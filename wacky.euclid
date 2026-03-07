@@ -1,0 +1,126 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 200.0,
+        "y": 380.0
+      },
+      {
+        "label": "B",
+        "x": 296.0,
+        "y": 135.0
+      },
+      {
+        "label": "C",
+        "x": 450.0,
+        "y": 380.0
+      },
+      {
+        "label": "_p0",
+        "x": 440.0,
+        "y": 152.0
+      },
+      {
+        "label": "_p1",
+        "x": 353.6415261649548,
+        "y": 337.25096899984146
+      },
+      {
+        "label": "_p2",
+        "x": 384.0,
+        "y": 380.0
+      },
+      {
+        "label": "_p3",
+        "x": 431.6044470450556,
+        "y": 350.73434757167934
+      },
+      {
+        "label": "_p4",
+        "x": 542.4654251492502,
+        "y": 239.59682706930028
+      },
+      {
+        "label": "_p5",
+        "x": 89.51524224632564,
+        "y": 95.09956371909675
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B"
+      },
+      {
+        "from": "A",
+        "to": "C"
+      },
+      {
+        "from": "B",
+        "to": "C"
+      },
+      {
+        "from": "B",
+        "to": "_p0"
+      },
+      {
+        "from": "_p1",
+        "to": "_p2"
+      },
+      {
+        "from": "_p3",
+        "to": "_p4"
+      },
+      {
+        "from": "C",
+        "to": "_p5"
+      }
+    ],
+    "circles": [
+      {
+        "center": "B",
+        "radius": 145.0,
+        "radius_point": "_p0"
+      },
+      {
+        "center": "_p0",
+        "radius": 145.0,
+        "radius_point": "B"
+      }
+    ],
+    "angleMarks": [
+      {
+        "from": "B",
+        "vertex": "A",
+        "to": "C",
+        "is_right": true
+      },
+      {
+        "from": "C",
+        "vertex": "B",
+        "to": "_p0",
+        "is_right": false
+      }
+    ]
+  },
+  "proof": {
+    "steps": [
+      {
+        "lineNumber": 5,
+        "text": "ab = ac, ab = bc, ¬(c=a), ¬(c=b)",
+        "justification": "Lemma:workspace_proof",
+        "dependencies": [
+          1
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  },
+  "exportedAt": "2026-03-06T00:53:23Z"
+}

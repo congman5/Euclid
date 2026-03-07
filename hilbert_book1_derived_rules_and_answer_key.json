@@ -1,0 +1,806 @@
+{
+  "system": "H",
+  "description": "Hilbert-only verifier registry and answer key for derived schemas/rules needed to complete Euclid Book I without Profile E.",
+  "source_summary": {
+    "profile_T_only": true,
+    "notes": [
+      "Based on the Hilbert kernel (incidence, order, congruence, parallel, continuity, logic).",
+      "Profile E is intentionally omitted.",
+      "Construction-like moves are represented as derived schemas, not primitive Euclidean postulates.",
+      "Canvas/drawing is not an oracle; all proof steps must be symbolically justified."
+    ]
+  },
+  "kernel_whitelist": {
+    "logical": [
+      "Given",
+      "Reiteration",
+      "ContradictionIntroduction",
+      "ContradictionElimination",
+      "RAA"
+    ],
+    "incidence": [
+      "Inc1",
+      "Inc2",
+      "Inc3"
+    ],
+    "order": [
+      "Ord1",
+      "Ord2",
+      "Ord3",
+      "Ord4",
+      "Pasch"
+    ],
+    "congruence": [
+      "Cong1",
+      "Cong2",
+      "Cong3",
+      "Cong4",
+      "SAS"
+    ],
+    "parallel": [
+      "Parallel"
+    ],
+    "continuity": [
+      "Archimedean",
+      "Completeness"
+    ]
+  },
+  "derived_schemas": [
+    {
+      "name": "LineConstructor",
+      "kind": "schema",
+      "status": "derived",
+      "premises": [
+        "Point(A)",
+        "Point(B)",
+        "A \u2260 B"
+      ],
+      "conclusion": "\u2203!l (A \u2208 l \u2227 B \u2208 l)",
+      "depends_on": [
+        "Inc1"
+      ],
+      "use_cases": [
+        "all propositions using a named line through two points"
+      ]
+    },
+    {
+      "name": "SegmentExtension",
+      "kind": "schema",
+      "status": "derived",
+      "premises": [
+        "A \u2260 B"
+      ],
+      "conclusion": "\u2203C Between(A,B,C)",
+      "depends_on": [
+        "Ord3"
+      ],
+      "use_cases": [
+        "I.2, I.5, I.16\u2013I.21 and many order arguments"
+      ]
+    },
+    {
+      "name": "CircleConstructor",
+      "kind": "schema",
+      "status": "derived",
+      "premises": [
+        "Point(O)",
+        "Point(P)",
+        "O \u2260 P"
+      ],
+      "conclusion": "Circle(O,P)",
+      "depends_on": [
+        "continuity/circle-language layer"
+      ],
+      "use_cases": [
+        "I.1, I.22, later circle-based constructions"
+      ],
+      "side_conditions": [
+        "Circle(O,P) means center O radius OP in the common language layer"
+      ]
+    },
+    {
+      "name": "CircleCircleIntersect",
+      "kind": "schema",
+      "status": "derived",
+      "premises": [
+        "Circle(A,B)",
+        "Circle(C,D)",
+        "CircleCircleIntersectionConditions(A,B,C,D)"
+      ],
+      "conclusion": "\u2203X (OnCircle(X,A,B) \u2227 OnCircle(X,C,D))",
+      "depends_on": [
+        "Continuity",
+        "circle theory"
+      ],
+      "use_cases": [
+        "I.1, I.22"
+      ],
+      "side_conditions": [
+        "Intersection conditions must be symbolic; never use canvas geometry as justification"
+      ]
+    },
+    {
+      "name": "CircleLineIntersect",
+      "kind": "schema",
+      "status": "derived",
+      "premises": [
+        "Circle(O,P)",
+        "Line(l)",
+        "CircleLineIntersectionConditions(O,P,l)"
+      ],
+      "conclusion": "\u2203X (OnCircle(X,O,P) \u2227 X \u2208 l)",
+      "depends_on": [
+        "Continuity",
+        "circle theory"
+      ],
+      "use_cases": [
+        "I.12-style circle arguments, later propositions"
+      ],
+      "side_conditions": [
+        "Intersection conditions must be symbolic"
+      ]
+    },
+    {
+      "name": "WitnessChoice",
+      "kind": "schema",
+      "status": "derived",
+      "premises": [
+        "\u2203X \u03c6(X)"
+      ],
+      "conclusion": "\u03c6(c)",
+      "depends_on": [
+        "existential proof administration"
+      ],
+      "use_cases": [
+        "naming constructed/intersection points"
+      ],
+      "side_conditions": [
+        "c must be fresh in visible scope"
+      ]
+    }
+  ],
+  "derived_rules": [
+    {
+      "name": "EqualityRules",
+      "category": "utility",
+      "members": [
+        "EqRefl",
+        "EqSym",
+        "EqTrans",
+        "EqSubst"
+      ],
+      "needed_for": [
+        "all Book I formal proofs",
+        "term equality normalization"
+      ]
+    },
+    {
+      "name": "CongruenceEquivalence",
+      "category": "utility",
+      "members": [
+        "CongReflSeg",
+        "CongSymSeg",
+        "CongTransSeg",
+        "CongSubstSeg"
+      ],
+      "needed_for": [
+        "I.5, I.6, I.7, I.47, I.48"
+      ]
+    },
+    {
+      "name": "AngleCongruenceRules",
+      "category": "utility",
+      "members": [
+        "AngRefl",
+        "AngSym",
+        "AngTrans"
+      ],
+      "needed_for": [
+        "I.5, I.6, I.9, I.16, I.27\u2013I.32"
+      ]
+    },
+    {
+      "name": "CongruenceElim",
+      "category": "definitional",
+      "premises": [
+        "Congruent(A,B,C,D,E,F)"
+      ],
+      "conclusion": "(AB = DE) \u2227 (BC = EF) \u2227 (CA = FD) \u2227 (\u2220ABC = \u2220DEF) \u2227 (\u2220BCA = \u2220EFD) \u2227 (\u2220CAB = \u2220FDE)",
+      "depends_on": [
+        "definition of triangle congruence"
+      ],
+      "needed_for": [
+        "all triangle congruence applications"
+      ]
+    },
+    {
+      "name": "SSS",
+      "category": "triangle_congruence",
+      "premises": [
+        "AB = DE",
+        "BC = EF",
+        "CA = FD"
+      ],
+      "conclusion": "Congruent(A,B,C,D,E,F)",
+      "depends_on": [
+        "SAS",
+        "Cong2",
+        "Cong4",
+        "Order"
+      ],
+      "needed_for": [
+        "I.8, I.47, I.48"
+      ]
+    },
+    {
+      "name": "ASA",
+      "category": "triangle_congruence",
+      "premises": [
+        "\u2220BAC = \u2220EDF",
+        "AC = DF",
+        "\u2220BCA = \u2220EFD"
+      ],
+      "conclusion": "Congruent(A,B,C,D,E,F)",
+      "depends_on": [
+        "Cong2",
+        "Cong4",
+        "Order",
+        "SAS"
+      ],
+      "needed_for": [
+        "I.6, many later theorems"
+      ]
+    },
+    {
+      "name": "SegmentArithmetic",
+      "category": "order_arithmetic",
+      "members": [
+        "SegAdd",
+        "SegSub"
+      ],
+      "side_conditions": [
+        "betweenness/collinearity must be explicit"
+      ],
+      "needed_for": [
+        "I.2, I.3, I.20, I.48 and other cut-off/addition arguments"
+      ]
+    },
+    {
+      "name": "RightAngleRules",
+      "category": "right_angle",
+      "members": [
+        "RightAngleCongruence",
+        "AngleCongruentToRightAngleIsRight",
+        "PerpendicularImpliesRightAngle",
+        "RightAngleImpliesPerpendicular"
+      ],
+      "needed_for": [
+        "I.11, I.12, I.13, I.14, I.46"
+      ]
+    },
+    {
+      "name": "AllRightAnglesCongruent",
+      "category": "right_angle",
+      "premises": [
+        "RightAngle(\u03b1)",
+        "RightAngle(\u03b2)"
+      ],
+      "conclusion": "\u03b1 = \u03b2",
+      "depends_on": [
+        "RightAngleRules"
+      ],
+      "needed_for": [
+        "I.13, I.14 and many orthogonality arguments"
+      ]
+    },
+    {
+      "name": "Midpoint",
+      "category": "construction",
+      "premises": [
+        "A \u2260 B"
+      ],
+      "conclusion": "\u2203M (Between(A,M,B) \u2227 AM = MB)",
+      "depends_on": [
+        "Incidence",
+        "Order",
+        "Congruence"
+      ],
+      "needed_for": [
+        "I.10, I.16, I.42"
+      ]
+    },
+    {
+      "name": "Perpendicular",
+      "category": "construction",
+      "premises": [
+        "Point(P)",
+        "Line(l)"
+      ],
+      "conclusion": "\u2203m (P \u2208 m \u2227 m \u27c2 l)",
+      "depends_on": [
+        "Incidence",
+        "Order",
+        "Congruence"
+      ],
+      "needed_for": [
+        "I.11, I.12, I.46, I.47"
+      ]
+    },
+    {
+      "name": "ParallelAngleRules",
+      "category": "parallel",
+      "members": [
+        "AltInteriorEqualImpliesParallel",
+        "ParallelImpliesAltInteriorEqual",
+        "SameSideInteriorSupplementaryImpliesParallel",
+        "ParallelTransversalAngleTransfer"
+      ],
+      "needed_for": [
+        "I.27\u2013I.32",
+        "all later parallel arguments"
+      ]
+    },
+    {
+      "name": "RadiusCongruence",
+      "category": "circle",
+      "premises": [
+        "Circle(O,P)",
+        "OnCircle(X,O,P)"
+      ],
+      "conclusion": "OX = OP",
+      "depends_on": [
+        "circle definition"
+      ],
+      "needed_for": [
+        "I.1, I.22 and circle arguments"
+      ]
+    },
+    {
+      "name": "UniqueEuclideanPointConstruction",
+      "category": "construction_uniqueness",
+      "premises": [
+        "copy-length axioms available",
+        "copy-angle axioms available",
+        "order axioms available"
+      ],
+      "conclusion": "Existence and uniqueness of standard Euclidean constructed points under specified side/orientation conditions",
+      "depends_on": [
+        "Cong2",
+        "Cong4",
+        "Order",
+        "SAS/SSS"
+      ],
+      "needed_for": [
+        "I.7, many uniqueness arguments"
+      ]
+    },
+    {
+      "name": "PropositionRule",
+      "category": "library",
+      "premises": [
+        "proof of Prop.I.k already registered"
+      ],
+      "conclusion": "Prop.I.k may be cited as a single justification in later proofs",
+      "depends_on": [
+        "dependency checker"
+      ],
+      "needed_for": [
+        "keeping later Book I proofs manageable"
+      ]
+    }
+  ],
+  "book_I_minimum_mapping": {
+    "I.1": [
+      "CircleConstructor",
+      "CircleCircleIntersect",
+      "WitnessChoice",
+      "RadiusCongruence"
+    ],
+    "I.2": [
+      "Cong2",
+      "SegmentArithmetic"
+    ],
+    "I.3": [
+      "Cong2",
+      "SegmentOrdering",
+      "SegmentArithmetic"
+    ],
+    "I.4": [
+      "SAS"
+    ],
+    "I.5": [
+      "SegmentExtension",
+      "SAS",
+      "CongruenceElim"
+    ],
+    "I.6": [
+      "ASA",
+      "CongruenceElim"
+    ],
+    "I.7": [
+      "UniqueEuclideanPointConstruction",
+      "SSS or SAS",
+      "CongruenceElim"
+    ],
+    "I.8": [
+      "SSS"
+    ],
+    "I.9": [
+      "Cong4",
+      "AngleCongruenceRules",
+      "UniqueEuclideanPointConstruction"
+    ],
+    "I.10": [
+      "Midpoint"
+    ],
+    "I.11": [
+      "Perpendicular",
+      "RightAngleRules"
+    ],
+    "I.12": [
+      "Perpendicular"
+    ],
+    "I.13": [
+      "RightAngleRules",
+      "AllRightAnglesCongruent"
+    ],
+    "I.14": [
+      "RightAngleRules",
+      "AllRightAnglesCongruent"
+    ],
+    "I.15": [
+      "AngleCongruenceRules"
+    ],
+    "I.16": [
+      "SegmentExtension",
+      "ASA/AngleRules",
+      "Prop.I.10"
+    ],
+    "I.17": [
+      "Prop.I.16"
+    ],
+    "I.18": [
+      "Prop.I.3",
+      "CongruenceElim"
+    ],
+    "I.19": [
+      "Prop.I.5",
+      "Prop.I.6"
+    ],
+    "I.20": [
+      "SegmentExtension",
+      "SegmentArithmetic"
+    ],
+    "I.21": [
+      "SegmentExtension",
+      "SegmentArithmetic",
+      "triangle inequality lemmas"
+    ],
+    "I.22": [
+      "CircleConstructor",
+      "CircleCircleIntersect",
+      "RadiusCongruence",
+      "SegmentArithmetic"
+    ],
+    "I.23": [
+      "Cong4"
+    ],
+    "I.24": [
+      "SAS",
+      "SegmentOrdering"
+    ],
+    "I.25": [
+      "SSS",
+      "SegmentOrdering"
+    ],
+    "I.26": [
+      "ASA or AAS",
+      "Prop.I.3"
+    ],
+    "I.27": [
+      "ParallelAngleRules",
+      "Prop.I.16",
+      "RAA"
+    ],
+    "I.28": [
+      "ParallelAngleRules"
+    ],
+    "I.29": [
+      "ParallelAngleRules"
+    ],
+    "I.30": [
+      "ParallelAngleRules",
+      "PropositionRule"
+    ],
+    "I.31": [
+      "Parallel",
+      "LineConstructor"
+    ],
+    "I.32": [
+      "ParallelAngleRules",
+      "angle sum rules"
+    ],
+    "I.33": [
+      "ParallelAngleRules",
+      "CongruenceElim"
+    ],
+    "I.34": [
+      "ParallelAngleRules",
+      "CongruenceElim"
+    ],
+    "I.35": [
+      "parallel area lemmas"
+    ],
+    "I.36": [
+      "parallel area lemmas"
+    ],
+    "I.37": [
+      "triangle/parallelogram area lemmas"
+    ],
+    "I.38": [
+      "triangle/parallelogram area lemmas"
+    ],
+    "I.39": [
+      "area comparison lemmas"
+    ],
+    "I.40": [
+      "area comparison lemmas"
+    ],
+    "I.41": [
+      "triangle/parallelogram area lemmas"
+    ],
+    "I.42": [
+      "Midpoint",
+      "Parallel"
+    ],
+    "I.43": [
+      "parallelogram complement lemmas"
+    ],
+    "I.44": [
+      "area transfer lemmas",
+      "Parallel"
+    ],
+    "I.45": [
+      "parallelogram completion lemmas"
+    ],
+    "I.46": [
+      "Perpendicular",
+      "Prop.I.3",
+      "AllRightAnglesCongruent"
+    ],
+    "I.47": [
+      "Prop.I.46",
+      "SSS",
+      "area lemmas"
+    ],
+    "I.48": [
+      "Prop.I.47",
+      "SSS",
+      "Prop.I.3",
+      "Perpendicular"
+    ]
+  },
+  "answer_key": {
+    "purpose": "Regression targets to verify rule registration and checker behavior before encoding all 48 proposition proofs.",
+    "positive_tests": [
+      {
+        "name": "test_Cong2_segment_transfer",
+        "goal": "\u2203!D (OnRay(D,A,X) \u2227 AD = BC)",
+        "premises": [
+          "Ray(A,X)",
+          "Segment(BC)"
+        ],
+        "expected": "accept",
+        "justification": "Cong2"
+      },
+      {
+        "name": "test_SAS_triangle_congruence",
+        "goal": "Congruent(A,B,C,D,E,F)",
+        "premises": [
+          "AB = DE",
+          "AC = DF",
+          "\u2220BAC = \u2220EDF"
+        ],
+        "expected": "accept",
+        "justification": "SAS"
+      },
+      {
+        "name": "test_SSS_triangle_congruence",
+        "goal": "Congruent(A,B,C,D,E,F)",
+        "premises": [
+          "AB = DE",
+          "BC = EF",
+          "CA = FD"
+        ],
+        "expected": "accept",
+        "justification": "SSS"
+      },
+      {
+        "name": "test_Midpoint",
+        "goal": "\u2203M (Between(A,M,B) \u2227 AM = MB)",
+        "premises": [
+          "A \u2260 B"
+        ],
+        "expected": "accept",
+        "justification": "Midpoint"
+      },
+      {
+        "name": "test_Perpendicular",
+        "goal": "\u2203m (P \u2208 m \u2227 m \u27c2 l)",
+        "premises": [
+          "Point(P)",
+          "Line(l)"
+        ],
+        "expected": "accept",
+        "justification": "Perpendicular"
+      },
+      {
+        "name": "test_CircleCircleIntersect",
+        "goal": "\u2203X (OnCircle(X,A,B) \u2227 OnCircle(X,C,D))",
+        "premises": [
+          "Circle(A,B)",
+          "Circle(C,D)",
+          "CircleCircleIntersectionConditions(A,B,C,D)"
+        ],
+        "expected": "accept",
+        "justification": "CircleCircleIntersect"
+      },
+      {
+        "name": "test_WitnessChoice",
+        "goal": "OnCircle(E,A,B) \u2227 OnCircle(E,C,D)",
+        "premises": [
+          "\u2203X (OnCircle(X,A,B) \u2227 OnCircle(X,C,D))"
+        ],
+        "expected": "accept",
+        "justification": "WitnessChoice",
+        "meta": {
+          "fresh_symbol": "E",
+          "instantiates": "X"
+        }
+      },
+      {
+        "name": "test_Prop_I_10",
+        "goal": "\u2203M (Between(A,M,B) \u2227 AM = MB)",
+        "premises": [
+          "A \u2260 B"
+        ],
+        "expected": "accept",
+        "proof": [
+          {
+            "id": 1,
+            "statement": "A \u2260 B",
+            "justification": "Given",
+            "refs": []
+          },
+          {
+            "id": 2,
+            "statement": "\u2203M (Between(A,M,B) \u2227 AM = MB)",
+            "justification": "Midpoint",
+            "refs": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "name": "test_Prop_I_12",
+        "goal": "\u2203m (C \u2208 m \u2227 m \u27c2 l)",
+        "premises": [
+          "Point(C)",
+          "Line(l)"
+        ],
+        "expected": "accept",
+        "proof": [
+          {
+            "id": 1,
+            "statement": "Point(C)",
+            "justification": "Given",
+            "refs": []
+          },
+          {
+            "id": 2,
+            "statement": "Line(l)",
+            "justification": "Given",
+            "refs": []
+          },
+          {
+            "id": 3,
+            "statement": "\u2203m (C \u2208 m \u2227 m \u27c2 l)",
+            "justification": "Perpendicular",
+            "refs": [
+              1,
+              2
+            ]
+          }
+        ]
+      }
+    ],
+    "negative_tests": [
+      {
+        "name": "reject_canvas_as_justification",
+        "premises": [
+          "Circle(A,B)",
+          "Circle(C,D)"
+        ],
+        "step": {
+          "statement": "\u2203X (OnCircle(X,A,B) \u2227 OnCircle(X,C,D))",
+          "justification": "CanvasShowsIntersection",
+          "refs": []
+        },
+        "expected_error": "UNKNOWN_JUSTIFICATION"
+      },
+      {
+        "name": "reject_circle_intersection_without_side_conditions",
+        "premises": [
+          "Circle(A,B)",
+          "Circle(C,D)"
+        ],
+        "step": {
+          "statement": "\u2203X (OnCircle(X,A,B) \u2227 OnCircle(X,C,D))",
+          "justification": "CircleCircleIntersect",
+          "refs": [
+            1,
+            2
+          ]
+        },
+        "expected_error": "PREMISE_PATTERN_MISMATCH"
+      },
+      {
+        "name": "reject_nonfresh_witness",
+        "premises": [
+          "\u2203X \u03c6(X)"
+        ],
+        "step": {
+          "statement": "\u03c6(A)",
+          "justification": "WitnessChoice",
+          "refs": [
+            1
+          ],
+          "meta": {
+            "fresh_symbol": "A",
+            "instantiates": "X"
+          }
+        },
+        "expected_error": "NON_FRESH_WITNESS"
+      },
+      {
+        "name": "reject_helper_not_registered",
+        "premises": [
+          "AB = DE",
+          "BC = EF",
+          "CA = FD"
+        ],
+        "step": {
+          "statement": "Congruent(A,B,C,D,E,F)",
+          "justification": "ExtractAngleFromCongruence",
+          "refs": [
+            1,
+            2,
+            3
+          ]
+        },
+        "expected_error": "UNKNOWN_JUSTIFICATION"
+      },
+      {
+        "name": "reject_using_canvas_for_equilateral",
+        "premises": [
+          "Circle(A,B)",
+          "Circle(B,A)",
+          "Triangle(A,B,C)"
+        ],
+        "step": {
+          "statement": "Equilateral(A,B,C)",
+          "justification": "CanvasEquilateral",
+          "refs": []
+        },
+        "expected_error": "UNKNOWN_JUSTIFICATION"
+      }
+    ],
+    "implementation_checks": [
+      "Kernel rules and derived rules must be stored separately.",
+      "Derived schemas must enforce side conditions symbolically.",
+      "Canvas may suggest witness points, but proof acceptance must never depend on measured coordinates.",
+      "Every later proposition should be provable either from kernel + derived rules or from earlier proposition rules."
+    ]
+  }
+}

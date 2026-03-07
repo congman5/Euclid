@@ -1,0 +1,134 @@
+{
+  "name": "workspace_proof",
+  "declarations": {
+    "points": [
+      "a",
+      "B",
+      "b",
+      "A"
+    ],
+    "lines": []
+  },
+  "premises": [
+    "¬(a = b)"
+  ],
+  "goal": "ab = ac, ab = bc, ¬(c = a), ¬(c = b)",
+  "lines": [
+    {
+      "id": 1,
+      "depth": 0,
+      "statement": "¬(a = b)",
+      "justification": "Given",
+      "refs": []
+    },
+    {
+      "id": 2,
+      "depth": 0,
+      "statement": "center(a,α), on(b,α)",
+      "justification": "let-circle",
+      "refs": [
+        1
+      ]
+    },
+    {
+      "id": 3,
+      "depth": 0,
+      "statement": "center(b,β), on(a,β)",
+      "justification": "let-circle",
+      "refs": [
+        1
+      ]
+    },
+    {
+      "id": 4,
+      "depth": 0,
+      "statement": "inside(a,α)\t",
+      "justification": "Generality 3",
+      "refs": [
+        2
+      ]
+    },
+    {
+      "id": 5,
+      "depth": 0,
+      "statement": "inside(b,β)",
+      "justification": "Generality 3",
+      "refs": [
+        3
+      ]
+    },
+    {
+      "id": 6,
+      "depth": 0,
+      "statement": "intersects(α, β)",
+      "justification": "Intersection 5",
+      "refs": [
+        4,
+        5
+      ]
+    },
+    {
+      "id": 7,
+      "depth": 0,
+      "statement": "on(c, α), on(c, β)",
+      "justification": "let-intersection-circle-circle-one",
+      "refs": [
+        6
+      ]
+    },
+    {
+      "id": 8,
+      "depth": 0,
+      "statement": "ac = ab",
+      "justification": "Segment transfer 4",
+      "refs": [
+        7
+      ]
+    },
+    {
+      "id": 9,
+      "depth": 0,
+      "statement": "bc = ba",
+      "justification": "Segment transfer 4",
+      "refs": [
+        7
+      ]
+    },
+    {
+      "id": 10,
+      "depth": 0,
+      "statement": "ab = ac",
+      "justification": "CN1 — Transitivity",
+      "refs": [
+        8
+      ]
+    },
+    {
+      "id": 11,
+      "depth": 0,
+      "statement": "ab = bc",
+      "justification": "CN1 — Transitivity",
+      "refs": [
+        9
+      ]
+    },
+    {
+      "id": 12,
+      "depth": 0,
+      "statement": "¬(c = a)",
+      "justification": "CN1 — Transitivity",
+      "refs": [
+        10
+      ]
+    },
+    {
+      "id": 13,
+      "depth": 0,
+      "statement": "¬(c = b)",
+      "justification": "CN1 — Transitivity",
+      "refs": [
+        11
+      ]
+    }
+  ]
+}

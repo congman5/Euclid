@@ -1,0 +1,717 @@
+"""
+Proposition data — all 48 Euclid Book I propositions + textbook theorems.
+
+Each proposition includes metadata for the UI: name, statement, given objects,
+required steps, conclusion, and applicability constraints.
+
+Formal content (sequents, theorems) is linked to the System E and System H
+libraries via ``get_e_theorem()`` and ``get_h_theorem()`` methods, keeping
+display metadata here and formal mathematics in the verifier.
+"""
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+
+@dataclass
+class GivenObjects:
+    points: List[dict] = field(default_factory=list)
+    segments: List[dict] = field(default_factory=list)
+    circles: List[dict] = field(default_factory=list)
+    angle_marks: List[dict] = field(default_factory=list)
+
+
+@dataclass
+class Proposition:
+    id: str
+    source: str
+    book: str
+    name: str
+    prop_number: Optional[int]
+    max_proposition: int
+    title: str
+    statement: str
+    given: str = ""
+    diagram_hint: str = ""
+    conclusion: str = ""
+    conclusion_predicate: str = ""
+    given_objects: Optional[GivenObjects] = None
+    requires: List[dict] = field(default_factory=list)
+    produces: str = ""
+    required_steps: List[dict] = field(default_factory=list)
+
+    @property
+    def e_library_name(self) -> Optional[str]:
+        """Return the System E library key (e.g. ``Prop.I.1``), or None for non-Euclid entries."""
+        if self.source == "euclid" and self.id.startswith("euclid-"):
+            return "Prop." + self.id.replace("euclid-", "")
+        return None
+
+    def get_e_theorem(self):
+        """Retrieve the ``ETheorem`` from the System E library.
+
+        Returns ``None`` for non-Euclid entries or if the theorem is
+        not (yet) in the library.
+        """
+        name = self.e_library_name
+        if name is None:
+            return None
+        try:
+            from verifier.e_library import E_THEOREM_LIBRARY
+            return E_THEOREM_LIBRARY.get(name)
+        except ImportError:
+            return None
+
+    def get_h_theorem(self):
+        """Retrieve the ``HTheorem`` from the System H library.
+
+        Returns ``None`` for non-Euclid entries or if the theorem is
+        not (yet) in the library.
+        """
+        name = self.e_library_name
+        if name is None:
+            return None
+        try:
+            from verifier.h_library import H_THEOREM_LIBRARY
+            return H_THEOREM_LIBRARY.get(name)
+        except ImportError:
+            return None
+
+    @property
+    def formal_sequent(self) -> Optional[str]:
+        """Return the formal System E sequent as a string, or None."""
+        thm = self.get_e_theorem()
+        if thm is None:
+            return None
+        return str(thm.sequent)
+
+
+def _go(pts=None, segs=None, circs=None, angles=None) -> GivenObjects:
+    return GivenObjects(
+        points=pts or [],
+        segments=segs or [],
+        circles=circs or [],
+        angle_marks=angles or [],
+    )
+
+
+PROPOSITIONS: List[Proposition] = [
+    Proposition("euclid-I.1", "euclid", "Book I", "Proposition I.1", 1, 0,
+                "Equilateral Triangle Construction",
+                "To construct an equilateral triangle on a given finite straight-line.",
+                given="A finite straight-line AB is given.",
+                conclusion="Triangle ABC is equilateral, constructed on the given line AB. Q.E.F.",
+                conclusion_predicate="ab = ac, ab = bc, ¬(c = a), ¬(c = b)",
+                given_objects=_go([{"label": "A", "x": 200, "y": 300}, {"label": "B", "x": 450, "y": 300}],
+                                  [{"from": "A", "to": "B"}]),
+                requires=[{"type": "segment", "label": "Base segment"}]),
+    Proposition("euclid-I.2", "euclid", "Book I", "Proposition I.2", 2, 1,
+                "Transfer a Length to a Point",
+                "To place at a given point a straight-line equal to a given straight-line.",
+                given="Point A and segment BC are given.",
+                conclusion="Segment AL equals BC. Q.E.F.",
+                conclusion_predicate="af = bc",
+                given_objects=_go([{"label": "A", "x": 200, "y": 250}, {"label": "B", "x": 350, "y": 350}, {"label": "C", "x": 480, "y": 350}],
+                                  [{"from": "B", "to": "C"}]),
+                requires=[{"type": "point", "label": "Target point"}, {"type": "segment", "label": "Segment to transfer"}]),
+    Proposition("euclid-I.3", "euclid", "Book I", "Proposition I.3", 3, 2,
+                 "Cut Off Equal Length",
+                 "Given two unequal straight-lines, cut off from the greater a straight-line equal to the less.",
+                 given="Segments AB (greater) and C (lesser).",
+                 conclusion="AE equals C. Q.E.F.",
+                 conclusion_predicate="between(a, e, b), ae = cd",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 300},
+                                    {"label": "B", "x": 500, "y": 300},
+                                    {"label": "C", "x": 200, "y": 400},
+                                    {"label": "D", "x": 350, "y": 400}],
+                                   [{"from": "A", "to": "B"},
+                                    {"from": "C", "to": "D"}])),
+    Proposition("euclid-I.4", "euclid", "Book I", "Proposition I.4", 4, 3,
+                 "SAS Congruence",
+                 "If two triangles have two sides equal and the included angle equal, the triangles are congruent.",
+                 given="Triangles ABC and DEF with AB=DE, AC=DF, ∠BAC=∠EDF.",
+                 conclusion="The triangles are congruent. Q.E.D.",
+                 conclusion_predicate="bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 200},
+                                    {"label": "B", "x": 100, "y": 380},
+                                    {"label": "C", "x": 300, "y": 380},
+                                    {"label": "D", "x": 400, "y": 200},
+                                    {"label": "E", "x": 350, "y": 380},
+                                    {"label": "F", "x": 550, "y": 380}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"},
+                                    {"from": "D", "to": "E"}, {"from": "D", "to": "F"}, {"from": "E", "to": "F"}])),
+    Proposition("euclid-I.5", "euclid", "Book I", "Proposition I.5", 5, 4,
+                 "Isosceles Base Angles",
+                 "In isosceles triangles the angles at the base are equal.",
+                 given="Triangle ABC with AB = AC.",
+                 conclusion="∠ABC = ∠ACB. Q.E.D.",
+                 conclusion_predicate="∠abc = ∠acb",
+                 given_objects=_go([{"label": "A", "x": 325, "y": 150},
+                                    {"label": "B", "x": 175, "y": 400},
+                                    {"label": "C", "x": 475, "y": 400}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"}])),
+    Proposition("euclid-I.6", "euclid", "Book I", "Proposition I.6", 6, 5,
+                 "Converse of Isosceles Base Angles",
+                 "If two angles of a triangle are equal, the sides subtending them are equal.",
+                 given="Triangle ABC with ∠ABC = ∠ACB.",
+                 conclusion="AB = AC. Q.E.D.",
+                 conclusion_predicate="ab = ac",
+                 given_objects=_go([{"label": "A", "x": 325, "y": 150},
+                                    {"label": "B", "x": 175, "y": 400},
+                                    {"label": "C", "x": 475, "y": 400}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"}])),
+    Proposition("euclid-I.7", "euclid", "Book I", "Proposition I.7", 7, 6,
+                 "Unique Triangle on Segment",
+                 "Given a segment, there cannot be two distinct triangles on the same side with equal corresponding sides.",
+                 given="Segment AB with triangles ABC and ABD on same side.",
+                 conclusion="C and D coincide. Q.E.D.",
+                 conclusion_predicate="c = d",
+                 given_objects=_go([{"label": "A", "x": 175, "y": 380},
+                                    {"label": "B", "x": 475, "y": 380},
+                                    {"label": "C", "x": 300, "y": 180},
+                                    {"label": "D", "x": 350, "y": 220}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"},
+                                    {"from": "A", "to": "D"}, {"from": "B", "to": "D"}])),
+    Proposition("euclid-I.8", "euclid", "Book I", "Proposition I.8", 8, 7,
+                 "SSS Congruence",
+                 "If two triangles have three sides pairwise equal, they are congruent.",
+                 given="Triangles ABC and DEF with AB=DE, BC=EF, CA=FD.",
+                 conclusion="The triangles are congruent. Q.E.D.",
+                 conclusion_predicate="∠bac = ∠edf, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 200},
+                                    {"label": "B", "x": 100, "y": 380},
+                                    {"label": "C", "x": 300, "y": 380},
+                                    {"label": "D", "x": 400, "y": 200},
+                                    {"label": "E", "x": 350, "y": 380},
+                                    {"label": "F", "x": 550, "y": 380}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"},
+                                    {"from": "D", "to": "E"}, {"from": "D", "to": "F"}, {"from": "E", "to": "F"}])),
+    Proposition("euclid-I.9", "euclid", "Book I", "Proposition I.9", 9, 8,
+                 "Bisect an Angle",
+                 "To bisect a given rectilineal angle.",
+                 given="Angle BAC.",
+                 conclusion="AD bisects angle BAC. Q.E.F.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 350},
+                                    {"label": "B", "x": 450, "y": 350},
+                                    {"label": "C", "x": 350, "y": 150}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}],
+                                   [],
+                                   [{"from": "B", "vertex": "A", "to": "C"}])),
+    Proposition("euclid-I.10", "euclid", "Book I", "Proposition I.10", 10, 9,
+                 "Bisect a Segment",
+                 "To bisect a given finite straight-line.",
+                 given="Segment AB.",
+                 conclusion="D is the midpoint of AB. Q.E.F.",
+                 given_objects=_go([{"label": "A", "x": 175, "y": 300},
+                                    {"label": "B", "x": 475, "y": 300}],
+                                   [{"from": "A", "to": "B"}])),
+    Proposition("euclid-I.11", "euclid", "Book I", "Proposition I.11", 11, 10,
+                 "Perpendicular from Point on Line",
+                 "To draw a perpendicular to a given line from a point on it.",
+                 given="Line AB and point C on it.",
+                 conclusion="CF is perpendicular to AB at C. Q.E.F.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 300},
+                                    {"label": "B", "x": 500, "y": 300}],
+                                   [{"from": "A", "to": "B"}])),
+    Proposition("euclid-I.12", "euclid", "Book I", "Proposition I.12", 12, 11,
+                 "Perpendicular from Point off Line",
+                 "To draw a perpendicular to a given line from a point not on it.",
+                 given="Line AB and point C not on it.",
+                 conclusion="CH is perpendicular to AB. Q.E.F.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 350},
+                                    {"label": "B", "x": 500, "y": 350},
+                                    {"label": "P", "x": 325, "y": 150}],
+                                   [{"from": "A", "to": "B"}])),
+    Proposition("euclid-I.13", "euclid", "Book I", "Proposition I.13", 13, 12,
+                 "Supplementary Angles",
+                 "If a straight line stands on another, the adjacent angles sum to two right angles.",
+                 given="Line CD standing on AB at point B.",
+                 conclusion="∠ABC + ∠ABD = 180°. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 350},
+                                    {"label": "B", "x": 500, "y": 350},
+                                    {"label": "C", "x": 325, "y": 350},
+                                    {"label": "D", "x": 325, "y": 150}],
+                                   [{"from": "A", "to": "B"}, {"from": "C", "to": "D"}])),
+    Proposition("euclid-I.14", "euclid", "Book I", "Proposition I.14", 14, 13,
+                 "Converse of Supplementary",
+                 "If adjacent angles on one side sum to two right angles, the lines form a straight line.",
+                 given="Angles on one side summing to 180°.",
+                 conclusion="The lines are in a straight line. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 350},
+                                    {"label": "B", "x": 325, "y": 350},
+                                    {"label": "C", "x": 500, "y": 350},
+                                    {"label": "D", "x": 325, "y": 150}],
+                                   [{"from": "A", "to": "B"}, {"from": "B", "to": "C"}, {"from": "B", "to": "D"}])),
+    Proposition("euclid-I.15", "euclid", "Book I", "Proposition I.15", 15, 14,
+                 "Vertical Angles",
+                 "Vertical angles are equal.",
+                 given="Two lines intersecting at E.",
+                 conclusion="∠AEC = ∠DEB and ∠AED = ∠BEC. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 200},
+                                    {"label": "B", "x": 500, "y": 400},
+                                    {"label": "C", "x": 500, "y": 200},
+                                    {"label": "D", "x": 150, "y": 400},
+                                    {"label": "E", "x": 325, "y": 300}],
+                                   [{"from": "A", "to": "B"}, {"from": "C", "to": "D"}])),
+    Proposition("euclid-I.16", "euclid", "Book I", "Proposition I.16", 16, 15,
+                 "Exterior Angle Theorem",
+                 "An exterior angle of a triangle is greater than either remote interior angle.",
+                 given="Triangle ABC with BC extended to D.",
+                 conclusion="∠ACD > ∠ABC and ∠ACD > ∠BAC. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 250, "y": 150},
+                                    {"label": "B", "x": 150, "y": 350},
+                                    {"label": "C", "x": 400, "y": 350},
+                                    {"label": "D", "x": 550, "y": 350}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"},
+                                    {"from": "C", "to": "D"}])),
+    Proposition("euclid-I.17", "euclid", "Book I", "Proposition I.17", 17, 16,
+                 "Two Angles Less Than Two Right Angles",
+                 "Any two angles of a triangle are together less than two right angles.",
+                 given="Triangle ABC.",
+                 conclusion="∠ABC + ∠BCA < 180°. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 250, "y": 150},
+                                    {"label": "B", "x": 150, "y": 380},
+                                    {"label": "C", "x": 450, "y": 380}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"}])),
+    Proposition("euclid-I.18", "euclid", "Book I", "Proposition I.18", 18, 17,
+                 "Greater Side Opposite Greater Angle",
+                 "In any triangle, the greater side subtends the greater angle.",
+                 given="Triangle ABC with AC > AB.",
+                 conclusion="∠ABC > ∠BCA. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 200, "y": 150},
+                                    {"label": "B", "x": 150, "y": 380},
+                                    {"label": "C", "x": 500, "y": 380}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"}])),
+    Proposition("euclid-I.19", "euclid", "Book I", "Proposition I.19", 19, 18,
+                 "Greater Angle Opposite Greater Side",
+                 "In any triangle, the greater angle is subtended by the greater side.",
+                 given="Triangle ABC with ∠ABC > ∠BCA.",
+                 conclusion="AC > AB. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 200, "y": 150},
+                                    {"label": "B", "x": 150, "y": 380},
+                                    {"label": "C", "x": 500, "y": 380}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"}])),
+    Proposition("euclid-I.20", "euclid", "Book I", "Proposition I.20", 20, 19,
+                 "Triangle Inequality",
+                 "In any triangle, the sum of any two sides is greater than the third.",
+                 given="Triangle ABC.",
+                 conclusion="BA + AC > BC. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 250, "y": 150},
+                                    {"label": "B", "x": 150, "y": 380},
+                                    {"label": "C", "x": 450, "y": 380}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"}])),
+    Proposition("euclid-I.21", "euclid", "Book I", "Proposition I.21", 21, 20,
+                 "Interior Triangle Sides and Angles",
+                 "If from the ends of a side of a triangle two lines are drawn to a point within the triangle, their sum is less than the remaining two sides, but the angle they contain is greater.",
+                 given="Triangle ABC with point D inside.",
+                 conclusion="BD + CD < BA + CA and ∠BDC > ∠BAC. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 300, "y": 120},
+                                    {"label": "B", "x": 130, "y": 400},
+                                    {"label": "C", "x": 470, "y": 400},
+                                    {"label": "D", "x": 300, "y": 310}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"},
+                                    {"from": "B", "to": "D"}, {"from": "C", "to": "D"}])),
+    Proposition("euclid-I.22", "euclid", "Book I", "Proposition I.22", 22, 21,
+                 "Triangle from Three Segments",
+                 "To construct a triangle from three given line segments (subject to the triangle inequality).",
+                 given="Three segments.",
+                 conclusion="Triangle KFG constructed. Q.E.F.",
+                 given_objects=_go([{"label": "A", "x": 100, "y": 200},
+                                    {"label": "B", "x": 250, "y": 200},
+                                    {"label": "C", "x": 100, "y": 280},
+                                    {"label": "D", "x": 300, "y": 280},
+                                    {"label": "E", "x": 100, "y": 360},
+                                    {"label": "F", "x": 280, "y": 360}],
+                                   [{"from": "A", "to": "B"}, {"from": "C", "to": "D"}, {"from": "E", "to": "F"}])),
+    Proposition("euclid-I.23", "euclid", "Book I", "Proposition I.23", 23, 22,
+                 "Copy an Angle",
+                 "To construct an angle equal to a given angle on a given line at a given point.",
+                 given="Angle DCE and line AB with point A.",
+                 conclusion="∠FAG = ∠DCE. Q.E.F.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 350},
+                                    {"label": "B", "x": 450, "y": 350},
+                                    {"label": "D", "x": 350, "y": 100},
+                                    {"label": "E", "x": 500, "y": 200},
+                                    {"label": "F", "x": 550, "y": 100}],
+                                   [{"from": "A", "to": "B"}, {"from": "D", "to": "E"}, {"from": "E", "to": "F"}],
+                                   [],
+                                   [{"from": "D", "vertex": "E", "to": "F"}])),
+    Proposition("euclid-I.24", "euclid", "Book I", "Proposition I.24", 24, 23,
+                 "Hinge Theorem",
+                 "If two sides of one triangle equal two sides of another but the included angle is greater, the base is greater.",
+                 given="Triangles with equal pairs of sides.",
+                 conclusion="The base opposite the greater angle is greater. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 180},
+                                    {"label": "B", "x": 100, "y": 380},
+                                    {"label": "C", "x": 300, "y": 380},
+                                    {"label": "D", "x": 400, "y": 180},
+                                    {"label": "E", "x": 350, "y": 380},
+                                    {"label": "F", "x": 580, "y": 380}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"},
+                                    {"from": "D", "to": "E"}, {"from": "D", "to": "F"}, {"from": "E", "to": "F"}])),
+    Proposition("euclid-I.25", "euclid", "Book I", "Proposition I.25", 25, 24,
+                 "Converse Hinge Theorem",
+                 "If two sides equal two sides and the base is greater, the angle is greater.",
+                 given="Triangles with equal pairs of sides.",
+                 conclusion="The angle opposite the greater base is greater. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 180},
+                                    {"label": "B", "x": 100, "y": 380},
+                                    {"label": "C", "x": 300, "y": 380},
+                                    {"label": "D", "x": 400, "y": 180},
+                                    {"label": "E", "x": 350, "y": 380},
+                                    {"label": "F", "x": 580, "y": 380}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"},
+                                    {"from": "D", "to": "E"}, {"from": "D", "to": "F"}, {"from": "E", "to": "F"}])),
+    Proposition("euclid-I.26", "euclid", "Book I", "Proposition I.26", 26, 25,
+                 "ASA and AAS Congruence",
+                 "Triangles with two angles and a corresponding side equal are congruent.",
+                 given="Triangles with matching angle-side combinations.",
+                 conclusion="The triangles are congruent. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 200},
+                                    {"label": "B", "x": 100, "y": 380},
+                                    {"label": "C", "x": 300, "y": 380},
+                                    {"label": "D", "x": 400, "y": 200},
+                                    {"label": "E", "x": 350, "y": 380},
+                                    {"label": "F", "x": 550, "y": 380}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"},
+                                    {"from": "D", "to": "E"}, {"from": "D", "to": "F"}, {"from": "E", "to": "F"}])),
+    Proposition("euclid-I.27", "euclid", "Book I", "Proposition I.27", 27, 26,
+                 "Alternate Interior Angles Imply Parallel",
+                 "If a transversal makes alternate interior angles equal, the lines are parallel.",
+                 given="Lines AB, CD cut by transversal EF with ∠AEF = ∠EFD.",
+                 conclusion="AB ∥ CD. Q.E.D.",
+                 conclusion_predicate="¬intersects(L, M)",
+                 given_objects=_go([{"label": "A", "x": 100, "y": 200},
+                                    {"label": "B", "x": 550, "y": 200},
+                                    {"label": "C", "x": 100, "y": 380},
+                                    {"label": "D", "x": 550, "y": 380}],
+                                   [{"from": "A", "to": "B"}, {"from": "C", "to": "D"}])),
+    Proposition("euclid-I.28", "euclid", "Book I", "Proposition I.28", 28, 27,
+                 "Exterior Angle Equals Opposite Interior Implies Parallel",
+                 "If exterior angle equals opposite interior, the lines are parallel.",
+                 given="Transversal making exterior = remote interior.",
+                 conclusion="The lines are parallel. Q.E.D.",
+                 conclusion_predicate="¬intersects(L, M)",
+                 given_objects=_go([{"label": "A", "x": 100, "y": 200},
+                                    {"label": "B", "x": 550, "y": 200},
+                                    {"label": "C", "x": 100, "y": 380},
+                                    {"label": "D", "x": 550, "y": 380}],
+                                   [{"from": "A", "to": "B"}, {"from": "C", "to": "D"}])),
+    Proposition("euclid-I.29", "euclid", "Book I", "Proposition I.29", 29, 28,
+                 "Parallel Lines Give Equal Alternate Angles",
+                 "A transversal cutting parallel lines makes alternate interior angles equal.",
+                 given="Parallel lines AB ∥ CD cut by transversal.",
+                 conclusion="Alternate interior angles are equal. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 100, "y": 200},
+                                    {"label": "B", "x": 550, "y": 200},
+                                    {"label": "C", "x": 100, "y": 380},
+                                    {"label": "D", "x": 550, "y": 380}],
+                                   [{"from": "A", "to": "B"}, {"from": "C", "to": "D"}])),
+    Proposition("euclid-I.30", "euclid", "Book I", "Proposition I.30", 30, 29,
+                 "Lines Parallel to the Same Line",
+                 "Lines parallel to the same line are parallel to each other.",
+                 given="AB ∥ EF and CD ∥ EF.",
+                 conclusion="AB ∥ CD. Q.E.D.",
+                 conclusion_predicate="¬intersects(L, M)",
+                 given_objects=_go([{"label": "A", "x": 100, "y": 160},
+                                    {"label": "B", "x": 550, "y": 160},
+                                    {"label": "C", "x": 100, "y": 290},
+                                    {"label": "D", "x": 550, "y": 290},
+                                    {"label": "E", "x": 100, "y": 420},
+                                    {"label": "F", "x": 550, "y": 420}],
+                                   [{"from": "A", "to": "B"}, {"from": "C", "to": "D"}, {"from": "E", "to": "F"}])),
+    Proposition("euclid-I.31", "euclid", "Book I", "Proposition I.31", 31, 30,
+                 "Construct Parallel Through a Point",
+                 "Through a given point, draw a line parallel to a given line.",
+                 given="Point A and line BC.",
+                 conclusion="EAF ∥ BC. Q.E.F.",
+                 given_objects=_go([{"label": "A", "x": 325, "y": 180},
+                                    {"label": "B", "x": 150, "y": 350},
+                                    {"label": "C", "x": 500, "y": 350}],
+                                   [{"from": "B", "to": "C"}])),
+    Proposition("euclid-I.32", "euclid", "Book I", "Proposition I.32", 32, 31,
+                 "Exterior Angle = Sum of Remote Interior Angles",
+                 "An exterior angle of a triangle equals the sum of the two non-adjacent interior angles; and the three interior angles sum to two right angles.",
+                 given="Triangle ABC with BC extended to D.",
+                 conclusion="∠ACD = ∠CAB + ∠ABC, and ∠A + ∠B + ∠C = 180°. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 250, "y": 150},
+                                    {"label": "B", "x": 150, "y": 350},
+                                    {"label": "C", "x": 400, "y": 350},
+                                    {"label": "D", "x": 550, "y": 350}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"},
+                                    {"from": "C", "to": "D"}])),
+    Proposition("euclid-I.33", "euclid", "Book I", "Proposition I.33", 33, 32,
+                 "Joining Equal Parallels",
+                 "Lines joining equal and parallel segments on the same side are themselves equal and parallel.",
+                 given="AB = CD and AB ∥ CD.",
+                 conclusion="AC = BD and AC ∥ BD. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 200},
+                                    {"label": "B", "x": 400, "y": 200},
+                                    {"label": "C", "x": 200, "y": 400},
+                                    {"label": "D", "x": 450, "y": 400}],
+                                   [{"from": "A", "to": "B"}, {"from": "C", "to": "D"},
+                                    {"from": "A", "to": "C"}, {"from": "B", "to": "D"}])),
+    Proposition("euclid-I.34", "euclid", "Book I", "Proposition I.34", 34, 33,
+                 "Parallelogram Properties",
+                 "In a parallelogram opposite sides and angles are equal, and the diagonal bisects the area.",
+                 given="Parallelogram ABCD.",
+                 conclusion="AB = CD, BC = AD, ∠A = ∠C, ∠B = ∠D. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 200},
+                                    {"label": "B", "x": 400, "y": 200},
+                                    {"label": "C", "x": 450, "y": 400},
+                                    {"label": "D", "x": 200, "y": 400}],
+                                   [{"from": "A", "to": "B"}, {"from": "B", "to": "C"},
+                                    {"from": "C", "to": "D"}, {"from": "D", "to": "A"}])),
+    Proposition("euclid-I.35", "euclid", "Book I", "Proposition I.35", 35, 34,
+                 "Parallelograms on Same Base Between Parallels",
+                 "Parallelograms on the same base and between the same parallels have equal area.",
+                 given="Parallelograms ABCD, EBCF on base BC between parallels.",
+                 conclusion="Area(ABCD) = Area(EBCF). Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 200},
+                                    {"label": "B", "x": 200, "y": 400},
+                                    {"label": "C", "x": 450, "y": 400},
+                                    {"label": "D", "x": 400, "y": 200},
+                                    {"label": "E", "x": 250, "y": 200},
+                                    {"label": "F", "x": 500, "y": 200}],
+                                   [{"from": "A", "to": "B"}, {"from": "B", "to": "C"}, {"from": "C", "to": "D"}, {"from": "D", "to": "A"},
+                                    {"from": "E", "to": "B"}, {"from": "C", "to": "F"}, {"from": "E", "to": "F"}])),
+    Proposition("euclid-I.36", "euclid", "Book I", "Proposition I.36", 36, 35,
+                 "Parallelograms on Equal Bases",
+                 "Parallelograms on equal bases and between the same parallels have equal area.",
+                 given="Parallelograms on equal bases between parallels.",
+                 conclusion="They have equal area. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 120, "y": 200},
+                                    {"label": "B", "x": 170, "y": 400},
+                                    {"label": "C", "x": 320, "y": 400},
+                                    {"label": "D", "x": 270, "y": 200},
+                                    {"label": "E", "x": 370, "y": 200},
+                                    {"label": "F", "x": 520, "y": 200}],
+                                   [{"from": "A", "to": "B"}, {"from": "B", "to": "C"}, {"from": "C", "to": "D"}, {"from": "D", "to": "A"},
+                                    {"from": "E", "to": "F"}])),
+    Proposition("euclid-I.37", "euclid", "Book I", "Proposition I.37", 37, 36,
+                 "Triangles on Same Base Between Parallels",
+                 "Triangles on the same base and between the same parallels have equal area.",
+                 given="Triangles ABC, DBC on base BC between parallels.",
+                 conclusion="Area(ABC) = Area(DBC). Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 200, "y": 200},
+                                    {"label": "B", "x": 150, "y": 400},
+                                    {"label": "C", "x": 450, "y": 400},
+                                    {"label": "D", "x": 400, "y": 200}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"},
+                                    {"from": "D", "to": "B"}, {"from": "D", "to": "C"}])),
+    Proposition("euclid-I.38", "euclid", "Book I", "Proposition I.38", 38, 37,
+                 "Triangles on Equal Bases Between Parallels",
+                 "Triangles on equal bases and between the same parallels have equal area.",
+                 given="Triangles on equal bases between parallels.",
+                 conclusion="They have equal area. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 170, "y": 200},
+                                    {"label": "B", "x": 120, "y": 400},
+                                    {"label": "C", "x": 270, "y": 400},
+                                    {"label": "D", "x": 430, "y": 200},
+                                    {"label": "E", "x": 380, "y": 400},
+                                    {"label": "F", "x": 530, "y": 400}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"},
+                                    {"from": "D", "to": "E"}, {"from": "D", "to": "F"}, {"from": "E", "to": "F"}])),
+    Proposition("euclid-I.39", "euclid", "Book I", "Proposition I.39", 39, 38,
+                 "Equal Triangles on Same Base Are Between Parallels",
+                 "Equal triangles on the same base and same side are between the same parallels.",
+                 given="Equal-area triangles on the same base.",
+                 conclusion="AD ∥ BC. Q.E.D.",
+                 conclusion_predicate="¬intersects(L, M)",
+                 given_objects=_go([{"label": "A", "x": 200, "y": 200},
+                                    {"label": "B", "x": 150, "y": 400},
+                                    {"label": "C", "x": 450, "y": 400},
+                                    {"label": "D", "x": 400, "y": 200}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"},
+                                    {"from": "D", "to": "B"}, {"from": "D", "to": "C"}])),
+    Proposition("euclid-I.40", "euclid", "Book I", "Proposition I.40", 40, 39,
+                 "Equal Triangles on Equal Bases Are Between Parallels",
+                 "Equal triangles on equal bases and same side are between the same parallels.",
+                 given="Equal-area triangles on equal bases.",
+                 conclusion="AD ∥ BC. Q.E.D.",
+                 conclusion_predicate="¬intersects(L, M)",
+                 given_objects=_go([{"label": "A", "x": 170, "y": 200},
+                                    {"label": "B", "x": 120, "y": 400},
+                                    {"label": "C", "x": 270, "y": 400},
+                                    {"label": "D", "x": 430, "y": 200},
+                                    {"label": "E", "x": 380, "y": 400},
+                                    {"label": "F", "x": 530, "y": 400}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"},
+                                    {"from": "D", "to": "E"}, {"from": "D", "to": "F"}, {"from": "E", "to": "F"}])),
+    Proposition("euclid-I.41", "euclid", "Book I", "Proposition I.41", 41, 40,
+                 "Parallelogram Double Triangle",
+                 "A parallelogram has twice the area of a triangle on the same base and between the same parallels.",
+                 given="Parallelogram ABCD and triangle EBC on base BC between parallels.",
+                 conclusion="Area(ABCD) = 2·Area(EBC). Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 200},
+                                    {"label": "B", "x": 200, "y": 400},
+                                    {"label": "C", "x": 450, "y": 400},
+                                    {"label": "D", "x": 400, "y": 200},
+                                    {"label": "E", "x": 300, "y": 200}],
+                                   [{"from": "A", "to": "B"}, {"from": "B", "to": "C"}, {"from": "C", "to": "D"}, {"from": "D", "to": "A"},
+                                    {"from": "E", "to": "B"}, {"from": "E", "to": "C"}])),
+    Proposition("euclid-I.42", "euclid", "Book I", "Proposition I.42", 42, 41,
+                 "Construct Parallelogram Equal to Triangle",
+                 "To construct a parallelogram equal in area to a given triangle in a given angle.",
+                 given="Triangle ABC and angle D.",
+                 conclusion="Parallelogram FECG equals triangle ABC. Q.E.F.",
+                 given_objects=_go([{"label": "A", "x": 200, "y": 150},
+                                    {"label": "B", "x": 100, "y": 350},
+                                    {"label": "C", "x": 350, "y": 350},
+                                    {"label": "D", "x": 450, "y": 250},
+                                    {"label": "E", "x": 500, "y": 350},
+                                    {"label": "F", "x": 550, "y": 250}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"},
+                                    {"from": "D", "to": "E"}, {"from": "D", "to": "F"}],
+                                   [],
+                                   [{"from": "E", "vertex": "D", "to": "F"}])),
+    Proposition("euclid-I.43", "euclid", "Book I", "Proposition I.43", 43, 42,
+                 "Complements of Parallelogram",
+                 "In any parallelogram, the complements of the parallelograms about the diagonal are equal.",
+                 given="Parallelogram ABCD with diagonal AC.",
+                 conclusion="Complement BK = complement KD. Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 180},
+                                    {"label": "B", "x": 400, "y": 180},
+                                    {"label": "C", "x": 450, "y": 400},
+                                    {"label": "D", "x": 200, "y": 400},
+                                    {"label": "K", "x": 300, "y": 290}],
+                                   [{"from": "A", "to": "B"}, {"from": "B", "to": "C"},
+                                    {"from": "C", "to": "D"}, {"from": "D", "to": "A"},
+                                    {"from": "A", "to": "C"}])),
+    Proposition("euclid-I.44", "euclid", "Book I", "Proposition I.44", 44, 43,
+                 "Apply Parallelogram to Line Segment",
+                 "To apply a parallelogram equal to a given triangle to a given line in a given angle.",
+                 given="Line AB, triangle C, angle D.",
+                 conclusion="Parallelogram applied. Q.E.F.",
+                 given_objects=_go([{"label": "A", "x": 150, "y": 300},
+                                    {"label": "B", "x": 350, "y": 300},
+                                    {"label": "C", "x": 200, "y": 150},
+                                    {"label": "D", "x": 450, "y": 200},
+                                    {"label": "E", "x": 500, "y": 300}],
+                                   [{"from": "A", "to": "B"}])),
+    Proposition("euclid-I.45", "euclid", "Book I", "Proposition I.45", 45, 44,
+                 "Construct Parallelogram Equal to Rectilineal Figure",
+                 "To construct a parallelogram equal in area to a given rectilineal figure in a given angle.",
+                 given="Rectilineal figure ABCD and angle E.",
+                 conclusion="Parallelogram constructed. Q.E.F.",
+                 given_objects=_go([{"label": "A", "x": 120, "y": 200},
+                                    {"label": "B", "x": 100, "y": 380},
+                                    {"label": "C", "x": 300, "y": 380},
+                                    {"label": "D", "x": 280, "y": 200},
+                                    {"label": "E", "x": 400, "y": 280},
+                                    {"label": "F", "x": 460, "y": 380},
+                                    {"label": "G", "x": 500, "y": 280}],
+                                   [{"from": "A", "to": "B"}, {"from": "B", "to": "C"},
+                                    {"from": "C", "to": "D"}, {"from": "D", "to": "A"},
+                                    {"from": "E", "to": "F"}, {"from": "E", "to": "G"}],
+                                   [],
+                                   [{"from": "F", "vertex": "E", "to": "G"}])),
+    Proposition("euclid-I.46", "euclid", "Book I", "Proposition I.46", 46, 45,
+                 "Construct a Square",
+                 "To construct a square on a given straight-line.",
+                 given="Segment AB.",
+                 conclusion="Square ABDC constructed. Q.E.F.",
+                 given_objects=_go([{"label": "A", "x": 200, "y": 400},
+                                    {"label": "B", "x": 450, "y": 400}],
+                                   [{"from": "A", "to": "B"}])),
+    Proposition("euclid-I.47", "euclid", "Book I", "Proposition I.47", 47, 46,
+                 "Pythagorean Theorem",
+                 "In right-angled triangles, the square on the hypotenuse equals the sum of the squares on the other two sides.",
+                 given="Right triangle ABC with right angle at A.",
+                 conclusion="BC² = AB² + AC². Q.E.D.",
+                 given_objects=_go([{"label": "A", "x": 200, "y": 380},
+                                    {"label": "B", "x": 200, "y": 180},
+                                    {"label": "C", "x": 450, "y": 380}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"}],
+                                   [],
+                                   [{"from": "B", "vertex": "A", "to": "C", "is_right": True}])),
+    Proposition("euclid-I.48", "euclid", "Book I", "Proposition I.48", 48, 47,
+                 "Converse of Pythagorean Theorem",
+                 "If the square on one side equals the sum of squares on the other two, the angle opposite the first side is right.",
+                 given="Triangle ABC with BC² = AB² + AC².",
+                 conclusion="∠BAC is a right angle. Q.E.D.",
+                 conclusion_predicate="∠bac = right-angle",
+                 given_objects=_go([{"label": "A", "x": 200, "y": 380},
+                                    {"label": "B", "x": 200, "y": 180},
+                                    {"label": "C", "x": 450, "y": 380}],
+                                   [{"from": "A", "to": "B"}, {"from": "A", "to": "C"}, {"from": "B", "to": "C"}])),
+]
+
+TEXTBOOK_THEOREMS: List[Proposition] = [
+    Proposition("tb-thm-2.1", "textbook", "Ch. 2", "Theorem 2.1", None, 48,
+                "Unique Midpoint",
+                "Every line segment has exactly one midpoint.",
+                given="A line segment AB.",
+                conclusion="M is the unique midpoint of AB. Q.E.D."),
+    Proposition("tb-thm-4.1", "textbook", "Ch. 4", "Theorem 4.1", None, 48,
+                "Triangle Angle Sum",
+                "The interior angles of a triangle sum to 180°.",
+                given="Triangle ABC.",
+                conclusion="m∠A + m∠B + m∠C = 180°. Q.E.D."),
+]
+
+ALL_PROPOSITIONS: List[Proposition] = PROPOSITIONS + TEXTBOOK_THEOREMS
+
+
+def get_proposition(prop_id: str) -> Optional[Proposition]:
+    return next((p for p in ALL_PROPOSITIONS if p.id == prop_id), None)
+
+
+def get_allowed_propositions(max_prop: int) -> List[Proposition]:
+    return [p for p in PROPOSITIONS if p.prop_number is not None and p.prop_number <= max_prop]
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Formal system linkage helpers (Phase 6.5.3)
+# ═══════════════════════════════════════════════════════════════════════
+
+def get_e_sequent(prop_id: str) -> Optional[str]:
+    """Return the formal System E sequent string for a proposition.
+
+    Args:
+        prop_id: e.g. ``"euclid-I.1"``
+
+    Returns:
+        The sequent string (e.g. ``"¬(a = b) ⇒ ∃c:POINT. ab = ac, …"``),
+        or ``None`` if the proposition has no E library entry.
+    """
+    prop = get_proposition(prop_id)
+    if prop is None:
+        return None
+    return prop.formal_sequent
+
+
+def get_h_sequent(prop_id: str) -> Optional[str]:
+    """Return the formal System H sequent string for a proposition.
+
+    Args:
+        prop_id: e.g. ``"euclid-I.1"``
+
+    Returns:
+        The sequent string, or ``None`` if not available.
+    """
+    prop = get_proposition(prop_id)
+    if prop is None:
+        return None
+    thm = prop.get_h_theorem()
+    if thm is None:
+        return None
+    return str(thm.sequent)
+
+
+def get_all_formal_links() -> Dict[str, dict]:
+    """Return a mapping from proposition id to its formal-system links.
+
+    Each value is a dict with keys ``e_name``, ``e_sequent``, ``h_sequent``
+    (any may be None if the theorem isn't in that library).
+    """
+    result: Dict[str, dict] = {}
+    for prop in PROPOSITIONS:
+        e_thm = prop.get_e_theorem()
+        h_thm = prop.get_h_theorem()
+        result[prop.id] = {
+            "e_name": prop.e_library_name,
+            "e_sequent": str(e_thm.sequent) if e_thm else None,
+            "h_sequent": str(h_thm.sequent) if h_thm else None,
+        }
+    return result
