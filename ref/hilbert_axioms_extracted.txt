@@ -1,0 +1,802 @@
+Hilbert’s Axioms
+March 26, 2013
+1
+Flaws in Euclid
+The description of “a point between two points, line separating the plane into two sides, a
+segment is congruent to another segment, and an angle is congruent to another angle,” are
+only demonstrated in Euclid’s Elements.
+2
+Axioms of Betweenness
+Points on line are not unrelated. We assume that there is a ternary relation among points,
+named as “point B is between point A and point C,” abbreviated as
+A ∗B ∗C
+Given distinct collinear points A, B, C, D. We use
+A ∗B ∗C ∗D
+to denote the following simultaneous relations of betweenness
+A ∗B ∗C,
+A ∗B ∗D,
+A ∗C ∗D,
+B ∗C ∗D.
+(1)
+Betweenness Axiom 1 (BA1) (Collinearity and symmetrization). If A∗B ∗C, then
+A, B, C are three distinct points all lying on the same line, and C ∗B ∗A.
+Betweenness Axiom 2 (BA2) (Extension). Given two distinct points B and D on a
+line l. There exist points A, C, E lying on line l such that A∗B ∗D, B ∗C ∗D, and B ∗D∗E;
+see Figure 1.
+E
+B
+A
+C
+D
+Figure 1: Betweenness Axiom 2
+Betweenness Axiom 3 (BA3) (Uniqueness). Let A, B, C br three distinct points on a
+line. Then one and only one of the three points is between the other two.
+Deﬁnition 1 (Line, segment, and ray). The line determined by two distinct points A
+and B is denote by
+AB.
+1
+
+---PAGE---
+We also use AB to denote the set of all points incident with the line determined by points
+A and B. A segment with endpoints A and B, denoted
+AB,
+is the set of points A, B, and all points between A and B. A ray emanating from a point A
+to another point B, denoted
+r(A, B),
+is the set of all points on AB and all points C such that A∗B ∗C. An open ray emanating
+from a point A to another point B is the set
+˚r(A, B) := r(A, B) ∖{A}.
+Proposition 2.1. For any two distinct points A and B,
+AB = r(A, B) ∩r(B, A),
+AB = r(A, B) ∪r(B, A).
+Proof. Note that AB ⊆r(A, B) ∩r(B, A) by deﬁnition of segment and ray. For each point
+P ∈r(A, B) ∩r(B, A), we have P ∈r(A, B) and P ∈r(B, A). Suppose P ̸∈AB. By
+deﬁnition of ray, we have A ∗B ∗P by P ∈r(A, B) and P ∗A ∗B by P ∈r(B, A). Then
+A, B, P are three distinct collinear points by BA1. This is contradictory to BA3 that there
+is only one point of the three A, B, P between the other two.
+It is clear that r(A, B) ∪r(B, A) ⊆AB. For each P ∈AB, if P ∈AB, it is clear that
+P ∈r(A, B) ∪r(B, A). Assume P ̸∈AB, then A, B, P are three distinct points by BA1,
+and one of them is between the other two by BA3. Since P is not between A and B, we
+have either A is between B and P or B is between A and P. In the formal case, we have
+P ∈r(B, A); in the latter case, we have P ∈r(A, B). Hence P ∈r(A, B) ∪r(B, A).
+Deﬁnition 2 (Same side and opposite side). Two points A, B not on a line l are said
+to be on the same side of l if A = B or the segment AB does not meet l. Two points A, B
+not on a line l are said to be on opposite sides of l if AB does not meet l.
+Betweenness Axiom 4 (BA4) (Plane separation). Let A, B, C be three distinct points
+not on a line l.
+(i) If A, B are on the same side of l and B, C are on the same side of l, then A, C are on
+the same side of l.
+(ii) If A, B are on opposite sides of l and B, C are on opposite sides of l, then A, C are
+on the same side of l.
+The relation of being on the same side of a ﬁxed line l is an equivalence relation on the
+set of points not on the line l, since it is reﬂexive, symmetric, and transitive by deﬁnition
+and Betweenness Axiom 4(i). Each equivalence class is called an open half-plane bounded
+by l. For each point P not on l, we denoted by
+˚
+H(l, P)
+the open half-plane that contains P. The set
+H(l, P) := ˚
+H(l, P) ∪l
+is called a half-plane (or closed half-plane) bounded by l.
+Corollary 2.2. For each line l there are exact two half-planes bounded by l.
+(iii) If A, B are on opposite sides of l and B, C are on the same side of l, then A, C are
+on opposite sides of l.
+2
+
+---PAGE---
+Proof. Let A, B be two points on opposite sides of a line l. We have two distinct half-planes
+H(l, A) and H(l, B). Given an arbitrary point C not on l. If A, C are on the same side of
+l, then H(l, C) = H(l, A). If A, C are on opposite sides, then B, C are on the same side of
+l by Betweenness Axiom 4(ii). Thus H(l, C) = H(l, B). Therefore there are at most two
+half-planes bounded by l.
+Given a point B on l and a point D not on l. By Betweenness Axiom 2 there exist points
+A, C, E such that A ∗B ∗D, B ∗C ∗D and B ∗D ∗E. Then A, D are on opposite sides of
+l. So there are at least two half-planes bounded by l.
+Proposition 2.3 (Linearity rules). Let A, B, C, D be distinct points on a line l. Then
+(a) A ∗B ∗C, A ∗C ∗D ⇒A ∗B ∗C ∗D.
+(b) B ∗C ∗D, A ∗B ∗D ⇒A ∗B ∗C ∗D.
+(c) A ∗B ∗C, B ∗C ∗D ⇒A ∗B ∗C ∗D.
+Proof. (a) Pick a point E outside l and make line EC; see Figure 2. Then C is the unique
+E
+B
+A
+C
+D
+Figure 2: Betweenness and separation axioms imply linearity
+intersection of l and EC. The points A, B must be on the same side of line EC. (Otherwise,
+AB meets EC at C; we then have A∗C∗B, which contradicts A∗B∗C.) Since A∗C∗D, then
+A, D are on opposite sides of EC. Hence B, D are on opposite sides of EC by Corollary 2.2,
+i.e., BD meets EC at C. We then obtain B ∗C ∗D.
+Draw line EB; the point B is the unique intersection of l and EB; see Figure 2. Since
+A ∗B ∗C, then A, C are on opposite sides of EB. Since B ∗C ∗D, we must have C, D on
+the same side of EB. (Otherwise B would be between C and D, contradicting to B ∗C ∗D.)
+Thus A, D are on opposite sides of EB by Corollary 2.2, i.e., AD meets EB at B between
+A and D. We then obtain A ∗B ∗D.
+(b) is similar to (a) by reversing the order.
+(c) Note that A, B, C are distinct and B, C, D are distinct. If A = D, then B ∗C ∗D
+becomes B ∗C ∗A, which is contradictory to A ∗B ∗C. So A, B, C, D are distinct.
+Pick a point E outside l and draw the line EC. Since B∗C∗D, then B, D are on opposite
+sides of EC by deﬁnition. Likewise, A ∗B ∗C implies that A, B are on the same side of
+EC. (Otherwise, A, B are on opposite sides of EC, i.e., AB meet EC at C; so A ∗C ∗B,
+contradicting to A ∗B ∗C.) It follows from Corollary 2.2 that A, D are on opposite sides of
+EC. Hence AD meets EC at C between A and D, i.e., A ∗C ∗D.
+Deﬁnition 3 (Strict total order). A binary relation ≺on a set X is called a strict total
+order if
+(TO1) Irreﬂexivity: x ̸≺x for all x ∈X;
+(TO2) Transitivity: if x ≺y and y ≺z then x ≺z;
+(TO3) Completeness: either x ≺y or y ≺x but not both for all x, y ∈X with x ̸= y.
+For a strict total order on X, the relation ⪯, deﬁned on X by x ⪯y if x = y or ≺y, is
+called a total order. For an order relation, we also write x ≺y and x ⪯y as y ≻x and
+y ⪰x respectively. The set X with a total order is said to be totally ordered.
+3
+
+---PAGE---
+Proposition 2.4 (Strict total order of line). For each line l with two distinct points
+A, B there exists a unique total order on l such that A ≺B and if C ∗D ∗E then either
+C ≺D ≺E
+or
+E ≺D ≺C
+but not both.
+Proof. Deﬁne A ≺B. For each point P of l other than A, B, we deﬁne
+(1) P ≺A and P ≺B if P ∗A ∗B,
+(2) A ≺P and P ≺B if A ∗P ∗B,
+(3) A ≺P and B ≺P if A ∗B ∗P.
+For any two distinct points P, Q other than A and other than B, we deﬁne
+P ≺Q
+if one of the following holds:
+(I) P ∗Q∗A∗B, (II) P ∗A∗Q∗B, (III) P ∗A∗B ∗Q, (IV) A∗P ∗Q∗B, (V) A∗P ∗B ∗Q,
+(VI) A ∗B ∗P ∗Q. We claim that ≺is a strict total order on l.
+It is clear that ≺satisﬁes irreﬂexive and completeness. For transitivity, let P ≺Q and
+Q ≺R, we claim P ≺R. If {P, Q, R} ∩{A, B} ̸= ∅, we clearly have P ≺R by deﬁnition of
+≺. If {P, Q, R} ∩{A, B} = ∅, we verify the six cases.
+Case I. P ∗Q ∗A ∗B.
+(I.1) Q∗R∗A∗B: Since P ∗Q∗A and Q∗R∗A, then P ∗Q∗R∗A by Proposition 2.3(b).
+Since P ∗R ∗A and R ∗A ∗B, then P ∗R ∗A ∗B by Proposition 2.3(c). Hence P ≺R by
+deﬁnition.
+(I.2) Q∗A∗R∗B: Since P ∗Q∗A and Q∗A∗R, then P ∗Q∗A∗R by Proposition 2.3(c).
+Since P ∗A ∗R and A ∗R ∗B, then P ∗A ∗R ∗B by Proposition 2.3(c). Hence P ≺R by
+deﬁnition.
+(I.3) Q∗A∗B ∗R: Since P ∗A∗B and A∗B ∗R, then P ∗A∗B ∗R by Proposition 2.3(c).
+By deﬁnition P ≺R.
+Case II. P ∗A ∗Q ∗B.
+(II.1) A∗Q∗R∗B: Since P ∗A∗B and A∗R∗B, then P ∗A∗R∗B by Proposition 2.3(b).
+By deﬁnition P ≺R.
+(II.2) A∗Q∗B∗R: Since P ∗A∗B and A∗B∗R, then P ∗A∗B∗R by Proposition 2.3(c).
+By deﬁnition P ≺R.
+Case III. P ∗A ∗B ∗Q.
+(III.1) A∗B∗Q∗R: Since P ∗A∗B and A∗B∗R, then P ∗A∗B∗R by Proposition 2.3(c).
+By deﬁnition P ≺R.
+Case IV. A ∗P ∗Q ∗B.
+(IV.1) A∗Q∗R∗B: Since A∗P ∗Q and A∗Q∗R, then A∗P ∗Q∗R by Proposition 2.3(a).
+Since P ∗Q ∗B and Q ∗R ∗B, then P ∗Q ∗R ∗B by Proposition 2.3(b). We then have
+A ∗P ∗R and P ∗R ∗B. Thus A ∗P ∗R ∗B by Proposition 2.3(c). By deﬁnition P ≺R.
+(IV.2) A∗Q∗B∗R: Since A∗P ∗B and A∗B∗R, then A∗P ∗B∗R by Proposition 2.3(a).
+By deﬁnition P ≺R.
+Case V. A ∗P ∗B ∗Q.
+(V.1) A∗B∗Q∗R: Since A∗P ∗B and A∗B∗R, then A∗P ∗B∗R by Proposition 2.3(a).
+By deﬁnition P ≺R.
+Case VI. A ∗B ∗P ∗Q.
+(VI.1) A∗B∗Q∗R: Since B∗P ∗Q and B∗Q∗R, then B∗P ∗Q∗R by Proposition 2.3(a).
+Since B∗P ∗R and A∗B∗R, then A∗B∗P ∗R by Proposition 2.3. By deﬁnition P ≺R.
+4
+
+---PAGE---
+Proposition 2.5 (Line separation). Let A, B, O be three distinct points such that A∗O∗B.
+Then
+r(O, A) ∩r(O, B) = {O},
+r(O, A) ∪r(O, B) = AB.
+If P ∈AB, then either P ∈r(O, A) or P ∈r(O, B). The rays r(O, A) and r(O, B) are said
+to be opposite each other.
+Proof. Let ≺be the strict total order on the line l such that A ≺B. By deﬁnition of the
+total order ⪯, the rays r(O, A), r(O, B), and the segment AB, we have
+r(O, A) = {P ∈l : P ⪯O},
+r(O, B) = {P ∈l : O ⪯P},
+AB = {P ∈l : A ⪯P ⪯B}.
+Then r(O, A) ∩r(O, B) = {O} and r(O, A) ∪r(O, B) = AB by the total ordering property
+of ≺.
+Corollary 2.6 (Line separation). Let l, m be two distinct lines intersecting at a point O.
+Let ≺be a strict total order on l. Then the two sets
+˚r(O, −) := {P ∈l : P ≺O},
+˚r(O, +) := {P ∈l : O ≺P}
+are on opposite sides of m. We also call them on opposite sides of O on l.
+Proof. Let A, B be two distinct points on l. If A, B ∈˚r(O, −), i.e., A ≺O, B ≺O, then
+for all P between A and B, we have either A ≺P ≺B or B ≺P ≺A. In either case we
+have P ≺O by transitivity. So AB is contained in ˚r(O, −). Clearly, AB does not meet m
+(since O is the unique intersection of l and m). Hence A, B are on the same side of m by
+deﬁnition. Likewise, if A, B ∈˚r(O, +), i.e., O ≺A, O ≺B, then A, B are on the same side
+of m. If A ≺O ≺B or B ≺O ≺A, then in either case AB meets m at O between A and
+B; so A, B are on opposite sides of m by deﬁnition.
+Theorem 2.7 (Pasch’s Theorem). Let A, B, C be distinct points of not collinear. Let l
+be a line meeting AB at a point D between A and B. Then one and only one of the three
+holds: (i) l meets AC at a point between A and C, (ii) l meets BC at a point between B and
+C, (iii) l meets both AC and BC at a point C.
+Intuitively, this theorem says that if a line “goes into” a triangle through one side then
+it must “come out” through another side.
+l
+B
+C
+A
+P
+Q
+Figure 3: A line passes through a triangle
+Proof. The points A, B are on the opposite sides of the line l. If C is on l, then l does not
+meet AC between A and C, otherwise l = AC; and l does not meet BC between B and C.
+If C is not on l, then either A, C are on the same side of l, or B, C are on the same side of
+l, butt not both. In the formal case, then B, C are the opposite sides of l. Thus l meets BC
+at a point between meets B and C, and is disjoint from AC. In the latter case, l meets AC
+at a point between A and C, and is disjoint from BC.
+5
+
+---PAGE---
+Deﬁnition 4 (Interior of angle). Given points A, O, B not collinear. The interior of an
+angle ∠AOB, denoted ˚∠AOB, is the set of points P such that P, A are on the same side of
+line OB, and P, B are on the same side of line OA, in other words,
+˚∠AOB := ˚
+H(OB, A) ∩˚
+H(OA, B);
+see Figure 4. We also deﬁne
+∠AOB := H(OB, A) ∩H(OA, B).
+It is convenient to consider a closed half-plane as a ﬂat angle.
+O
+B
+P
+A
+A
+O
+B
+P
+Figure 4: Interior of an angle
+Proposition 2.8 (Between-Cross Lemma). Given an angle ∠AOB and a point P on
+AB. Then P belongs to ˚∠AOB if and only if A ∗P ∗B.
+Proof. “⇒”: The point P belongs to ˚∠AOB. By deﬁnition P, B are on the same side of
+line OA. Suppose P ∗A ∗B. Then P, B are opposite sides of OA, since PB meets OA
+at A between P and B. This is a contradiction. Likewise, A ∗B ∗P leads to a similar
+contradiction. Then we must have A ∗P ∗B by trichotomy of betweenness.
+“⇐”: We have A∗P ∗B. Note that line AB meets line OB at the unique point B. Then
+AP does not meet OB. So A, P are on the same side of OB. Likewise, points B, P are on
+the same side of OB. Hence by deﬁnition P belongs to ˚∠AOB.
+Proposition 2.9. Let P be a point in ˚∠AOB. Then
+(a) The open ray ˚r(O, P) is contained in ˚∠AOB.
+(b) The opposite ray to r(O, P) is disjoint from ˚∠AOB. See the left of Figure 5.
+(c) If B ∗O ∗B′, then A belongs to ˚∠POB′.
+P’
+O
+P
+B
+A
+B’
+O
+P
+C
+A
+B
+Figure 5: Property of interior of an angle and Crossbar Theorem
+Proof. (a) Let Q be a point on the open ray ˚r(O, P). It is clear that PQ is disjoint from OA
+(since the intersection of the two lines PQ, OA are the unique point O). This means that
+P, Q are on the same side of OA by deﬁnition. Since P ∈˚∠AOB, i.e., P, B are on the same
+side of OA, then B, Q are on the same side of OA. Likewise, A, Q are on the same side of
+OB. Thus Q is an interior point of ∠AOB.
+6
+
+---PAGE---
+(b) Let P ′ be a point on the opposite ray of r(O, P); see the left of Figure 5. Then P, P ′
+are on opposite sides of OB. Since A, P are the same side of OB, then A, P ′ are on the
+opposite sides of OB. Thus P ′ is not an interior point of ∠AOB by deﬁnition.
+(c) Note that P, A are on the same side of OB′ (since OB′ = OB and P ∈˚∠AOB). We
+claim that A, B′ are on the same side of OP. If so, we have A ∈˚∠POB′ by deﬁnition.
+Suppose that A, B′ are on opposite sides of OP, i.e., OP intersects AB′ at C between A
+and B′. Then A ∗C ∗B′ and C ∈˚∠AOB′ by Proposition 2.8. Since C ∈OP and C ̸= O,
+we have either C ∈˚r(O, P) or C ∈˚r(O, P ′).
+If C ∈˚r(O, P), then P ∈˚r(O, C), which is contained in ˚∠AOB′ by part (a). Thus P, B′
+are on the same side of OA (since P ∈˚∠AOB′). Since P, B are the same side of OA, we see
+that B, B′ are on the same side of OA. This is a contradiction.
+If C ∈˚r(O, P ′), then P ′ ∈˚r(O, C), which is contained in ˚∠AOB′ by part (a). Thus A, P ′
+are on the same side of OB (= OB′) by deﬁnition. Since P ′, P are on opposite sides of OB,
+we see that A, P are on the opposite sides of OB. This is a contradiction.
+Deﬁnition 5 (Between rays). A ray r(O, P) is between two non-opposite rays r(O, A)
+and r(O, B) if P is in the interior of ∠AOB (independent of the choice of P on the ray
+r(O, P)).
+Proposition 2.10 (Crossbar Theorem). If a ray r(O, P) is between two rays r(O, A) and
+r(O, B), then r(O, P) intersects AB at C between A and B. See the right of Figure 5. The
+interior of ∠AOB is a disjoint union of interiors ˚∠AOP, ˚∠BOP, and open ray ˚r(O, P).
+Proof. Note that B, B′ are on opposite sides of OP, and B′, A are on the same side of OP;
+see the left of Figure 5. Then A, B are on opposite sides of OP. Thus OP intersects AB.
+Since the ray r(O, P ′) (opposite to the ray r(O, P)) is disjoint from the interior of ∠AOB,
+and since the open segment (A, B) is contained in the interior ˚∠AOB, then the open ray
+˚r(O, P) must intersect AB at C between A and B; see the right of Figure 5.
+Deﬁnition 6 (Interior of triangle). The interior of a triangle ∆ABC is the intersection
+of interiors of its three angles, denoted ˚∆ABC. The boundary of ∆ABC is the union of
+the three sides, i.e.,
+∂∆ABC := AB ∪AC ∪BC.
+We also use ∆ABC to denote the union of the interior and the boundary of ∆ABC.
+Proposition 2.11. Given a triangle ∆ABC and O ∈˚∆ABC. Let l = AB, m = AC,
+n = BC. Then
+(a) ˚∆ABC = ˚
+H(l, O) ∩˚
+H(m, O) ∩˚
+H(n, O).
+(b) Any ray r(O, P) meets the boundary of ∆ABC at a unique point Q.
+Proof. (a) Trivial by ˚∠ABC = ˚
+H(l, O) ∩˚
+H(n, O) and other two interiors of angles.
+(b) Let l = OP. The line OA meet BC at D between B and C. We then have A∗O ∗D,
+the open ray ˚r(D, O) is contained in ˚
+H(n, O), and its opposite half-line is contained in the
+opposite side of n. So (A, D) := AD ∖{A, D} is contained in the interior of ∆ABC.
+Case 1. OP = OA. Then Q = A if A ∗P ∗O; Q = D if A ∗O ∗P. See the left of
+Figure 6.
+Case 2. OP ̸= OA. The line OA separates the triangle ∆ABC into two triangles ∆ABD
+and ∆ACD. Since OP meets AD at O between A and D, then OP meets the boundary of
+∆ABD at a unique point E and the boundary of ∆ACD at a unique point F. Moreover,
+E ∈AB ∪BD and F ∈AC ∪CD. If r(O, P) = r(O, E), then Q = E. If r(O, P) = r(O, F),
+then Q = F.
+7
+
+---PAGE---
+B
+A
+C
+O
+P
+D
+F
+A
+C
+O
+D
+B
+P
+E
+Figure 6: Ray emanating from the interior of a triangle
+3
+Axioms of Segment Congruence
+Segments are not unrelated. We assume that there is a binary relation between segments,
+named as “segment AB is congruent to segment CD,” abbreviated as
+AB ∼= CD.
+Congruence Axiom 1 (CA1). Given two distinct points A, B, and a ray r emanating
+from a point A′. There exists exactly one point B′ on r such that B′ ̸= A′ and AB ∼= A′B′.
+Moreover, if r = r(A, B), then B′ = B; if r = r(B, A), then B′ = A.
+B’
+A
+B
+A’
+Figure 7: Congruence of segments
+Congruence Axiom 2. (CA2) If AB ∼= CD and CD ∼= EF, then AB ∼= EF.
+Proposition 3.1. (1) AB ∼= AB, AB ∼= BA. (2) If AB ∼= CD, then CD ∼= AB.
+Proof. (1) It follows from the latter part of CA1. (2) Let CD ∼= AB′, where B′ is a point
+on the ray r(A, B). Then AB ∼= AB′ by transitivity. Hence B′ = B by CA1. We then have
+CD ∼= AB.
+Congruence Axiom 3 (Segment addition) (CA3). If A ∗B ∗C, A′ ∗B′ ∗C′ and
+AB ∼= A′B′, BC ∼= B′C′, then AC ∼= A′C′.
+Proposition 3.2 (Segment subtraction). Given A∗B ∗C and A′ ∗B′ ∗C′. If AB ∼= A′B′
+and AC ∼= A′C′, then BC ∼= B′C′.
+Proof. Let BC ∼= B′P, where P is a point on the ray r(A′, B′). Then AC ∼= A′P by CA2.
+Since AC ∼= A′C′, then A′P ∼= A′C′ by CA2. Thus P = C′ by CA1. So BC ∼= B′C′.
+Proposition 3.3 (Betweenness preserving by congruence of segments). Given AC ∼=
+A′C′ and A ∗B ∗C.
+Then there exists a unique point B′ between A′ and C′ such that
+AB ∼= A′B′ and BC ∼= B′C′.
+Proof. Let AB ∼= A′B′, where B′ is the unique point on the ray r(A′, C′). Let BC ∼= B′P,
+where P is the unique point such that A′ ∗B′ ∗P. Since AB ∼= A′B′ and BC ∼= B′P, then
+AC ∼= A′P by CA3. Since AC ∼= A′C′, then P = C′ by CA2. So A′ ∗B′ ∗C′.
+8
+
+---PAGE---
+Proposition 3.4 (Congruence of lines). For any two lines l and l′, there exists a one-
+to-one correspondence f : l →l′ such that AB ∼= f(A)f(B) for distinct points A, B ∈l and
+if A ∗B ∗C then
+f(A) ∗f(B) ∗f(C).
+Proof. Pick two points O ∈l and O′ ∈m. We have open rays ˚r(O, −),˚r(O, +) of l and
+open rays ˚r(O′, −),˚r(O′, +) of l′. Deﬁne f(O) = O′. For each P ∈˚r(O, −), there exists a
+unique point P ′ ∈˚r(O′, −) such that OP ∼= O′P ′; deﬁne f(P) = P ′. For each Q ∈˚r(O, +),
+there exists a unique point Q′ ∈˚r(O′, +) such that OQ ∼= O′Q′; deﬁne f(Q) = Q′. We then
+have a map f : l →l′. Likewise we have a map f ′ : l′ →l deﬁned in similar fashion. Then
+f ′ ◦f : l →l and f ◦f ′ : l′ →l′ are identity maps. So f and f ′ are bijections.
+Given distinct points A, B ∈l. If A ∗B ∗O or B ∗A ∗O, then either A, B ∈˚r(O, −)
+or A, B, ∈˚r(O, +); thus AB ∼= f(A)f(B) by segment subtraction.
+If A ∗O ∗B, then
+AB ∼= f(A)f(B) by segment addition.
+If A ∗B ∗C on l, then there exists a unique point B′′ be between f(A) and f(C)
+such that AB ∼= f(A)B′′ and B′′f(C) by the congruence of preserving betweenness. Since
+AB ∼= f(A)f(B), we must have f(B) = B′′. Hence f(A) ∗f(B) ∗f(C).
+Deﬁnition 7 (Linear order of segments). For segments AB, CD, if there exists a point
+E between C and D such that AB ∼= CE, we write AB < CD or CD > AB.
+Theorem 3.5 (Strict total order of segments). For two segments AB and CD, one and
+only one of the three holds: AB < CD, AB ∼= CD, AB > CD (trichotomy). Moreover,
+(a) If AB ∼= CD and CD < EF, then AB < EF.
+(b) If AB < CD and CD ∼= EF, then AB < EF.
+(c) If AB < CD and CD < EF, then AB < EF.
+Proof. Given segments AB and CD. Let AB ∼= CE, where E is the unique point on the ray
+r(C, D). We have one and only one of the three: C ∗E ∗D, E = D, C ∗D ∗E. These are
+exactly the three cases: AB < CD, AB ∼= CD, AB > CD.
+(a) Let P be a point such that E ∗P ∗F and CD ∼= EP. Then AB ∼= EP by CA2. Thus
+AB < EF by deﬁnition.
+(b) Let P be a point such that C ∗P ∗D and AB ∼= CP by deﬁnition. Then there exists
+a point Q such that E ∗Q ∗F and CP ∼= EQ by Proposition 3.3 (congruence of preserving
+betweenness). Then AB ∼= EQ by CA2. Thus AB < EF by deﬁnition.
+(c) Let P be such that AB ∼= CP and C ∗P ∗D. Let R be such that E ∗R ∗F and
+CD ∼= ER. Then there exists a point Q such that E∗Q∗R and CP ∼= EQ. Thus AB ∼= EQ,
+E ∗Q ∗R ∗F, and of course E ∗Q ∗F. Therefore AB < EF.
+4
+Axioms of Angle and Triangle Congruence
+Angles are not unrelated. We assume that there is a binary relation between angles, named
+as “angle ∠ABC is congruent to angle ∠DEF,” abbreviated as
+∠ABC ∼= ∠DEF.
+Congruence Axiom 4 (CA4). Given an angle ∠AOB and a ray r(O′, A′), where the rays
+r(O, A), r(O, B) are not opposite. There exists a unique ray r(O′, B′) on each side of the
+line O′A′ such that ∠A′O′B′ ∼= ∠AOB. Moreover, if r(O′, A′) = r(O, A) and the side of OA
+is the half-plane ˚
+H(OA, B), then r(O, B′) = r(O, B). If r(O′, A′) = r(O, B) and the side of
+OB is the half-plane ˚
+H(OB, A), then r(O, B′) = r(O, A).
+9
+
+---PAGE---
+Congruence Axiom 5 (CA5). If ∠A ∼= ∠B and ∠B ∼= ∠C, then ∠A ∼= ∠C.
+It is easy to see that angle congruence is reﬂexive, symmetric, and transitive. So angle
+congruence is an equivalence relation on angles.
+Deﬁnition 8 (Congruence of triangles). A triangle is a collection of three non-collinear
+points A, B, C together with three segments AB, AC, BC (called sides), and three angles
+∠ABC, ∠ACB, ∠BAC, denoted ∆ABC. The point set of ∆ABC, denoted by the same
+notation, is
+∆ABC := ∠ABC ∩∠ACB ∩∠BAC.
+The interior of ∆ABC is the point set
+˚∆ABC := ˚∠ABC ∩˚∠ACB ∩˚∠BAC.
+Two triangles are said to be congruent if there is a one-to-one correspondence between
+their vertices such that the corresponding sides are congruent and the corresponding angles
+are congruent. More speciﬁcally, if a triangle with vertices A, B, C is congruent to a triangle
+with vertices A′, B′, C′ by the one-to-one correspondence A to A′, B to B′, and C to C′,
+written
+∆ABC ∼= ∆A′B′C′
+(the order of vertices is material),
+then AB ∼= A′B′, AC ∼= A′C′, BC ∼= B′C′, and ∠A ∼= ∠A′, ∠B ∼= ∠B′, ∠C ∼= ∠C′.
+Congruence Axiom 6 (Side-angle-side) (SAS). If two sides and the included angle of
+a triangle are congruent respectively to two sides and the included angle of another triangle,
+then we say that the two triangles are congruent. More precisely, given two triangles with
+vertices A, B, C and vertices A′, B′, C′. If AB ∼= A′B′, AC ∼= A′C′, and ∠A ∼= ∠A′, then
+∆ABC ∼= ∆A′B′C′.
+Corollary 4.1. Given a triangle ∆ABC and a segment A′B′ ∼= AB. Then there exists a
+unique point C′ on each side of the line A′B′ such that ∆ABC ∼= ∆A′B′C′.
+Proof. Choose a side of line A′B′. There exists one and only one ray r(A′, P) such that
+∠B′A′P ∼= ∠BAC by CA4. Then there exists a unique point C′ on r(A′, P) such that
+A′C′ ∼= AC by CA1. Thus ∆B′A′C′ ∼= ∆BAC by SAS.
+Proposition 4.2. Given a triangle ∆ABC. If AB ∼= AC, then ∠B ∼= ∠C.
+Proof. Consider the one-to-one correspondence A ↔A, B →C, C →B. We have AB ∼=
+AC, ∠BAC ∼= ∠CAB, AC ∼= AB. Then ∆ABC ∼= ∆ACB by SAS. Thus ∠B ∼= ∠C by
+deﬁnition of congruence of triangles.
+Deﬁnition 9 (Supplementary angle, opposite angle, right angle). Supplementary
+angles and opposite angles are deﬁned as before. A right angle is an angle which is congruent
+to its supplement.
+A closed half-plane is not an angle by our deﬁnition of angles; it is
+convenient to call it a ﬂat angle.
+Proposition 4.3 (Supplementary, opposite, right angle congruence rules). (a) Sup-
+plements of congruent angles are congruent.
+(b) Opposite angles are congruent each other.
+(c) Any angle congruent to a right angle is a right angle.
+10
+
+---PAGE---
+O
+A
+B
+C
+D
+C’
+D’
+O’
+A’
+B’
+Figure 8: Supplements of congruence angles are congruent
+Proof. Given two congruent angles ∠AOB ∼= ∠A′O′B′. Pick a point C on the opposite ray
+of r(O, A) with C ̸= O. Pick a point C′ on the opposite ray of r(O′, A′) with C′ ̸= O. We
+may assume OA ∼= O′A′, OB ∼= O′B′, OC ∼= O′C′. See Figure 8.
+(a) We need to show ∠BOC ∼= ∠B′O′C′.
+Since OA ∼= O′A′, ∠AOB ∼= ∠A′O′B′,
+OB ∼= O′B′, then ∆AOB ∼= A′O′B′ by SAS. Then AC ∼= A′C′ by CA3; AB ∼= A′B′ and
+∠BAC ∼= ∠B′A′C′ by deﬁnition of congruence triangles. Thus ∆BAC ∼= B′A′C′ by SAS.
+Since OC ∼= O′C′, ∠OCB ∼= O′C′B′ and CB ∼= C′B′, then ∆OCB ∼= O′C′B′ by SAS. We
+see ∠BOC ∼= ∠B′O′C′.
+(b) Consider opposite angles ∠AOB and ∠COD in the left of Figure 8. Both are sup-
+plementary to ∠BOC. So ∠AOB ∼= ∠COD by (a).
+(c) Let ∠AOB be a right angle. Need to show that ∠A′O′B′ is a right angle. Notice that
+∠AOB ∼= ∠BOC by deﬁnition of right angles, ∠B′O′C′ ∼= ∠BOC by (a), and ∠AOB ∼=
+∠A′O′B′ by given condition. Then ∠A′O′B′ ∼= ∠B′O′C′ by transitivity. This means that
+∠A′O′B′ is a right angle.
+Proposition 4.4 (Existence of perpendicular line). For each line l and each point P
+not on l, there exists a unique line m through P perpendicular to l.
+P’
+P
+A
+Q
+B
+Figure 9: Construction of perpendicular lines
+Proof. Pick two distinct points A, B on l. Draw segment AP. Then there exists a unique
+ray r(A, C) on the opposite side of line l such that ∠BAP ∼= ∠BAC. Mark a point P ′ on
+the ray r(A, C) such that AP ∼= AP ′. Draw line PP ′ = m. We claim that m ⊥l. See
+Figure 9.
+If A, P, P ′ are collinear, then A is the intersection of lines AB and PP ′. Clearly, ∠BAP
+and BAP ′ are congruent supplementary angles. So they are right angles and m ⊥l.
+Assume that A, P, P ′ are not collinear. Since P, P ′ on opposite sides of l, then r(P, P ′)
+intersects l at a unique point Q. We have triangles ∆APQ and ∆AP ′Q. Since AP ∼= AP ′,
+∠PAQ ∼= ∠P ′AQ, AQ ∼= AQ, then ∆PAQ ∼= ∆P ′AQ by SAS. Thus ∠AQP ∼= ∠AQP ′ by
+deﬁnition of congruence triangles, i.e., m ⊥l.
+11
+
+---PAGE---
+Proposition 4.5 (Angle-side-angle criterion) (ASA). If two angles and the included
+side of a triangle are congruent to two angles and the included side of another triangle, then
+the two triangles are congruent.
+C’
+A
+B
+C
+A’
+B’
+C’’
+Figure 10: Angle-side-angle criterion
+Proof. Given triangles ∆ABC, ∆A′B′C′, and ∠BAC ∼= ∠B′A′C′, AB ∼= A′B′, ∠ABC ∼=
+∠A′B′C′. Draw the unique point C′′ on the ray r(A′, C′) such that AC ∼= A′C′′. Then
+∆ABC ∼= ∆A′B′C′′ by SAS. Then ∠ABC ∼= ∠A′B′C′′ by deﬁnition of congruence of trian-
+gles. Since ∠ABC ∼= ∠A′B′C′ by given condition, then ∠A′B′C′ ∼= ∠A′B′C′′ by transitivity.
+This means that B′, C′, C′′ are collinear, i.e., C′, C′′ are on both lines B′C′ and A′C′. Since
+intersection point of two lines is unique, we have C′ = C′′. Hence △ABC ∼= △A′B′C′. See
+Figure 10. Hence ∆ABC ∼= ∆A′B′C′.
+Proposition 4.6 (Angle addition). Given two angles ∠AOC and ∠A′O′C′. Let r(O, B)
+be a ray between rays r(O, A) and r(O, C). Let r(O′, B′) be a ray between rays r(O′, A′) and
+r(O′, C′). If ∠AOB ∼= ∠A′O′B′ and ∠BOC ∼= ∠B′O′C′, then ∠AOC ∼= ∠A′O′C′.
+Proof. We may assume that OA ∼= O′A′, OB ∼= O′B′, OC ∼= O′C′, and that B is a point
+on AC between A, C. But we did not assume that B′ is a point on A′C′. See Figure 11.
+Then ∆AOB ∼= A′O′B′ and ∆BOC ∼= ∆B′O′C′ by SAS. We see that the supplementary
+angles ∠OBA, ∠OBC are congruent to the angles ∠O′B′A′, ∠O′B′C′ respectively. Then the
+supplementary angle ∠O′B′C′′ of ∠O′B′A′ is congruent to ∠OBC by the Supplementary
+Angle Congruence Rule. Thus ∠O′B′C′′ ∼= ∠O′B′C′ by transitivity. Since ∠O′B′C′′ and
+∠O′B′C′ are on the same side of line O′B′, it follows that ∠O′B′C′′ = ∠O′B′C′ by CA3.
+So A′, B′, C′, C′′ are collinear. Since AB ∼= A′B′, BC ∼= B′C′, then AC ∼= A′C′. Since
+∠OAC ∼= ∠O′A′C′, ∠OCA ∼= ∠O′C′A′, we have ∆AOC ∼= ∆A′O′C′ by ASA. Therefore
+∠AOC ∼= ∠A′O′C′.
+A
+O
+C
+B
+A’
+O’
+B’
+C’
+Figure 11: Angle subtraction
+Proposition 4.7 (Angle subtraction). Let r(O, B) be a ray between rays r(O, A) and
+r(O, C). Let r(O′, B′) be a ray between rays r(O′, A′) and r(O′, C′). If ∠AOB ∼= ∠A′O′B′,
+∠AOC ∼= ∠A′O′C′, then ∠BOC ∼= ∠B′O′C′.
+12
+
+---PAGE---
+Proof. We may assume that OA ∼= O′A′, OC ∼= O′C′, and that B is a point on AC and B′
+is a point on A′C′. See Figure 11. Since ∠AOC ∼= ∠A′O′C′, we have ∆AOC ∼= ∆A′O′C′
+by SAS. Thus AC ∼= A′C′ and ∠OAB ∼= ∠O′A′B′. Since ∠AOB ∼= ∠A′O′B′, OA ∼= O′A′,
+∠OAB ∼= ∠O′A′B′, then ∆OAB ∼= ∆O′A′B′ by ASA. Thus AB ∼= A′B′. Since AC ∼= A′C′,
+then BC ∼= B′C′ by Proposition 3.2 (segment subtraction). Now OC ∼= O′C′, ∠OCB ∼=
+∠O′C′B′, CB ∼= C′B′, we have ∆OCB ∼= O′C′B′ by SAS. Therefore ∠BOC ∼= ∠B′O′C′.
+Proposition 4.8. Given a triangle ∆ABC. If ∠B ∼= ∠C, then AB ∼= AC.
+Proof. Let A 7→A, B 7→C, C 7→B. Since ∠ABC ∼= ∠ACB, BC ∼= CB, ∠ACB ∼= ∠ABC,
+then ∆ABC ∼= ACB by ASA. Thus AB ∼= AC by deﬁnition of congruence of triangles.
+Deﬁnition 10. An angle ∠AOB is less than an angle ∠A′O′C′, written ∠AOB < ∠A′O′C′,
+if there exists a ray r(O′, B′) between the rays r(O′, A′) and r(O′, C′), such that ∠AOB ∼=
+∠A′O′B′.
+Proposition 4.9 (Strict total order of angles). For any two angles ∠A and ∠B, one
+and only one of the three holds: ∠A < ∠B, ∠A ∼= ∠B, ∠B < ∠A (trichotomy). Moreover,
+(a) If ∠A ∼= ∠B, ∠B < ∠C, then ∠A < ∠C.
+(b) If ∠A < ∠B, ∠B ∼= ∠C, then ∠A < ∠C.
+(c) If ∠A < ∠B, ∠B < ∠C, then ∠A < ∠C.
+Proof. Given two angles ∠AOB and ∠A′O′B′. There exists a unique open ray ˚r(O′, C′) in
+the open half-plane ˚
+H(O′A′, B′) such that ∠AOB ∼= ∠A′O′C′. If C′ is on the ray r(O′, B′),
+then r(O′, C′) = r(O′, B′) and ∠AOB ∼= ∠A′O′B′. If C′ is not on the ray r(O′, B′), there
+are two cases.
+Case 1. Points C′, A′ are on the same side of O′B′.
+Since C′, B′ are on the same side of O′A′, then C′ is contained in the interior of ∠A′O′B′;
+so is the open ray ˚r(O′, C′). Thus ∠AOB < ∠A′O′B′.
+Case 2. Points C′, A′ are on opposite sides of O′B′. Then r(O′, B′) meets A′C′ at P ′
+between A′ and C′ by Crossbar Theorem.
+Thus ˚r(O′, B′) is contained in ˚∠A′O′C′.
+By
+deﬁnition ∠AOB > ∠A′O′B′.
+(a) Let ∠AOB ∼= ∠A′O′B′ < ∠A′′O′′C′′. There exists a ray r(O′′, B′′) between rays
+r(O′′, A′′) and r(O′′, C′′) such that ∠A′O′B′ ∼= ∠A′′O′′B′′ by deﬁnition. Then ∠AOB ∼=
+∠A′′O′′B′′ by transitivity. Thus ∠AOB < ∠A′′O′′C′′.
+(b) Let ∠AOB < ∠A′O′C′ ∼= ∠A′′O′′C′′. There exists a ray r(O′, B′) between the rays
+r(O′, A′) and r(O′, C′) such that ∠AOB ∼= ∠A′O′B′. Let r(O′′, B′′) be a ray between the
+rays r(O′′, A′′) and r(O′′, C′′) such that ∠A′O′B′ ∼= ∠A′′O′′B′′. Then ∠AOB ∼= ∠A′′O′′B′′
+by transitivity. Thus ∠AOB < ∠A′′O′′C′′.
+(c) Let ∠AOB < ∠A′O′C′ < ∠A′′O′′D′′. There exists a ray r(O′′, C′′) between the rays
+r(O′′, A′′) and r(O′′, D′′) such that ∠A′O′C′ ∼= ∠A′′O′′C′′. Then ∠AOB < ∠A′′O′′C′′ by
+(b). Thus there exists a ray r(O′′, B′′) between the rays r(O′′, A′′) and r(O′′, C′′) such that
+∠AOB ∼= ∠A′′O′′B′′. Therefore ∠AOB < ∠A′′O′′D′′.
+Proposition 4.10 (Side-side-side criterion) (SSS). Given triangles ∆ABC and ∆A′B′C′.
+If AB ∼= A′B′, AC ∼= A′C′, BC ∼= B′C′, then ∆ABC ∼= ∆A′B′C′.
+Proof. Let C′′ be the unique point on the opposite side of ˚
+H(A′B′, C′) bounded by A′B′ such
+that ∆ABC ∼= ∆A′B′C′′. Draw the segment C′C′′. The line A′B′ meets C′C′′ at D′ between
+C′ and C′′. See Figure 12. Then A′C′ ∼= AC ∼= A′C′′ and B′C′ ∼= BC ∼= B′C′′, i.e., ∆A′C′C′′
+and ∆B′C′C′′ are isosceles triangles. Hence ∠A′C′C′′ ∼= ∠A′C′′C′ and ∠B′C′C′′ ∼= ∠B′C′′C′.
+13
+
+---PAGE---
+D’
+A
+A’
+B
+C
+C’
+C’’
+B’
+δ
+β
+α γ
+Figure 12: Side-side-side criterion
+If A′ ∗D′ ∗B′, then the open ray ˚r(C′, C′′) is contained in ˚∠A′C′B′, and the open ray
+˚r(C′′, C′) is contained in ˚∠A′C′′B′ by Crossbar Theorem; thus ∠A′C′B′ ∼= ∠A′C′′B′ by angle
+addition. If A′ ∗B′ ∗D′, then ˚r(C′, B′) is contained in ˚∠A′C′D′, and ˚r(C′′, B′) is contained
+in ˚∠A′C′′D′ by Crossbar Theorem; thus ∠A′C′B′ ∼= ∠A′C′′B′ by angle subtraction. Since
+A′C′ ∼= AC ∼= A′C′′, ∠A′C′B′ ∼= ∠A′C′′B′, B′C′ ∼= BC ∼= B′C′′, we see that ∆A′B′C′ ∼=
+∆A′B′C′′ by SAS. Hence ∆ABC ∼= ∆A′B′C′ by transitivity.
+Theorem 4.11 (Euclid’s Fourth Postulate). All right angles are congruent to each other.
+E’
+A
+B
+A’
+B’
+C
+C’
+O
+O’
+D’
+Figure 13: Euclid’s Fourth Postulate
+Proof. Given angles ∠AOC ∼= BOC and ∠A′O′C′ ∼= B′O′C′; see Figure 13. We need to show
+∠AOC ∼= ∠A′O′C′. Let ˚r(O′, P ′) be the unique open ray in ˚
+H(A′B′, C′) such that ∠AOC ∼=
+∠A′O′P ′. It suﬃces to show that ˚r(O′, P ′) = ˚r(O′, C′). Suppose ˚r(O′, P ′) ̸= ˚r(O′, C′). Then
+either ˚r(O′, P ′) = ˚r(O′, D′), which is contained in ˚∠A′O′C′, or ˚r(O′, P ′) = ˚r(O′, E′), which
+is contained in ˚∠B′O′C′.
+In the former case, we have ∠A′O′D′ < ∠A′O′C′ and ∠B′O′C′ < ∠B′O′D′ by deﬁnition
+of order of angles. Since ∠A′O′C′ ∼= ∠B′O′C′ by right angle property, then ∠A′O′D′ <
+∠B′O′D′ by Proposition 4.9.
+Note that ∠BOC ∼= ∠B′O′D′ by Proposition 4.3(a), and
+∠AOC ∼= ∠A′O′D′. Then ∠AOC < ∠BOC. However, ∠AOC ∼= ∠BOC by right angle
+property. In summary we have
+∠AOC ∼= ∠A′O′D′ < ∠A′O′C′ ∼= ∠B′O′C′ < ∠B′O′D′ ∼= ∠BOC ∼= ∠AOC.
+So ∠AOC < ∠AOC; this is a contradiction. In the latter case, we have
+∠AOC ∼= ∠A′O′E′ > ∠A′O′C′ ∼= ∠B′O′C′ > ∠B′O′E′ ∼= ∠BOC ∼= ∠AOC.
+So ∠AOC > ∠AOC; this is a contradiction.
+14
+
+---PAGE---
+5
+Axioms of Continuity
+Dedekind’s Axiom (Continuity Axiom). If a line l is partitioned into two nonempty
+subsets Σ1, Σ2, i.e., l = Σ1 ∪Σ1 and Σ1 ∩Σ2 = ∅, such that no point of either subset is
+between two points of the other (equivalently both are convex), then there exists a unique
+point O on l such that one of Σ1, Σ2 is a ray with vertex O and the other is an open ray
+with vertex O opposite to the other ray. The pair {Σ, Σ2} is called a Dedekind cut of l.
+Given two distinct points A, B ∈l. If A, B ∈Σi, we have AB ⊂Σi, i.e., Σi has no
+“hole.” Suppose we do not require Σ1 ∩Σ2 = ∅in Dedekind’s axiom. If A, B ∈Σ1 ∩Σ2,
+then we must have A = B. So the intersection Σ1 ∩Σ2 contains exactly one point O. Thus
+Σ1, Σ2 are two rays with the vertex O. So, when Σ1 ∩Σ2 = ∅is imposed, we say that the
+partition {Σ1, Σ2} determines one point on l.
+Deﬁnition 11. A subset Ωof points is said to be convex provided that whenever two points
+P, Q are contained in Ωthen the segment PQ is contained in Ω.
+For a line l with a total order ⪯, the following subsets of l are convex sets, known as
+intervals: line l; rays
+r(O, −) = {P ∈l : P ⪯O},
+r(O, +) = {P ∈l : O ⪯P};
+open rays
+˚r(O, −) = {P ∈l : P ≺O},
+˚r(O, +) = {P ∈l : O ≺P};
+closed interval (segment)
+[A, B] = AB = {P ∈l : A ⪯P ⪯B};
+open interval (segment)
+(A, B) = {P ∈l : A ≺P ≺B};
+half-closed and half-open intervals (segments)
+[A, B) = {P ∈l : A ⪯P ≺B},
+(A, B] = {P ∈l : A ≺P ⪯B}.
+The points O, A, B are called endpoints of I. For a line not satisfying Dedekind’s axiom,
+a convex subset of the line is not necessarily an interval.
+Proposition 5.1 (Extended Dedekind’s Axiom). Dedekind’s axiom is valid for any
+nonempty interval I of any line l. More precisely, if a nonempty interval I is partitioned
+into two nonempty convex sets Σ1, Σ2, then both Σ1, Σ2 are intervals with an endpoint O,
+one is closed and the other is open at O.
+Proof. Let l be totally ordered so that left and right sides of I are meaningful. If I is empty
+or contains exactly one point, nothing is to be proved for the statement is irrelevant. We
+assume that I contains at least two points.
+Let Σ1 be on the left side of Σ2. Since I is nonempty, the complement l ∖I has one of
+the forms: (a) empty set ∅, (b) a left (open) ray Γ1, (c) a right (open) ray Γ2, (d) disjoint
+union of a left (open) ray Γ1 and a right (open) ray Γ2.
+Set Σ′
+1 := Σ1 ∪Γ1 and Σ′
+2 := Σ2 ∪Γ2.
+Then Σ′
+1, Σ′
+2 form a Dedekind cut of l.
+By
+Dedekind’s axiom, there exists a unique point O on l such that Σ′
+1 is the right closed (open)
+ray r(O, −) (˚r(O, −)) with vertex O, and Σ′
+2 is the left open (closed) ray ˚r(O, +) (r(O, +))
+with vertex O. Hence Σ1 is a right-closed (right-open) interval with right endpoint O ∈Σ1,
+and Σ2 is left-open (left-closed) interval with left endpoint O.
+15
+
+---PAGE---
+Example. Let Q be the ﬁeld of rational numbers. Then Q2 forms an aﬃne plane, called
+rational aﬃne plane under its points and lines deﬁned by one linear equation. Dedekind’s
+axiom is not satisﬁed by the rational plane. Consider the x-axis l = {(a, 0) : a ∈Q}. Let
+Σ1 = {(a, 0) : a ∈Q, a2 > 3, a > 0} and Σ2 = l ∖Σ1. Then Σ1, Σ2 form a Dedekind cut,
+that is, they satisfy the conditions of Dedekind’s axiom. However, neither Σ1 nor Σ2 is an
+(open) ray of l. In fact, Σ1 = {(a, 0) : a ∈Q, a >
+√
+3} is not an interval in Q2 (since it has
+no left endpoint).
+Dedekind’s axiom implies all of the following axioms.
+Euclid’s Proposition. For each segment there exists an equilateral triangle having one of
+its sides to be the given segment.
+Deﬁnition 12. A point P is said to be inside a circle of radius OR with center O if
+OP < OR.
+Circular Continuity Principle. If each of two circles has one point inside but outside the
+other, then the two circles intersect at two points.
+Elementary Continuity Principle. If one endpoint of a segment is inside a circle and
+the other endpoint is outside, then the segment intersects the circle.
+Archimedes’[′a:ki′mi:di:z] Axiom. Given a segment AB and a ray r with vertex O. For
+each point P ̸= O on r, there exist an integer n and a point Q on r, where OQ ∼= n · AB,
+such that either Q = P or O ∗P ∗Q.
+Aristotle’s[′æristotl] Axiom. Given an acute angle ∠AOB and a segment CD. There
+exists a point Y on the ray r(O, B) such that XY > CD, where X is the foot of Y on the
+ray r(O, A).
+Proposition 5.2 (Dedekind’s implies Archimedes’). Dedekind’s axiom implies Archimedes’
+axiom.
+Proof. Given a segment AB and a ray r with vertex O. A point P ∈r is said to be reachable
+by AB if P = O or there exist an positive integer n and a point Q, such that OQ ∼= n · AB
+and O ∗P ∗Q. Let Σ1 be the set of points on r reachable by AB, and points on the opposite
+ray of r; so O ∈Σ1. Let Σ2 be the complement of Σ1 in the line l that contains r; Σ2 is
+also the complement of Σ1 in r. We claim that Σ2 = ∅. (If so, all points on the ray r are
+reachable by AB, which is Archimedes’ axiom.)
+Suppose Σ2 ̸= ∅. We claim that {Σ1, Σ2} is a Dedekind cut of l. One the one hand, let
+P, Q ∈Σ1 be distinct points. If both P, Q are on r or on the opposite ray of r, it is clear
+that PQ ⊂Σ1. If P is on the opposite ray of r and Q ∈r, then PO ⊂Σ1 and OQ ⊂Σ1;
+so PQ = PO ∪OQ ⊂Σ1. On the other hand, let P, Q ∈Σ2 be distinct points. Suppose
+PQ ̸⊂Σ2; there exists a point R ∈Σ1 such that P ∗R ∗Q; since R can be reached, so is
+P; thus P ∈Σ1, which is a contradiction. Therefore {Σ1, Σ2} is a Dedekind cut of l, and
+determines a unique point O′ on l.
+Case 1. O′ ∈Σ1. Then Σ1 is a ray with vertex O′. Since the opposite ray of r is contained
+in Σ1, then O′ ∈r and Σ2 is an open ray on r with vertex O′. Let O′ be reached by laying
+oﬀn copies of AB starting from O. Then by laying oﬀone more copy of AB on r starting
+from O′, we get points of Σ2 being reached by AB. This is impossible.
+Case 2. O′ ∈Σ2. Then Σ2 is a ray on r with vertex O′ ̸= O, and Σ1 is the opposite
+open ray with vertex O′. Laying oﬀone copy of AB starting from O′ on the open ray Σ1, we
+obtain a point P ′ in Σ1. Then any point Q′ such that P ′ ∗Q′ ∗O′ is reachable by AB. Thus
+by laying one more copy of AB starting from Q′, the point O′ is reachable. So O′ ∈Σ1. This
+is a contradiction.
+16
+
+---PAGE---
+Proposition 5.3 (Dedekind’s implies Elementary Continuity). Dedekind’s axiom im-
+plies Elementary Continuity Principle.
+Proof. Let γ be a circle with center O and radius OR. Let AB be a segment with A inside
+and B outside γ, i.e., OA < OR and OB > OR. Let Σ1 denote the set of points on AB
+inside γ, and Σ2 the subset of points on AB outside or on γ. Then Σ1, Σ2 form a Dedekind
+cut for the segment AB by trichotomy of segments. Dedekind’s axiom implies that there
+exists a unique point P on AB such that Σ1, Σ2 are intervals with endpoint P, one contains
+P and the other does not contain P. We claim that P is on γ, i.e., OP ∼= OR.
+Case 1. OP < OR. Then P ∈Σ1. Take a point Q ∈Σ2 such that |PQ| = (|OR| −
+|OP|)/2. By triangle inequality we have
+|OR| < |OQ| < |OP| + |PQ| = |OP|/2 + |OR|,
+which is a contradiction.
+Case 2. OP > OR. Then P ∈Σ2. Take a point Q ∈Σ1 such that A ∗Q ∗P and
+|PQ| ≤(|OP| −|OR|)/2. Since |OQ| < |OR| and |QP| = |PQ|, then by triangle inequality
+|OP| ≤|OQ| + |QP| < |OR| + (|OP| −|OR|)/2 = |OR|/2 + |OP|,
+which is a contradiction.
+So we must have OP ∼= OR.
+Relationship between the Axioms of Continuity.
+Dedekind’s axiom ⇒Archimedes’ axiom, Circlar Continuity Principle
+Archimedes’ axiom ⇒Aristotle’s axiom
+Circlar Continuity Principle ⇒Elemenatry Continuity Principle
+17
+
+---PAGE---

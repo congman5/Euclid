@@ -47,7 +47,7 @@ from ..engine.constraints import (
 # ═══════════════════════════════════════════════════════════════════════════
 
 POINT_RADIUS = 5
-SNAP_DISTANCE = 15
+SNAP_DISTANCE = 22
 UNDO_LIMIT = 30
 RIGHT_ANGLE_TOL = 5.0  # degrees tolerance for perpendicular tool
 
@@ -167,12 +167,27 @@ class SegmentItem(QGraphicsLineItem):
         super().__init__()
         self.p1 = p1
         self.p2 = p2
-        self.setPen(QPen(COLORS["segment"], 2))
+        self.draw_color: QColor = COLORS["segment"]
+        self.setPen(QPen(self.draw_color, 2))
         self.setZValue(1)
         # Tick marks for equality groups
         self.tick_count = 0
         self._tick_items: List[QGraphicsLineItem] = []
         self.update_position()
+
+    def shape(self):
+        """Widen the clickable area so thin lines are easier to select."""
+        from PyQt6.QtGui import QPainterPath, QPainterPathStroker
+        path = super().shape()
+        stroker = QPainterPathStroker()
+        grab = SNAP_DISTANCE
+        scene = self.scene()
+        if scene and scene.views():
+            scale = scene.views()[0].transform().m11()
+            if scale > 0:
+                grab = max(grab, grab / scale)
+        stroker.setWidth(grab * 2)
+        return stroker.createStroke(path)
 
     def update_position(self):
         self.setLine(self.p1.pos().x(), self.p1.pos().y(),
@@ -218,9 +233,24 @@ class RayItem(QGraphicsLineItem):
         super().__init__()
         self.p1 = p1
         self.p2 = p2
-        self.setPen(QPen(COLORS["segment"], 2))
+        self.draw_color: QColor = COLORS["segment"]
+        self.setPen(QPen(self.draw_color, 2))
         self.setZValue(1)
         self.update_position()
+
+    def shape(self):
+        """Widen the clickable area so thin rays are easier to select."""
+        from PyQt6.QtGui import QPainterPath, QPainterPathStroker
+        path = super().shape()
+        stroker = QPainterPathStroker()
+        grab = SNAP_DISTANCE
+        scene = self.scene()
+        if scene and scene.views():
+            scale = scene.views()[0].transform().m11()
+            if scale > 0:
+                grab = max(grab, grab / scale)
+        stroker.setWidth(grab * 2)
+        return stroker.createStroke(path)
 
     def update_position(self):
         x1, y1 = self.p1.pos().x(), self.p1.pos().y()
@@ -244,7 +274,8 @@ class CircleItem(QGraphicsEllipseItem):
         self.center_pt = center
         self.radius_pt = radius_pt
         self.radius = radius
-        self.setPen(QPen(COLORS["circle"], 2))
+        self.draw_color: QColor = COLORS["circle"]
+        self.setPen(QPen(self.draw_color, 2))
         self.setBrush(QBrush(Qt.BrushStyle.NoBrush))
         self.setZValue(0)
         self.update_position()
@@ -438,9 +469,9 @@ class GeometryScene(QGraphicsScene):
                                         p.segment_t)
         return {
             "points": [(p.label, p.pos().x(), p.pos().y(), p._label_visible) for p in self._points.values()],
-            "segments": [(s.p1.label, s.p2.label) for s in self._segments],
-            "rays": [(r.p1.label, r.p2.label) for r in self._rays],
-            "circles": [(c.center_pt.label, c.radius_pt.label if c.radius_pt else None, c.radius) for c in self._circles],
+            "segments": [(s.p1.label, s.p2.label, s.draw_color.name()) for s in self._segments],
+            "rays": [(r.p1.label, r.p2.label, r.draw_color.name()) for r in self._rays],
+            "circles": [(c.center_pt.label, c.radius_pt.label if c.radius_pt else None, c.radius, c.draw_color.name()) for c in self._circles],
             "angles": [(a.from_pt.label, a.vertex_pt.label, a.to_pt.label, a.is_right) for a in self._angles],
             "next_label": self._next_label,
             "next_internal": self._next_internal,
@@ -502,23 +533,38 @@ class GeometryScene(QGraphicsScene):
             pt.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, self._tool == "select")
             self.addItem(pt)
             self._points[lbl] = pt
-        for fl, tl in snap["segments"]:
+        for entry in snap["segments"]:
+            fl, tl = entry[0], entry[1]
+            color_name = entry[2] if len(entry) > 2 else None
             p1, p2 = self._points.get(fl), self._points.get(tl)
             if p1 and p2:
                 seg = SegmentItem(p1, p2)
+                if color_name:
+                    seg.draw_color = QColor(color_name)
+                    seg.setPen(QPen(seg.draw_color, 2))
                 self.addItem(seg)
                 self._segments.append(seg)
-        for fl, tl in snap.get("rays", []):
+        for entry in snap.get("rays", []):
+            fl, tl = entry[0], entry[1]
+            color_name = entry[2] if len(entry) > 2 else None
             p1, p2 = self._points.get(fl), self._points.get(tl)
             if p1 and p2:
                 ray = RayItem(p1, p2)
+                if color_name:
+                    ray.draw_color = QColor(color_name)
+                    ray.setPen(QPen(ray.draw_color, 2))
                 self.addItem(ray)
                 self._rays.append(ray)
-        for cl, rpl, rad in snap["circles"]:
+        for entry in snap["circles"]:
+            cl, rpl, rad = entry[0], entry[1], entry[2]
+            color_name = entry[3] if len(entry) > 3 else None
             cpt = self._points.get(cl)
             rpt = self._points.get(rpl) if rpl else None
             if cpt:
                 circ = CircleItem(cpt, rpt, rad)
+                if color_name:
+                    circ.draw_color = QColor(color_name)
+                    circ.setPen(QPen(circ.draw_color, 2))
                 self.addItem(circ)
                 self._circles.append(circ)
         for fl, vl, tl, is_right in snap["angles"]:
@@ -590,45 +636,27 @@ class GeometryScene(QGraphicsScene):
         self.canvas_changed.emit()
 
     def _validate_equality_groups(self):
-        """Remove segments from equality groups whose lengths no longer match.
-        Called after point drags to keep tick marks honest."""
-        changed = False
+        """Update tick mark positions after geometry changes.
+
+        Equality assertions are user-declared facts — they are never
+        silently removed.  Only the visual tick positions need refreshing
+        (handled by _apply_equality_ticks via segment.update_position).
+        """
+        # Remove groups that reference deleted segments
         new_groups = []
         for tick_count, pairs in self._equality_groups:
-            if not pairs:
-                continue
-            # Compute lengths for each pair
-            pair_lengths = []
+            kept = []
             for lbl_a, lbl_b in pairs:
-                seg = None
                 for s in self._segments:
                     if (s.p1.label == lbl_a and s.p2.label == lbl_b) or \
                        (s.p1.label == lbl_b and s.p2.label == lbl_a):
-                        seg = s
+                        kept.append((lbl_a, lbl_b))
                         break
-                if seg:
-                    pair_lengths.append((lbl_a, lbl_b, self._segment_length(seg)))
-                # If segment no longer exists, drop the pair
-            if len(pair_lengths) < 2:
-                if pairs:
-                    changed = True
-                continue
-            # Keep only pairs whose length matches the first
-            ref_len = pair_lengths[0][2]
-            kept = []
-            for a, b, length in pair_lengths:
-                tol = max(3.0, 0.02 * max(ref_len, length))
-                if abs(length - ref_len) <= tol:
-                    kept.append((a, b))
-                else:
-                    changed = True
             if len(kept) >= 2:
                 new_groups.append((tick_count, kept))
-            else:
-                changed = True
-        if changed:
+        if len(new_groups) != len(self._equality_groups):
             self._equality_groups = new_groups
-            self._apply_equality_ticks()
+        self._apply_equality_ticks()
 
     # ── Tool / API ────────────────────────────────────────────────────
 
@@ -641,6 +669,8 @@ class GeometryScene(QGraphicsScene):
         self._clear_snap_indicator()
         self._clear_circle_preview()
         self._clear_tool_preview()
+        for s in self._eq_selection:
+            s.setPen(QPen(s.draw_color, 2))
         self._eq_selection.clear()
         self._tool = tool
         self._pending.clear()
@@ -763,6 +793,7 @@ class GeometryScene(QGraphicsScene):
             if (s.p1 is p1 and s.p2 is p2) or (s.p1 is p2 and s.p2 is p1):
                 return s
         seg = SegmentItem(p1, p2)
+        seg.draw_color = QColor(self._draw_color)
         seg.setPen(QPen(self._draw_color, 2))
         self.addItem(seg)
         self._segments.append(seg)
@@ -777,6 +808,7 @@ class GeometryScene(QGraphicsScene):
             return None
         r = math.hypot(cpt.pos().x() - ept.pos().x(), cpt.pos().y() - ept.pos().y())
         circ = CircleItem(cpt, ept, r)
+        circ.draw_color = QColor(self._draw_color)
         circ.setPen(QPen(self._draw_color, 2))
         self.addItem(circ)
         self._circles.append(circ)
@@ -790,6 +822,7 @@ class GeometryScene(QGraphicsScene):
         if not p1 or not p2:
             return None
         ray = RayItem(p1, p2)
+        ray.draw_color = QColor(self._draw_color)
         ray.setPen(QPen(self._draw_color, 2))
         self.addItem(ray)
         self._rays.append(ray)
@@ -801,6 +834,7 @@ class GeometryScene(QGraphicsScene):
         if not cpt:
             return None
         circ = CircleItem(cpt, None, radius)
+        circ.draw_color = QColor(self._draw_color)
         circ.setPen(QPen(self._draw_color, 2))
         self.addItem(circ)
         self._circles.append(circ)
@@ -856,8 +890,6 @@ class GeometryScene(QGraphicsScene):
         for am in self._angles:
             if pt in (am.from_pt, am.vertex_pt, am.to_pt):
                 am.update_position()
-        # Remove equality assertions for segments that are no longer equal
-        self._validate_equality_groups()
         # Intersection drag: if THE DRAGGED point is at an intersection, scale both
         if pt.intersection_circles and len(pt.intersection_circles) >= 2:
             c1, c2 = pt.intersection_circles[0], pt.intersection_circles[1]
@@ -926,6 +958,8 @@ class GeometryScene(QGraphicsScene):
                     for am in self._angles:
                         if other_pt in (am.from_pt, am.vertex_pt, am.to_pt):
                             am.update_position()
+        # Validate equality groups AFTER all geometry has settled
+        self._validate_equality_groups()
         self.canvas_changed.emit()
 
     def _update_constrained_points(self, seg: SegmentItem):
@@ -973,9 +1007,10 @@ class GeometryScene(QGraphicsScene):
     def get_state(self) -> dict:
         return {
             "points": [{"label": p.label, "x": p.pos().x(), "y": p.pos().y()} for p in self._points.values()],
-            "segments": [{"from": s.p1.label, "to": s.p2.label} for s in self._segments],
+            "segments": [{"from": s.p1.label, "to": s.p2.label, "color": s.draw_color.name()} for s in self._segments],
             "circles": [{"center": c.center_pt.label, "radius": c.radius,
-                         "radius_point": c.radius_pt.label if c.radius_pt else None} for c in self._circles],
+                         "radius_point": c.radius_pt.label if c.radius_pt else None,
+                         "color": c.draw_color.name()} for c in self._circles],
             "angle_marks": [{"from": a.from_pt.label, "vertex": a.vertex_pt.label,
                              "to": a.to_pt.label, "is_right": a.is_right} for a in self._angles],
             "equality_groups": [(tc, pairs) for tc, pairs in self._equality_groups],
@@ -1182,7 +1217,7 @@ class GeometryScene(QGraphicsScene):
                 item = item.parentItem()
             if isinstance(item, SegmentItem):
                 if item in self._eq_selection:
-                    item.setPen(QPen(COLORS["segment"], 2))
+                    item.setPen(QPen(item.draw_color, 2))
                     self._eq_selection.remove(item)
                 else:
                     item.setPen(QPen(COLORS["equality_tick"], 3))
@@ -1190,7 +1225,7 @@ class GeometryScene(QGraphicsScene):
                 if len(self._eq_selection) == 2:
                     self.assert_segments_equal(self._eq_selection[0], self._eq_selection[1])
                     for s in self._eq_selection:
-                        s.setPen(QPen(COLORS["segment"], 2))
+                        s.setPen(QPen(s.draw_color, 2))
                     self._eq_selection.clear()
             return
 

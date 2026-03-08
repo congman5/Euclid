@@ -172,6 +172,12 @@ class EParser:
             # Not a ≠ pattern, restore position
             self.pos = saved
 
+        # Inherently-negated T/H predicates → negative literal
+        if self.peek_kind() == "ID" and self.peek_val() in (
+                "Neq", "NotB", "NotCong", "Para"):
+            atom = self._parse_atom()
+            return Literal(atom, polarity=False)
+
         atom = self._parse_atom()
         return Literal(atom, polarity=True)
 
@@ -339,6 +345,173 @@ class EParser:
                 obj2 = self._expect_name()
                 self.expect("RP")
                 return Intersects(obj1, obj2)
+
+            # ── System T predicates (parsed into E atoms) ─────────
+            if name == "B":  # B(a,b,c) → Between(a,b,c)
+                self.advance()
+                self.expect("LP")
+                a = self._expect_name()
+                self.expect("COMMA")
+                b = self._expect_name()
+                self.expect("COMMA")
+                c = self._expect_name()
+                self.expect("RP")
+                return Between(a, b, c)
+
+            if name == "Cong":  # Cong(a,b,c,d) → ab = cd
+                self.advance()
+                self.expect("LP")
+                a = self._expect_name()
+                self.expect("COMMA")
+                b = self._expect_name()
+                self.expect("COMMA")
+                c = self._expect_name()
+                self.expect("COMMA")
+                d = self._expect_name()
+                self.expect("RP")
+                return Equals(SegmentTerm(a, b), SegmentTerm(c, d))
+
+            if name == "Eq":  # Eq(a,b) → a = b
+                self.advance()
+                self.expect("LP")
+                a = self._expect_name()
+                self.expect("COMMA")
+                b = self._expect_name()
+                self.expect("RP")
+                return Equals(a, b)
+
+            if name == "Neq":  # Neq(a,b) → ¬(a = b) — return atom; caller negates
+                self.advance()
+                self.expect("LP")
+                a = self._expect_name()
+                self.expect("COMMA")
+                b = self._expect_name()
+                self.expect("RP")
+                return Equals(a, b)  # wrapped as negative literal by caller
+
+            if name == "NotB":  # NotB(a,b,c) → ¬between — atom; caller negates
+                self.advance()
+                self.expect("LP")
+                a = self._expect_name()
+                self.expect("COMMA")
+                b = self._expect_name()
+                self.expect("COMMA")
+                c = self._expect_name()
+                self.expect("RP")
+                return Between(a, b, c)  # wrapped as negative literal by caller
+
+            if name == "NotCong":  # NotCong(a,b,c,d) → ¬(ab=cd) — caller negates
+                self.advance()
+                self.expect("LP")
+                a = self._expect_name()
+                self.expect("COMMA")
+                b = self._expect_name()
+                self.expect("COMMA")
+                c = self._expect_name()
+                self.expect("COMMA")
+                d = self._expect_name()
+                self.expect("RP")
+                return Equals(SegmentTerm(a, b), SegmentTerm(c, d))
+
+            # ── System H predicates (parsed into E atoms) ─────────
+            if name == "IncidL":  # IncidL(a,l) → on(a,l)
+                self.advance()
+                self.expect("LP")
+                point = self._expect_name()
+                self.expect("COMMA")
+                line = self._expect_name()
+                self.expect("RP")
+                return On(point, line)
+
+            if name == "BetH":  # BetH(a,b,c) → between(a,b,c)
+                self.advance()
+                self.expect("LP")
+                a = self._expect_name()
+                self.expect("COMMA")
+                b = self._expect_name()
+                self.expect("COMMA")
+                c = self._expect_name()
+                self.expect("RP")
+                return Between(a, b, c)
+
+            if name == "CongH":  # CongH(a,b,c,d) → ab = cd
+                self.advance()
+                self.expect("LP")
+                a = self._expect_name()
+                self.expect("COMMA")
+                b = self._expect_name()
+                self.expect("COMMA")
+                c = self._expect_name()
+                self.expect("COMMA")
+                d = self._expect_name()
+                self.expect("RP")
+                return Equals(SegmentTerm(a, b), SegmentTerm(c, d))
+
+            if name == "CongaH":  # CongaH(a,b,c,d,e,f) → ∠abc = ∠def
+                self.advance()
+                self.expect("LP")
+                a = self._expect_name()
+                self.expect("COMMA")
+                b = self._expect_name()
+                self.expect("COMMA")
+                c = self._expect_name()
+                self.expect("COMMA")
+                d = self._expect_name()
+                self.expect("COMMA")
+                e = self._expect_name()
+                self.expect("COMMA")
+                f = self._expect_name()
+                self.expect("RP")
+                return Equals(AngleTerm(a, b, c), AngleTerm(d, e, f))
+
+            if name == "SameSideH":  # SameSideH(a,b,l) → same-side(a,b,l)
+                self.advance()
+                self.expect("LP")
+                a = self._expect_name()
+                self.expect("COMMA")
+                b = self._expect_name()
+                self.expect("COMMA")
+                line = self._expect_name()
+                self.expect("RP")
+                return SameSide(a, b, line)
+
+            if name == "EqPt":  # EqPt(a,b) → a = b
+                self.advance()
+                self.expect("LP")
+                a = self._expect_name()
+                self.expect("COMMA")
+                b = self._expect_name()
+                self.expect("RP")
+                return Equals(a, b)
+
+            if name == "EqL":  # EqL(l,m) → l = m
+                self.advance()
+                self.expect("LP")
+                a = self._expect_name()
+                self.expect("COMMA")
+                b = self._expect_name()
+                self.expect("RP")
+                return Equals(a, b)
+
+            if name == "ColH":  # ColH(a,b,c) → between(a,b,c) (approx)
+                self.advance()
+                self.expect("LP")
+                a = self._expect_name()
+                self.expect("COMMA")
+                b = self._expect_name()
+                self.expect("COMMA")
+                c = self._expect_name()
+                self.expect("RP")
+                return Between(a, b, c)
+
+            if name == "Para":  # Para(l,m) → ¬intersects(l,m) — caller negates
+                self.advance()
+                self.expect("LP")
+                a = self._expect_name()
+                self.expect("COMMA")
+                b = self._expect_name()
+                self.expect("RP")
+                return Intersects(a, b)  # wrapped as negative literal by caller
 
             # After this, it's either:
             #   - an equality/inequality:  a = b, a ≠ b
@@ -613,9 +786,16 @@ class EParser:
             return True
         if t[0] == "HYPH_ID" and t[1] in ("same-side", "diff-side"):
             return True
-        if t[0] == "ID" and t[1] in ("on", "On", "between", "Between",
-                                       "center", "Center", "inside", "Inside",
-                                       "intersects", "Intersects"):
+        if t[0] == "ID" and t[1] in (
+                "on", "On", "between", "Between",
+                "center", "Center", "inside", "Inside",
+                "intersects", "Intersects",
+                # System T
+                "B", "Cong", "Eq", "Neq", "NotB", "NotCong",
+                # System H
+                "IncidL", "BetH", "CongH", "CongaH", "ColH",
+                "EqPt", "EqL", "Para", "SameSideH",
+        ):
             return True
         return False
 

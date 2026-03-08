@@ -19,7 +19,8 @@ Axiom List (from Paper Section 5.2, Tarski & Givant 1999):
   E1  — Equidistance symmetry:  ab ≡ ba
   E2  — Equidistance transitivity: ab≡pq ∧ ab≡rs → pq≡rs
   E3  — Identity of equidistance: ab≡cc → a=b
-  B   — Betweenness: B(abd) ∧ B(bcd) → B(abc)
+  A6  — Betweenness identity: B(aba) → a=b
+  B   — Inner transitivity of betweenness: B(abd) ∧ B(bcd) → B(abc)
   SC  — Segment construction: ∃x. B(qax) ∧ ax≡bc
   5S  — Five-segment
   P   — Pasch: B(apc) ∧ B(qcb) → ∃x. B(axq) ∧ B(bpx)
@@ -85,11 +86,19 @@ EQUIDISTANCE_AXIOMS: List[TClause] = [
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# Betweenness axiom (B)
+# Betweenness axioms (A6, B)
 # ═══════════════════════════════════════════════════════════════════════
 
 BETWEENNESS_AXIOMS: List[TClause] = [
-    # B. B(abd) ∧ B(bcd) → B(abc)
+    # A6. Betweenness identity: B(a,b,a) → a = b
+    # Paper §5.2: "B(aba) → a = b"
+    # Boutry et al. Table 1 (A6): "A B A ⇒ A = B"
+    # Coghetto/Grabowski: "betweenness identity"
+    # Clause: ¬B(a,b,a) ∨ Eq(a,b)
+    _clause(_neg(B("a", "b", "a")),
+            _pos(Eq("a", "b"))),
+
+    # B (A15). Inner transitivity: B(abd) ∧ B(bcd) → B(abc)
     # Clause: ¬B(a,b,d) ∨ ¬B(b,c,d) ∨ B(a,b,c)
     _clause(_neg(B("a", "b", "d")),
             _neg(B("b", "c", "d")),

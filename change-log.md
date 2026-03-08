@@ -2,6 +2,298 @@
 
 All notable changes to the Euclid Elements Simulator project.
 
+## [7.9.0] - 2025-XX-XX
+
+### Added — File name shown as workspace title (main_window.py)
+
+- **Title updates on save/load**: After saving or opening a `.euclid` file, the toolbar title (next to the ← Back button) displays the file name (without extension). The proof panel's internal proof name is also updated to match.
+
+### Removed — Bottom statement bar (main_window.py)
+
+- **Statement bar removed**: The gray bar at the bottom of the workspace that displayed the proposition statement has been removed. It showed stale text after loading a different file.
+
+### Added — Canvas-only and proof-only file save/load (file_format.py, main_window.py)
+
+- **Save dialog with Canvas Only / Canvas + Proof / Proof Only / Cancel**: The Save button prompts the user to choose what to save:
+  - **Canvas Only** (`.euclid`) — saves diagram objects only, no proof section in the file.
+  - **Canvas + Proof** (`.euclid`) — saves the full workspace (canvas + proof journal).
+  - **Proof Only** (`.euclid`) — saves the proof journal only, no canvas.
+- **Unified `.euclid` extension**: All file types use `.euclid`. The internal `"format"` tag (`"euclid-proof"` vs `"euclid-journal"`) distinguishes canvas files from proof-only files.
+- **Canvas-only .euclid files**: `serialize_to_json` omits the `"proof"` section when `journal_state` is `None`. On load, the `has_journal` flag tells the loader whether to touch the proof panel.
+- **Proof-only .euclid files**: Format tag `"euclid-journal"`. `save_journal_json` / `load_journal_json` handle these.
+- **Smart Open**: The Open button accepts `.euclid` files. `detect_file_format` reads the `"format"` tag inside the file to determine behavior: canvas files load canvas (and journal if present); proof-only files load journal only (canvas untouched).
+- **Canvas load helper**: Extracted `_load_canvas_from_data` for reuse.
+
+### Fixed — Canvas save/load now preserves circles, angle marks, and equality groups (main_window.py, file_format.py)
+
+- **Circles restored on load**: The `_import` method previously only loaded points and segments. Now loads circles (with radius-point support when available).
+- **Angle marks restored on load**: Angle mark data (from, vertex, to, is_right) is now restored from saved files.
+- **Equality groups serialized and restored**: `equality_groups` are now included in the `.euclid` file format (both serialize and deserialize) and restored on load with tick marks reapplied.
+- **Batch signal blocking on import**: Canvas signals are blocked during bulk import to prevent mid-rebuild callbacks into the proof panel.
+
+### Fixed — Proof journal no longer reset on file load (file_format.py, proof_panel.py, main_window.py)
+
+- **Full journal state saved**: The `.euclid` file format now includes `name`, `premises`, `goal`, and `declarations` alongside proof steps. Previously only steps were saved; premises, goal, declarations, and proof name were silently dropped.
+- **Full journal state restored on load**: `_import` now calls `restore_journal_state()` to repopulate all journal fields. Old files without the new fields load with backward compatibility (steps only).
+- **New `get_journal_state` / `restore_journal_state` API on ProofPanel**: Clean serialization boundary for the proof journal, independent of the canvas.
+
+### Fixed — Equality tool no longer resets segment color to blue (canvas_widget.py)
+
+- **Color revert on equality assertion**: Setting two segments equal via the equality tool reset both segments to the default blue. The tool now restores each segment's original drawing color after assertion.
+- **Color restored on tool switch**: Switching tools while a segment is highlighted for equality now restores its original color.
+- **Per-object colors persisted in undo/redo**: Segment, ray, and circle colors are now saved in undo/redo snapshots and restored correctly.
+- **Per-object colors exported in save files**: Segment and circle colors are included in `get_state()` and restored on file load via `_import`.
+
+### Removed — Redundant Save/Load buttons from proof panel (proof_panel.py)
+
+- **Save and Load buttons removed**: The `.euclid` file format now saves and loads both canvas and full proof journal (premises, goal, declarations, steps). The proof panel's own Save/Load buttons (which used a separate verifier-JSON format) were redundant. Removed the buttons, `_save_proof`, `_load_proof`, and the Ctrl+S shortcut.
+
+### Removed — Subproof buttons and unused connectives from proof panel (proof_panel.py)
+
+- **▶ Sub / ◀ Close buttons removed**: System E uses direct construction-based proofs exclusively — no Book I proposition requires assumption-discharge (subproof) patterns. The buttons and their backing `_open_subproof` / `_close_subproof` methods have been removed to declutter the header toolbar.
+- **⊥ (falsum) removed from connective palette**: Without proof-by-contradiction rules, the bottom/falsum symbol is unused. Removed from both `CONNECTIVES` and `CONNECTIVE_MAP`.
+- **→, ↔, ∃, ∃!, ∀ removed from connective palette**: System E has no conditional introduction, biconditional, or quantifier inference rules — all five symbols are unused. Removed from both `CONNECTIVES` and `CONNECTIVE_MAP`.
+- **∨, ≤, ≥ removed from connective palette**: System E has no disjunction-introduction/case-analysis rules, and metric axioms use only `=` and `<` (no ≤/≥ predicates). Removed from both `CONNECTIVES` and `CONNECTIVE_MAP`.
+- **Detail bar removed**: The bottom detail label was redundant with the per-line status indicators and goal ✓/✗ badge. Eval/error feedback now goes to the goal status tooltip. The `_detail` widget and all references have been removed.
+- **`_current_depth` field removed**: All depth-tracking state and logic removed since proofs are always flat (depth 0).
+- **Greek letter palette trimmed to α, β, γ**: Book I proofs use at most 2–3 circles; the previous 18-letter palette was unnecessary. Reduced to the three letters actually used for circle naming.
+
+### Changed — Rewritten textbook Theorems 2.1 and 4.1 (proposition_data.py)
+
+- **Theorem 2.1 (Unique Midpoint)**: Rewritten with formal content — `given_objects` (points A, B, M with segment AB), `conclusion_predicate` (`between(a,m,b), am = mb`), and proper statement/given/conclusion text.
+- **Theorem 4.1 (Triangle Angle Sum)**: Rewritten with formal content — `given_objects` (triangle ABC with three sides), `conclusion_predicate` (`∠bac + ∠abc + ∠bca = two-right`), and proper statement/given/conclusion text.
+- **12 new tests** added to `test_proposition_links.py` validating both theorems have given_objects, conclusion_predicates, proper statements, and correct list membership.
+
+### Added — Automatic cross-system verification (E / T / H)
+
+- **Auto-detect system per proof step**: `_detect_system()` scans each statement for T or H predicate names (`B(`, `Cong(`, `IncidL(`, `BetH(`, etc.) and routes verification through the appropriate consequence engine.
+- **Cross-system bridging**: When different systems are mixed in the same proof, known facts are automatically translated between systems using `t_bridge` (E↔T) and `h_bridge` (E↔H). For example, a premise written as `between(a,b,c)` in E can be referenced by a subsequent step written as `B(a,b,c)` in T or `BetH(a,b,c)` in H.
+- **Fallback chain**: If the E consequence engine cannot derive a step, the verifier tries the T engine (via bridge), then the H engine (via bridge), before rejecting it.
+
+### Added — System switcher in E / T / H translation view
+
+- **Clickable system badges**: The E, T, and H badges on each card in the sidebar translation tab are now buttons. Clicking one rewrites the proof panel's premises, goal, and all step formulas into the selected system's notation using the bridge translators.
+- **Corrected system button label letters**: Badge buttons in the E / T / H translation view were blank — the multiline stylesheet lacked `padding:0px`, so Qt's default padding pushed the letter text outside the small fixed-size button. Switched to a compact inline stylesheet matching the proof panel's working system buttons (with explicit `padding:0px`), increased button size from 24×20 to 28×22, and updated badge colours to match the proof panel (E = blue, T = purple, H = orange).
+- **`ProofPanel.switch_system(target)`**: New method that parses all formulas, translates them to the target system (E, T, or H) via `t_bridge` / `h_bridge`, and writes them back. Formulas with no direct equivalent in the target system are kept as-is.
+
+### Fixed — Proof Journal header alignment (proof_panel.py)
+
+- **Eval/All buttons right-aligned**: Moved the step-count label (`✓N ✗N ?N`) from after the Eval/All buttons to after the title, so Eval and All are now flush-right — visually aligned with the Undo/Redo/Save/Load/Lemma buttons in Row 2.
+
+### Fixed — Rule dropdown button appeared blank (proof_panel.py)
+
+- **Visible rule dropdown icon**: The `▼` rule-picker button on each proof line appeared blank because Qt's default padding pushed the glyph outside the small 22×22 button. Switched to `▾` (smaller triangle), added `padding:0px` to the inline stylesheet, and bumped `font-size` from `10px` to `12px` so the icon is clearly visible.
+
+### Fixed — Connective and Greek palette buttons appeared blank (proof_panel.py)
+
+- **Visible palette button glyphs**: The `↔`, `⊥`, `∃`, `∀`, and Greek letter buttons in the symbol palette could appear blank because the parent stylesheet's `font-size:10px` was too small for the 20px-tall buttons. Added per-button inline stylesheet with `padding:0px 3px;font-size:11px;min-width:0px;` to both the connective row and Greek letter rows, ensuring all glyphs render within their fixed-size buttons.
+
+### Fixed — Canvas equality tool icon (main_window.py)
+
+- **Equality tool icon**: Changed the canvas toolbar equality button from `═` (box-drawing double horizontal, rendered as a thin line or blank at small sizes) to `≅` (congruence symbol), making the button clearly recognizable. Updated tooltip to "Assert segments equal (click two segments)".
+
+### Changed — Larger canvas interaction area (canvas_widget.py)
+
+- **Increased snap distance**: `SNAP_DISTANCE` raised from 15 → 22 px, making it easier to click on points, segments, and circle edges. This enlarges the grab area for dragging points and the detection radius for snapping to objects.
+- **Wider segment/ray hit area**: Added `shape()` overrides to `SegmentItem` and `RayItem` using `QPainterPathStroker` to widen the clickable region to `SNAP_DISTANCE × 2` around the thin 2px line. This makes the equality tool, delete tool, and any click-on-segment interaction much easier — you no longer need pixel-perfect aim on the thin line.
+
+### Fixed — Equality ticks lost when resizing a construction (canvas_widget.py)
+
+- **Persistent equality assertions**: `_validate_equality_groups()` was removing equality tick marks whenever segment lengths diverged during a drag — even temporarily. Equality assertions are now treated as user-declared facts that persist through geometry changes. They are only removed when a referenced segment is deleted (not when lengths stop matching). Tick mark positions still update to follow the moved segments.
+
+### Changed — Floating splitter collapse restore tabs (main_window.py)
+
+- **Floating overlay tabs**: Replaced the previous HBox-wrapper approach with absolutely-positioned floating tabs that overlay the splitter edges. Tabs are no longer contained in any layout bar — they are small 20×60px buttons that float at the vertical center of the splitter area and don't affect the layout of the statement bar or other elements.
+- **All 3 panels tracked**: Canvas (▶ on left edge), proof panel (◀ on right edge), and reference/translation tabs (◀ on right edge, stacked above proof tab) all show restore tabs when collapsed.
+- **Reference panel collapse**: Dragging the reference panel to zero width now shows a restore tab. Clicking it re-opens the panel and the Reference toggle button.
+
+### Added — Prop I.1 proof in Hilbert (H) notation (proofs/Prop_I_1_H.json)
+
+- **Loadable H-notation proof**: `proofs/Prop_I_1_H.json` contains a complete 11-step proof of Prop I.1 written in System H notation. The goal uses `CongH(a,b,a,c)` and `CongH(a,b,b,c)` instead of segment equalities. Construction steps use E circle primitives (since H has no circle sort), while conclusion steps use H predicates. Load via the **Load** button in the proof panel.
+
+### Changed — Human-readable sequent display in E / T / H translation view (translation_view.py)
+
+- **Plain English sequent formatting**: The structured "Given: / Prove:" sequent display on each system card now translates formal notation into readable English instead of showing raw predicate syntax. Examples:
+  - `¬(a = b)` → **a ≠ b**
+  - `on(a, L)` → **point a lies on L**
+  - `between(a, b, c)` → **b is strictly between a and c**
+  - `ab = cd` → **segment ab ≅ segment cd**
+  - `∠bac = right-angle` → **∠bac is a right angle**
+  - `¬(intersects(L, N))` → **L ∥ N  (parallel)**
+  - `same-side(a, b, L)` → **a, b are on the same side of L**
+  - `Cong(a,b,c,d)` → **segment ab ≅ segment cd**  (System T)
+  - `B(a,b,c)` → **b is between a and c**  (System T)
+  - `CongH(a,b,c,d)` → **segment ab ≅ segment cd**  (System H)
+  - `CongaH(a,b,c,d,e,f)` → **∠abc ≅ ∠def**  (System H)
+  - `¬(ColH(a,b,c))` → **a, b, c form a triangle  (non-collinear)**  (System H)
+  - `Para(l,m)` → **l ∥ m  (parallel)**  (System H)
+- **Natural existential prefix**: `Prove (∃c:POINT.):` replaced with **Then there exist point c such that:**. Multiple variables grouped by sort (e.g. **Then there exist points d, e, f, g, h, k such that:**). Internal `_pi_` auxiliary variables from the π translation are filtered out.
+
+- **Auto-detect system per proof step**: `_detect_system()` scans each statement for T or H predicate names (`B(`, `Cong(`, `IncidL(`, `BetH(`, etc.) and routes verification through the appropriate consequence engine.
+- **Cross-system bridging**: When different systems are mixed in the same proof, known facts are automatically translated between systems using `t_bridge` (E↔T) and `h_bridge` (E↔H). For example, a premise written as `between(a,b,c)` in E can be referenced by a subsequent step written as `B(a,b,c)` in T or `BetH(a,b,c)` in H.
+- **Fallback chain**: If the E consequence engine cannot derive a step, the verifier tries the T engine (via bridge), then the H engine (via bridge), before rejecting it.
+
+## [7.8.0] - 2025-XX-XX
+
+### Added — Proof editor accepts Tarski (T) and Hilbert (H) syntax
+
+- **Extended `e_parser.py`** to recognize all T and H predicate names and parse them into equivalent E atoms:
+  - **System T**: `B(a,b,c)` → `between`, `Cong(a,b,c,d)` → `ab = cd`, `Eq(a,b)` → `a = b`, `Neq(a,b)` → `¬(a = b)`, `NotB(a,b,c)` → `¬between`, `NotCong(a,b,c,d)` → `¬(ab = cd)`.
+  - **System H**: `IncidL(a,l)` → `on`, `BetH(a,b,c)` → `between`, `CongH(a,b,c,d)` → `ab = cd`, `CongaH(a,b,c,d,e,f)` → `∠abc = ∠def`, `SameSideH(a,b,l)` → `same-side`, `EqPt(a,b)` → `a = b`, `EqL(l,m)` → `l = m`, `ColH(a,b,c)` → `between`, `Para(l,m)` → `¬intersects`.
+- **Glossary T and H entries are now clickable buttons** that insert templates into the focused proof field, matching the E buttons.
+
+## [7.7.0] - 2025-XX-XX
+
+### Removed — All legacy code
+
+- **Deleted `verifier/_legacy/`**: Removed `ast.py`, `checker.py`, `library.py`, `matcher.py`, `parser.py`, `propositions.py`, `rules.py`, `scope.py`, `__init__.py` (9 files).
+- **Deleted `verifier/answer_key_migrator.py`** and **`verifier/tests/test_answer_key_migration.py`**: Migration to System E is complete; `answer-keys-e.json` is the canonical source.
+- **Removed legacy aliases from `unified_checker.py`**: `parse_legacy_formula`, `verify_old_proof_json`, `get_legacy_rules` removed. Legacy diagrammatic rule aliases (`Ord2`, `Ord3`, `Ord4`, `Bet`, `Inc1`–`Inc3`, `Pasch`, `SS1`–`SS3`) removed from `_classify_justification`.
+- **Removed legacy syntax translation from `proof_panel.py`**: `_to_verifier_syntax`, `_split_top_level`, `_translate_one`, `_RULE_KIND_MAP` removed.
+- **Cleaned `main_window.py`**: Removed `LegacyProofPanel` alias, legacy comments in docstring and section headers.
+- **Updated tests**: Removed legacy translation tests from `test_system_e_integration.py`, updated `test_smoke.py` to not import deleted functions, fixed `Ord2` → `Diagrammatic` in all test justifications.
+
+### Changed — Unified glossary across proof journal and sidebar
+
+- **Proof Journal glossary rewritten** as a compact read-only reference with three system sections (**E**, **T**, **H**), each with a colour-coded badge. Entries are plain labels (not buttons) — no insertion behaviour, no duplication of `=`, `≠` already in the connective bar. All valid primitives for each system are listed.
+- **Sidebar glossary (`_E_GLOSSARY`)** updated to include 6 missing System E primitives: `diff-side`, `¬intersects`, `let L = line(a, b)`, `let α = circle(a, b)`, `ab + bc = ac`, `∠abc < ∠def`. Both glossaries now show the same primitives.
+
+## [7.6.13] - 2025-XX-XX
+
+### Added — Reiteration rule (unified_checker.py)
+
+- **Reit** rule added to `get_available_rules()` so it now appears in the rule dropdown menu in the Proof Journal. Reiteration allows restating a previously established fact — the verifier already accepted `Reit` as a valid justification (classified as `StepKind.DIAGRAMMATIC`), but it was missing from the UI rule catalogue.
+
+## [7.6.12] - 2025-XX-XX
+
+### Changed — Compact glossary button grid + △ connective (proof_panel.py)
+
+- **△ added to connective bar**: The triangle symbol (`△`) is now in the top connective row alongside `∧`, `∨`, `¬`, `=`, etc., so it's always visible without expanding the glossary.
+- **Glossary rewritten as compact button grid**: Removed verbose English explanations. Glossary entries are now buttons in a 4-column grid layout, where wider predicates (e.g. `between(a,b,c)`, `same-side(a,b,L)`, `∠abc = ∠def`) span 2 columns. Buttons use `Consolas 8pt` for a compact fit.
+- **Added missing predicates**: `diff-side(a,b,L)` and `ab+bc = ac` (magnitude addition) are now included — both are valid parser inputs that were previously missing from the palette.
+- **All 20 valid predicates covered**: `on`, `center`, `inside`, `between`, `same-side`, `diff-side`, `intersects`, `¬intersects`, `right-angle`, `let L=line`, `let α=circle`, `a = b`, `a ≠ b`, `ab = cd`, `ab < cd`, `∠abc = ∠def`, `∠abc < ∠def`, `ab+bc = ac`, `△abc = △def`.
+
+## [7.6.11] - 2025-XX-XX
+
+### Changed — Glossary replaces predicate buttons in Proof Journal (proof_panel.py)
+
+- **Removed** the grid of small predicate buttons (`on(a,L)`, `between`, `ab=cd`, etc.) from the palette section. These were tiny, unlabelled, and hard to distinguish.
+- **Replaced** with the collapsible **Glossary** section which now serves as both a quick-reference and the predicate inserter. Each glossary row shows the formal notation (e.g. `on(a, L)`) alongside its English meaning (e.g. "Point a lies on line L"). Clicking any row inserts the corresponding template into the focused proof field — same behavior as the old buttons but with context.
+- Glossary entries include constructions (`let L = line(a, b)`, `let α = circle(a, b)`) that were previously only available as predicate buttons.
+- The connective buttons (∧, ∨, ¬, etc.) and Greek letter buttons remain unchanged in the symbol palette above.
+- Entry count badge shown in the glossary header.
+
+## [7.6.10] - 2025-XX-XX
+
+### Added — Glossary in Proof Journal (proof_panel.py)
+
+- **Collapsible glossary section** added to the Proof Journal panel between the predicate palette and the lemma section. Lists all 14 System E predicates with plain English translations (e.g. `on(a, L)` → "Point a lies on line L"). Starts collapsed; click the header to expand. Each entry shows the formal notation in a code-style label with the English meaning beside it. Hover highlights rows for easy scanning.
+
+## [7.6.9] - 2025-XX-XX
+
+### Changed — Collapsible sections start collapsed (rule_reference.py, translation_view.py)
+
+- **Rule Reference**: All six section groups (Construction, Diagrammatic, Metric, Transfer, Superposition, Propositions) now start **collapsed** on startup. Arrow indicator starts as `▸` and card container starts hidden.
+- **Glossary**: Rewrote glossary sections as collapsible dropdowns matching the rule reference pattern — clickable header with collapse arrow (`▸`/`▾`), hover highlight, pointing-hand cursor, and a hideable body container. All three sections (E, T, H) start collapsed.
+
+## [7.6.8] - 2025-XX-XX
+
+### Fixed — Glossary Panel section headers (translation_view.py)
+
+- **Left margin**: Increased glossary section header left content margin from `12px` to `16px` to match the rule reference panel fix, preventing badge/title text from overlapping the 4px color stripe.
+- **Label borders**: Added `border: none` to the system badge and title labels to prevent inherited border from the parent QFrame stylesheet bleeding through.
+- **Count badge sizing**: Added explicit `setMinimumWidth(28)`, `setFixedHeight(20)`, `setAlignment(AlignCenter)`, and `border: none`. Changed `border-radius` from `9px` to `10px` (half of fixed height) and removed vertical padding for a consistent pill shape — same fix as the rule reference panel.
+
+### Changed — Tab ordering (main_window.py)
+
+- Swapped the position of the **Glossary** and **E / T / H** tabs in both tab widget locations (verifier-mode and canvas-mode sidebars). Tab order is now: Rules → Glossary → E / T / H (was: Rules → E / T / H → Glossary).
+
+## [7.6.7] - 2025-XX-XX
+
+### Fixed — Rule Reference Panel spacing (rule_reference.py)
+
+- **Left margin**: Increased section header left content margin from `12px` to `16px` so the collapse arrow (`▾`) and title text no longer overlap with the 4px color stripe.
+- **Arrow/title border**: Added `border: none` to arrow and title labels to prevent inherited border from the parent QFrame stylesheet bleeding through.
+- **Count badge sizing**: Added explicit `setMinimumWidth(28)`, `setFixedHeight(20)`, `setAlignment(AlignCenter)`, and `border: none` to the count badge. Changed `border-radius` from `9px` to `10px` (half of fixed height) for a consistent pill shape. Removed `padding` vertical component (was `2px 8px`, now `0px 8px`) since height is fixed. This eliminates the glitchy inconsistent rendering across different DPI/font sizes.
+
+### Updated — README.md
+
+- Updated total test count from 639 to ~890.
+- Updated verifier test count from ~590 to ~790.
+- Updated System H axiom count from 39 to 40 (CA5 angle transitivity added).
+- Added **UI Features** section documenting all four sidebar tabs: Diagnostics, Rules (152 rules), E/T/H translation view, and Glossary (primitives reference).
+- Added `translation_view.py` to the project structure listing with description.
+
+## [7.6.6] - 2025-XX-XX
+
+### Fixed — E / T / H Translation View (translation_view.py)
+
+- **Background coloration**: System cards now use white backgrounds with subtle per-system tinted code blocks (green for E, blue for T, purple for H) instead of inheriting the dark header background that made text unreadable.
+- **Card styling**: Cards have rounded corners, light borders, and 4px colored left stripe matching the system badge. Removed hover effect that caused visual confusion.
+- **Font readability**: Switched sequent text from `formula(11)` to `formula(10)` with `line-height: 1.5` for better readability. System labels use `heading(11)` instead of `ui_bold(11)`.
+- **Structured sequent display**: Raw comma-separated sequent strings now formatted into structured **Given:** / **Prove:** sections with bullet points (`•`), making hypotheses and conclusions immediately distinguishable.
+- **System subtitles**: Each system card now shows a one-line description (e.g. "Tarski's axioms — uses only points with betweenness (B) and equidistance (≡)").
+- **Tab bar consistency**: Second tab widget (canvas-mode sidebar) now uses `C.header_bg` instead of hardcoded `#4a3c5c` for consistent styling across both window modes.
+
+### Added — Primitives Glossary Tab (translation_view.py, main_window.py)
+
+- **New `GlossaryPanel` class** (`translation_view.py`): Reference panel explaining every formal primitive across all three systems with English translations.
+  - **System E** (14 entries): `on(a, L)` → "Point a lies on line L", `between(a, b, c)` → "b is strictly between a and c", `same-side`, `center`, `inside`, `intersects`, segment/angle/area comparisons, `right-angle`, negation.
+  - **System T** (6 entries): `B(a, b, c)` → "b is between a and c (nonstrict)", `Cong(a, b, c, d)` → "Segment ab is congruent to segment cd", `Eq`, `Neq`, `NotB`, `NotCong`.
+  - **System H** (9 entries): `IncidL(a, l)` → "Point a lies on line l (incidence)", `BetH`, `CongH`, `CongaH`, `ColH`, `EqPt`, `EqL`, `Para`, `SameSideH`.
+- **Glossary tab registered** in both tab widget locations in `main_window.py` (verifier-mode and canvas-mode sidebars).
+- Each entry shows the formal notation in a tinted code block with English meaning below, grouped by system with collapsible section headers and count badges.
+
+## [7.6.5] - 2025-XX-XX
+
+### Fixed — Rule Reference Panel (rule_reference.py)
+
+- **Section header text overlap**: Increased left margin from `Sp.padding` to `12px` so text clears the 4px color stripe. Added `background: transparent` to all header labels to prevent widget background from clipping text against the color stripe.
+- **Section reference pill**: Replaced inline plain-text section ref (was "§3.3" unstyled next to title) with a styled pill badge — light background, border, border-radius, and padding — visually separating it from the section title.
+- **Count badge styling**: Changed from grey background (`C.border`) with grey text to category-colored background with white text, making it visible and matching the section's color identity.
+- **Rule card layout**: Removed redundant uppercase category badge ("DIAGRAMMATIC", "METRIC", etc.) that cluttered each card. Replaced with a small color dot (`●`) matching the section color, plus the rule name and subtle section reference.
+- **Description indentation**: Rule descriptions now indent 16px under the name for clear visual hierarchy. Multi-line proposition descriptions (statement + formal sequent) also properly indented.
+- **Card margins**: Increased left content margin from `Sp.padding + 14` to `20px` for consistent alignment with section headers.
+
+## [7.6.4] - 2025-XX-XX
+
+### Fixed — Axiomatic Systems Audit (Reference PDFs Cross-Check)
+
+Audited all three axiomatic systems (E, H, T) against reference materials:
+- **Avigad, Dean, Mumma (2009)** — `formal_system_extracted.txt`
+- **Hilbert Axioms PDF** — betweenness (BA1-BA4), congruence (CA1-CA6)
+- **Coghetto & Grabowski (2016)** — "Tarski Geometry Axioms Part II" (A1-A11 formalized in Mizar)
+- **Boutry, Kastenbaum, Saintier (2023)** — "Towards an Independent Version of Tarski's System" (independence proofs, variant axioms A0-A15)
+
+#### Added — Missing Tarski Axiom A6 (Betweenness Identity)
+
+- **`t_axioms.py`**: Added axiom A6 (`B(a,b,a) → a=b`) to `BETWEENNESS_AXIOMS`. This axiom was listed in all three reference sources (paper §5.2 axiom 6, Boutry Table 1 as "Between Identity", Coghetto §6 Def. 7) but was absent from the implementation. While A6 is derivable from the other axioms in the GRS system (paper omits it from the GRS rule list since it's provable from E3+SC), it is a standard axiom in Tarski's axiomatization and its presence ensures the deduction engine can use it directly.
+
+#### Added — Missing Hilbert Axiom CA5 (Angle Transitivity)
+
+- **`h_axioms.py`**: Added axiom CA5 (`CongaH(A,B,C,D,E,F) ∧ CongaH(D,E,F,G,H,I) → CongaH(A,B,C,G,H,I)`) to `ANGLE_CONGRUENCE_AXIOMS`. The Hilbert Axioms PDF states: "If ∠A ≅ ∠B and ∠B ≅ ∠C, then ∠A ≅ ∠C." This was the only angle transitivity missing from the implementation — angle reflexivity (AC.1), commutativity (AC.2), permutation (AC.3), and symmetry (AC.4) were already present.
+
+#### Verified — System E Axioms
+
+- All E axioms in `e_axioms.py` confirmed correct against paper §3.3-3.7: 4 generality axioms, 7 between axioms (B1-B7), 5 same-side axioms, 4 Pasch axioms, 3 triple-incidence axioms, circle axioms, intersection axioms, transfer axioms (DS1-DS4, DA1-DA4), and superposition.
+
+#### Updated — Test Counts
+
+- `test_t_system.py`: `DEDUCTION_AXIOMS` count updated from 17 → 18, `ALL_T_AXIOMS` from 29 → 30
+- `test_h_system.py`: `ALL_CONGRUENCE_AXIOMS` count updated from 13 → 14, `ALL_H_AXIOMS` from 39 → 40
+- Full test suite: 789 passed, 1 skipped, 0 regressions
+
+#### Added — Verifier Functional Tests for New Axioms
+
+- `test_t_system.py`: Added `test_a6_betweenness_identity` (B(A,B,A)→Eq(A,B) fires in TConsequenceEngine), `test_a6_no_false_positive` (A6 does NOT fire on B(A,B,C) when A≠C), `test_is_consequence_a6` (API-level test)
+- `test_h_system.py`: Added `test_conga_transitivity` (CongaH(A,B,C,B,C,A)∧CongaH(B,C,A,C,A,B)→CongaH(A,B,C,C,A,B) fires in HConsequenceEngine), `test_conga_transitivity_chain` (verifies full equivalence class via CA5+AC.4 symmetry)
+
+#### Extracted — Reference PDFs
+
+- `hilbert_axioms_extracted.txt` — 17-page extraction of betweenness axioms BA1-BA4, congruence axioms CA1-CA6, Pasch's theorem, crossbar theorem, segment/angle ordering
+- `tarski_part2_extracted.txt` — 10-page extraction of A8-A11 formalization (lower/upper dimension, Euclid axiom, continuity) with Mizar proofs
+- `tarski_independent_extracted.txt` — 12-page extraction of independence results: variant axiom table (A0, A2', A7', A9', A10', A11', A14, A15), counter-models, Klein's model for A10' independence
+
 ## [7.6.3] - 2025-XX-XX
 
 ### Fixed — Proposition Evaluation (e_library.py)
@@ -23,6 +315,10 @@ All notable changes to the Euclid Elements Simulator project.
 
 - **Vacuous acceptance bug**: Empty proofs were accepted as valid for any proposition whose goal formula failed to parse. Root cause: `all(lit in known for lit in [])` returns `True` (vacuous truth). Fixed by tracking parse success; if a goal string is present but parsing fails or produces zero literals, the proof is now rejected with an explicit error message
 - **Parser gap (e_parser.py)**: Added support for parenthesized magnitude expressions (e.g. `(△abc + △def) = (△ghi + △jkl)`) in `_parse_atom` — previously the parser could not handle atoms starting with `(`, causing the entire goal to be unparseable for Prop I.47 and any other proposition using `MagAdd` in its conclusion
+
+### Fixed — Tarski Consequence Engine (t_consequence.py)
+
+- **Grounding explosion**: `TConsequenceEngine` used brute-force Cartesian-product grounding over all point combinations — with 6 points and the 5-segment axiom (8 variables), this generated 6⁸ = 1,679,616 ground clauses per axiom (1.75M total), causing `test_e2_transitivity` to hang indefinitely. Replaced with **matched unit-propagation**: for each axiom clause and each candidate "free" literal, match the remaining literals' negations against known facts to find valid substitutions. Grounding is now proportional to the number of known facts, not point^k. All 56 Tarski tests pass in 0.28s (was infinite for 6-point tests)
 
 ## [7.6.2] - 2025-XX-XX
 

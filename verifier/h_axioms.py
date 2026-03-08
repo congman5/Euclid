@@ -288,6 +288,14 @@ ANGLE_CONGRUENCE_AXIOMS: List[HClause] = [
     #       CongaH(A,B,C,D,E,F) → CongaH(D,E,F,A,B,C)
     _clause(_neg(CongaH("A", "B", "C", "D", "E", "F")),
             _pos(CongaH("D", "E", "F", "A", "B", "C"))),
+
+    # AC.5  conga transitivity (CA5):
+    #       CongaH(A,B,C,D,E,F) ∧ CongaH(D,E,F,G,H,I)
+    #         → CongaH(A,B,C,G,H,I)
+    # Hilbert Axioms PDF (CA5): "If ∠A ≅ ∠B and ∠B ≅ ∠C, then ∠A ≅ ∠C."
+    _clause(_neg(CongaH("A", "B", "C", "D", "E", "F")),
+            _neg(CongaH("D", "E", "F", "G", "H", "I")),
+            _pos(CongaH("A", "B", "C", "G", "H", "I"))),
 ]
 
 

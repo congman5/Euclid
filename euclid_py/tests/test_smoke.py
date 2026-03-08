@@ -105,12 +105,54 @@ class TestFileFormat:
             "points": [{"label": "A", "x": 10, "y": 20}],
             "segments": [{"from": "A", "to": "B"}],
         }
-        steps = [{"text": "Segment(A,B)", "justification": "Given", "dependencies": []}]
+        journal = {
+            "name": "test_proof",
+            "premises": ["on(A, L)"],
+            "goal": "ab = cd",
+            "declarations": {"points": ["A", "B"], "lines": ["L"]},
+            "steps": [{"text": "Segment(A,B)", "justification": "Given", "dependencies": []}],
+        }
         path = str(tmp_path / "test.euclid")
-        save_proof(path, canvas, steps)
+        save_proof(path, canvas, journal)
         data = load_proof(path)
         assert data["points"][0]["label"] == "A"
-        assert len(data["steps"]) == 1
+        assert data["has_journal"] is True
+        j = data["journal"]
+        assert len(j["steps"]) == 1
+        assert j["name"] == "test_proof"
+        assert j["premises"] == ["on(A, L)"]
+        assert j["goal"] == "ab = cd"
+
+    def test_canvas_only_round_trip(self, tmp_path):
+        from euclid_py.engine.file_format import save_proof, load_proof
+        canvas = {
+            "points": [{"label": "X", "x": 5, "y": 15}],
+            "segments": [],
+        }
+        path = str(tmp_path / "canvas_only.euclid")
+        save_proof(path, canvas, None)
+        data = load_proof(path)
+        assert data["points"][0]["label"] == "X"
+        assert data["has_journal"] is False
+        assert "journal" not in data
+
+    def test_proof_only_round_trip(self, tmp_path):
+        from euclid_py.engine.file_format import (
+            save_journal_json, load_journal_json, detect_file_format,
+        )
+        journal = {
+            "name": "my_proof",
+            "premises": ["between(a,b,c)"],
+            "goal": "ab = bc",
+            "declarations": {"points": ["a", "b", "c"], "lines": []},
+            "steps": [],
+        }
+        path = str(tmp_path / "proof.euclid")
+        save_journal_json(path, journal)
+        assert detect_file_format(path) == "euclid-journal"
+        loaded = load_journal_json(path)
+        assert loaded["name"] == "my_proof"
+        assert loaded["premises"] == ["between(a,b,c)"]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -276,7 +318,7 @@ class TestUiSmoke:
         p.set_declarations(["A", "B", "C"], [])
         p.add_premise_text("Between(A,B,C)")
         p.set_conclusion("Between(C,B,A)")
-        p.add_step("Between(C,B,A)", "Ord2", [1])
+        p.add_step("Between(C,B,A)", "Diagrammatic", [1])
         # This used to crash with: NameError: name 'checker' is not defined
         p._eval_all()
         # After fix, the step should be marked as derived (✓)
@@ -317,25 +359,13 @@ class TestSystemEDefault:
         assert any("§3.7" in g for g in group_names), "Missing Superposition (§3.7)"
         assert any("Prop" in g for g in group_names), "Missing Propositions"
         # Must NOT have old Hilbert categories
-        assert "Logical" not in group_names, "Legacy 'Logical' group still present"
-        assert "Incidence" not in group_names, "Legacy 'Incidence' group still present"
-        assert "Derived" not in group_names, "Legacy 'Derived' group still present"
+        assert "Logical" not in group_names, "Old 'Logical' group still present"
+        assert "Incidence" not in group_names, "Old 'Incidence' group still present"
+        assert "Derived" not in group_names, "Old 'Derived' group still present"
 
     def test_all_rule_names_populated(self):
         from euclid_py.ui.proof_panel import ALL_RULE_NAMES
         assert len(ALL_RULE_NAMES) >= 100
-
-    def test_no_legacy_rule_imports(self):
-        """proof_panel.py must not import get_legacy_rules at module level."""
-        import ast as ast_mod
-        import pathlib
-        pp = pathlib.Path(__file__).resolve().parent.parent / "ui" / "proof_panel.py"
-        tree = ast_mod.parse(pp.read_text(encoding="utf-8-sig"))
-        for node in ast_mod.walk(tree):
-            if isinstance(node, ast_mod.ImportFrom) and node.module:
-                if "get_legacy_rules" in (
-                        alias.name for alias in (node.names or [])):
-                    assert False, "proof_panel.py still imports get_legacy_rules"
 
 
 class TestTranslationView:
@@ -549,17 +579,15 @@ class TestLegacyDeprecation:
         """The unified checker is importable and has the expected API."""
         from verifier.unified_checker import (
             verify_proof,
-            verify_old_proof_json,
+            verify_e_proof_json,
             verify_step,
             get_available_rules,
             get_theorem,
-            parse_legacy_formula,
-            get_legacy_rules,
+            parse_e_formula,
         )
         assert callable(verify_proof)
-        assert callable(verify_old_proof_json)
+        assert callable(verify_e_proof_json)
         assert callable(verify_step)
         assert callable(get_available_rules)
         assert callable(get_theorem)
-        assert callable(parse_legacy_formula)
-        assert callable(get_legacy_rules)
+        assert callable(parse_e_formula)

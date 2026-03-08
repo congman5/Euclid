@@ -175,3 +175,79 @@ class TestSpecificLinks:
         seq = get_e_sequent("euclid-I.48")
         # Converse: conclusion should be a right angle
         assert "RightAngle" in seq or "right" in seq.lower() or "∠" in seq
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Textbook theorem content
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestTextbookTheorems:
+    """Validate rewritten textbook theorems have proper formal content."""
+
+    def test_thm_2_1_exists(self):
+        p = get_proposition("tb-thm-2.1")
+        assert p is not None
+        assert p.title == "Unique Midpoint"
+
+    def test_thm_2_1_has_given_objects(self):
+        p = get_proposition("tb-thm-2.1")
+        assert p.given_objects is not None
+        assert len(p.given_objects.points) == 3  # A, B, M
+        labels = {pt["label"] for pt in p.given_objects.points}
+        assert {"A", "B", "M"} == labels
+        assert len(p.given_objects.segments) == 1  # AB
+
+    def test_thm_2_1_has_conclusion_predicate(self):
+        p = get_proposition("tb-thm-2.1")
+        assert p.conclusion_predicate != ""
+        assert "between" in p.conclusion_predicate
+        assert "am" in p.conclusion_predicate.lower() or "mb" in p.conclusion_predicate.lower()
+
+    def test_thm_2_1_has_proper_statement(self):
+        p = get_proposition("tb-thm-2.1")
+        assert "midpoint" in p.statement.lower()
+        assert "AM = MB" in p.conclusion or "am = mb" in p.conclusion.lower()
+
+    def test_thm_2_1_given_mentions_segment(self):
+        p = get_proposition("tb-thm-2.1")
+        assert "A" in p.given and "B" in p.given
+
+    def test_thm_4_1_exists(self):
+        p = get_proposition("tb-thm-4.1")
+        assert p is not None
+        assert p.title == "Triangle Angle Sum"
+
+    def test_thm_4_1_has_given_objects(self):
+        p = get_proposition("tb-thm-4.1")
+        assert p.given_objects is not None
+        assert len(p.given_objects.points) == 3  # A, B, C
+        labels = {pt["label"] for pt in p.given_objects.points}
+        assert {"A", "B", "C"} == labels
+        assert len(p.given_objects.segments) == 3  # AB, BC, AC
+
+    def test_thm_4_1_has_conclusion_predicate(self):
+        p = get_proposition("tb-thm-4.1")
+        assert p.conclusion_predicate != ""
+        assert "∠" in p.conclusion_predicate
+        assert "right-angle" in p.conclusion_predicate
+
+    def test_thm_4_1_has_proper_statement(self):
+        p = get_proposition("tb-thm-4.1")
+        assert "angle" in p.statement.lower() or "180" in p.statement or "right" in p.statement.lower()
+
+    def test_thm_4_1_given_mentions_triangle(self):
+        p = get_proposition("tb-thm-4.1")
+        assert "Triangle" in p.given or "triangle" in p.given
+
+    def test_textbook_not_in_euclid_propositions(self):
+        """Textbook theorems should not appear in PROPOSITIONS (only in ALL)."""
+        from euclid_py.engine.proposition_data import PROPOSITIONS, TEXTBOOK_THEOREMS
+        prop_ids = {p.id for p in PROPOSITIONS}
+        for t in TEXTBOOK_THEOREMS:
+            assert t.id not in prop_ids
+
+    def test_textbook_in_all_propositions(self):
+        """Textbook theorems should appear in ALL_PROPOSITIONS."""
+        all_ids = {p.id for p in ALL_PROPOSITIONS}
+        assert "tb-thm-2.1" in all_ids
+        assert "tb-thm-4.1" in all_ids

@@ -126,8 +126,8 @@ class TestTAxiomCounts:
 
     def test_deduction_axioms_count(self):
         from verifier.t_axioms import DEDUCTION_AXIOMS
-        # E1(1) + E2(1) + E3(1) + B(1) + 5S(1) + 2U(3) + Eq(3) + Neg(6) = 17
-        assert len(DEDUCTION_AXIOMS) == 17
+        # E1(1) + E2(1) + E3(1) + A6(1) + B(1) + 5S(1) + 2U(3) + Eq(3) + Neg(6) = 18
+        assert len(DEDUCTION_AXIOMS) == 18
 
     def test_construction_axioms_count(self):
         from verifier.t_axioms import CONSTRUCTION_AXIOMS
@@ -136,8 +136,8 @@ class TestTAxiomCounts:
 
     def test_all_axioms_count(self):
         from verifier.t_axioms import ALL_T_AXIOMS, LOWER_DIM_AXIOMS
-        # 17 deduction + 9 construction + 3 lower_dim = 29
-        assert len(ALL_T_AXIOMS) == 29
+        # 18 deduction + 9 construction + 3 lower_dim = 30
+        assert len(ALL_T_AXIOMS) == 30
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -238,11 +238,47 @@ class TestTConsequenceEngine:
         # much more than the original two literals.
         assert len(closure) > 2
 
+    def test_a6_betweenness_identity(self):
+        """A6: B(A,B,A) → Eq(A,B).
+
+        Axiom A6 (betweenness identity) from Tarski & Givant (1999),
+        confirmed in Boutry et al. (2023) Table 1 and Coghetto &
+        Grabowski (2016).
+        """
+        from verifier.t_consequence import TConsequenceEngine
+        engine = TConsequenceEngine()
+        known = {TLiteral(B("A", "B", "A"), True)}
+        vars_ = {"A": TSort.POINT, "B": TSort.POINT}
+        closure = engine.direct_consequences(known, vars_)
+        # A6 should derive that A = B
+        assert TLiteral(Eq("A", "B"), True) in closure
+        # Symmetry follows
+        assert TLiteral(Eq("B", "A"), True) in closure
+
+    def test_a6_no_false_positive(self):
+        """A6 should NOT derive Eq(A,B) from B(A,B,C) when A ≠ C."""
+        from verifier.t_consequence import TConsequenceEngine
+        engine = TConsequenceEngine()
+        known = {
+            TLiteral(B("A", "B", "C"), True),
+            TLiteral(Neq("A", "C"), True),
+        }
+        vars_ = {"A": TSort.POINT, "B": TSort.POINT, "C": TSort.POINT}
+        closure = engine.direct_consequences(known, vars_)
+        # A6 only fires on B(x,y,x) pattern — NOT on B(A,B,C)
+        assert TLiteral(Eq("A", "B"), True) not in closure
+
     def test_is_consequence_api(self):
         """Test the convenience is_t_consequence function."""
         from verifier.t_consequence import is_t_consequence
         known = {TLiteral(Cong("A", "B", "C", "C"), True)}
         assert is_t_consequence(known, TLiteral(Eq("A", "B"), True))
+
+    def test_is_consequence_a6(self):
+        """is_t_consequence API should work for A6."""
+        from verifier.t_consequence import is_t_consequence
+        known = {TLiteral(B("X", "Y", "X"), True)}
+        assert is_t_consequence(known, TLiteral(Eq("X", "Y"), True))
 
 
 # ═══════════════════════════════════════════════════════════════════════

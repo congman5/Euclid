@@ -1,0 +1,48 @@
+{
+  "format": "euclid-journal",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "proof": {
+    "name": "test2",
+    "premises": [
+      "¬(a = b)"
+    ],
+    "goal": "ab = ac, ab = bc, ¬(c = a), ¬(c = b)",
+    "declarations": {
+      "points": [
+        "A",
+        "B"
+      ],
+      "lines": []
+    },
+    "steps": [
+      {
+        "lineNumber": 2,
+        "text": "on(diff-side(∠ = ∠,,),)",
+        "justification": "M4 — Angle symmetry",
+        "dependencies": [
+          12
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 3,
+        "text": "center(,)",
+        "justification": "Triple incidence 2",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 4,
+        "text": "¬ ∧ △",
+        "justification": "Given",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  },
+  "exportedAt": "2026-03-08T18:16:12Z"
+}

@@ -47,7 +47,7 @@ class UnifiedResult:
     was used and whether T-bridge fallback was invoked.
     """
     valid: bool = False
-    engine: str = "e"          # "e", "t_fallback", or "legacy"
+    engine: str = "e"          # "e" or "t_fallback"
     e_result: Optional[ECheckResult] = None
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
@@ -277,6 +277,36 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
     for lit in premise_lits:
         checker.known.add(lit)
 
+    # ── 4b. T and H consequence engines for cross-system steps ────
+    from .t_consequence import TConsequenceEngine
+    from .h_consequence import HConsequenceEngine
+    from .t_bridge import e_literal_to_t, t_literal_to_e
+    from .h_bridge import e_literal_to_h, h_literal_to_e
+    from .t_ast import TLiteral as _TLit, TSort
+    from .h_ast import HLiteral as _HLit, HSort
+
+    t_engine = TConsequenceEngine()
+    h_engine = HConsequenceEngine()
+
+    def _e_known_to_t(known: Set[Literal]) -> Set[_TLit]:
+        """Translate current E known-set to T literals."""
+        t_known: Set[_TLit] = set()
+        for lit in known:
+            result = e_literal_to_t(lit)
+            if result:
+                for tl in result:
+                    t_known.add(tl)
+        return t_known
+
+    def _e_known_to_h(known: Set[Literal]) -> Set[_HLit]:
+        """Translate current E known-set to H literals."""
+        h_known: Set[_HLit] = set()
+        for lit in known:
+            hl = e_literal_to_h(lit)
+            if hl is not None:
+                h_known.add(hl)
+        return h_known
+
     # ── 5. Check each proof line ──────────────────────────────────
     lines = proof_json.get("lines", [])
     premise_ids: Set[int] = set()
@@ -326,6 +356,9 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
         # Determine step kind from justification
         step_kind = _classify_justification(just)
 
+        # Detect which formal system the statement uses
+        step_system = _detect_system(stmt_str)
+
         if step_kind == StepKind.CONSTRUCTION:
             # Construction rule: check prereqs from refs, add conclusions
             rule = CONSTRUCTION_RULE_BY_NAME.get(just)
@@ -349,8 +382,49 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
             for lit in step_lits:
                 if lit in checker.known:
                     continue
-                if checker.consequence_engine.is_consequence(
-                        checker.known, lit, checker.variables):
+                # Try E engine first
+                ok = checker.consequence_engine.is_consequence(
+                    checker.known, lit, checker.variables)
+                # If E doesn't accept and the step uses T syntax,
+                # bridge known facts to T and check via T engine
+                if not ok and step_system == "T":
+                    t_known = _e_known_to_t(checker.known)
+                    t_lits = e_literal_to_t(lit)
+                    if t_lits:
+                        ok = all(
+                            tl in t_known or t_engine.is_consequence(
+                                t_known, tl)
+                            for tl in t_lits
+                        )
+                # If E doesn't accept and the step uses H syntax,
+                # bridge known facts to H and check via H engine
+                if not ok and step_system == "H":
+                    h_known = _e_known_to_h(checker.known)
+                    h_lit = e_literal_to_h(lit)
+                    if h_lit is not None:
+                        ok = (h_lit in h_known or
+                              h_engine.is_consequence(h_known, h_lit))
+                # As a last resort for any system, try the other engines
+                if not ok and step_system == "E":
+                    # Try T fallback
+                    t_known = _e_known_to_t(checker.known)
+                    t_lits = e_literal_to_t(lit)
+                    if t_lits and all(
+                        tl in t_known or t_engine.is_consequence(
+                            t_known, tl)
+                        for tl in t_lits
+                    ):
+                        ok = True
+                    # Try H fallback
+                    if not ok:
+                        h_known = _e_known_to_h(checker.known)
+                        h_lit = e_literal_to_h(lit)
+                        if h_lit is not None and (
+                            h_lit in h_known or
+                            h_engine.is_consequence(h_known, h_lit)
+                        ):
+                            ok = True
+                if ok:
                     checker.known.add(lit)
                 else:
                     lr.valid = False
@@ -523,18 +597,6 @@ def _classify_justification(just: str) -> Optional[StepKind]:
         "SSS": StepKind.SUPERPOSITION_SSS,
         "SAS Superposition": StepKind.SUPERPOSITION_SAS,
         "SSS Superposition": StepKind.SUPERPOSITION_SSS,
-        # Legacy diagrammatic rule aliases
-        "Ord2": StepKind.DIAGRAMMATIC,
-        "Ord3": StepKind.DIAGRAMMATIC,
-        "Ord4": StepKind.DIAGRAMMATIC,
-        "Bet": StepKind.DIAGRAMMATIC,
-        "Inc1": StepKind.DIAGRAMMATIC,
-        "Inc2": StepKind.DIAGRAMMATIC,
-        "Inc3": StepKind.DIAGRAMMATIC,
-        "Pasch": StepKind.DIAGRAMMATIC,
-        "SS1": StepKind.DIAGRAMMATIC,
-        "SS2": StepKind.DIAGRAMMATIC,
-        "SS3": StepKind.DIAGRAMMATIC,
         "Reit": StepKind.DIAGRAMMATIC,
         "Given": StepKind.DIAGRAMMATIC,
     }
@@ -567,6 +629,33 @@ def _classify_justification(just: str) -> Optional[StepKind]:
 
     # Default: unrecognised
     return None
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# System detection — identifies E / T / H from statement syntax
+# ═══════════════════════════════════════════════════════════════════════
+
+_T_PREDICATES = {"B", "Cong", "Eq", "Neq", "NotB", "NotCong"}
+_H_PREDICATES = {"IncidL", "BetH", "CongH", "CongaH", "ColH",
+                 "EqPt", "EqL", "Para", "SameSideH"}
+
+
+def _detect_system(statement: str) -> str:
+    """Detect which formal system a statement uses.
+
+    Returns ``"E"``, ``"T"``, or ``"H"`` by scanning for system-specific
+    predicate names.  Falls back to ``"E"`` when no T/H predicate is found.
+    """
+    import re
+    # Look for predicate names followed by '(' to avoid matching
+    # variable names that happen to be the same letters.
+    for pred in _H_PREDICATES:
+        if re.search(rf'\b{pred}\s*\(', statement):
+            return "H"
+    for pred in _T_PREDICATES:
+        if re.search(rf'\b{pred}\s*\(', statement):
+            return "T"
+    return "E"
 
 
 def _literal_var_names(lit: Literal) -> Set[str]:
@@ -889,6 +978,14 @@ def get_available_rules() -> List[RuleInfo]:
         section="§3.7",
     ))
 
+    # ── Structural rules ──────────────────────────────────────────
+    rules.append(RuleInfo(
+        name="Reit",
+        category="construction",
+        description="Reiteration: restate a previously established fact",
+        section="§3.2",
+    ))
+
     # ── Propositions (Book I) ─────────────────────────────────────
     for name, thm in E_THEOREM_LIBRARY.items():
         hyps = ", ".join(str(h) for h in thm.sequent.hypotheses) if thm.sequent.hypotheses else "—"
@@ -939,17 +1036,12 @@ def list_theorem_names() -> List[str]:
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# Legacy-format bridge (Phase 6.5.4)
-#
-# These functions let the UI call into the old parse_proof/ProofChecker
-# pipeline through unified_checker, so no UI file needs to import
-# verifier.parser or verifier.checker directly.
+# Formula parsing
 # ═══════════════════════════════════════════════════════════════════════
 
 def parse_e_formula(text: str, sort_ctx: Optional[Dict[str, Sort]] = None):
     """Parse a System E formula string into a list of literals.
 
-    Replacement for the old ``parse_legacy_formula``.
     Returns a list of ``Literal`` objects or ``None`` on parse error.
     """
     from .e_parser import parse_literal_list, EParseError
@@ -957,23 +1049,3 @@ def parse_e_formula(text: str, sort_ctx: Optional[Dict[str, Sort]] = None):
         return parse_literal_list(text, sort_ctx)
     except EParseError:
         return None
-
-
-# Aliases for backward-compatibility (referenced by smoke tests)
-parse_legacy_formula = parse_e_formula
-
-
-def verify_old_proof_json(proof_json: dict) -> PanelCheckResult:
-    """Thin wrapper around :func:`verify_e_proof_json`.
-
-    Kept for backward-compatibility with tests that import this name.
-    """
-    return verify_e_proof_json(proof_json)
-
-
-def get_legacy_rules() -> List[RuleInfo]:
-    """Return available rules (alias for :func:`get_available_rules`).
-
-    Kept for backward-compatibility with tests that import this name.
-    """
-    return get_available_rules()

@@ -10,7 +10,7 @@ A formal proof verifier for Euclid's *Elements* Book I, implementing three axiom
 # Install dependencies
 pip install -r requirements.txt
 
-# Run all tests (639 tests)
+# Run all tests (~890 tests)
 python -m pytest verifier/tests/ euclid_py/tests/ -v
 
 # Launch the PyQt6 UI
@@ -68,6 +68,17 @@ User writes proof in System E syntax
 ```
 
 The T and H translations happen **invisibly** — the user never sees Tarski's system. This follows GeoCoq's design where proofs are written in Euclid's style but verified through Tarski's axiom system automatically.
+
+## UI Features
+
+The PyQt6 desktop application includes several reference panels accessible via sidebar tabs:
+
+| Tab | Description |
+|-----|-------------|
+| **Diagnostics** | Real-time error and warning display for the current proof |
+| **Rules** | Searchable catalog of all 152 axiom rules grouped by paper section (§3.3–§3.7) plus 48 propositions |
+| **E / T / H** | Side-by-side translation view showing the current proposition in all three formal systems, with structured Given/Prove formatting |
+| **Glossary** | Primitives reference — every formal predicate across Systems E, T, and H with plain English translations (e.g. `on(a, L)` → "Point a lies on line L") |
 
 ## Proposition Library
 
@@ -158,7 +169,7 @@ Euclid/
 │   ├── diagnostics.py            # Shared diagnostic codes and results
 │   ├── _legacy/                  # Deprecated Fitch-style checker (reference only)
 │   ├── examples/                 # Example proof JSON files
-│   └── tests/                    # ~590 pytest tests
+│   └── tests/                    # ~790 pytest tests
 │
 ├── euclid_py/                    # PyQt6 desktop application
 │   ├── __main__.py               # App entry point
@@ -167,7 +178,8 @@ Euclid/
 │   │   ├── proof_panel.py        # Interactive proof editor
 │   │   ├── proof_view.py         # Proof display widget
 │   │   ├── canvas_widget.py      # Geometry diagram canvas
-│   │   ├── rule_reference.py     # Rule reference panel
+│   │   ├── rule_reference.py     # Rule reference panel (152 rules)
+│   │   ├── translation_view.py   # E/T/H translation view + primitives glossary
 │   │   ├── diagnostics_panel.py  # Error/warning display
 │   │   └── summary_panel.py      # Proof summary
 │   ├── engine/
@@ -207,7 +219,7 @@ Euclid/
 
 ### System H Axioms (Hilbert's *Grundlagen*)
 
-Groups I–IV: Incidence (8), Order (4), Congruence (6), Parallels (1) + derived — 39 clauses total.
+Groups I–IV: Incidence (8), Order (4), Congruence (6), Parallels (1) + derived — 40 clauses total.
 
 ## Running Tests
 

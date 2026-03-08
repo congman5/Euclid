@@ -1,0 +1,594 @@
+P. Quaresma and Z. Kovács (Ed.): Automated Deduction
+in Geometry 2023 (ADG 2023).
+EPTCS 398, 2024, pp. 73–84, doi:10.4204/EPTCS.398.11
+© P. Boutry et al.
+This work is licensed under the
+Creative Commons Attribution License.
+Towards an Independent Version of
+Tarski’s System of Geometry
+Pierre Boutry
+Centre Inria d’Université Côte d’Azur, Sophia Antipolis, France
+pierre.boutry@inria.fr
+Stéphane Kastenbaum
+No affiliation
+stephane.kastenbaum@gmail.com
+Clément Saintier
+No affiliation
+clement.saintier@gmail.com
+In 1926–1927, Tarski designed a set of axioms for Euclidean geometry which reached its final form
+in a manuscript by Schwabhäuser, Szmielew and Tarski in 1983. The differences amount to simpli-
+fications obtained by Tarski and Gupta. Gupta presented an independent version of Tarski’s system
+of geometry, thus establishing that his version could not be further simplified without modifying
+the axioms. To obtain the independence of one of his axioms, namely Pasch’s axiom, he proved
+the independence of one of its consequences: the previously eliminated symmetry of betweenness.
+However, an independence model for the non-degenerate part of Pasch’s axiom was provided by
+Szczerba for another version of Tarski’s system of geometry in which the symmetry of betweenness
+holds. This independence proof cannot be directly used for Gupta’s version as the statements of the
+parallel postulate differ.
+In this paper, we present our progress towards obtaining an independent version of a variant of
+Gupta’s system. Compared to Gupta’s version, we split Pasch’s axiom into this previously eliminated
+axiom and its non-degenerate part and change the statement of the parallel postulate. We verified the
+independence properties by mechanizing counter-models using the Coq proof-assistant.
+1
+Introduction
+The independence1 of axioms for geometry has often been an important topic in the field of geometry.
+For centuries, many mathematicians believed that Euclid’s fifth postulate was rather a theorem which
+could be derived from the first four of Euclid’s postulates. History is rich with incorrect proofs of
+Euclid’s fifth postulate. In 1763, Klügel provided, in his dissertation, a survey of about 30 attempts
+to “prove Euclid’s parallel postulate” [13]. The question was finally settled in 1832 and 1840, when
+Bolyai [5] and Lobachevsky [14] exhibited models of hyperbolic geometry, thus establishing that this
+postulate was independent. Later, Hilbert dedicated the second section of his famous Grundlagen der
+Geometrie [12] to independence properties. Then, when working out the final version [22] of the axioms
+for Metamathematische Methoden in der Geometrie [19], commonly referred to as SST, independence
+results proved very helpful.
+So it is a surprise that, now that we have access to tools like proof assistants which we believe to
+be perfectly suited for the task, the only independence to be mechanized was the one for Euclid’s fifth
+postulate [18]. To the best of our knowledge, the most recent work on the topic is the formalization of
+the Poincaré disk model in Isabelle/HOL [20].
+1We recall that an axiom is said to be independent from a set of axiom if it is not derivable from the axioms in this set.
+
+---PAGE---
+74
+Towards an Independent Version of Tarski’s System of Geometry
+In this paper, we study independence properties linked to SST [19]. SST has the advantage of being
+expressed in the first-order language rather than natural language which leaves room for interpretation
+leading to possible problems [8].2 There are several ways to prove independence results [4]. Here we
+focus on independence through counter-model, i.e. constructing a model where the axiom to be proven
+independent will not hold while all the others will.
+In 1965, Gupta presented an independent version of Tarski’s system of geometry [11]. To obtain
+the independence of one of his axioms, namely Pasch’s axiom, he proved the independence of one
+of its consequences: the previously eliminated symmetry of betweenness. However, an independence
+model for the non-degenerate part of Pasch’s axiom was provided by Szczerba for another version of
+Tarski’s system of geometry in which the symmetry of betweenness holds [21]. This independence
+proof cannot be directly used for Gupta’s version as the statements of the parallel postulate differ. This
+can be remedied by carefully choosing the statement of the parallel postulate amongst the ones known
+to be equivalent [7]. We aim to verify that splitting Pasch’s axiom into its non-degenerate part and
+the symmetry of betweenness in addition to changing the statement of the parallel postulate allows to
+obtain a system that is still independent. So we go in the opposite direction of what Makarios did
+by removing the need of the reflexivity properties for congruence thanks to a modification to the five-
+segment property [17]. Indeed, our view is that an axiom should capture a limited and well-defined
+property, instead of trying to minimize the needed number of axioms at any cost.
+We remark that a small change in the statement of an axiom can change whether or not it holds in
+a specific model. This makes a computer very well suited to the verification that an axiom holds in a
+model. So we chose to mechanize the various counter-models needed for this task in the Coq proof-
+assistant [23].
+The rest of the paper is structured as follows. First, in Sec. 2, we present the system we will be
+working on throughout the rest of this paper. Then, in Sec. 3, we show how to build a model of Tarski’s
+axiom. Finally, before concluding on the achieved results, we present an example of independence proof
+in Sec. 4.
+2
+A Variant of Tarski’s System of Geometry
+In this section, we start by recalling the axioms of Tarski’s system of geometry. Then, we present the
+modification Gupta made to it to obtain a fully independent system [11]. Finally, we describe how to
+modify his system to combine his results and the ones from Szczerba [21].
+2.1
+Tarski’s System of Geometry
+Tarski’s axiom system is based on a single primitive type depicting points and two predicates, namely
+congruence and betweenness. AB ≡CD states that the segments AB and CD have the same length.
+A B C means that A, B and C are collinear and B is between A and C (and B may be equal to A or C).
+For an explanation of the axioms and their history see [22]. Table 1 lists the axioms for planar Euclidean
+geometry.
+2A possible interpretation of Hilbert’s axiom could lead to a degenerate model for first two groups of Hilbert’s axioms.
+
+---PAGE---
+P. Boutry et al.
+75
+A1
+Symmetry
+AB≡BA
+A2
+Pseudo-Transitivity
+AB≡CD∧AB≡EF ⇒CD≡EF
+A3
+Cong Identity
+AB≡CC ⇒A = B
+A4
+Segment construction
+∃E,A B E ∧BE ≡CD
+A5
+Five-segment
+AB≡A′B′ ∧BC ≡B′C′∧
+AD≡A′D′ ∧BD≡B′D′∧
+A B C ∧A′ B′ C′ ∧A ̸= B ⇒CD≡C′D′
+A6
+Between Identity
+A B A ⇒A = B
+A7
+Inner Pasch
+A P C ∧B Q C ⇒∃X,P X B∧Q X A
+A8
+Lower Dimension
+∃ABC,¬A B C ∧¬B C A∧¬C A B
+A9
+Upper Dimension
+AP≡AQ∧BP≡BQ∧CP≡CQ∧P ̸= Q ⇒
+A B C ∨B C A∨C A B
+A10
+Euclid
+A D T ∧B D C ∧A ̸= D ⇒
+∃XY,A B X ∧A C Y ∧X T Y
+A11
+Continuity
+(∃A,(∀XY,Ξ(X)∧ϒ(Y) ⇒A X Y)) ⇒
+∃B,(∀XY,Ξ(X)∧ϒ(Y) ⇒X B Y)
+Table 1: Tarski’s axiom system for planar Euclidean geometry.
+2.2
+Gupta’s Contribution
+The problem of the independence of Tarski’s axiom system, as defined in Table 1, remains open. Let
+us introduce the modifications Gupta made to it to obtain an independent system. He reintroduced the
+inner transitivity of betweenness A153 in Table 2. Having added this axiom, the identity axiom for
+betweenness A6 became a theorem and could then be removed from the system. Finally A2, A9 and A11
+are replaced by A2’, A9’ and A11’. We omit the details of how to mechanize in Coq that this system,
+consisting of A1, A2’, A3-A5, A7, A8, A9’, A10, A11’ and A15,4 and Tarski’s system are equivalent.
+Gupta proves that this system is independent. To prove that A7 is independent in this system, he shows
+that A14, a consequence of A7 in this system, does not hold. However, Szczerba [21] found that A7
+does not hold when A14 and all the other axioms, with the exception of A10, in Gupta’s system do. So
+this would suggest that A7 can be split into A14 and a variant of A7 while still having an independent
+system.
+2.3
+An Independent System for Planar Geometry
+The system that we want to prove independent is very close to the one Gupta studied in his thesis [11].
+We split Pasch’s axiom A7 into its non-degenerate part A7’ and A14, change the version of the parallel
+postulate A10 and add one axiom (for reasons explained later). A7’ excludes from A7 the degenerate
+cases where the triangle ABC is flat or when P or Q are respectively not strictly between A and C or B
+and C. We cannot use A10 as it does not hold in the counter-model found by Szczerba [21]. We chose
+Proclus postulate,5 denoted as A10’ in Table 2, verified to be equivalent to it when assuming A0-A9,
+using Coq [7], as it holds in all the counter-models provided by Gupta as well as in the one found by
+3We number them as in [22].
+4Actually the statement for A7 differs in [22] but the change is not important here.
+5Col ABC and AB ∥CD denotes that A, B and C are collinear and that lines AB and CD are parallel according to the
+definitions given in SST [19].
+
+---PAGE---
+76
+Towards an Independent Version of Tarski’s System of Geometry
+A0
+Point equality decidability
+X = Y ∨X ̸= Y
+A2’
+Pseudo-Transitivity
+AB≡EF ∧CD≡EF ⇒AB≡CD
+A7’
+Inner Pasch
+A P C ∧B Q C∧
+A ̸= P∧P ̸= C ∧B ̸= Q∧Q ̸= C∧
+¬(A B C ∨B C A∨C A B) ⇒
+∃X,P X B∧Q X A
+A9’
+Upper Dimension
+AP≡AQ∧BP≡BQ∧CP≡CQ∧
+P ̸= Q∧A ̸= B∧A ̸= C ∧B ̸= C ⇒
+A B C ∨B C A∨C A B
+A10’
+Proclus
+AB∥CD∧Col ABP∧¬Col ABQ ⇒
+∃Y,Col CDY ∧Col PQY
+A11’
+Continuity
+(∃A,(∀XY,Ξ(X)∧ϒ(Y) ⇒A X Y)) ⇒
+∃B,(∀XY,Ξ(X)∧ϒ(Y) ⇒
+X = B∨B = Y ∨X B Y)
+A14
+Between Symmetry
+A B C ⇒C B A
+A15
+Between Inner Transitivity
+A B D∧B C D ⇒A B C
+Table 2: Added axioms to Tarski’s system of geometry.
+Szczerba, thanks to Theorem 1 in [21]. Finally, the formal development found in SST [19] is essentially
+classical due to the many case distinctions found in the proofs of its lemmas. However, the decidability
+of point equality is sufficient to obtain the arithmetization of geometry in an intuitionistic setting [6]. So
+we add the decidability of point equality A0 so that we can work in an intuitionistic setting. The reader
+not familiar with the difference between classical and intuitionistic logic may refer to [1]. This system,
+consisting of A0, A1, A2’, A3-A5, A7’, A8, A9’, A10’, A11’, A14 and A15, and Tarski’s system are
+equivalent. Again, we do not detail how to mechanize this fact in Coq.
+3
+A model of Tarski’s system of geometry
+In this section, we present our proof that Cartesian planes over a Pythagorean ordered field form a model
+of the variant of Tarski’s system of geometry that we have introduced in the previous section. First, we
+present the structure that we used to define this model. Then we define the model that we used, that is,
+the way we instantiated the signature of this system. Finally, we detail the proofs of some of the more
+interesting axioms.
+3.1
+The Real Field Structure
+The structure that was used to define this model was built by Cohen [9]. The real field structure results
+of the addition of operators to a discrete6 field: two boolean comparison functions (for strict and non-
+strict order) and a norm operator. Elements of this real field structure verify the axioms listed in Table 3.
+Finally, the elements of a real field structure are all comparable to zero. We should remark that this field
+is not necessarily Pythagorean. In fact, there is no defined structure in the Mathematical Components li-
+brary [15] for Pythagorean fields. This can however be added much more easily than before thanks to the
+6Discrete fields are fields with a decidable equality.
+
+---PAGE---
+P. Boutry et al.
+77
+Subadditivity of the norm operator
+|x+y| ≤|x|+|y|
+Compatibility of the addition with the strict comparison
+0 < x∧0 < y ⇒0 < x+y
+Definiteness of the norm operator
+|x| = 0 ⇒x = 0
+Comparability of positive numbers
+0 ≤x∧0 ≤y ⇒(x ≤y)||(y ≤x)
+The norm operator is a morphism for the multiplication
+|x∗y| = |x|∗|y|
+Large comparison in terms of the norm
+(x ≤y) = (|y−x| == y−x)7
+Strict comparison in terms of the large comparison
+(x < y) = (y ! = x)&&(x ≤y)
+Table 3: Axioms of the real field structure.
+recent modification of the Mathematical Components library to make use of the Hierarchy Builder [10].
+However, the Pythagorean property is only required for the proof of the segment construction axiom A4.
+So we chose to prove that this axiom holds in our model by admitting an extra axiom which was defined
+in this library: the real closed field axiom. It states that intermediate value property holds for polynomial
+with coefficients in the field. While it is much stronger than Pythagoras’ axiom, we only used it to be
+able to define the square root of a number which is a sum of squares and would therefore have a square
+root in a Pythagorean field. Finally, we did not yet prove that A11 holds in our model since it would
+require a much more involved effort. Indeed, this is similar to verifying that Tarski’s system of geometry
+admits a quantifier elimination procedure.
+3.2
+The Model
+Let us now define our model. Being based on a single primitive type and two predicates, the signature
+of Tarski’s system of geometry is rather simple. However, this system has the advantage of having a
+n-dimensional variant. To obtain this variant, one only needs to change the dimension axioms. So far, we
+have restricted ourselves to the planar version of this system. With a view to extend the GeoCoq library
+to its n-dimensional variant, we wanted to define a model in which we could prove all but the dimension
+axioms in an arbitrary dimension to be able to construct a model of the n-dimensional variant by only
+proving the new dimension axioms. Hence we chose to define Tpoint as a vector of dimension n+1 with
+coefficient in the real field structure F (we used the real field structure for all the development with the
+exception of the proof of the segment construction axiom) for a fixed integer n, that is ’rV[R]_(n.+1).
+We adopted Gupta’s definition [11] for the congruence cong, namely that AB≡CD if the squares of the
+Euclidean norms of B −A and D −C are equal. Actually Gupta also proved that any model of the n-
+dimensional variant of Tarski’s system of geometry is isomorphic to his model. He defined that A B C
+holds if and only if there exists a k ∈F such that 0 ≤k ≤1 and B −A = k(C −A). In fact, if such a k
+exists, it can be computed. By letting A = (ai)1≤i≤n+1, B = (bi)1≤i≤n+1 and C = (ci)1≤i≤n+1, if A ̸= C
+then there exists a i ∈N such that 1 ≤i ≤n + 1 and ai ̸= ci and in this case we set k to bi−ai
+ci−ai and if
+A = C we set k to zero. Therefore we defined a function ratio that computes the possible value for
+k, thus allowing us to define the betweenness by the boolean equality test. This was actually important
+as it permitted to directly manipulate the definition for betweenness by rewriting since we defined it as
+a boolean test. Finally, as it was often necessary to distinguish whether or not A B C holds due to
+a degeneracy, we split the definition bet of the betweenness into two predicates: the first one, betS,
+capturing the general case of k being strictly between 0 and 1 and the second one, betE, capturing the
+three possible degenerate cases, namely either A = B, B = C or A = B and B = C.
+7== denotes the boolean equality test for the elements of the field.
+
+---PAGE---
+78
+Towards an Independent Version of Tarski’s System of Geometry
+Formally, we consider the following model:
+Variable R : realFieldType.
+Variable n : nat.
+Implicit Types (a b c d : ’rV[R]_(n.+1)).
+Definition cong a b c d := (b - a) *m (b - a)^T == (d - c) *m (d - c)^T.
+Definition betE a b c := [ || [ && a == b & b == c ], a == b | b == c ].
+Definition ratio v1 v2 :=
+if [pick k : ’I_(n.+1) | v2 0 k != 0] is Some k
+then v1 0 k / v2 0 k else 0.
+Definition betR a b c := ratio (b - a) (c - a).
+Definition betS a b c (r := betR a b c) :=
+[ && b - a == r *: (c - a), 0 < r & r < 1].
+Definition bet a b c := betE a b c || betS a b c.
+3.3
+Proof that the Axioms hold in the Model
+Now that we have defined the model, we focus on the proof that the axioms of the system from Sec. 2.3
+hold in this model. However, we omit the details of the proofs for axioms A1, A2’, A3 and A14 since
+they are rather straightforward. For the same reason, we do not cover the decidability of point equality
+A0.
+Let us start by focusing on axioms A7’ and A15 as the proofs that they hold in our model are quite
+similar. In the case of axiom A15 we know that A B D and B C D so let k1 ∈F be such that 0 < k1 < 1
+and B−A = k1(D−A) (the degenerate case of this axiom is trivial so we only consider the general case)
+and k2 ∈F be such that 0 < k2 < 1 and C −B = k2(D −B). In order to prove that A B C we need to
+find a k ∈F such that 0 < k < 1 and B −A = k(C −A). By calculation we find that k =
+k1
+k1+k2−k1k2 and
+we can verify that 0 < k < 1. In a similar way, for axiom A7’, we know that A P C and B Q C so
+let k1 ∈F be such that 0 < k1 < 1 and P−A = k1(C −A) (the hypotheses imply that 0 < k1 < 1 because
+A ̸= P and P ̸= C) and k2 ∈F be such that 0 < k2 < 1 and Q −B = k2(C −B). In order to prove that
+there exists a point X such that P X B and Q X A we need to find a k3 ∈F and a k4 ∈F such that
+0 < k3 < 1, 0 < k4 < 1 and k3(B−P)+P = k4(A−Q)+Q. By calculation we find that k3 =
+k1(1−k2)
+k1+k2−k1k2
+and k4 =
+k2(1−k1)
+k1+k2−k1k2 and we can verify that 0 < k3 < 1 and 0 < k4 < 1. In both of these proof, the ratios
+are almost identical to the point that it suffices to prove the following lemma:
+Lemma ratio_bet a b c k1 k2 k3 :
+0 < k1 -> 0 < k2 -> k1 < 1 -> 0 < k3 -> k3 < k1+k2-k1*k2 ->
+b - a == ((k1+k2-k1*k2)/k3)^-1 *: (c - a) -> bet a b c.
+It allows to prove quite easily both of these axioms. For axiom A4, we proceeded in a analogous
+way: it suffices to set the point E that can be constructed using this axiom to ∥D−C∥
+∥B−A∥(B −A) + A and to
+verify this point satisfies the desired properties by calculation.
+
+---PAGE---
+P. Boutry et al.
+79
+We now turn to axiom A5. We followed Makarios’ approach for the proof that this axiom holds in
+our model [16]. In his proof he used the cosine rule: in a triangle whose vertices are the vectors A, B and
+C we have
+∥C −B∥2 = ∥C −A∥2 +∥B−A∥2 −2(B−A)·(C −A).
+As noted by Makarios, using the cosine rule allows to avoid defining angles and properties about them.
+Applying the cosine rule for the triangles BCD and B′C′D′ allows to prove that ∥D −C∥2 = ∥D′ −C′∥2
+by showing that
+(C −B)·(D−B) = (C′ −B′)·(D′ −B′)
+which can be justified, by applying the cosine rule again, this time in the triangles ABD and A′B′D′, if
+∥D−A∥−∥D−B∥−∥A−B∥= ∥D′ −A′∥−∥D′ −B′∥−∥A′ −B′∥
+which we know from the hypotheses and if the ratios corresponding to the betweenness A B C and
+A′ B′ C′ are equal which can be obtained by calculation.
+Next, let us consider axiom A10.8 From the hypotheses we have two ratios k1 ∈F and k2 ∈F such
+that 0 < k1 < 1, 0 < k2 < 1, D−A = k1(T −A) and D−B = k2(C −B). Using these ratios, it suffices to
+define X such that B−A = k1(X −A) and Y such that C −A = k1(Y −A). So we know by construction
+that A B X and A C Y and we easily get that T −X = k2(Y −X) by calculation, thus proving that
+X T Y. Since A10 and A10’ are equivalent when A0, A1, A2’, A3-A5, A7’, A8, A9’, A11’, A14 and
+A15 hold, this allows to prove that A10’ holds in our model.
+Finally the remaining two axioms are treated in a slightly different setting since they are the dimen-
+sion axioms. Formally we fix the value of n to 1. In order to simplify the many rewriting steps needed
+for these proofs we started by establishing the following two lemmas:
+Definition sqr_L2_norm_2D a b :=
+(b 0 0 - a 0 0) ^+ 2 + (b 0 1 - a 0 1) ^+ 2.
+Lemma congP a b c d :
+reflect (sqr_L2_norm_2D a b = sqr_L2_norm_2D c d) (cong a b c d).
+Lemma betSP’ a b c (r := betR a b c) :
+reflect ([ /\ b 0 0 - a 0 0 = r * (c 0 0 - a 0 0),
+b 0 1 - a 0 1 = r * (c 0 1 - a 0 1), 0 < r & r < 1])
+(betS a b c).
+The reader familiar with SSREFLECT will have recognized the reflect predicate, described in [9]
+for example. In practice, these lemmas allowed to spare many steps that would have been repeated in
+almost every proof concerning the dimension axioms. It was much more straightforward to prove that
+axiom A8 holds in our model than for axiom A9’. In fact, it is enough to find three non-collinear points.
+We simply took the points (0,0), (0,1) and (1,0):
+Definition row2 {R : ringType} (a b : R) : ’rV[R]_2 :=
+\row_p [eta \0 with 0 |-> a, 1 |-> b] p.
+8Similarly to A7, when we were proving Euclid’s axiom, we realized that the same kind of distinctions was also needed.
+The degenerate cases are implied by the other betweenness axioms so it suffices to show that A10 holds when the angle ∠BAC
+is non-flat and when D is different from T.
+
+---PAGE---
+80
+Towards an Independent Version of Tarski’s System of Geometry
+Definition a : ’rV[R]_(2) := row2 0 0.
+Definition b : ’rV[R]_(2) := row2 0 1.
+Definition c : ’rV[R]_(2) := row2 1 0.
+It was then an easy matter to verify that axiom A8 holds in our model. For axiom A9, the idea of the
+proof that we formalized was to first show that, by letting M be the midpoint of P and Q, the equation
+(xP −xM)(xM −xX)+(yP −yM)(yM −yX) = 0, capturing the property that the points P, M, and X form a
+right angle with the right angle at vertex M, was verified when X would be equal to A, B or C:
+Lemma cong_perp (a p q : ’rV[R]_(2)) (m := (1 / (1 + 1)) *: (p + q)) :
+cong a p a q ->
+(p 0 0 - m 0 0) * (m 0 0 - a 0 0) +
+(p 0 1 - m 0 1) * (m 0 1 - a 0 1) = 0.
+Next, we demonstrated that for three points A, B and C verifying (xA −xB)(yB −yC)−(yA −yB)(xB −
+xC) = 0 are collinear in the sense that A B C ∨B C A∨C A B:
+Lemma col_2D a b c :
+(a 0 0 - b 0 0) * (b 0 1 - c 0 1) ==
+(a 0 1 - b 0 1) * (b 0 0 - c 0 0) ->
+(bet a b c \/ bet b c a \/ bet c a b).
+Using the equations implied by cong_perp we could derive that
+(xP −xM)(yM −yP)((xA −xB)(yB −yC)−(yA −yB)(xB −xC)) = 0.
+We were then left with three cases: either the abscissas of P and M are equal in which case the ordinate
+of A, B and C were equal thus sufficing to complete the proof, or the ordinates of P and M are equal in
+which case the abscissas of A, B and C were equal thus completing the proof, or (xA −xB)(yB −yC) −
+(yA −yB)(xB −xC) = 0 corresponding to the lemma that we had proved and again allowing to conclude.
+Putting everything together, we could prove that Cartesian planes over a Pythagorean ordered field
+form a model of the variant of Tarski’s system of geometry, thus proving the satisfiability of the theory.9
+Global Instance Rcf_to_T2D : Tarski_2D Rcf_to_T_PED.
+Global Instance Rcf_to_T_euclidean : Tarski_euclidean Rcf_to_T_PED.
+4
+An Example of Independence Proof
+To illustrate how we obtain formal proofs of independence we present an example. We start by defining
+the counter-model we will use to prove the independence of axiom A10’. We then provide the sketch of
+the formal proof.
+9Tarski_euclidean is the type class that captures the theory consisting of axioms A0-A10.
+
+---PAGE---
+P. Boutry et al.
+81
+4.1
+Klein’s Model
+To prove Euclid’s Parallel Postulate independent from the other axiom we work in Klein’s model as
+defined in SST [19]:
+Variable R : realFieldType.
+Variable n : nat.
+Definition Vector := ’rV[R]_(n.+1).
+Definition Point : Type := {p : Vector | (p *m p^T) 0 0 < 1}.
+Notation "#" := proj1_sig.
+Implicit Types (a b c d : Point).
+Implicit Types (v w x y : Vector).
+Definition bet’ a b c := bet (#a) (#b) (#c).
+Definition omd_v v w := (1 - (v *m (w)^T) 0 0).
+Definition cong_v v w x y :=
+(omd_v v w)^+2/(omd_v v v * omd_v w w) ==
+(omd_v x y)^+2/(omd_v x x * omd_v y y).
+Definition cong’ a b c d := cong_v (#a) (#b) (#c) (#d).
+Here, Point is the type of Vector, vectors of dimension n + 1 with coefficient in the real field
+structure, lying inside the unit disk and # the projection allowing to recover the coordinate part of this
+dependent type. In Klein’s model, b is said to be between a and c iff their coordinate parts can be said to
+be bet in the model from Sec. 3 and line-segments ab and cd are said to be congruent iff
+(1−#a·#b)2
+(1−#a·#a)(1−#b·#b) =
+(1−#c·#d)2
+(1−#c·#c)(1−#d ·#d)
+where · denotes the dot product of two vectors.
+4.2
+Independence of Euclid’s Parallel Postulate via Klein’s Model
+Here we only detail the proof that A10’ does not hold in this model. Mechanizing the following proof
+sketch allows to derive.
+Lemma euclid : ~ euclidP (@Point R 1) (@bet’ R 1).
+To make sure that we did not introduce any change in the axioms between the various models we
+relied on predicates such as euclidP, which depend on possibly the type for points and the predicate(s)
+for betweenness and/or congruence.
+Theorem 1. Axiom A10’ does not hold in Klein’s model.
+Proof. Since Klein’s model forms a model of neutral geometry,10 it suffices to prove that any version
+of the parallel postulate, proven equivalent to A10’ in Coq when assuming A0-A9, does not hold. We
+10Neutral geometry is defined by the set of axioms of Euclidean geometry from which the parallel postulate has been re-
+moved.
+
+---PAGE---
+82
+Towards an Independent Version of Tarski’s System of Geometry
+choose to work with A10. Picking a, b, c, d and t to be of coordinates (0,0), (0, 1
+2), (1
+2,0), (1
+4, 1
+4) and
+(1
+2, 1
+2), some computations allow to verify that #a #d #t, #b #d #c b ̸= d, d ̸= c and ¬Col #a#b#c.
+So, to prove that this version does not hold, it is enough to show that for any x and y such that x lies inside
+the unit disk, #a #b #x, #a #c #y and #x #t #y, it holds that y is not a Point, meaning that it lies
+outside the unit disk. Let us first eliminate the case where b = x as it would lead to a contradiction. Here,
+we use the algebraic characterization of collinearity11 to obtain that, if b = x, the ordinate of x would
+need to be equal to both 0 and 1
+2 which is impossible. Now let us pose b′ to be the vector x+a−b. It is
+an easy matter to check that #a #b′ #x so let us pose k1 to be the ratio associated to this betweenness.
+We can verify that k1 ≤1
+2 since x is supposed to belong to the unit disk. We can then take d′ at ratio k1
+from a to t. Applying what was proven to show that A10’ holds in Cartesian planes over a Pythagorean
+ordered field, we can show that y′ at ratio 1
+k1 from a to c is such that #a #c #y′ and #x #t #y′. If we
+can prove that y = y′ we will be done as y′ lies outside of the unit disk because k1 ≤1
+2 so 2 ≤1
+k1 . Finally,
+to prove that y = y′ we can reason by uniqueness of the intersection of lines which is valid in neutral
+geometry.
+5
+Conclusion
+We defined ten out of the eleven counter-models present in Gupta’s thesis [11], thus obtaining the Coq
+formal proof of the independence of ten out of the thirteen axioms of the system presented in Sec. 2.3.
+This seems to indicate that Pasch’s axiom could indeed be split into two meaningfully different parts as
+done in this paper while still having an independent system. However, we will only be sure of this once
+we will have formalized the missing three counter-models. These can be found in Gupta’s thesis [11],
+Szczerba’s paper [21], and Beeson’s section The recursive model in [2].
+Five of the formalized models are finite and the other five are modifications of the model presented
+in Sec. 3. We highlight that, for the latter five, A11’ is not verified for the same reason as for the model
+from Sec. 3.. All these models are available in the GeoCoq library12 and represent about 4k lines of
+formal proof.
+We are currently extending this work by proving the independence of a more constructive version13
+of the axioms which would also allow to capture n-dimensional geometry. For this extension we could
+not rely on A9(n) from [22]. Indeed, we found that it can only be assumed as an upper n-dimensional
+axiom when n = 2 or 3. A9(n) is stated as follows.
+^
+1≤i≤j≤n
+Pi ̸= Pj ∧
+n^
+i=2
+AP1 ≡APi ∧
+n^
+i=2
+BP1 ≡BPi ∧
+n^
+i=2
+CP1 ≡CPi ⇒Col ABC
+By taking Pi = (cos 2iπ
+n ,sin 2iπ
+n ,0,...,0) for 1 ≤i ≤n then (0,0,x3,x4,...,xn) satisfies the premises for
+any x3,x4,...,xn in the standard n-dimensional model while triplets of points of this form are not nec-
+essarily collinear. The various modifications did not allow to reuse some of the counter-models already
+mechanized, so new ones are necessary.
+We are convinced that using a proof-assistant is crucial when proving the independence of a system,
+where small changes in a statement are critical. Actually, there was a typo in Gupta’s counter-model for
+11Here we use the converse of col_2D.
+12http://geocoq.github.io/GeoCoq/
+13We replace point equality decidability by point equality “stability”, namely ∀XY,¬¬X = Y ⇒X = Y, which allows to
+prove equality of points by contradiction but does not allow case distinctions. We do not go as far as in [3] where not even
+“stability” is assumed. We also apply the same modifications made to obtain what is called “continuous Tarski geometry” in [1].
+
+---PAGE---
+P. Boutry et al.
+83
+A2 and we just exhibited a problem with axiom A9(n) from [22]. The GeoCoq library also proved very
+useful as it allowed us to combine the algebraic and geometric14 reasoning.
+Acknowledgments: We would like to thank Marius Hinge for his contribution to the early stage of
+this work.
+References
+[1] Beeson, M.: A Constructive Version of Tarski’s Geometry. Annals of Pure and Applied Logic 166(11),
+1199–1273 (2015). doi:10.1016/j.apal.2015.07.006
+[2] Beeson, M.: Constructive Geometry and the Parallel Postulate. Bulletin of Symbolic Logic 22(1), 1–104
+(2016). doi:10.1017/bsl.2015.41
+[3] Beeson,
+M.:
+Brouwer
+and
+Euclid.
+Indagationes
+Mathematicae
+29(1),
+483–533
+(2018).
+doi:10.1016/j.indag.2017.06.002
+[4] Beeson, M., Boutry, P., Narboux, J.: Herbrand’s theorem and non-Euclidean geometry. The Bulletin of
+Symbolic Logic 21(2), 111–122 (2015). doi:10.1017/bsl.2015.6
+[5] Bolyai, J.: Appendix, Scientiam Spatii absolute veram exhibens: a veritate aut falsitate Axiomatis XI. Eu-
+clidei (a priori haud unquam decidenda) independentem; adjecta ad casum falsitatis, quadratura circuli geo-
+metrica. Auctore Johanne Bolyai de eadem, Geometrarum in Exercitu Caesareo Regio Austriaco Castrensium
+Capitaneo. Coll. Ref. (1832)
+[6] Boutry, P., Braun, G., Narboux, J.: Formalization of the Arithmetization of Euclidean Plane Geometry and
+Applications. Journal of Symbolic Computation (2018). doi:10.1016/j.jsc.2018.04.007
+[7] Boutry, P., Gries, C., Narboux, J., Schreck, P.: Parallel Postulates and Continuity Axioms: A Mechanized
+Study in Intuitionistic Logic Using Coq. Journal of Automated Reasoning (2017), doi:10.1007/s10817-017-
+9422-8
+[8] Braun, G., Boutry, P., Narboux, J.: From Hilbert to Tarski. In: Narboux, J., Schreck, P., Streinu, I. (eds.) Pro-
+ceedings of the Eleventh International Workshop on Automated Deduction in Geometry. pp. 78–96 (2016),
+https://hal.inria.fr/hal-01332044
+[9] Cohen, C.: Formalized algebraic numbers: construction and first-order theory. Theses, Ecole Polytechnique
+X (Nov 2012), https://pastel.archives-ouvertes.fr/pastel-00780446
+[10] Cohen, C., Sakaguchi, K., Tassi, E.: Hierarchy Builder: Algebraic hierarchies Made Easy in Coq with Elpi
+(System Description). In: 5th International Conference on Formal Structures for Computation and Deduction
+(FSCD 2020). vol. 167, pp. 34:1–34:21. Paris, France (Jun 2020). doi:10.4230/LIPIcs.FSCD.2020.34
+[11] Gupta, H.N.: Contributions to the Axiomatic Foundations of Geometry. Ph.D. thesis, University of Califor-
+nia, Berkeley (1965)
+[12] Hilbert, D.: Les fondements de la géométrie. Dunod, Jacques Gabay edn. (1971), edition critique avec intro-
+duction et compléments préparée par Paul Rossier
+[13] Klugel, G.S.: Conatuum praecipuorum theoriam parallelarum demonstrandi recensio. Ph.D. thesis, Schultz,
+Göttingen (1763), German translation available: http://www2.math.uni-wuppertal.de/~volkert/
+versuch.html
+[14] Lobatschewsky, N.: Geometrische Untersuchungen zur Theorie der Parallellinien, pp. 159–223. Springer
+Vienna, Vienna (1985). doi:10.1007/978-3-7091-9511-6_4
+[15] Mahboubi, A., Tassi, E.: Mathematical Components. Zenodo (Sep 2022), doi:10.5281/zenodo.7118596
+[16] Makarios, T.J.M.: A Mechanical Verification of the Independence of Tarski’s Euclidean Axiom. Master’s
+thesis, Victoria University of Wellington (2012)
+14Such as the use of the uniqueness of the intersection in our proof of Theorem 1.
+
+---PAGE---
+84
+Towards an Independent Version of Tarski’s System of Geometry
+[17] Makarios, T.J.M.:
+A further simplification of Tarski’s axioms of geometry. arXiv:
+Logic (2013).
+doi:10.1285/i15900932v33n2p123.
+[18] Narboux, J., Janicic, P., Fleuriot, J.: Computer-assisted Theorem Proving in Synthetic Geometry. In:
+Sitharam, M., John, A.S., Sidman, J. (eds.) Handbook of Geometric Constraint Systems Principles. Dis-
+crete Mathematics and Its Applications, Chapman and Hall/CRC (2018). doi:10.1201/9781315121116-2,
+https://inria.hal.science/hal-01779452
+[19] Schwabhäuser, W., Szmielew, W., Tarski, A.: Metamathematische Methoden in der Geometrie. Springer-
+Verlag (1983)
+[20] Simi´c, D., Mari´c, F., Boutry, P.: Formalization of the Poincaré Disc Model of Hyperbolic Geometry. Journal
+of Automated Reasoning 65(1), 31–73 (Apr 2020). doi:10.1007/s10817-020-09551-2
+[21] Szczerba, L.W.: Independence of Pasch’s axiom. Bull. Acad. Polon. Sci. Sér. Sci. Math. Astronom. Phys. 18,
+491–498 (1970)
+[22] Tarski, A., Givant, S.: Tarski’s System of Geometry. The Bulletin of Symbolic Logic 5(2), 175–214 (1999).
+doi:10.2307/421089
+[23] Team, T.C.D.: The Coq Proof Assistant, version 8.15 (2022), doi:10.5281/zenodo.5846982
+
+---PAGE---

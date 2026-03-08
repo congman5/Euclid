@@ -228,7 +228,7 @@ class _SectionGroup(QWidget):
         visible_count: int, total_count: int, parent=None,
     ):
         super().__init__(parent)
-        self._collapsed = False
+        self._collapsed = True
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -241,34 +241,46 @@ class _SectionGroup(QWidget):
             QFrame {{
                 background: {C.surface};
                 border-bottom: 1px solid {C.border};
-                border-left: 3px solid {badge_color};
+                border-left: 4px solid {badge_color};
             }}
             QFrame:hover {{
                 background: {C.surface_hover};
             }}
         """)
         hdr_layout = QHBoxLayout(self._header)
-        hdr_layout.setContentsMargins(Sp.padding, 8, Sp.padding, 8)
+        hdr_layout.setContentsMargins(16, 8, Sp.padding, 8)
         hdr_layout.setSpacing(8)
 
         # Collapse indicator
-        self._arrow = QLabel("\u25BE")  # ▾
+        self._arrow = QLabel("\u25B8")  # ▸ (starts collapsed)
         self._arrow.setFont(Fonts.ui(11))
-        self._arrow.setStyleSheet(f"color: {C.text_muted};")
+        self._arrow.setStyleSheet(
+            f"color: {C.text_muted}; background: transparent;"
+            f" border: none;"
+        )
         self._arrow.setFixedWidth(14)
         hdr_layout.addWidget(self._arrow)
 
         # Title
         title_lbl = QLabel(title)
         title_lbl.setFont(Fonts.heading(11))
-        title_lbl.setStyleSheet(f"color: {C.text};")
+        title_lbl.setStyleSheet(
+            f"color: {C.text}; background: transparent;"
+            f" border: none;"
+        )
         hdr_layout.addWidget(title_lbl)
 
-        # Section reference
+        # Section reference — styled pill so it doesn't run into the title
         if section_ref:
             ref_lbl = QLabel(section_ref)
-            ref_lbl.setFont(Fonts.ui(10))
-            ref_lbl.setStyleSheet(f"color: {C.text_muted};")
+            ref_lbl.setFont(Fonts.ui(9))
+            ref_lbl.setStyleSheet(f"""
+                color: {C.text_muted};
+                background: {C.bg};
+                border: 1px solid {C.border};
+                border-radius: 3px;
+                padding: 1px 6px;
+            """)
             hdr_layout.addWidget(ref_lbl)
 
         hdr_layout.addStretch()
@@ -280,11 +292,15 @@ class _SectionGroup(QWidget):
             count_text = str(total_count)
         count_badge = QLabel(count_text)
         count_badge.setFont(Fonts.ui(9))
+        count_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        count_badge.setMinimumWidth(28)
+        count_badge.setFixedHeight(20)
         count_badge.setStyleSheet(f"""
-            background: {C.border};
-            color: {C.text_secondary};
-            border-radius: 8px;
-            padding: 2px 8px;
+            background: {badge_color};
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0px 8px;
         """)
         hdr_layout.addWidget(count_badge)
 
@@ -293,6 +309,7 @@ class _SectionGroup(QWidget):
 
         # ── Card container ────────────────────────────────────────
         self._card_container = QWidget()
+        self._card_container.setVisible(False)
         self._card_layout = QVBoxLayout(self._card_container)
         self._card_layout.setContentsMargins(0, 0, 0, 0)
         self._card_layout.setSpacing(0)
@@ -327,30 +344,50 @@ class _RuleCard(QFrame):
                 background: {C.surface_hover};
             }}
         """)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(Sp.padding + 14, 6, Sp.padding, 6)
-        layout.setSpacing(2)
+        badge_color = _BADGE_COLORS.get(category, C.primary)
 
-        # Top row: name + category badge
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 6, Sp.padding, 6)
+        layout.setSpacing(3)
+
+        # Top row: letter badge + name + section ref
         top = QHBoxLayout()
         top.setSpacing(6)
 
+        _CAT_LETTERS = {
+            "construction": "C",
+            "diagrammatic": "D",
+            "metric": "M",
+            "transfer": "T",
+            "superposition": "S",
+            "proposition": "P",
+            "lemma": "L",
+        }
+        letter = _CAT_LETTERS.get(category, "?")
+        badge = QLabel(letter)
+        badge.setFont(Fonts.ui(8))
+        badge.setFixedWidth(18)
+        badge.setFixedHeight(18)
+        badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        badge.setStyleSheet(
+            f"background: {badge_color}; color: white;"
+            f" border-radius: 3px; font-weight: bold;"
+        )
+        top.addWidget(badge)
+
         nm = QLabel(name)
-        nm.setFont(Fonts.ui_bold(11))
+        nm.setFont(Fonts.ui_bold(10))
         nm.setStyleSheet(f"color: {C.text}; background: transparent;")
         top.addWidget(nm)
 
-        badge_color = _BADGE_COLORS.get(category, C.primary)
-        badge = QLabel(category.upper())
-        badge.setFont(Fonts.ui(8))
-        badge.setFixedHeight(16)
-        badge.setStyleSheet(f"""
-            background: {badge_color};
-            color: white;
-            border-radius: 3px;
-            padding: 1px 5px;
-        """)
-        top.addWidget(badge)
+        if section:
+            sec_lbl = QLabel(section)
+            sec_lbl.setFont(Fonts.ui(8))
+            sec_lbl.setStyleSheet(
+                f"color: {C.text_muted}; background: transparent;"
+            )
+            top.addWidget(sec_lbl)
+
         top.addStretch()
         layout.addLayout(top)
 
@@ -361,23 +398,26 @@ class _RuleCard(QFrame):
             stmt = QLabel(lines[0])
             stmt.setFont(Fonts.ui(10))
             stmt.setStyleSheet(
-                f"color: {C.text_secondary}; background: transparent;"
+                f"color: {C.text}; background: transparent;"
+                f" padding-left: 24px;"
             )
             stmt.setWordWrap(True)
             layout.addWidget(stmt)
-            # Line 2: formal sequent (smaller, muted)
-            seq = QLabel(lines[1])
+            # Line 2+: formal sequent (smaller, muted)
+            seq = QLabel("\n".join(lines[1:]))
             seq.setFont(Fonts.formula(9))
             seq.setStyleSheet(
                 f"color: {C.text_muted}; background: transparent;"
+                f" padding-left: 24px;"
             )
             seq.setWordWrap(True)
             layout.addWidget(seq)
         else:
             desc_lbl = QLabel(description)
-            desc_lbl.setFont(Fonts.formula(10))
+            desc_lbl.setFont(Fonts.ui(10))
             desc_lbl.setStyleSheet(
-                f"color: {C.text_secondary}; background: transparent;"
+                f"color: {C.text}; background: transparent;"
+                f" padding-left: 24px;"
             )
             desc_lbl.setWordWrap(True)
             layout.addWidget(desc_lbl)

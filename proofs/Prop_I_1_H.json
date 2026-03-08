@@ -1,0 +1,91 @@
+{
+  "name": "Prop.I.1 (Hilbert)",
+  "declarations": {
+    "points": ["a", "b", "c"],
+    "lines": [],
+    "circles": ["α", "β"]
+  },
+  "premises": [
+    "¬(a = b)"
+  ],
+  "goal": "CongH(a, b, a, c), CongH(a, b, b, c), ¬(c = a), ¬(c = b)",
+  "lines": [
+    {
+      "id": 1,
+      "depth": 0,
+      "statement": "¬(a = b)",
+      "justification": "Given",
+      "refs": []
+    },
+    {
+      "id": 2,
+      "depth": 0,
+      "statement": "center(a, α), on(b, α)",
+      "justification": "let-circle",
+      "refs": [1]
+    },
+    {
+      "id": 3,
+      "depth": 0,
+      "statement": "center(b, β), on(a, β)",
+      "justification": "let-circle",
+      "refs": [1]
+    },
+    {
+      "id": 4,
+      "depth": 0,
+      "statement": "intersects(α, β)",
+      "justification": "Diagrammatic",
+      "refs": [2, 3]
+    },
+    {
+      "id": 5,
+      "depth": 0,
+      "statement": "on(c, α), on(c, β)",
+      "justification": "let-intersection-circle-circle-one",
+      "refs": [4]
+    },
+    {
+      "id": 6,
+      "depth": 0,
+      "statement": "ac = ab",
+      "justification": "Transfer",
+      "refs": [2, 5]
+    },
+    {
+      "id": 7,
+      "depth": 0,
+      "statement": "bc = ba",
+      "justification": "Transfer",
+      "refs": [3, 5]
+    },
+    {
+      "id": 8,
+      "depth": 0,
+      "statement": "CongH(a, b, a, c)",
+      "justification": "Metric",
+      "refs": [6]
+    },
+    {
+      "id": 9,
+      "depth": 0,
+      "statement": "CongH(a, b, b, c)",
+      "justification": "Metric",
+      "refs": [7, 8]
+    },
+    {
+      "id": 10,
+      "depth": 0,
+      "statement": "¬(c = a)",
+      "justification": "Metric",
+      "refs": [8]
+    },
+    {
+      "id": 11,
+      "depth": 0,
+      "statement": "¬(c = b)",
+      "justification": "Metric",
+      "refs": [9]
+    }
+  ]
+}

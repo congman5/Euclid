@@ -1,19 +1,16 @@
 ﻿"""Proof Panel -- PyQt6 Fitch-style proof journal.
 
-True Fitch-style proof display:
+Direct-style proof display for System E (no subproofs needed):
   - Each proof line is an inline-editable widget row
-  - Scope bars painted on the left for subproof nesting
   - Rule dropdown on each line opens a popup picker (System E rules)
   - Refs box next to the rule on each line
   - Insert bar between lines to add new steps
-  - Subproofs: button opens a new scope with Assume line
   - Predicate palette aligned to System E syntax (§3.3-§3.7)
   - Declarations row (Points / Lines)
   - Premises section with formal predicates
   - Goals / conclusion with turnstile
   - Eval Step / Eval All wired to verifier via unified_checker
   - Undo / redo (30 levels)
-  - Save / Load proof JSON
 
 Phase 9.1 of the implementation plan.
 """
@@ -62,8 +59,6 @@ def _build_rule_groups():
     return groups
 
 
-_RULE_KIND_MAP = {}  # Kept empty — legacy mapping no longer needed
-
 RULE_GROUPS = _build_rule_groups()
 
 ALL_RULE_NAMES = []
@@ -75,15 +70,16 @@ for _rules in RULE_GROUPS.values():
 # PREDICATE PALETTE
 # ===================================================================
 
-CONNECTIVES = ["\u2227", "\u2228", "\u00ac", "\u2194",
-               "\u22a5", "=", "\u2260", "\u2203", "\u2203!", "\u2200", "(", ")", ","]
+CONNECTIVES = ["\u2227", "\u00ac",
+               "=", "\u2260", "<", ">",
+               "(", ")",
+               "\u25b3"]
 CONNECTIVE_MAP = {
-    "\u2227": " \u2227 ", "\u2228": " \u2228 ", "\u00ac": "\u00ac",
-    "\u2194": " \u2194 ",
-    "\u22a5": "\u22a5", "=": " = ", "\u2260": " \u2260 ",
-    "\u2203": "\u2203", "\u2203!": "\u2203!",
-    "\u2200": "\u2200",
-    "(": "(", ")": ")", ",": ", ",
+    "\u2227": " \u2227 ", "\u00ac": "\u00ac",
+    "=": " = ", "\u2260": " \u2260 ",
+    "<": " < ", ">": " > ",
+    "(": "(", ")": ")",
+    "\u25b3": "\u25b3",
 }
 
 PREDICATES = [
@@ -110,12 +106,8 @@ PREDICATES = [
     ("△", "△"),
 ]
 
-# Greek letters for geometric proofs (circles, angles, etc.)
-GREEK_LETTERS = [
-    "α", "β", "γ", "δ", "ε", "ζ", "η", "θ",
-    "ι", "κ", "λ", "μ", "ν", "ξ", "ρ",
-    "σ", "τ", "φ", "χ", "ψ", "ω",
-]
+# Greek letters for circle naming in System E
+GREEK_LETTERS = ["α", "β", "γ"]
 
 
 # ===================================================================
@@ -222,15 +214,16 @@ class FitchLineWidget(QFrame):
         is_assume = step.justification == "Assume"
 
         # Rule dropdown button (visible arrow)
-        self._rule_btn = QPushButton("\u25bc")
+        self._rule_btn = QPushButton("\u25be")
         self._rule_btn.setFont(_FONT_SMALL)
         self._rule_btn.setFixedSize(22, 22)
         self._rule_btn.setObjectName("rule_drop_btn")
         self._rule_btn.setStyleSheet(
-            "#rule_drop_btn { background:#e8ede8; border:1px solid #c8d0c8;"
-            " border-radius:3px; color:" + _TEXT_GREEN + "; font-size:10px; }"
-            "#rule_drop_btn:hover { background:#d0e0d0;"
-            " border-color:#388c6b; }")
+            "#rule_drop_btn{background:#e8ede8;border:1px solid #c8d0c8;"
+            "border-radius:3px;color:" + _TEXT_GREEN + ";font-size:12px;"
+            "padding:0px;}"
+            "#rule_drop_btn:hover{background:#d0e0d0;"
+            "border-color:#388c6b;}")
         self._rule_btn.clicked.connect(self._show_rule_menu)
         if is_assume:
             self._rule_btn.setVisible(False)
@@ -619,7 +612,6 @@ class ProofPanel(QWidget):
         self._proof_name = "workspace_proof"
         self._selected = -1
         self._selected_prem = -1  # index into self._premises
-        self._current_depth = 0
         self._undo_stack = []
         self._redo_stack = []
         self._decl_points = []
@@ -654,6 +646,11 @@ class ProofPanel(QWidget):
         lbl.setFont(_HEADER_FONT)
         lbl.setStyleSheet("color:#1a1a2e;")
         row1.addWidget(lbl)
+        self._count_label = QLabel("")
+        self._count_label.setFont(_FONT_SMALL)
+        self._count_label.setStyleSheet(
+            "color:#5a5a72;font-size:11px;padding:0 4px;")
+        row1.addWidget(self._count_label)
         row1.addStretch()
         for text, tip, cb in [
             ("Eval", "Evaluate selected step", self._eval_selected),
@@ -667,15 +664,30 @@ class ProofPanel(QWidget):
                 "QPushButton:hover{background:#2e7358;}")
             b.clicked.connect(cb)
             row1.addWidget(b)
-        self._count_label = QLabel("")
-        self._count_label.setFont(_FONT_SMALL)
-        self._count_label.setStyleSheet(
-            "color:#5a5a72;font-size:11px;padding:0 4px;")
-        row1.addWidget(self._count_label)
         hvbox.addLayout(row1)
-        # Row 2: file / edit buttons
+
+        # Row 2: E/T/H system switchers (left) + file/edit buttons (right)
         row2 = QHBoxLayout()
         row2.setSpacing(3)
+        _sys_colors = {"E": "#2d70b3", "T": "#7b3fa0", "H": "#c06020"}
+        _sys_labels = {"E": "System E (Euclid)",
+                       "T": "System T (Tarski)",
+                       "H": "System H (Hilbert)"}
+        for sk in ("E", "T", "H"):
+            sc = _sys_colors[sk]
+            sb = QPushButton(sk)
+            sb.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
+            sb.setFixedHeight(22)
+            sb.setFixedWidth(28)
+            sb.setToolTip(f"Switch proof to {_sys_labels[sk]}")
+            sb.setStyleSheet(
+                f"QPushButton{{background:{sc};color:white;border:none;"
+                f"border-radius:3px;font-weight:bold;font-size:11px;"
+                f"padding:0px;}}"
+                f"QPushButton:hover{{background:#1a1a2e;}}")
+            sb.clicked.connect(
+                lambda _, s=sk: self.switch_system(s))
+            row2.addWidget(sb)
         row2.addStretch()
         _btn_style = (
             "QPushButton{background:transparent;color:#5a5a72;"
@@ -686,8 +698,6 @@ class ProofPanel(QWidget):
         for text_label, tip, cb in [
             ("Undo", "Undo (Ctrl+Z)", self._undo),
             ("Redo", "Redo (Ctrl+Y)", self._redo),
-            ("Save", "Save proof JSON (Ctrl+S)", self._save_proof),
-            ("Load", "Load proof JSON", self._load_proof),
             ("Lemma", "Load a verified proof as a lemma", self._load_lemma),
         ]:
             b = QPushButton(text_label)
@@ -724,6 +734,8 @@ class ProofPanel(QWidget):
             b = QPushButton(sym)
             b.setFixedHeight(20)
             b.setFont(_FONT_SMALL)
+            b.setStyleSheet(
+                "padding:0px 3px;font-size:11px;min-width:0px;")
             ins = CONNECTIVE_MAP.get(sym, sym)
             b.clicked.connect(
                 lambda _, t=ins: self._insert_into_focused(t))
@@ -736,53 +748,300 @@ class ProofPanel(QWidget):
             b.setFixedHeight(20)
             b.setFont(_FONT_SMALL)
             b.setToolTip(letter)
+            b.setStyleSheet(
+                "padding:0px 3px;font-size:11px;min-width:0px;")
             b.clicked.connect(
                 lambda _, t=letter: self._insert_into_focused(t))
             row = 1 + col // cols_per_row
             sym_grid.addWidget(b, row, col % cols_per_row)
             col += 1
         pl.addLayout(sym_grid)
-
-        # Grid for predicates (use fewer columns so buttons aren't squished)
-        pred_cols = min(cols_per_row, 5)
-        pred_grid = QGridLayout()
-        pred_grid.setSpacing(2)
-        pred_grid.setContentsMargins(0, 0, 0, 0)
-        for i, (name, tmpl) in enumerate(PREDICATES):
-            b = QPushButton(name)
-            b.setToolTip(tmpl)
-            b.setFont(QFont("Segoe UI", 8))
-            b.setFixedHeight(18)
-            b.setSizePolicy(QSizePolicy.Policy.Preferred,
-                            QSizePolicy.Policy.Fixed)
-            b.setMinimumWidth(b.fontMetrics().horizontalAdvance(name) + 12)
-            b.clicked.connect(
-                lambda _, t=tmpl: self._insert_into_focused(t))
-            pred_grid.addWidget(b, i // pred_cols, i % pred_cols)
-        pl.addLayout(pred_grid)
         root.addWidget(palette)
 
-        # -- Lemma section (collapsible list of loaded lemmas) --
+        # -- Glossary (E / T / H collapsible tabs with flow buttons) --
+        self._glossary_frame = QFrame()
+        self._glossary_frame.setObjectName("glossary_frame")
+        self._glossary_frame.setStyleSheet(
+            "#glossary_frame { background:#eef0f5;"
+            " border-bottom:1px solid #c0c2c8; }"
+            "#glossary_frame QLabel { background:transparent; }"
+            "#glossary_frame QPushButton { background:#f7f8fa; color:#1a1a2e;"
+            " border:1px solid #c0c2c8; border-radius:3px;"
+            " padding:0px 3px; font-size:10px; min-width:0px; }"
+            "#glossary_frame QPushButton:hover { background:#dce0e8;"
+            " border-color:#888; }")
+        glossary_vbox = QVBoxLayout(self._glossary_frame)
+        glossary_vbox.setContentsMargins(8, 4, 8, 4)
+        glossary_vbox.setSpacing(0)
+
+        # Header row (clickable to expand/collapse the whole glossary)
+        glossary_hdr = QFrame()
+        glossary_hdr.setCursor(
+            __import__("PyQt6.QtGui", fromlist=["QCursor"]).QCursor(
+                Qt.CursorShape.PointingHandCursor))
+        glossary_hdr.setStyleSheet("background:transparent;")
+        ghdr_row = QHBoxLayout(glossary_hdr)
+        ghdr_row.setContentsMargins(0, 2, 0, 2)
+        ghdr_row.setSpacing(4)
+        self._glossary_arrow = QLabel("\u25b8")
+        self._glossary_arrow.setFont(QFont("Segoe UI", 10))
+        self._glossary_arrow.setStyleSheet("color:#5a5a72;")
+        self._glossary_arrow.setFixedWidth(14)
+        ghdr_row.addWidget(self._glossary_arrow)
+        glossary_title = QLabel("Glossary")
+        glossary_title.setFont(QFont("Segoe UI", 10))
+        glossary_title.setStyleSheet("color:#5a5a72;")
+        ghdr_row.addWidget(glossary_title)
+        ghdr_row.addStretch()
+        glossary_vbox.addWidget(glossary_hdr)
+
+        # Glossary body (starts hidden)
+        self._glossary_body = QWidget()
+        self._glossary_body.setVisible(False)
+        gbody = QVBoxLayout(self._glossary_body)
+        gbody.setContentsMargins(0, 4, 0, 2)
+        gbody.setSpacing(0)
+
+        # ── Flow layout helper ──
+        from PyQt6.QtWidgets import QLayout as _QLayout
+        from PyQt6.QtCore import QRect as _QRect, QSize as _QSize
+
+        class _FlowLayout(_QLayout):
+            """Flow layout that wraps widgets to the next row."""
+            def __init__(self, parent=None, h_spacing=4, v_spacing=4):
+                super().__init__(parent)
+                self._items = []
+                self._h_sp = h_spacing
+                self._v_sp = v_spacing
+
+            def addItem(self, item):
+                self._items.append(item)
+
+            def count(self):
+                return len(self._items)
+
+            def itemAt(self, index):
+                if 0 <= index < len(self._items):
+                    return self._items[index]
+                return None
+
+            def takeAt(self, index):
+                if 0 <= index < len(self._items):
+                    return self._items.pop(index)
+                return None
+
+            def hasHeightForWidth(self):
+                return True
+
+            def heightForWidth(self, width):
+                return self._do_layout(_QRect(0, 0, width, 0), True)
+
+            def setGeometry(self, rect):
+                super().setGeometry(rect)
+                self._do_layout(rect, False)
+
+            def sizeHint(self):
+                return self.minimumSize()
+
+            def minimumSize(self):
+                s = _QSize(0, 0)
+                for item in self._items:
+                    s = s.expandedTo(item.minimumSize())
+                return s
+
+            def _do_layout(self, rect, test):
+                x = rect.x()
+                y = rect.y()
+                row_h = 0
+                for item in self._items:
+                    w = item.sizeHint().width()
+                    h = item.sizeHint().height()
+                    if x + w > rect.right() and row_h > 0:
+                        x = rect.x()
+                        y += row_h + self._v_sp
+                        row_h = 0
+                    if not test:
+                        item.setGeometry(_QRect(x, y, w, h))
+                    x += w + self._h_sp
+                    row_h = max(row_h, h)
+                return y + row_h - rect.y()
+
+        def _make_section(parent_layout, sys_label, color, buttons):
+            """Create a collapsible section with a badge header and flow buttons."""
+            section = QWidget()
+            sec_lay = QVBoxLayout(section)
+            sec_lay.setContentsMargins(0, 0, 0, 0)
+            sec_lay.setSpacing(0)
+
+            # Clickable header row: arrow + badge + label
+            hdr = QFrame()
+            hdr.setCursor(
+                __import__("PyQt6.QtGui", fromlist=["QCursor"]).QCursor(
+                    Qt.CursorShape.PointingHandCursor))
+            hdr.setStyleSheet("background:transparent;")
+            hdr_row = QHBoxLayout(hdr)
+            hdr_row.setContentsMargins(0, 3, 0, 3)
+            hdr_row.setSpacing(4)
+
+            arrow = QLabel("\u25b8")
+            arrow.setFont(QFont("Segoe UI", 9))
+            arrow.setStyleSheet("color:#5a5a72;")
+            arrow.setFixedWidth(12)
+            hdr_row.addWidget(arrow)
+
+            badge = QLabel(sys_label)
+            badge.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
+            badge.setFixedHeight(16)
+            badge.setFixedWidth(20)
+            badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            badge.setStyleSheet(
+                f"background:{color}; color:white; border:none;"
+                " border-radius:3px; padding:0px 2px;")
+            hdr_row.addWidget(badge)
+
+            _SYS_NAMES = {"E": "System E (Euclid)",
+                          "T": "System T (Tarski)",
+                          "H": "System H (Hilbert)"}
+            title = QLabel(_SYS_NAMES.get(sys_label, sys_label))
+            title.setFont(QFont("Segoe UI", 9))
+            title.setStyleSheet("color:#3a3a50;")
+            hdr_row.addWidget(title)
+            hdr_row.addStretch()
+            sec_lay.addWidget(hdr)
+
+            # Button body (starts collapsed)
+            body = QWidget()
+            body.setVisible(False)
+            flow = _FlowLayout(body, h_spacing=4, v_spacing=4)
+            for label, tmpl in buttons:
+                b = QPushButton(label)
+                b.setToolTip(tmpl)
+                b.setFont(_FONT_SMALL)
+                b.setFixedHeight(20)
+                b.setStyleSheet(
+                    f"QPushButton {{ border-left: 3px solid {color}; }}")
+                b.clicked.connect(
+                    lambda _, t=tmpl: self._insert_into_focused(t))
+                flow.addWidget(b)
+            body.setLayout(flow)
+            sec_lay.addWidget(body)
+
+            def _toggle(event=None):
+                vis = not body.isVisible()
+                body.setVisible(vis)
+                arrow.setText("\u25be" if vis else "\u25b8")
+
+            hdr.mousePressEvent = _toggle
+            parent_layout.addWidget(section)
+
+        # ── System E ──
+        _make_section(gbody, "E", "#2d70b3", [
+            ("on(a,L)",            "on(,)"),
+            ("on(a,\u03b1)",       "on(,)"),
+            ("center(a,\u03b1)",   "center(,)"),
+            ("inside(a,\u03b1)",   "inside(,)"),
+            ("between(a,b,c)",     "between(,,)"),
+            ("same-side(a,b,L)",   "same-side(,,)"),
+            ("diff-side(a,b,L)",   "diff-side(,,)"),
+            ("intersects(L,\u03b1)", "intersects(,)"),
+            ("\u00acintersects",   "\u00acintersects(,)"),
+            ("right-angle",        "right-angle"),
+            ("let L=line",         "let L be line(,)"),
+            ("let \u03b1=circle",  "let \u03b1 be circle(,)"),
+            ("\u2220abc=\u2220def", "\u2220 = \u2220"),
+            ("\u2220abc<\u2220def", "\u2220 < \u2220"),
+            ("ab+bc=ac",           " + = "),
+            ("\u25b3abc=\u25b3def", "\u25b3 = \u25b3"),
+        ])
+
+        # ── System T ──
+        _make_section(gbody, "T", "#7b3fa0", [
+            ("B(a,b,c)",        "B(,,)"),
+            ("Cong(a,b,c,d)",   "Cong(,,,)"),
+            ("Eq(a,b)",         "Eq(,)"),
+            ("Neq(a,b)",        "Neq(,)"),
+            ("NotB(a,b,c)",     "NotB(,,)"),
+            ("NotCong(a,b,c,d)","NotCong(,,,)"),
+        ])
+
+        # ── System H ──
+        _make_section(gbody, "H", "#c06020", [
+            ("IncidL(a,l)",     "IncidL(,)"),
+            ("BetH(a,b,c)",     "BetH(,,)"),
+            ("CongH(a,b,c,d)",  "CongH(,,,)"),
+            ("CongaH(a,b,c,d,e,f)", "CongaH(,,,,,)"),
+            ("SameSideH(a,b,l)","SameSideH(,,)"),
+            ("ColH(a,b,c)",     "ColH(,,)"),
+            ("Para(l,m)",       "Para(,)"),
+            ("EqPt(a,b)",       "EqPt(,)"),
+            ("EqL(l,m)",        "EqL(,)"),
+        ])
+
+        glossary_vbox.addWidget(self._glossary_body)
+        root.addWidget(self._glossary_frame)
+
+        def _toggle_glossary(event=None):
+            vis = not self._glossary_body.isVisible()
+            self._glossary_body.setVisible(vis)
+            self._glossary_arrow.setText("\u25be" if vis else "\u25b8")
+
+        glossary_hdr.mousePressEvent = _toggle_glossary
+
+        # -- Lemma section (collapsible, matching glossary style) --
         self._lemma_frame = QFrame()
         self._lemma_frame.setObjectName("lemma_frame")
         self._lemma_frame.setStyleSheet(
             "#lemma_frame { background:#eef0f5;"
             " border-bottom:1px solid #c0c2c8; }"
             "#lemma_frame QLabel { background:transparent; }")
-        self._lemma_layout = QVBoxLayout(self._lemma_frame)
-        self._lemma_layout.setContentsMargins(8, 4, 8, 4)
+        lemma_outer = QVBoxLayout(self._lemma_frame)
+        lemma_outer.setContentsMargins(8, 4, 8, 4)
+        lemma_outer.setSpacing(0)
+
+        # Clickable header row
+        lemma_hdr = QFrame()
+        lemma_hdr.setCursor(
+            __import__("PyQt6.QtGui", fromlist=["QCursor"]).QCursor(
+                Qt.CursorShape.PointingHandCursor))
+        lemma_hdr.setStyleSheet("background:transparent;")
+        lhdr_row = QHBoxLayout(lemma_hdr)
+        lhdr_row.setContentsMargins(0, 2, 0, 2)
+        lhdr_row.setSpacing(4)
+        self._lemma_arrow = QLabel("\u25b8")
+        self._lemma_arrow.setFont(QFont("Segoe UI", 10))
+        self._lemma_arrow.setStyleSheet("color:#5a5a72;")
+        self._lemma_arrow.setFixedWidth(14)
+        lhdr_row.addWidget(self._lemma_arrow)
+        lemma_title = QLabel("Lemmas")
+        lemma_title.setFont(QFont("Segoe UI", 10))
+        lemma_title.setStyleSheet("color:#5a5a72;")
+        lhdr_row.addWidget(lemma_title)
+        lhdr_row.addStretch()
+        lemma_outer.addWidget(lemma_hdr)
+
+        # Collapsible body (starts hidden)
+        self._lemma_body = QWidget()
+        self._lemma_body.setVisible(False)
+        self._lemma_layout = QVBoxLayout(self._lemma_body)
+        self._lemma_layout.setContentsMargins(0, 4, 0, 2)
         self._lemma_layout.setSpacing(2)
-        lemma_header = QLabel("Lemmas")
-        lemma_header.setFont(QFont("Segoe UI", 10))
-        lemma_header.setStyleSheet("color:#5a5a72;")
-        self._lemma_layout.addWidget(lemma_header)
         self._lemma_list_container = QVBoxLayout()
         self._lemma_list_container.setSpacing(2)
         self._lemma_layout.addLayout(self._lemma_list_container)
-        self._lemma_empty_label = QLabel("No lemmas loaded. Click Lemma to add one.")
+        self._lemma_empty_label = QLabel(
+            "No lemmas loaded. Click Lemma to add one.")
         self._lemma_empty_label.setFont(QFont("Segoe UI", 9))
-        self._lemma_empty_label.setStyleSheet("color:#aaa; font-style:italic;")
+        self._lemma_empty_label.setStyleSheet(
+            "color:#aaa; font-style:italic;")
         self._lemma_list_container.addWidget(self._lemma_empty_label)
+        lemma_outer.addWidget(self._lemma_body)
+
+        def _toggle_lemmas(event=None):
+            vis = not self._lemma_body.isVisible()
+            self._lemma_body.setVisible(vis)
+            self._lemma_arrow.setText("\u25be" if vis else "\u25b8")
+
+        lemma_hdr.mousePressEvent = _toggle_lemmas
         root.addWidget(self._lemma_frame)
 
         # -- Declarations (hidden, used internally for verifier) --
@@ -808,68 +1067,30 @@ class ProofPanel(QWidget):
         self._scroll.setWidget(self._lines_container)
         root.addWidget(self._scroll, stretch=1)
 
-        # -- Bottom toolbar --
-        btm = QFrame()
-        btm.setObjectName("proof_btm_bar")
-        btm.setStyleSheet(
-            "#proof_btm_bar { background:#e4e6ea;"
-            " border-top:1px solid #c0c2c8; }")
-        bl = QHBoxLayout(btm)
-        bl.setContentsMargins(10, 4, 10, 4)
-        bl.setSpacing(8)
-        btn_sub = QPushButton("\u25b6 Subproof")
-        btn_sub.setObjectName("btn_subproof")
-        btn_sub.setFont(_FONT_SMALL)
-        btn_sub.setStyleSheet(
-            "#btn_subproof{background:" + _BG_LINE + ";border:1px solid #388c6b;"
-            "border-radius:3px;padding:3px 10px;"
-            "font-size:11px;color:#388c6b;}"
-            "#btn_subproof:hover{background:#d8eed8;}")
-        btn_sub.clicked.connect(self._open_subproof)
-        btn_close = QPushButton("\u25c0 Close")
-        btn_close.setObjectName("btn_close_sub")
-        btn_close.setFont(_FONT_SMALL)
-        btn_close.setStyleSheet(
-            "#btn_close_sub{background:" + _BG_LINE + ";border:1px solid #c0c2c8;"
-            "border-radius:3px;padding:3px 10px;font-size:11px;}"
-            "#btn_close_sub:hover{background:#e0e2e8;}")
-        btn_close.clicked.connect(self._close_subproof)
-        bl.addWidget(btn_sub)
-        bl.addWidget(btn_close)
-        bl.addStretch()
-        root.addWidget(btm)
-
-        # -- Goals --
+        # -- Goal (single compact row: label ⊢ input status) --
         goal_frame = QFrame()
         goal_frame.setObjectName("goal_frame")
         goal_frame.setStyleSheet(
             "#goal_frame { background:#e8e8ee;"
             " border-top:1px solid #c0c2c8; }"
             "#goal_frame QLabel { background:transparent; }")
-        gl = QVBoxLayout(goal_frame)
-        gl.setContentsMargins(10, 6, 10, 6)
-        gh = QLabel("Goals")
-        gh.setFont(QFont("Segoe UI", 10))
-        gh.setStyleSheet("color:#5a5a72;")
-        gh.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        gl.addWidget(gh)
-        # Goal row with turnstile and status
-        goal_row = QHBoxLayout()
-        goal_row.setSpacing(8)
-        # Turnstile image-like label
-        turnstile = QLabel("\u22a2")
-        turnstile.setFont(QFont("Segoe UI", 16))
-        turnstile.setStyleSheet("color:#888; background:transparent;")
-        turnstile.setFixedWidth(28)
-        goal_row.addWidget(turnstile)
+        goal_row = QHBoxLayout(goal_frame)
+        goal_row.setContentsMargins(8, 4, 8, 4)
+        goal_row.setSpacing(4)
+        goal_lbl = QLabel("\u22a2")
+        goal_lbl.setFont(QFont("Segoe UI", 14))
+        goal_lbl.setStyleSheet("color:#5a5a72;")
+        goal_lbl.setFixedWidth(22)
+        goal_lbl.setToolTip("Goal / conclusion")
+        goal_row.addWidget(goal_lbl)
         self._goal_edit = QLineEdit("")
         self._goal_edit.setFont(_FONT)
         self._goal_edit.setFrame(False)
         self._goal_edit.setObjectName("goal_edit")
-        self._goal_edit.setPlaceholderText("Enter goal formula...")
+        self._goal_edit.setPlaceholderText("Goal formula...")
         self._goal_edit.setStyleSheet(
             "#goal_edit { background:transparent; color:" + _TEXT_DARK + ";"
-            " padding:4px 6px; border:none; }"
+            " padding:2px 4px; border:none; }"
             "#goal_edit:focus { background:" + _BG_WHITE + ";"
             " border:1px solid #5ca4e6; border-radius:2px; }")
         self._goal_edit.textChanged.connect(self._on_goal_changed)
@@ -888,25 +1109,11 @@ class ProofPanel(QWidget):
         self._goal_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._goal_status.setStyleSheet("color:#999; background:transparent;")
         goal_row.addWidget(self._goal_status)
-        gl.addLayout(goal_row)
         root.addWidget(goal_frame)
-
-        # -- Detail --
-        self._detail = QLabel()
-        self._detail.setWordWrap(True)
-        self._detail.setFont(_FONT_SMALL)
-        self._detail.setMinimumHeight(36)
-        self._detail.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse)
-        self._detail.setStyleSheet(
-            "padding:6px 12px; color:#5a5a72; font-size:11px;"
-            " background:#e4e6ea; border-top:1px solid #c0c2c8;")
-        root.addWidget(self._detail)
 
         QShortcut(QKeySequence("Ctrl+Z"), self, self._undo)
         QShortcut(QKeySequence("Ctrl+Y"), self, self._redo)
         QShortcut(QKeySequence("Ctrl+Shift+Z"), self, self._redo)
-        QShortcut(QKeySequence("Ctrl+S"), self, self._save_proof)
 
     @staticmethod
     def _make_flow_row():
@@ -916,120 +1123,13 @@ class ProofPanel(QWidget):
         return r
 
     # ===============================================================
-    # SYNTAX TRANSLATION (System E → legacy display format)
-    # ===============================================================
-
-    @staticmethod
-    def _to_verifier_syntax(expr: str) -> str:
-        """Translate a System E formula string to legacy verifier syntax.
-
-        Used by tests to confirm that the UI palette's E-syntax input
-        can round-trip to the legacy predicate format.
-
-        Handles comma-separated conjunctions: ``"ab = ac, ab = bc"``
-        becomes ``"Equal(AB,AC) ∧ Equal(AB,BC)"``.
-        """
-        parts = ProofPanel._split_top_level(expr)
-        if len(parts) > 1:
-            translated = [ProofPanel._translate_one(p) for p in parts]
-            return " ∧ ".join(translated)
-        return ProofPanel._translate_one(expr)
-
-    @staticmethod
-    def _split_top_level(expr: str) -> list:
-        """Split on commas that are NOT inside parentheses."""
-        parts = []
-        depth = 0
-        current = []
-        for ch in expr:
-            if ch == '(':
-                depth += 1
-                current.append(ch)
-            elif ch == ')':
-                depth -= 1
-                current.append(ch)
-            elif ch == ',' and depth == 0:
-                parts.append(''.join(current).strip())
-                current = []
-            else:
-                current.append(ch)
-        parts.append(''.join(current).strip())
-        return [p for p in parts if p]
-
-    @staticmethod
-    def _translate_one(expr: str) -> str:
-        """Translate a single System E literal to legacy syntax."""
-        expr = expr.strip()
-
-        # between(a, b, c) → Between(A,B,C)
-        m = re.match(r'between\(\s*(\w)\s*,\s*(\w)\s*,\s*(\w)\s*\)', expr)
-        if m:
-            return "Between(%s,%s,%s)" % (
-                m.group(1).upper(), m.group(2).upper(), m.group(3).upper())
-
-        # on(a, L) → OnLine(A,l)
-        m = re.match(r'on\(\s*(\w)\s*,\s*(\w)\s*\)', expr)
-        if m:
-            pt, ln = m.group(1), m.group(2)
-            return "OnLine(%s,%s)" % (pt.upper(), ln.lower())
-
-        # same-side(a, b, L) → SameSide(A,B,L)
-        m = re.match(
-            r'same-side\(\s*(\w)\s*,\s*(\w)\s*,\s*(\w)\s*\)', expr)
-        if m:
-            return "SameSide(%s,%s,%s)" % (
-                m.group(1).upper(), m.group(2).upper(),
-                m.group(3).upper())
-
-        # ¬(a = b) → A != B
-        m = re.match(r'[¬!]\(\s*(\w)\s*=\s*(\w)\s*\)', expr)
-        if m:
-            return "%s != %s" % (m.group(1).upper(), m.group(2).upper())
-
-        # ∠bac = right-angle → RightAngle(B,A,C)
-        m = re.match(r'[∠∡](\w)(\w)(\w)\s*=\s*right-angle', expr)
-        if m:
-            return "RightAngle(%s,%s,%s)" % (
-                m.group(1).upper(), m.group(2).upper(),
-                m.group(3).upper())
-
-        # ∠abc = ∠def → EqualAngle(A,B,C,D,E,F)
-        m = re.match(
-            r'[∠∡](\w)(\w)(\w)\s*=\s*[∠∡](\w)(\w)(\w)', expr)
-        if m:
-            return "EqualAngle(%s,%s,%s,%s,%s,%s)" % tuple(
-                g.upper() for g in m.groups())
-
-        # △abc = △def → Congruent(A,B,C,D,E,F)
-        m = re.match(r'[△▵](\w)(\w)(\w)\s*=\s*[△▵](\w)(\w)(\w)', expr)
-        if m:
-            return "Congruent(%s,%s,%s,%s,%s,%s)" % tuple(
-                g.upper() for g in m.groups())
-
-        # cd < ab → Greater(AB,CD)
-        m = re.match(r'(\w)(\w)\s*<\s*(\w)(\w)', expr)
-        if m:
-            lesser = m.group(1).upper() + m.group(2).upper()
-            greater = m.group(3).upper() + m.group(4).upper()
-            return "Greater(%s,%s)" % (greater, lesser)
-
-        # ab = cd → Equal(AB,CD)
-        m = re.match(r'(\w)(\w)\s*=\s*(\w)(\w)', expr)
-        if m:
-            return "Equal(%s%s,%s%s)" % (
-                m.group(1).upper(), m.group(2).upper(),
-                m.group(3).upper(), m.group(4).upper())
-
-        return expr
-
-    # ===============================================================
     # PUBLIC API
     # ===============================================================
 
     def add_step(self, text, justification, refs, depth=None):
         self._push_undo()
         ln = len(self._premises) + len(self._steps) + 1
-        d = depth if depth is not None else self._current_depth
+        d = depth if depth is not None else 0
         step = ProofStep(ln, text, justification, refs, d)
         self._steps.append(step)
         self._rebuild_lines()
@@ -1038,7 +1138,7 @@ class ProofPanel(QWidget):
     def insert_step_at(self, position, text="",
                        justification="", refs=None, depth=None):
         self._push_undo()
-        d = depth if depth is not None else self._current_depth
+        d = depth if depth is not None else 0
         step = ProofStep(0, text, justification, refs or [], d)
         self._steps.insert(position, step)
         self._renumber()
@@ -1085,19 +1185,74 @@ class ProofPanel(QWidget):
         self._premises = []
         self._conclusion = ""
         self._proof_name = "workspace_proof"
-        self._current_depth = 0
         self._decl_points = []
         self._decl_lines = []
         self._selected = -1
         self._selected_prem = -1
         self._goal_edit.setText("")
         self._goal_status.setText("")
-        self._detail.setText("")
         self._undo_stack = []
         self._redo_stack = []
         self._count_label.setText("")
         self._points_input.clear()
         self._lines_input.clear()
+        self._rebuild_lines()
+
+    def switch_system(self, target: str):
+        """Rewrite all premises, goal, and steps into *target* notation.
+
+        *target* is ``"E"``, ``"T"``, or ``"H"``.  Each formula string is
+        parsed via the E parser (which already accepts E/T/H syntax),
+        translated to the target system via the bridge modules, and
+        written back.  Formulas that cannot be translated are kept as-is.
+        """
+        from verifier.e_parser import parse_literal_list, EParseError
+        from verifier.t_bridge import e_literal_to_t
+        from verifier.h_bridge import e_literal_to_h
+
+        def _translate_text(text: str) -> str:
+            """Translate a single formula string to *target* notation."""
+            if not text.strip():
+                return text
+            try:
+                e_lits = parse_literal_list(text)
+            except EParseError:
+                return text  # unparseable → keep as-is
+
+            parts: list[str] = []
+            for lit in e_lits:
+                if target == "T":
+                    t_lits = e_literal_to_t(lit)
+                    if t_lits:
+                        parts.extend(str(tl) for tl in t_lits)
+                    else:
+                        parts.append(str(lit))  # no T equivalent
+                elif target == "H":
+                    h_lit = e_literal_to_h(lit)
+                    if h_lit is not None:
+                        parts.append(str(h_lit))
+                    else:
+                        parts.append(str(lit))  # no H equivalent
+                else:
+                    # E — keep as-is (already in E notation)
+                    parts.append(str(lit))
+            return ", ".join(parts) if parts else text
+
+        # Rewrite premises
+        for i, prem in enumerate(self._premises):
+            self._premises[i] = _translate_text(prem)
+
+        # Rewrite conclusion / goal
+        if self._conclusion:
+            self._conclusion = _translate_text(self._conclusion)
+            self._goal_edit.setText(self._conclusion)
+
+        # Rewrite step text
+        for step in self._steps:
+            step.text = _translate_text(step.text)
+
+        # Reset evaluations since formulas changed
+        self.reset_evaluations()
         self._rebuild_lines()
 
     def get_steps(self):
@@ -1106,6 +1261,42 @@ class ProofPanel(QWidget):
                  "dependencies": s.refs,
                  "depth": s.depth, "status": s.status}
                 for s in self._steps]
+
+    def get_journal_state(self) -> dict:
+        """Return the full proof journal state for file serialization."""
+        return {
+            "name": self._proof_name,
+            "premises": list(self._premises),
+            "goal": self._conclusion,
+            "declarations": {
+                "points": list(self._decl_points),
+                "lines": list(self._decl_lines),
+            },
+            "steps": self.get_steps(),
+        }
+
+    def restore_journal_state(self, state: dict):
+        """Restore the full proof journal from a deserialized state dict."""
+        self._proof_name = state.get("name", "workspace_proof")
+        self._premises = list(state.get("premises", []))
+        self._conclusion = state.get("goal", "")
+        decl = state.get("declarations", {})
+        self.set_declarations(
+            decl.get("points", []), decl.get("lines", []))
+        self._goal_edit.setText(self._conclusion)
+        self._steps = []
+        for step in state.get("steps", []):
+            s = ProofStep(
+                line_number=step.get("lineNumber", 0),
+                text=step.get("text", ""),
+                justification=step.get("justification", ""),
+                refs=step.get("dependencies", []),
+                depth=step.get("depth", 0),
+            )
+            s.status = step.get("status", "?")
+            self._steps.append(s)
+        self._rebuild_lines()
+        self._update_counts()
 
     # ===============================================================
     # LINE REBUILD
@@ -1269,7 +1460,7 @@ class ProofPanel(QWidget):
         """Add a new empty line at the end of the proof."""
         self.insert_step_at(
             len(self._steps), "", "", [],
-            depth=self._current_depth)
+            depth=0)
 
     def _on_add_premise_bar(self):
         """Add a new empty premise above the Fitch bar."""
@@ -1308,9 +1499,6 @@ class ProofPanel(QWidget):
             lw.set_selected(False)
         for j, pw in enumerate(self._prem_widgets):
             pw.set_selected(j == index)
-        self._detail.setText(
-            "Line " + str(prem_line_num)
-            + "  |  " + (self._premises[index] if index < len(self._premises) else ""))
 
     def _on_line_text_changed(self, ln):
         self.step_changed.emit()
@@ -1371,18 +1559,6 @@ class ProofPanel(QWidget):
             lw.set_selected(lw.step.line_number == ln)
         for pw in self._prem_widgets:
             pw.set_selected(False)
-        step = None
-        for s in self._steps:
-            if s.line_number == ln:
-                step = s
-                break
-        if step:
-            self._detail.setText(
-                "Line " + str(step.line_number)
-                + "  |  Depth " + str(step.depth)
-                + "  |  " + step.justification
-                + "  |  Refs: " + str(step.refs)
-                + "  |  Status: " + step.status)
 
     # ===============================================================
     # UNDO / REDO
@@ -1394,7 +1570,6 @@ class ProofPanel(QWidget):
                 (s.line_number, s.text, s.justification,
                  list(s.refs), s.depth, s.status)
                 for s in self._steps],
-            "depth": self._current_depth,
         }
 
     def _push_undo(self):
@@ -1409,7 +1584,6 @@ class ProofPanel(QWidget):
             s = ProofStep(ln, txt, just, refs, depth)
             s.status = status
             self._steps.append(s)
-        self._current_depth = snap["depth"]
         self._rebuild_lines()
         self.step_changed.emit()
 
@@ -1466,21 +1640,6 @@ class ProofPanel(QWidget):
             self._rebuild_lines()
             self.step_changed.emit()
 
-    def _open_subproof(self):
-        self._current_depth += 1
-        pos = len(self._steps)
-        if self._selected > 0:
-            for i, s in enumerate(self._steps):
-                if s.line_number == self._selected:
-                    pos = i + 1
-                    break
-        self.insert_step_at(
-            pos, "", "Assume", [], self._current_depth)
-
-    def _close_subproof(self):
-        if self._current_depth > 0:
-            self._current_depth -= 1
-
     # ===============================================================
     # EVAL
     # ===============================================================
@@ -1489,15 +1648,10 @@ class ProofPanel(QWidget):
         self._eval_all()
 
     def _eval_all(self):
-        # If there are no proof steps yet, skip verification entirely
-        # and show a neutral prompt instead of a confusing parse error.
         if not self._steps:
-            self._detail.setText(
+            self._goal_status.setText("")
+            self._goal_status.setToolTip(
                 "Add proof steps and click Eval to verify.")
-            self._detail.setStyleSheet(
-                "padding:6px 12px; color:#5a5a72;"
-                " font-size:11px; background:#f5f6fa;"
-                " border-top:1px solid #e0e0e8;")
             self._update_counts()
             return
 
@@ -1507,16 +1661,11 @@ class ProofPanel(QWidget):
             result = verify_e_proof_json(proof_json)
         except Exception as exc:
             err_msg = str(exc)
-            if "Unexpected token" in err_msg or "parse" in err_msg.lower():
-                self._detail.setText(
-                    "Some formulas use syntax not yet supported by "
-                    "the verifier.  Check premises and conclusion.")
-            else:
-                self._detail.setText("Verifier error: " + err_msg)
-            self._detail.setStyleSheet(
-                "padding:6px 12px; color:#cc8800;"
-                " font-size:11px; background:#fffbf0;"
-                " border-top:1px solid #e0e0e8;")
+            self._goal_status.setText("\u26a0")
+            self._goal_status.setStyleSheet(
+                "color:#cc8800; font-weight:bold;"
+                " background:transparent;")
+            self._goal_status.setToolTip("Verifier error: " + err_msg)
             return
 
         error_ids: set = set()
@@ -1537,7 +1686,6 @@ class ProofPanel(QWidget):
             lw.refresh_from_step()
 
         if self._conclusion:
-            # Validate goal formula syntax using System E parser
             goal_syntax_ok = False
             try:
                 from verifier.unified_checker import parse_e_formula
@@ -1551,69 +1699,38 @@ class ProofPanel(QWidget):
                 self._goal_status.setStyleSheet(
                     "color:#2e8b57; font-weight:bold;"
                     " background:transparent;")
+                self._goal_status.setToolTip("ACCEPTED")
             elif not goal_syntax_ok:
                 self._goal_status.setText("\u2717")
                 self._goal_status.setStyleSheet(
                     "color:#cc3333; font-weight:bold;"
                     " background:transparent;")
-                self._detail.setText(
-                    "Goal formula is not valid syntax. "
-                    "Use connectives: \u2227  \u2228  \u00ac(  \u2194  \u22a5  \u2260  \u2203  \u2203!  \u2200  "
-                    "and System E predicates: on(a,L)  between(a,b,c)  "
-                    "ab = cd  \u2220abc = \u2220def  etc.")
-                self._detail.setStyleSheet(
-                    "padding:6px 12px; color:#cc3333;"
-                    " font-size:11px; background:#fff5f5;"
-                    " border-top:1px solid #e0e0e8;")
+                self._goal_status.setToolTip(
+                    "Goal formula is not valid syntax.")
             else:
                 self._goal_status.setText("\u2717")
                 self._goal_status.setStyleSheet(
                     "color:#cc3333; font-weight:bold;"
                     " background:transparent;")
-
-        self._update_counts()
-
-        if self._selected > 0:
-            step = None
-            for s in self._steps:
-                if s.line_number == self._selected:
-                    step = s
-                    break
-            if step:
-                lr = result.line_results.get(step.line_number)
-                msgs = lr.errors if lr and lr.errors else []
-                if msgs:
-                    self._detail.setText("\n".join(msgs))
-                    self._detail.setStyleSheet(
-                        "padding:6px 12px; color:#cc3333;"
-                        " font-size:11px; background:#fff5f5;"
-                        " border-top:1px solid #e0e0e8;")
+                if result.errors:
+                    self._goal_status.setToolTip(result.errors[0])
                 else:
-                    self._detail.setText(
-                        "Line " + str(step.line_number)
-                        + ": " + step.status)
-                    self._detail.setStyleSheet(
-                        "padding:6px 12px; color:#5a5a72;"
-                        " font-size:11px; background:#f5f6fa;"
-                        " border-top:1px solid #e0e0e8;")
-        elif result.errors:
-            self._detail.setText(result.errors[0])
-            self._detail.setStyleSheet(
-                "padding:6px 12px; color:#cc3333;"
-                " font-size:11px; background:#fff5f5;"
-                " border-top:1px solid #e0e0e8;")
+                    self._goal_status.setToolTip("REJECTED")
         else:
             if result.accepted:
-                txt = "ACCEPTED \u2713"
-                col = "#2e8b57"
-            else:
-                txt = "REJECTED \u2717"
-                col = "#cc3333"
-            self._detail.setText(txt)
-            self._detail.setStyleSheet(
-                "padding:6px 12px; color:" + col + ";"
-                " font-size:11px; background:#f5faf5;"
-                " border-top:1px solid #e0e0e8;")
+                self._goal_status.setText("\u2713")
+                self._goal_status.setStyleSheet(
+                    "color:#2e8b57; font-weight:bold;"
+                    " background:transparent;")
+                self._goal_status.setToolTip("ACCEPTED")
+            elif result.errors:
+                self._goal_status.setText("\u2717")
+                self._goal_status.setStyleSheet(
+                    "color:#cc3333; font-weight:bold;"
+                    " background:transparent;")
+                self._goal_status.setToolTip(result.errors[0])
+
+        self._update_counts()
 
     def _build_proof_json(self):
         pts_raw = self._points_input.text().strip()
@@ -1711,23 +1828,6 @@ class ProofPanel(QWidget):
         self._count_label.setText("  ".join(parts))
 
     # ===============================================================
-    # SAVE / LOAD
-    # ===============================================================
-
-    def _save_proof(self):
-        proof_json = self._build_proof_json()
-        path, _ = QFileDialog.getSaveFileName(
-            self, "Save Proof JSON", "",
-            "JSON Files (*.json);;All Files (*)")
-        if path:
-            try:
-                with open(path, "w", encoding="utf-8") as f:
-                    json.dump(proof_json, f, indent=2,
-                              ensure_ascii=False)
-            except Exception as exc:
-                self._detail.setText("Save error: " + str(exc))
-
-    # ===============================================================
     # LEMMA MANAGEMENT
     # ===============================================================
 
@@ -1742,46 +1842,39 @@ class ProofPanel(QWidget):
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except Exception as exc:
-            self._detail.setText("Lemma load error: " + str(exc))
+            self._goal_status.setToolTip(
+                "Lemma load error: " + str(exc))
             return
         name = data.get("name", "unnamed")
         goal = data.get("goal", "")
         premises = data.get("premises", [])
         if not goal:
-            self._detail.setText("Lemma has no goal — cannot use as a rule.")
+            self._goal_status.setToolTip(
+                "Lemma has no goal \u2014 cannot use as a rule.")
             return
         # Verify the proof first
         try:
             from verifier.unified_checker import verify_e_proof_json
             result = verify_e_proof_json(data)
         except Exception as exc:
-            self._detail.setText("Lemma verification error: " + str(exc))
+            self._goal_status.setToolTip(
+                "Lemma verification error: " + str(exc))
             return
         if not result.accepted:
-            msgs = result.errors[:3] if result.errors else []
-            self._detail.setText(
-                "Lemma rejected — proof is not valid.\n"
-                + "\n".join(msgs))
-            self._detail.setStyleSheet(
-                "padding:6px 12px; color:#cc3333;"
-                " font-size:11px; background:#fff5f5;"
-                " border-top:1px solid #e0e0e8;")
+            self._goal_status.setToolTip(
+                "Lemma rejected \u2014 proof is not valid.")
             return
         # Check for duplicates
         for existing in self._lemmas:
             if existing.name == name:
-                self._detail.setText(
+                self._goal_status.setToolTip(
                     "Lemma '" + name + "' already loaded.")
                 return
         lemma = LoadedLemma(name, premises, goal, path)
         self._lemmas.append(lemma)
         self._rebuild_lemma_ui()
-        self._detail.setText(
+        self._goal_status.setToolTip(
             "Lemma '" + name + "' loaded \u2713  Goal: " + goal)
-        self._detail.setStyleSheet(
-            "padding:6px 12px; color:#2e8b57;"
-            " font-size:11px; background:#f0faf0;"
-            " border-top:1px solid #e0e0e8;")
 
     def _remove_lemma(self, index):
         """Remove a loaded lemma by index."""
@@ -1789,8 +1882,6 @@ class ProofPanel(QWidget):
             removed = self._lemmas.pop(index)
             self._unregister_lemma_rule(removed)
             self._rebuild_lemma_ui()
-            self._detail.setText(
-                "Lemma '" + removed.name + "' removed.")
 
     def _rebuild_lemma_ui(self):
         """Rebuild the lemma list display."""
@@ -1848,44 +1939,3 @@ class ProofPanel(QWidget):
     def _unregister_lemma_rule(lem):
         """Remove a single lemma rule (no-op)."""
         pass
-
-    def _load_proof(self):
-        path, _ = QFileDialog.getOpenFileName(
-            self, "Open Proof JSON", "",
-            "JSON Files (*.json);;All Files (*)")
-        if not path:
-            return
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-        except Exception as exc:
-            self._detail.setText("Load error: " + str(exc))
-            return
-        self._push_undo()
-        self._steps = []
-        self._premises = []
-        self._conclusion = ""
-        self._current_depth = 0
-        self._proof_name = data.get("name", "workspace_proof")
-        decl = data.get("declarations", {})
-        self.set_declarations(
-            decl.get("points", []), decl.get("lines", []))
-        for p in data.get("premises", []):
-            self._premises.append(p)
-        self._refresh_premises()
-        self.set_conclusion(data.get("goal", ""))
-        num_premises = len(self._premises)
-        for ld in data.get("lines", []):
-            # Skip premise lines (they're already loaded from "premises")
-            if ld.get("id", 0) <= num_premises and ld.get("justification") == "Given":
-                continue
-            s = ProofStep(
-                line_number=ld["id"],
-                text=ld.get("statement", ""),
-                justification=ld.get("justification", ""),
-                refs=ld.get("refs", []),
-                depth=ld.get("depth", 0),
-            )
-            self._steps.append(s)
-        self._rebuild_lines()
-        self.step_changed.emit()

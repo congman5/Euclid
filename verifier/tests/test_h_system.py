@@ -178,8 +178,8 @@ class TestHAxiomCounts:
     def test_congruence_axiom_count(self):
         from verifier.h_axioms import ALL_CONGRUENCE_AXIOMS
         assert len(ALL_CONGRUENCE_AXIOMS) > 0
-        # 5 segment + 1 addition + 4 angle + 1 SAS + 2 same_side = 13
-        assert len(ALL_CONGRUENCE_AXIOMS) == 13
+        # 5 segment + 1 addition + 5 angle + 1 SAS + 2 same_side = 14
+        assert len(ALL_CONGRUENCE_AXIOMS) == 14
 
     def test_parallel_axiom_count(self):
         from verifier.h_axioms import PARALLEL_AXIOMS
@@ -187,8 +187,8 @@ class TestHAxiomCounts:
 
     def test_total_axiom_count(self):
         from verifier.h_axioms import ALL_H_AXIOMS
-        # 14 + 11 + 13 + 1 = 39
-        assert len(ALL_H_AXIOMS) == 39
+        # 14 + 11 + 14 + 1 = 40
+        assert len(ALL_H_AXIOMS) == 40
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -300,6 +300,46 @@ class TestHConsequenceEngine:
         }
         result = engine.direct_consequences(known, variables)
         assert HLiteral(ColH("A", "B", "C")) in result
+
+    def test_conga_transitivity(self):
+        """CA5: CongaH(A,B,C,B,C,A) ∧ CongaH(B,C,A,C,A,B)
+        → CongaH(A,B,C,C,A,B).
+
+        Hilbert Axioms reference (CA5): If ∠A ≅ ∠B and ∠B ≅ ∠C,
+        then ∠A ≅ ∠C.
+
+        Uses ANGLE_CONGRUENCE_AXIOMS subset to avoid grounding
+        explosion (CA5 has 9 schema variables).
+        """
+        from verifier.h_consequence import HConsequenceEngine
+        from verifier.h_axioms import ANGLE_CONGRUENCE_AXIOMS
+        engine = HConsequenceEngine(axioms=ANGLE_CONGRUENCE_AXIOMS)
+        known = {
+            HLiteral(CongaH("A", "B", "C", "B", "C", "A")),
+            HLiteral(CongaH("B", "C", "A", "C", "A", "B")),
+        }
+        variables = {v: HSort.POINT for v in ["A", "B", "C"]}
+        result = engine.direct_consequences(known, variables)
+        # CA5 transitivity: ∠ABC ≅ ∠BCA ∧ ∠BCA ≅ ∠CAB → ∠ABC ≅ ∠CAB
+        assert HLiteral(CongaH("A", "B", "C", "C", "A", "B")) in result
+
+    def test_conga_transitivity_chain(self):
+        """CA5 should enable chaining: if ∠1≅∠2 and ∠2≅∠3,
+        then ∠1≅∠3 (via CA5), and then if ∠1≅∠3 and ∠3≅∠2,
+        also ∠1≅∠2 (which was already known — consistency)."""
+        from verifier.h_consequence import HConsequenceEngine
+        from verifier.h_axioms import ANGLE_CONGRUENCE_AXIOMS
+        engine = HConsequenceEngine(axioms=ANGLE_CONGRUENCE_AXIOMS)
+        known = {
+            HLiteral(CongaH("A", "B", "C", "B", "C", "A")),
+            HLiteral(CongaH("B", "C", "A", "C", "A", "B")),
+        }
+        variables = {v: HSort.POINT for v in ["A", "B", "C"]}
+        result = engine.direct_consequences(known, variables)
+        # AC.4 (symmetry) and AC.5 (transitivity) together give
+        # the full equivalence class:
+        assert HLiteral(CongaH("C", "A", "B", "A", "B", "C")) in result
+        assert HLiteral(CongaH("C", "A", "B", "B", "C", "A")) in result
 
 
 # ═══════════════════════════════════════════════════════════════════════

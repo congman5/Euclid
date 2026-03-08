@@ -1,0 +1,73 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 200.0,
+        "y": 300.0
+      },
+      {
+        "label": "B",
+        "x": 450.0,
+        "y": 300.0
+      },
+      {
+        "label": "_p0",
+        "x": 325.0,
+        "y": 83.49364905389035
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "_p0",
+        "color": "#1a1a2e"
+      },
+      {
+        "from": "B",
+        "to": "_p0",
+        "color": "#1a1a2e"
+      }
+    ],
+    "circles": [
+      {
+        "center": "B",
+        "radius": 250.0,
+        "radius_point": "A",
+        "color": "#2d70b3"
+      },
+      {
+        "center": "A",
+        "radius": 250.0,
+        "radius_point": "B",
+        "color": "#f57c00"
+      }
+    ],
+    "angleMarks": [],
+    "equalityGroups": [
+      [
+        1,
+        [
+          [
+            "B",
+            "_p0"
+          ],
+          [
+            "A",
+            "_p0"
+          ]
+        ]
+      ]
+    ]
+  },
+  "exportedAt": "2026-03-08T18:16:07Z"
+}

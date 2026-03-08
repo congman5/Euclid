@@ -136,7 +136,7 @@ class TestUiInteraction:
         p = ProofPanel()
         p.set_declarations(["A", "B", "C"], [])
         p.add_step("Between(A,B,C)", "Given", [])
-        p.add_step("Between(C,B,A)", "Ord2", [1])
+        p.add_step("Between(C,B,A)", "Diagrammatic", [1])
         assert len(p._steps) == 2
         assert p._steps[1].line_number == 2
 
@@ -184,75 +184,13 @@ class TestUiInteraction:
         assert len(p._steps) == 3
         assert p._steps[1].text == "B"
 
-    def test_construction_syntax_between(self):
-        """System E 'between' syntax translates to legacy Between()."""
-        from euclid_py.ui.proof_panel import ProofPanel
-        result = ProofPanel._to_verifier_syntax("between(a, b, c)")
-        assert result == "Between(A,B,C)"
-
-    def test_construction_syntax_on(self):
-        """System E 'on(a, L)' translates to legacy OnLine()."""
-        from euclid_py.ui.proof_panel import ProofPanel
-        result = ProofPanel._to_verifier_syntax("on(a, L)")
-        assert result == "OnLine(A,l)"
-
-    def test_construction_syntax_negation(self):
-        """System E '¬(a = b)' translates to legacy 'A != B'."""
-        from euclid_py.ui.proof_panel import ProofPanel
-        result = ProofPanel._to_verifier_syntax("¬(a = b)")
-        assert result == "A != B"
-
-    def test_construction_syntax_segment_equality(self):
-        """System E 'ab = cd' translates to legacy Equal(AB,CD)."""
-        from euclid_py.ui.proof_panel import ProofPanel
-        result = ProofPanel._to_verifier_syntax("ab = cd")
-        assert result == "Equal(AB,CD)"
-
-    def test_construction_syntax_angle_equality(self):
-        """System E '∠abc = ∠def' translates to legacy EqualAngle()."""
-        from euclid_py.ui.proof_panel import ProofPanel
-        result = ProofPanel._to_verifier_syntax("∠abc = ∠def")
-        assert result == "EqualAngle(A,B,C,D,E,F)"
-
-    def test_construction_syntax_same_side(self):
-        """System E 'same-side' translates to legacy SameSide()."""
-        from euclid_py.ui.proof_panel import ProofPanel
-        result = ProofPanel._to_verifier_syntax("same-side(a, b, L)")
-        assert result == "SameSide(A,B,L)"
-
-    def test_construction_syntax_less_than(self):
-        """System E 'cd < ab' translates to legacy Greater(AB,CD)."""
-        from euclid_py.ui.proof_panel import ProofPanel
-        result = ProofPanel._to_verifier_syntax("cd < ab")
-        assert result == "Greater(AB,CD)"
-
-    def test_construction_syntax_right_angle(self):
-        """System E right-angle translates to legacy RightAngle()."""
-        from euclid_py.ui.proof_panel import ProofPanel
-        result = ProofPanel._to_verifier_syntax("∠bac = right-angle")
-        assert result == "RightAngle(B,A,C)"
-
-    def test_construction_syntax_triangle_congruence(self):
-        """System E triangle equality translates to legacy Congruent()."""
-        from euclid_py.ui.proof_panel import ProofPanel
-        result = ProofPanel._to_verifier_syntax("△abc = △def")
-        assert result == "Congruent(A,B,C,D,E,F)"
-
-    def test_construction_syntax_comma_separated(self):
-        """Comma-separated E literals become ∧-joined."""
-        from euclid_py.ui.proof_panel import ProofPanel
-        result = ProofPanel._to_verifier_syntax("ab = ac, ab = bc")
-        assert "∧" in result
-        assert "Equal(AB,AC)" in result
-        assert "Equal(AB,BC)" in result
-
     def test_steps_with_premises_numbered_correctly(self):
         """Proof steps are numbered after premises."""
         from euclid_py.ui.proof_panel import ProofPanel
         p = ProofPanel()
         p.add_premise_text("A != B")
         p.add_premise_text("Between(A,B,C)")
-        p.add_step("Between(C,B,A)", "Ord2", [1])
+        p.add_step("Between(C,B,A)", "Diagrammatic", [1])
         # 2 premises → step starts at line 3
         assert p._steps[0].line_number == 3
 
@@ -271,7 +209,7 @@ class TestIntegrationProof:
         p.set_declarations(["A", "B", "C"], [])
         p.add_premise_text("Between(A,B,C)")
         p.set_conclusion("Between(C,B,A)")
-        p.add_step("Between(C,B,A)", "Ord2", [1])
+        p.add_step("Between(C,B,A)", "Diagrammatic", [1])
         p._eval_all()
         assert any(s.status == "✓" for s in p._steps), \
             f"Expected ✓ step, got: {[s.status for s in p._steps]}"
@@ -283,7 +221,7 @@ class TestIntegrationProof:
         p.set_declarations(["A", "B", "C"], [])
         p.add_premise_text("Between(A,B,C)")
         p.set_conclusion("Between(C,B,A)")
-        p.add_step("Between(C,B,A)", "Ord2", [1])
+        p.add_step("Between(C,B,A)", "Diagrammatic", [1])
         p._eval_all()
         goal_text = p._goal_status.text()
         assert goal_text == "✓", f"Goal status: {goal_text!r}"

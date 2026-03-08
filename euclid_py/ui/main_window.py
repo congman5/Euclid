@@ -3,10 +3,10 @@ Main Window — Fitch-style proof verifier UI.
 
 Three screens:
   1. Home — Proposition browser with search/filter
-  2. Proof — Split workspace: canvas + old proof panel (legacy)
+  2. Proof — Split workspace: canvas + proof panel
   3. Verifier — Full Fitch-style proof verification environment
 
-The Verifier screen is the new primary UI, featuring:
+The Verifier screen is the primary UI, featuring:
   • Left sidebar: proof metadata, declarations, premises, goal, status
   • Center: custom-painted Fitch proof view with scope bars
   • Right sidebar: diagnostics + rule reference (tabbed)
@@ -31,9 +31,12 @@ from PyQt6.QtWidgets import (
 from ..engine.proposition_data import (
     ALL_PROPOSITIONS, Proposition, get_proposition, get_allowed_propositions,
 )
-from ..engine.file_format import save_proof, load_proof
+from ..engine.file_format import (
+    save_proof, load_proof, save_journal_json, load_journal_json,
+    detect_file_format,
+)
 from .canvas_widget import CanvasWidget, COLOR_PALETTE
-from .proof_panel import ProofPanel as LegacyProofPanel
+from .proof_panel import ProofPanel
 from .proof_view import ProofPanel as FitchProofPanel, ProofLineData
 from .summary_panel import SummaryPanel
 from .diagnostics_panel import DiagnosticsPanel
@@ -42,7 +45,7 @@ from .fitch_theme import C, Fonts, Sp, Sym, MAIN_STYLESHEET
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# COLOUR PALETTE (legacy — kept for Home/Workspace screens)
+# COLOUR PALETTE
 # ═══════════════════════════════════════════════════════════════════════════
 
 COLORS = {
@@ -364,8 +367,8 @@ class _VerifierScreen(QWidget):
         self._proof_panel.line_selected.connect(self._on_line_selected)
         body_splitter.addWidget(self._proof_panel)
 
-        # Right: Tabbed diagnostics + rule reference + translations
-        from .translation_view import TranslationView
+        # Right: Tabbed diagnostics + rule reference + translations + glossary
+        from .translation_view import TranslationView, GlossaryPanel
         right_tabs = QTabWidget()
         right_tabs.setStyleSheet(f"""
             QTabWidget::pane {{
@@ -398,8 +401,10 @@ class _VerifierScreen(QWidget):
         self._diagnostics.navigate_to_line.connect(self._navigate_to_line)
         self._rule_ref = RuleReferencePanel()
         self._verifier_translation_view = TranslationView()
+        self._glossary_panel = GlossaryPanel()
         right_tabs.addTab(self._diagnostics, "Diagnostics")
         right_tabs.addTab(self._rule_ref, "Rules")
+        right_tabs.addTab(self._glossary_panel, "Glossary")
         right_tabs.addTab(self._verifier_translation_view, "E / T / H")
         body_splitter.addWidget(right_tabs)
 
@@ -612,7 +617,7 @@ class _VerifierScreen(QWidget):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# WORKSPACE SCREEN (canvas + proof panel — legacy)
+# WORKSPACE SCREEN (canvas + proof panel)
 # ═══════════════════════════════════════════════════════════════════════════
 
 class _WorkspaceScreen(QWidget):
@@ -662,13 +667,9 @@ class _WorkspaceScreen(QWidget):
         btn_save.clicked.connect(self._save)
         tl.addWidget(btn_save)
 
-        btn_export = QPushButton("Export")
-        btn_export.clicked.connect(self._export)
-        tl.addWidget(btn_export)
-
-        btn_import = QPushButton("Import")
-        btn_import.clicked.connect(self._import)
-        tl.addWidget(btn_import)
+        btn_open = QPushButton("Open")
+        btn_open.clicked.connect(self._import)
+        tl.addWidget(btn_open)
 
         self._btn_ref = QPushButton("Reference")
         self._btn_ref.setCheckable(True)
@@ -742,7 +743,7 @@ class _WorkspaceScreen(QWidget):
             ("angle", "∠", "Measure angle (click 3 existing points)"),
             ("perpendicular", "∟", "Mark right angle (click 3 existing points, must be 90°)"),
             None,
-            ("equal", "═", "Assert segments equal"),
+            ("equal", "\u2245", "Assert segments equal (click two segments)"),
             ("delete", "✕", "Delete object"),
             None,
         ]
@@ -860,7 +861,7 @@ class _WorkspaceScreen(QWidget):
         splitter = QSplitter(Qt.Orientation.Horizontal)
         self._canvas = CanvasWidget()
         self._canvas.zoom_changed = self._update_zoom_label
-        self._proof_panel = LegacyProofPanel()
+        self._proof_panel = ProofPanel()
         self._dirty = False
         # Canvas changes reset proof evaluations back to ? (v1.14.0)
         self._canvas.scene.canvas_changed.connect(self._proof_panel.reset_evaluations)
@@ -870,8 +871,8 @@ class _WorkspaceScreen(QWidget):
         body_splitter.addWidget(canvas_container)
         body_splitter.addWidget(self._proof_panel)
 
-        # Right sidebar: tabbed Reference + Translations (hidden by default)
-        from .translation_view import TranslationView
+        # Right sidebar: tabbed Reference + Translations + Glossary (hidden by default)
+        from .translation_view import TranslationView, GlossaryPanel
         self._right_tabs = QTabWidget()
         self._right_tabs.setStyleSheet(f"""
             QTabWidget::pane {{
@@ -880,7 +881,7 @@ class _WorkspaceScreen(QWidget):
                 background: #ffffff;
             }}
             QTabBar {{
-                background: #4a3c5c;
+                background: {C.header_bg};
             }}
             QTabBar::tab {{
                 padding: 8px 16px;
@@ -902,28 +903,147 @@ class _WorkspaceScreen(QWidget):
         """)
         self._ref_panel = RuleReferencePanel()
         self._translation_view = TranslationView()
+        self._glossary_view = GlossaryPanel()
         self._right_tabs.addTab(self._ref_panel, "Reference")
+        self._right_tabs.addTab(self._glossary_view, "Glossary")
         self._right_tabs.addTab(self._translation_view, "E / T / H")
         self._right_tabs.setMinimumWidth(300)
         self._right_tabs.setMaximumWidth(460)
         self._right_tabs.setVisible(False)
         body_splitter.addWidget(self._right_tabs)
 
+        # Clicking a system badge in the E/T/H tab rewrites the proof
+        self._translation_view.system_selected.connect(
+            self._proof_panel.switch_system)
+
         body_splitter.setStretchFactor(0, 3)
         body_splitter.setStretchFactor(1, 2)
         body_splitter.setStretchFactor(2, 1)
-        layout.addWidget(body_splitter)
+        self._body_splitter = body_splitter
+        self._splitter_saved_sizes = [0, 0, 0]
 
-        # ── Statement bar at bottom ───────────────────────────────────
-        self._stmt_bar = QLabel()
-        self._stmt_bar.setWordWrap(True)
-        self._stmt_bar.setStyleSheet(f"padding:8px 16px; background:{COLORS['background']}; color:{COLORS['textSecondary']}; font-size:13px;")
-        layout.addWidget(self._stmt_bar)
+        layout.addWidget(body_splitter)
+        body_splitter.splitterMoved.connect(self._on_splitter_moved)
+
+        # ── Floating restore tabs (overlay, not in any layout) ────────
+        _tab_style = (
+            f"QPushButton{{background:{COLORS['surface']};"
+            f"color:{COLORS['primary']};"
+            f"border:1px solid {COLORS['border']};"
+            "border-radius:3px;font-size:14px;padding:0px;}}"
+            f"QPushButton:hover{{background:{COLORS['primary']};color:white;}}"
+        )
+        self._left_tab = QPushButton("\u25b6", self)
+        self._left_tab.setToolTip("Show canvas")
+        self._left_tab.setFixedSize(20, 60)
+        self._left_tab.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._left_tab.setStyleSheet(_tab_style)
+        self._left_tab.setVisible(False)
+        self._left_tab.clicked.connect(lambda: self._restore_panel(0))
+        self._left_tab.raise_()
+
+        self._right_tab = QPushButton("\u25c0", self)
+        self._right_tab.setToolTip("Show proof panel")
+        self._right_tab.setFixedSize(20, 60)
+        self._right_tab.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._right_tab.setStyleSheet(_tab_style)
+        self._right_tab.setVisible(False)
+        self._right_tab.clicked.connect(lambda: self._restore_panel(1))
+        self._right_tab.raise_()
+
+        self._right_tab2 = QPushButton("\u25c0", self)
+        self._right_tab2.setToolTip("Show reference panel")
+        self._right_tab2.setFixedSize(20, 60)
+        self._right_tab2.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._right_tab2.setStyleSheet(_tab_style)
+        self._right_tab2.setVisible(False)
+        self._right_tab2.clicked.connect(lambda: self._restore_panel(2))
+        self._right_tab2.raise_()
+
+    # ── Splitter collapse / restore ─────────────────────────────────
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._reposition_restore_tabs()
+
+    def _reposition_restore_tabs(self):
+        """Move the floating restore tabs to the correct edge positions."""
+        if not hasattr(self, '_body_splitter'):
+            return
+        sp = self._body_splitter
+        sp_geo = sp.geometry()
+        cy = sp_geo.y() + sp_geo.height() // 2 - 30  # vertical center
+
+        # Left tab: left edge of splitter
+        self._left_tab.move(sp_geo.x(), cy)
+        self._left_tab.raise_()
+
+        # Right tab: right edge of splitter
+        self._right_tab.move(sp_geo.x() + sp_geo.width() - 20, cy)
+        self._right_tab.raise_()
+
+        # Right tab 2 (reference): just left of right_tab when both visible
+        if self._right_tab.isVisible() and self._right_tab2.isVisible():
+            self._right_tab2.move(
+                sp_geo.x() + sp_geo.width() - 20, cy - 65)
+        else:
+            self._right_tab2.move(
+                sp_geo.x() + sp_geo.width() - 20, cy)
+        self._right_tab2.raise_()
+
+    def _on_splitter_moved(self, pos, index):
+        sizes = self._body_splitter.sizes()
+        total = sum(sizes)
+        if total <= 0:
+            return
+        # Save sizes whenever all visible panels have reasonable width
+        if all(s > 30 for s in sizes if s > 0) and sizes[0] > 30 and sizes[1] > 30:
+            self._splitter_saved_sizes = list(sizes)
+        # Canvas collapsed (pushed all the way left)
+        self._left_tab.setVisible(sizes[0] < 10)
+        # Proof panel collapsed (pushed all the way right)
+        self._right_tab.setVisible(sizes[1] < 10)
+        # Reference tabs collapsed (only when they were visible)
+        if self._right_tabs.isVisible():
+            self._right_tab2.setVisible(sizes[2] < 10)
+        else:
+            self._right_tab2.setVisible(False)
+        self._reposition_restore_tabs()
+
+    def _restore_panel(self, panel_index):
+        saved = self._splitter_saved_sizes
+        sizes = self._body_splitter.sizes()
+        total = sum(sizes)
+        if total <= 0:
+            return
+        if panel_index == 2 and not self._right_tabs.isVisible():
+            # Reference panel was hidden via toggle button, re-show it
+            self._right_tabs.setVisible(True)
+            self._btn_ref.setChecked(True)
+        target_size = saved[panel_index] if saved[panel_index] > 50 else total // 3
+        sizes[panel_index] = target_size
+        remaining = total - target_size
+        other_indices = [i for i in range(3) if i != panel_index]
+        other_total = sum(sizes[i] for i in other_indices)
+        if other_total > 0:
+            r = remaining / other_total
+            sizes[other_indices[0]] = int(sizes[other_indices[0]] * r)
+            sizes[other_indices[1]] = total - sizes[panel_index] - sizes[other_indices[0]]
+        else:
+            sizes[other_indices[0]] = remaining
+            sizes[other_indices[1]] = 0
+        self._body_splitter.setSizes(sizes)
+        self._left_tab.setVisible(sizes[0] < 10)
+        self._right_tab.setVisible(sizes[1] < 10)
+        if self._right_tabs.isVisible():
+            self._right_tab2.setVisible(sizes[2] < 10)
+        else:
+            self._right_tab2.setVisible(False)
+        self._reposition_restore_tabs()
 
     def load_proposition(self, prop: Proposition):
         self._current_prop = prop
         self._title_label.setText(f"{prop.name} — {prop.title}")
-        self._stmt_bar.setText(prop.statement)
         self._canvas.clear()
         self._proof_panel.clear()
         # Set the proof name from the proposition
@@ -1061,37 +1181,128 @@ class _WorkspaceScreen(QWidget):
         self._zoom_label.setText(f"{self._canvas.zoom_percent()}%")
 
     def _save(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Save Proof", "", "Euclid Files (*.euclid)")
+        """Prompt: Canvas Only (.euclid), Canvas + Proof (.euclid), Proof Only (.json), or Cancel."""
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Save")
+        msg.setText("What would you like to save?")
+        msg.setInformativeText(
+            "Canvas Only (.euclid) — diagram only, no proof journal\n"
+            "Canvas + Proof (.euclid) — full workspace\n"
+            "Proof Only (.euclid) — proof journal only, no canvas")
+        btn_canvas = msg.addButton("Canvas Only", QMessageBox.ButtonRole.AcceptRole)
+        btn_both = msg.addButton("Canvas + Proof", QMessageBox.ButtonRole.AcceptRole)
+        btn_proof = msg.addButton("Proof Only", QMessageBox.ButtonRole.AcceptRole)
+        msg.addButton(QMessageBox.StandardButton.Cancel)
+        msg.exec()
+        clicked = msg.clickedButton()
+        if clicked == btn_canvas:
+            self._save_euclid(include_journal=False)
+        elif clicked == btn_both:
+            self._save_euclid(include_journal=True)
+        elif clicked == btn_proof:
+            self._save_proof_json()
+
+    def _save_euclid(self, include_journal: bool = True):
+        """Save a .euclid file, optionally including the proof journal."""
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save Euclid File", "", "Euclid Files (*.euclid)")
         if path:
             canvas = self._canvas.get_state()
-            steps = self._proof_panel.get_steps()
-            save_proof(path, canvas, steps)
+            journal = self._proof_panel.get_journal_state() if include_journal else None
+            save_proof(path, canvas, journal)
             self._dirty = False
-            self._mw.statusBar().showMessage(f"Saved to {path}")
+            self._set_file_title(path)
+            label = "canvas + proof" if include_journal else "canvas"
+            self._mw.statusBar().showMessage(f"Saved {label} to {path}")
 
-    def _export(self):
-        self._save()
+    def _save_proof_json(self):
+        """Save proof journal only as a .euclid file."""
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save Proof File", "", "Euclid Files (*.euclid)")
+        if path:
+            journal = self._proof_panel.get_journal_state()
+            save_journal_json(path, journal)
+            self._dirty = False
+            self._set_file_title(path)
+            self._mw.statusBar().showMessage(f"Saved proof to {path}")
 
     def _toggle_reference(self):
         """Show or hide the reference / translation sidebar."""
         visible = not self._right_tabs.isVisible()
         self._right_tabs.setVisible(visible)
         self._btn_ref.setChecked(visible)
+        # Hide the reference restore tab when the panel is toggled off
+        if not visible:
+            self._right_tab2.setVisible(False)
+        self._reposition_restore_tabs()
 
     def _import(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Open Proof", "", "Euclid Files (*.euclid *.json)")
-        if path:
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Open File", "",
+            "Euclid Files (*.euclid)")
+        if not path:
+            return
+        fmt = detect_file_format(path)
+        self._set_file_title(path)
+        if fmt == "euclid-journal":
+            # Proof-only file: update journal, leave canvas untouched
+            journal = load_journal_json(path)
+            self._proof_panel.clear()
+            self._proof_panel.restore_journal_state(journal)
+            self._mw.statusBar().showMessage(f"Loaded proof from {path}")
+        else:
+            # .euclid file: always load canvas
             data = load_proof(path)
-            self._canvas.clear()
+            self._load_canvas_from_data(data)
+            # Only touch the journal if the file contains one
+            if data.get("has_journal"):
+                journal = data.get("journal", {})
+                self._proof_panel.clear()
+                self._proof_panel.restore_journal_state(journal)
+                self._mw.statusBar().showMessage(
+                    f"Loaded canvas + proof from {path}")
+            else:
+                self._mw.statusBar().showMessage(
+                    f"Loaded canvas from {path} (proof journal unchanged)")
+
+    def _load_canvas_from_data(self, data: dict):
+        """Replace the canvas with objects from a deserialized .euclid dict."""
+        self._canvas.clear()
+        self._canvas._scene.blockSignals(True)
+        try:
             for pt in data.get("points", []):
                 self._canvas.add_point(pt["label"], pt["x"], pt["y"])
             for seg in data.get("segments", []):
-                self._canvas.add_segment(seg["from"], seg["to"])
-            self._proof_panel.clear()
-            for step in data.get("steps", []):
-                self._proof_panel.add_step(
-                    step.get("text", ""),
-                    step.get("justification", ""),
-                    step.get("dependencies", []),
-                )
-            self._mw.statusBar().showMessage(f"Imported {path}")
+                s = self._canvas.scene.add_segment(seg["from"], seg["to"])
+                if s and seg.get("color"):
+                    from PyQt6.QtGui import QColor, QPen
+                    s.draw_color = QColor(seg["color"])
+                    s.setPen(QPen(s.draw_color, 2))
+            for circ in data.get("circles", []):
+                rp = circ.get("radius_point")
+                if rp:
+                    c = self._canvas.scene.add_circle_by_radius_pt(
+                        circ["center"], rp)
+                else:
+                    c = self._canvas.scene.add_circle(
+                        circ["center"], circ["radius"])
+                if c and circ.get("color"):
+                    from PyQt6.QtGui import QColor, QPen
+                    c.draw_color = QColor(circ["color"])
+                    c.setPen(QPen(c.draw_color, 2))
+            for am in data.get("angle_marks", []):
+                self._canvas.scene.add_angle_mark(
+                    am["from"], am["vertex"], am["to"],
+                    is_right=am.get("is_right", False))
+            for tc, pairs in data.get("equality_groups", []):
+                self._canvas.scene._equality_groups.append((tc, pairs))
+            self._canvas.scene._apply_equality_ticks()
+        finally:
+            self._canvas._scene.blockSignals(False)
+
+    def _set_file_title(self, path: str):
+        """Update the toolbar title and proof name from a file path."""
+        import os
+        name = os.path.splitext(os.path.basename(path))[0]
+        self._title_label.setText(name)
+        self._proof_panel.set_proof_name(name)
