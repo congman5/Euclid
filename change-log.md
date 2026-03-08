@@ -2,6 +2,12 @@
 
 All notable changes to the Euclid Elements Simulator project.
 
+## [7.9.1] - 2025-XX-XX
+
+### Changed — Rewritten README.md for Git (README.md)
+
+- **Polished README**: Rewrote `README.md` with centered header, shields.io badges (Python, PyQt6, tests, license), highlighted feature summary, architecture diagram, three-system comparison table, verification pipeline explanation, desktop app feature table, proposition library overview, System E syntax reference with constructions and sequent format, axiom system summaries, project structure tree, test commands, requirements section, Python API and CLI usage examples, and academic references.
+
 ## [7.9.0] - 2025-XX-XX
 
 ### Added — File name shown as workspace title (main_window.py)

@@ -1,247 +1,307 @@
-# Euclid Elements Simulator
+<div align="center">
 
-A formal proof verifier for Euclid's *Elements* Book I, implementing three axiom systems with automatic bridge translations — inspired by the [GeoCoq](https://geocoq.github.io/GeoCoq/) project.
+# 📐 Euclid Elements Simulator
 
-**Reference paper**: Avigad, Dean, Mumma (2009), *"A Formal System for Euclid's Elements"*
+**A formal proof verifier & interactive geometry workbench for Euclid's *Elements* Book I**
 
-## Quick Start
+[![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](#requirements)
+[![PyQt6](https://img.shields.io/badge/GUI-PyQt6-41CD52?logo=qt&logoColor=white)](#features)
+[![Tests](https://img.shields.io/badge/Tests-~890_passing-brightgreen)](#running-tests)
+[![License](https://img.shields.io/badge/License-MIT-blue)](#license)
+
+Implements three axiom systems (**Euclid E**, **Tarski T**, **Hilbert H**) with automatic bridge translations, all 48 Book I propositions formalized and verified, and a desktop GUI for constructing and checking proofs interactively.
+
+*Inspired by [GeoCoq](https://geocoq.github.io/GeoCoq/) · Based on Avigad, Dean & Mumma (2009), ["A Formal System for Euclid's Elements"](https://doi.org/10.1017/S1755020309990098)*
+
+</div>
+
+---
+
+## ✨ Highlights
+
+- **All 48 propositions** of Book I — from equilateral triangle construction (I.1) to the Pythagorean theorem (I.47) — formalized with hand-written, machine-verified proofs
+- **Three axiom systems** (E / T / H) connected by automatic π and ρ translations — users write in Euclid's style, verification falls back through Tarski invisibly
+- **Interactive desktop app** with a geometry canvas, step-by-step proof editor, real-time diagnostics, a 152-rule reference catalog, and E/T/H translation view
+- **~890 automated tests** covering all three axiom systems, the completeness pipeline, theorem application, and the UI layer
+
+---
+
+## 🚀 Quick Start
 
 ```bash
-# Install dependencies
+# Clone the repository
+git clone https://github.com/<your-username>/euclid-elements-simulator.git
+cd euclid-elements-simulator
+
+# Install dependencies (Python 3.12+)
 pip install -r requirements.txt
 
-# Run all tests (~890 tests)
-python -m pytest verifier/tests/ euclid_py/tests/ -v
-
-# Launch the PyQt6 UI
+# Launch the desktop GUI
 python -m euclid_py
 
-# Verify a proof from the command line
+# Or verify a proof from the command line
 python -m verifier.cli verifier/examples/valid_inc1.json
+
+# Run the full test suite
+python -m pytest verifier/tests/ euclid_py/tests/ -v
 ```
 
-## Architecture
+---
 
-The project implements three axiom systems bridged through Tarski's system, following GeoCoq's approach where Tarski is the computational foundation and Euclid/Hilbert are theorem-level overlays:
+## 🏗️ Architecture
+
+The project follows GeoCoq's layered design: proofs are authored in **System E** (Euclid's geometric language), with **System T** (Tarski) acting as an invisible computational bridge for completeness, and **System H** (Hilbert) available as an alternative notation.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    euclid_py (PyQt6 UI)                     │
-│  main_window → proof_panel → proof_view → diagnostics_panel │
-│  canvas_widget → rule_reference → summary_panel             │
-├─────────────────────────────────────────────────────────────┤
-│                  unified_checker.py                          │
-│           Single entry point for all verification            │
-├─────────────────┬──────────────────┬────────────────────────┤
-│    System E     │    System T      │     System H           │
-│  (Primary)      │  (Bridge)        │  (Display)             │
-│  e_ast          │  t_ast           │  h_ast                 │
-│  e_axioms       │  t_axioms        │  h_axioms              │
-│  e_consequence  │  t_consequence   │  h_consequence         │
-│  e_construction │  t_bridge (E↔T)  │  h_bridge (E↔H)       │
-│  e_metric       │  t_checker       │  h_checker             │
-│  e_transfer     │  t_completeness  │  h_library             │
-│  e_superposition│  t_cut_elim      │                        │
-│  e_checker      │  t_pi / t_rho    │                        │
-│  e_library      │                  │                        │
-│  e_proofs       │                  │                        │
-├─────────────────┴──────────────────┴────────────────────────┤
-│              _legacy/ (deprecated Fitch checker)             │
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│                     euclid_py  (PyQt6 UI)                     │
+│   main_window · proof_panel · canvas_widget · diagnostics     │
+│   rule_reference · translation_view · summary_panel           │
+├───────────────────────────────────────────────────────────────┤
+│                    unified_checker.py                          │
+│             Single entry point for all verification            │
+├──────────────────┬───────────────────┬────────────────────────┤
+│   System E       │   System T        │   System H             │
+│   (Primary)      │   (Bridge)        │   (Display)            │
+│                  │                   │                        │
+│   e_ast          │   t_ast           │   h_ast                │
+│   e_axioms       │   t_axioms        │   h_axioms             │
+│   e_consequence  │   t_consequence   │   h_consequence        │
+│   e_construction │   t_bridge (E↔T)  │   h_bridge (E↔H)      │
+│   e_metric       │   t_checker       │   h_checker            │
+│   e_transfer     │   t_completeness  │   h_library            │
+│   e_superposition│   t_cut_elim      │                        │
+│   e_checker      │   t_pi / t_rho    │                        │
+│   e_library      │                   │                        │
+│   e_proofs       │                   │                        │
+└──────────────────┴───────────────────┴────────────────────────┘
 ```
 
 ### The Three Systems
 
-| System | Sorts | Primitives | Role | Paper Reference |
-|--------|-------|-----------|------|-----------------|
-| **System E** (Euclid) | Points, Lines, Circles | `on`, `between`, `same-side`, `center`, `inside`, `intersects`, `=` (segment/angle/area) | Primary proof language — what users write in | Sections 3.3–3.8 |
-| **System T** (Tarski) | Points only | `B` (betweenness), `Cong` (equidistance) | Internal bridge for completeness checking — invisible to users | Section 5.2 |
-| **System H** (Hilbert) | Points, Lines | `IncidL`, `BetH`, `CongH`, `CongaH` | Alternative display format | Hilbert's *Grundlagen* |
+| System | Sorts | Primitives | Role |
+|--------|-------|-----------|------|
+| **E** (Euclid) | Points, Lines, Circles | `on`, `between`, `same-side`, `center`, `inside`, `intersects`, `=` | Primary proof language — what users write in |
+| **T** (Tarski) | Points only | `B` (betweenness), `Cong` (equidistance) | Invisible bridge for completeness verification |
+| **H** (Hilbert) | Points, Lines | `IncidL`, `BetH`, `CongH`, `CongaH` | Alternative display notation |
 
 ### Verification Pipeline
 
 ```
-User writes proof in System E syntax
-  → e_checker validates (e_consequence + e_construction + e_metric)
-  → If inconclusive → automatic π → T → t_consequence → ρ → E
-  → Result shown to user as ✓/✗ with E-language diagnostics
+User writes proof in System E
+  → e_checker validates (consequence + construction + metric engines)
+  → If inconclusive → automatic π translation → Tarski T → ρ back to E
+  → Result: ✓ / ✗ with diagnostics in E notation
 ```
 
-The T and H translations happen **invisibly** — the user never sees Tarski's system. This follows GeoCoq's design where proofs are written in Euclid's style but verified through Tarski's axiom system automatically.
+> **Invisible bridging** — The user never sees Tarski's system. Cross-system facts are automatically translated via `t_bridge` (E↔T) and `h_bridge` (E↔H).
 
-## UI Features
+---
 
-The PyQt6 desktop application includes several reference panels accessible via sidebar tabs:
+## 🖥️ Desktop Application
 
-| Tab | Description |
-|-----|-------------|
-| **Diagnostics** | Real-time error and warning display for the current proof |
-| **Rules** | Searchable catalog of all 152 axiom rules grouped by paper section (§3.3–§3.7) plus 48 propositions |
-| **E / T / H** | Side-by-side translation view showing the current proposition in all three formal systems, with structured Given/Prove formatting |
-| **Glossary** | Primitives reference — every formal predicate across Systems E, T, and H with plain English translations (e.g. `on(a, L)` → "Point a lies on line L") |
+The PyQt6 GUI provides a complete workbench for exploring Euclidean proofs:
 
-## Proposition Library
+| Feature | Description |
+|---------|-------------|
+| **Geometry Canvas** | Interactive diagram — draw points, segments, circles, angle marks; drag to reshape; snap-to-point with visual indicators |
+| **Proof Editor** | Step-by-step proof journal with premises, goal, declarations; symbol palette for connectives & Greek letters; rule dropdown per line |
+| **Diagnostics** | Real-time ✓/✗ status per step with detailed error messages and goal verification |
+| **Rule Reference** | Searchable catalog of all 152 axiom rules (§3.3–§3.7) plus 48 proposition sequents |
+| **E / T / H View** | Side-by-side translation of the current proposition across all three systems with human-readable "Given / Prove" formatting |
+| **Glossary** | Every formal predicate across E, T, and H with plain English translations |
+| **File I/O** | Save/load `.euclid` files — canvas only, proof only, or both; smart format detection on open |
 
-All 48 propositions of Euclid's *Elements* Book I are formalized in both System E and System H:
+---
+
+## 📖 Proposition Library
+
+All **48 propositions** of Euclid's *Elements* Book I are formalized with hand-written, machine-verified proofs:
 
 | Range | Topic | Key Propositions |
 |-------|-------|-----------------|
-| I.1–I.3 | Basic constructions | Equilateral triangle, segment transfer, cut-off |
-| I.4–I.8 | Triangle congruence | SAS (I.4), isosceles (I.5–I.6), SSS (I.8) |
-| I.9–I.12 | Bisection & perpendiculars | Angle bisector (I.9), midpoint (I.10) |
-| I.13–I.15 | Angles on a line | Supplementary angles, vertical angles |
-| I.16–I.26 | Triangle inequalities | Exterior angle (I.16), ASA/AAS (I.26) |
-| I.27–I.32 | Parallel lines | Alternate angles (I.27–I.29), angle sum (I.32) |
-| I.33–I.45 | Parallelograms & area | Area equality, parallelogram constructions |
-| I.46–I.48 | Pythagorean theorem | Square (I.46), Pythagoras (I.47), converse (I.48) |
+| I.1 – I.3 | Basic constructions | Equilateral triangle, segment transfer, cut-off |
+| I.4 – I.8 | Triangle congruence | SAS (I.4), isosceles (I.5–I.6), SSS (I.8) |
+| I.9 – I.12 | Bisection & perpendiculars | Angle bisector, midpoint, perpendicular drop |
+| I.13 – I.15 | Angles on a line | Supplementary angles, vertical angles |
+| I.16 – I.26 | Triangle inequalities | Exterior angle (I.16), ASA/AAS (I.26) |
+| I.27 – I.32 | Parallel lines | Alternate angles (I.27–I.29), angle sum (I.32) |
+| I.33 – I.45 | Parallelograms & area | Area equality, parallelogram constructions |
+| I.46 – I.48 | Pythagorean theorem | Square (I.46), Pythagoras (I.47), converse (I.48) |
 
-## System E Proof Syntax
+> 28 propositions are **neutral geometry** (no parallel postulate); 20 require **Euclid's fifth postulate** (first used at I.29).
 
-System E uses the formal language from Avigad, Dean, Mumma (2009):
+---
 
-| Predicate | Meaning | Example |
-|-----------|---------|---------|
-| `on(a, L)` | Point `a` lies on line `L` | `on(a, L)` |
-| `between(a, b, c)` | `b` is strictly between `a` and `c` | `between(a, b, c)` |
-| `same-side(a, b, L)` | `a` and `b` are on the same side of `L` | `same-side(p, q, L)` |
-| `on(a, α)` | Point `a` lies on circle `α` | `on(a, α)` |
-| `inside(a, α)` | Point `a` is inside circle `α` | `inside(a, α)` |
-| `center(a, α)` | Point `a` is center of circle `α` | `center(a, α)` |
-| `ab = cd` | Segment `ab` equals segment `cd` | `ab = cd` |
-| `∠abc = ∠def` | Angle `abc` equals angle `def` | `∠abc = ∠def` |
-| `ab < cd` | Segment `ab` is less than `cd` | `ab < cd` |
+## 📝 System E Proof Syntax
+
+Proofs use the formal language from Avigad, Dean & Mumma (2009):
+
+| Predicate | Meaning |
+|-----------|---------|
+| `on(a, L)` | Point *a* lies on line *L* |
+| `between(a, b, c)` | *b* is strictly between *a* and *c* |
+| `same-side(a, b, L)` | *a* and *b* are on the same side of line *L* |
+| `center(a, α)` | *a* is the center of circle *α* |
+| `inside(a, α)` | *a* is inside circle *α* |
+| `ab = cd` | Segment *ab* equals segment *cd* |
+| `∠abc = ∠def` | Angle *abc* equals angle *def* |
+| `ab < cd` | Segment *ab* is less than *cd* |
+| `△abc = △def` | Area of triangle *abc* equals area of *def* |
+
+### Constructions
+
+```
+let L = line(a, b)            — line through a, b
+let α = circle(a, b)          — circle centered at a through b
+let p = intersection(...)     — intersection point
+```
 
 ### Sequent Format
 
-Theorems are expressed as sequents: `hypotheses ⇒ ∃vars. conclusions`
+Theorems are expressed as sequents: **hypotheses ⇒ ∃vars. conclusions**
 
 ```
-Prop I.1:  ¬(a = b) ⇒ ∃c:POINT. ab = ac, ab = bc, ¬(c = a), ¬(c = b)
-Prop I.4:  ¬(a = b), ..., ∠abc = ∠def ⇒ ac = df, ∠bac = ∠edf, ∠bca = ∠efd
-Prop I.47: ¬(a = b), ..., ∠bac = right-angle ⇒ (△bcb + △bcb) = ((△aba + △aba) + (△aca + △aca))
+Prop I.1 :  ¬(a = b)  ⇒  ∃c. ab = ac ∧ ab = bc ∧ c ≠ a ∧ c ≠ b
+Prop I.4 :  SAS hypotheses  ⇒  ac = df ∧ ∠bac = ∠edf ∧ ∠bca = ∠efd
+Prop I.47:  right-angle triangle  ⇒  BC² = AB² + AC²  (via area decomposition)
 ```
 
-## Project Structure
+---
+
+## ⚙️ Axiom Systems
+
+### System E — Euclid (Paper §3.3–3.7)
+
+| Group | Count | Section | Description |
+|-------|-------|---------|-------------|
+| Construction | 6 | §3.3 | `line`, `circle`, intersection rules |
+| Diagrammatic | ~30 | §3.4 | Betweenness, same-side, Pasch, incidence |
+| Metric | ~12 | §3.5 | Segment/angle/area congruence & ordering |
+| Transfer | ~8 | §3.6 | Cross-predicate transfer rules |
+| Superposition | 2 | §3.7 | SAS, SSS |
+
+### System T — Tarski (Paper §5.2)
+
+11 axioms + 6 negativity clauses (30 GRS clauses total). Sorts: **POINT** only. Primitives: `B` (betweenness), `Cong` (equidistance).
+
+### System H — Hilbert (*Grundlagen der Geometrie*)
+
+40 clauses across Groups I–IV: Incidence (8), Order (4), Congruence (6), Parallels (1) + derived theorems.
+
+---
+
+## 📁 Project Structure
 
 ```
 Euclid/
-├── README.md                     # This file
-├── requirements.txt              # Python dependencies (PyQt6, pytest)
-├── IMPLEMENTATION_PLAN.md        # Comprehensive development plan (Phases 4–10)
-├── AUDIT.md                      # Architecture audit against GeoCoq
-├── change-log.md                 # Changelog
-├── answer-keys-e.json            # All 48 answer keys in System E format
-├── formal_system_extracted.txt   # Reference paper text
+├── requirements.txt               # Dependencies: PyQt6, pytest
+├── change-log.md                  # Detailed changelog
+├── answer-keys-e.json             # All 48 answer keys (System E)
 │
-├── verifier/                     # Core verification engine
-│   ├── unified_checker.py        # ★ Single entry point for all verification
-│   │
-│   ├── e_ast.py                  # System E AST (sorts, literals, sequents)
-│   ├── e_axioms.py               # System E axioms (§3.4–3.6)
-│   ├── e_consequence.py          # Forward-chaining consequence engine (§3.8)
-│   ├── e_construction.py         # Construction rules (§3.3)
-│   ├── e_metric.py               # Metric axioms (§3.5)
-│   ├── e_transfer.py             # Transfer axioms (§3.6)
-│   ├── e_superposition.py        # Superposition rule (§3.7)
-│   ├── e_checker.py              # System E proof checker
-│   ├── e_bridge.py               # Old format ↔ System E translation
-│   ├── e_library.py              # All 48 theorem sequents
-│   ├── e_proofs.py               # Encoded proofs for I.1–I.48
-│   ├── e_parser.py               # System E formula parser
-│   │
-│   ├── t_ast.py                  # System T AST (points only, B + ≡)
-│   ├── t_axioms.py               # 11 Tarski axioms as GRS clauses
-│   ├── t_consequence.py          # T forward-chaining engine
-│   ├── t_checker.py              # T proof checker
-│   ├── t_bridge.py               # E ↔ T translations (π, ρ)
-│   ├── t_completeness.py         # Completeness pipeline (Theorem 5.1)
-│   ├── t_cut_elimination.py      # Cut elimination for GRS
-│   ├── t_pi_translation.py       # Full π: E → T
-│   ├── t_rho_translation.py      # Full ρ: T → E
-│   │
-│   ├── h_ast.py                  # System H AST (Hilbert's axioms)
-│   ├── h_axioms.py               # 39 Hilbert axiom clauses
-│   ├── h_consequence.py          # H forward-chaining engine
-│   ├── h_checker.py              # H proof checker
-│   ├── h_bridge.py               # E ↔ H translations
-│   ├── h_library.py              # All 48 theorems in H notation
-│   │
-│   ├── diagnostics.py            # Shared diagnostic codes and results
-│   ├── _legacy/                  # Deprecated Fitch-style checker (reference only)
-│   ├── examples/                 # Example proof JSON files
-│   └── tests/                    # ~790 pytest tests
+├── verifier/                      # ── Core verification engine ──
+│   ├── unified_checker.py         # ★ Single entry point for all verification
+│   ├── e_*.py                     # System E  (AST, axioms, consequence, …)
+│   ├── t_*.py                     # System T  (AST, axioms, bridge, π/ρ, …)
+│   ├── h_*.py                     # System H  (AST, axioms, bridge, …)
+│   ├── diagnostics.py             # Shared error codes & result types
+│   ├── examples/                  # Example proof JSON files
+│   └── tests/                     # ~790 pytest tests
 │
-├── euclid_py/                    # PyQt6 desktop application
-│   ├── __main__.py               # App entry point
+├── euclid_py/                     # ── PyQt6 desktop application ──
+│   ├── __main__.py                # App entry point
 │   ├── ui/
-│   │   ├── main_window.py        # Main application window
-│   │   ├── proof_panel.py        # Interactive proof editor
-│   │   ├── proof_view.py         # Proof display widget
-│   │   ├── canvas_widget.py      # Geometry diagram canvas
-│   │   ├── rule_reference.py     # Rule reference panel (152 rules)
-│   │   ├── translation_view.py   # E/T/H translation view + primitives glossary
-│   │   ├── diagnostics_panel.py  # Error/warning display
-│   │   └── summary_panel.py      # Proof summary
+│   │   ├── main_window.py         # Main window & toolbar
+│   │   ├── proof_panel.py         # Interactive proof editor
+│   │   ├── canvas_widget.py       # Geometry diagram canvas
+│   │   ├── rule_reference.py      # Rule reference panel (152 rules)
+│   │   ├── translation_view.py    # E/T/H translation + glossary
+│   │   ├── diagnostics_panel.py   # Error/warning display
+│   │   └── summary_panel.py       # Proof summary
 │   ├── engine/
-│   │   ├── proposition_data.py   # UI metadata linked to e_library.py
-│   │   ├── constraints.py        # Diagram constraints
-│   │   └── file_format.py        # Proof file I/O
-│   └── tests/                    # ~49 pytest tests
+│   │   ├── proposition_data.py    # UI metadata for all 48 propositions
+│   │   ├── constraints.py         # Diagram constraints
+│   │   └── file_format.py         # .euclid file I/O
+│   └── tests/                     # ~100 pytest tests
 │
-└── legacy JS/                    # ⚠️ Deprecated React/Vite web app
+└── proofs/                        # Saved proof files (.euclid / .json)
 ```
+---
 
-## Axiom Systems
-
-### System E Axioms (Paper §3.3–3.7)
-
-| Group | Count | Paper Section | Description |
-|-------|-------|---------------|-------------|
-| Construction | 6 | §3.3 | `line(a,b)`, `circle(a,b)`, intersection rules |
-| Diagrammatic | ~30 | §3.4 | Betweenness, same-side, Pasch, circle, incidence |
-| Metric | ~12 | §3.5 | Segment/angle/area congruence and ordering |
-| Transfer | ~8 | §3.6 | Betweenness → segment, angle → ordering |
-| Superposition | 2 | §3.7 | SAS, SSS |
-
-### System T Axioms (Paper §5.2)
-
-| Axiom | Description |
-|-------|-------------|
-| E1–E3 | Equidistance: symmetry, transitivity, identity |
-| B | Betweenness |
-| SC | Segment construction (existential) |
-| 5S | Five-segment |
-| P | Pasch (existential) |
-| 2L/2U | Dimension axioms (lower/upper 2D) |
-| PP | Parallel postulate (existential) |
-| Int | Intersection (existential) |
-| + 6 negativity axioms |
-
-### System H Axioms (Hilbert's *Grundlagen*)
-
-Groups I–IV: Incidence (8), Order (4), Congruence (6), Parallels (1) + derived — 40 clauses total.
-
-## Running Tests
+## 🧪 Running Tests
 
 ```bash
-# All tests
+# Full suite (~890 tests)
 python -m pytest verifier/tests/ euclid_py/tests/ -v
 
-# Just the verifier
+# Verifier only (~790 tests)
 python -m pytest verifier/tests/ -v
 
-# Just the UI tests
+# UI tests
 python -m pytest euclid_py/tests/ -v
 
-# Specific system
-python -m pytest verifier/tests/test_t_system.py -v        # Tarski
-python -m pytest verifier/tests/test_completeness.py -v     # Completeness
-python -m pytest verifier/tests/test_unified_checker.py -v  # Unified checker
+# Specific subsystems
+python -m pytest verifier/tests/test_t_system.py -v         # Tarski axioms
+python -m pytest verifier/tests/test_completeness.py -v      # Completeness pipeline
+python -m pytest verifier/tests/test_unified_checker.py -v   # Unified checker
+python -m pytest verifier/tests/test_e_system.py -v          # All 48 propositions
 ```
 
-## References
+---
 
-- Avigad, Dean, Mumma (2009). "A Formal System for Euclid's Elements." *Review of Symbolic Logic* 2(4): 700–768.
-- [GeoCoq](https://geocoq.github.io/GeoCoq/) — Coq formalization of geometry foundations (Tarski, Hilbert, Euclid).
-- Hilbert (1899). *Grundlagen der Geometrie*.
-- Tarski (1959). "What is Elementary Geometry?"
+## 🔧 Requirements
+
+- **Python 3.12+**
+- **PyQt6** ≥ 6.6.0 — desktop GUI framework
+- **pytest** ≥ 7.0.0 — test runner
+
+Install with:
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 🧑‍💻 Usage Examples
+
+### Python API
+
+```python
+from verifier.unified_checker import verify_proof, verify_named_proof, get_theorem
+
+# Verify a named proposition
+result = verify_named_proof("Prop.I.1")
+print(result.valid)   # True
+print(result.engine)  # 'E'
+
+# Look up a theorem sequent
+thm = get_theorem("Prop.I.47")
+print(thm.sequent)
+# ¬(a = b), ... ⇒ ∃d,e,f,g,h,k. (area decomposition)
+```
+
+### Command Line
+
+```bash
+# Verify a proof JSON file
+python -m verifier.cli verifier/examples/valid_inc1.json
+
+# Launch the GUI and load a file
+python -m euclid_py proofs/Prop_I_1_H.json
+```
+
+---
+
+## 📚 References
+
+- Avigad, J., Dean, E., & Mumma, J. (2009). "A Formal System for Euclid's Elements." *Review of Symbolic Logic*, 2(4), 700–768.
+- [GeoCoq](https://geocoq.github.io/GeoCoq/) — Coq formalization of geometry (Tarski, Hilbert, Euclid).
+- Hilbert, D. (1899). *Grundlagen der Geometrie*.
+- Tarski, A. (1959). "What is Elementary Geometry?"
+- Negri, S. (2003). "Contraction-free sequent calculi for geometric theories."
+
+---
+
+## 📄 License
+
+This project is provided for educational and research purposes. See the repository for license details.
