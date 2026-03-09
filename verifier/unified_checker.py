@@ -302,7 +302,7 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
         """Translate current E known-set to H literals."""
         h_known: Set[_HLit] = set()
         for lit in known:
-            hl = e_literal_to_h(lit)
+            hl = e_literal_to_h(lit, sort_ctx)
             if hl is not None:
                 h_known.add(hl)
         return h_known
@@ -360,24 +360,28 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
         step_system = _detect_system(stmt_str)
 
         if step_kind == StepKind.CONSTRUCTION:
-            # Construction rule: check prereqs from refs, add conclusions
+            # Construction rule: match conclusion pattern to derive
+            # var_map, then validate prerequisites against known facts.
             rule = CONSTRUCTION_RULE_BY_NAME.get(just)
             if rule is None:
                 lr.valid = False
                 lr.errors.append(f"Unknown construction rule '{just}'.")
             else:
-                # Check that referenced lines supply the prereqs
-                # For now we just check all assertions are consistent
-                # and add them to known
-                for lit in step_lits:
-                    checker.known.add(lit)
-                    # Infer sorts from atom structure (e.g. center → circle)
-                    _infer_sorts_from_atom(lit.atom, sort_ctx)
-                    # Register any new variables from the literal
-                    for vname in _literal_var_names(lit):
-                        if vname not in checker.variables:
-                            checker.variables[vname] = _infer_sort(
-                                vname, sort_ctx)
+                # Check prerequisites via pattern matching
+                if rule.prereq_pattern:
+                    _vm, prereq_err = _match_construction_prereqs(
+                        rule, step_lits, checker.known, checker)
+                    if prereq_err is not None:
+                        lr.valid = False
+                        lr.errors.append(prereq_err)
+                if lr.valid:
+                    for lit in step_lits:
+                        checker.known.add(lit)
+                        _infer_sorts_from_atom(lit.atom, sort_ctx)
+                        for vname in _literal_var_names(lit):
+                            if vname not in checker.variables:
+                                checker.variables[vname] = _infer_sort(
+                                    vname, sort_ctx)
         elif step_kind == StepKind.DIAGRAMMATIC:
             for lit in step_lits:
                 if lit in checker.known:
@@ -400,7 +404,7 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                 # bridge known facts to H and check via H engine
                 if not ok and step_system == "H":
                     h_known = _e_known_to_h(checker.known)
-                    h_lit = e_literal_to_h(lit)
+                    h_lit = e_literal_to_h(lit, sort_ctx)
                     if h_lit is not None:
                         ok = (h_lit in h_known or
                               h_engine.is_consequence(h_known, h_lit))
@@ -418,7 +422,7 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                     # Try H fallback
                     if not ok:
                         h_known = _e_known_to_h(checker.known)
-                        h_lit = e_literal_to_h(lit)
+                        h_lit = e_literal_to_h(lit, sort_ctx)
                         if h_lit is not None and (
                             h_lit in h_known or
                             h_engine.is_consequence(h_known, h_lit)
@@ -505,27 +509,33 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                     lr.errors.append(
                         f"Unknown theorem '{just}'.")
             if thm is not None:
+                # Derive variable mapping from step literals vs
+                # theorem conclusions so hypotheses can be checked
+                # with the user's actual variable names.
+                var_map = _match_theorem_var_map(thm, step_lits)
                 # Check hypotheses of the theorem are met
                 for hyp in thm.sequent.hypotheses:
-                    if hyp not in checker.known:
+                    inst = substitute_literal(hyp, var_map)
+                    if inst not in checker.known:
                         # Try via consequence engines
-                        if hyp.is_diagrammatic:
+                        if inst.is_diagrammatic:
                             ok = checker.consequence_engine.is_consequence(
-                                checker.known, hyp, checker.variables)
-                        elif hyp.is_metric:
+                                checker.known, inst, checker.variables)
+                        elif inst.is_metric:
                             ok = checker.metric_engine.is_consequence(
-                                checker.known, hyp)
+                                checker.known, inst)
                         else:
-                            ok = hyp in checker.known
+                            ok = inst in checker.known
                         if not ok:
                             lr.valid = False
                             lr.errors.append(
                                 f"Theorem '{just}' hypothesis not "
-                                f"met: {hyp}")
+                                f"met: {inst}")
                 if lr.valid:
-                    # Add theorem conclusions to known facts
+                    # Add substituted theorem conclusions to known
                     for conc in thm.sequent.conclusions:
-                        checker.known.add(conc)
+                        inst_conc = substitute_literal(conc, var_map)
+                        checker.known.add(inst_conc)
                     # Also add step's own literals (which may be
                     # a subset of the conclusions)
                     for lit in step_lits:
@@ -662,6 +672,129 @@ def _literal_var_names(lit: Literal) -> Set[str]:
     """Extract variable names from a literal."""
     from .e_ast import atom_vars
     return atom_vars(lit.atom)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Pattern matching — derive var_map from rule patterns vs step literals
+# ═══════════════════════════════════════════════════════════════════════
+
+def _atom_fields(atom) -> Optional[Tuple[type, Tuple[str, ...]]]:
+    """Return (atom_class, (string_fields...)) for pattern matching.
+
+    Only handles atoms whose fields are all plain strings (the kind used
+    in construction-rule patterns).  Returns ``None`` for atoms that
+    contain ``Term`` sub-expressions (Equals on magnitudes, LessThan).
+    """
+    from .e_ast import (On, SameSide, Between, Center, Inside,
+                        Intersects, Equals)
+    if isinstance(atom, On):
+        return (On, (atom.point, atom.obj))
+    if isinstance(atom, SameSide):
+        return (SameSide, (atom.a, atom.b, atom.line))
+    if isinstance(atom, Between):
+        return (Between, (atom.a, atom.b, atom.c))
+    if isinstance(atom, Center):
+        return (Center, (atom.point, atom.circle))
+    if isinstance(atom, Inside):
+        return (Inside, (atom.point, atom.circle))
+    if isinstance(atom, Intersects):
+        return (Intersects, (atom.obj1, atom.obj2))
+    if isinstance(atom, Equals):
+        if isinstance(atom.left, str) and isinstance(atom.right, str):
+            return (Equals, (atom.left, atom.right))
+    return None
+
+
+def _try_match_literal(
+    pattern: Literal, concrete: Literal, bindings: Dict[str, str]
+) -> Optional[Dict[str, str]]:
+    """Try to unify *pattern* with *concrete*, extending *bindings*.
+
+    Returns updated bindings on success, ``None`` on failure.
+    The original *bindings* dict is not mutated.
+    """
+    if pattern.polarity != concrete.polarity:
+        return None
+    pf = _atom_fields(pattern.atom)
+    cf = _atom_fields(concrete.atom)
+    if pf is None or cf is None:
+        return None
+    pat_cls, pat_args = pf
+    con_cls, con_args = cf
+    if pat_cls is not con_cls or len(pat_args) != len(con_args):
+        return None
+    new_bindings = dict(bindings)
+    for pvar, cval in zip(pat_args, con_args):
+        if pvar in new_bindings:
+            if new_bindings[pvar] != cval:
+                return None
+        else:
+            new_bindings[pvar] = cval
+    return new_bindings
+
+
+def _match_construction_prereqs(
+    rule,
+    step_lits: List[Literal],
+    known: Set[Literal],
+    checker,
+) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
+    """Derive a var_map from *step_lits* vs the rule's conclusion pattern,
+    then check that every prerequisite (instantiated) is in *known* or
+    derivable via the consequence engine.
+
+    Returns ``(var_map, error_msg)``.  *error_msg* is ``None`` on success.
+    """
+    bindings: Dict[str, str] = {}
+    remaining = list(step_lits)  # track unconsumed step literals
+
+    for pat_lit in rule.conclusion_pattern:
+        matched = False
+        for i, step_lit in enumerate(remaining):
+            result = _try_match_literal(pat_lit, step_lit, bindings)
+            if result is not None:
+                bindings = result
+                remaining.pop(i)  # consume this step literal
+                matched = True
+                break
+        if not matched:
+            # Could not match this conclusion pattern element — skip
+            # prerequisite checking (rule may be used in a non-standard
+            # way; we'll still add the step's literals below).
+            return None, None
+
+    # All conclusion patterns matched — now check prerequisites
+    for prereq in rule.prereq_pattern:
+        inst = substitute_literal(prereq, bindings)
+        if inst in known:
+            continue
+        # Try consequence engine
+        ok = checker.consequence_engine.is_consequence(
+            known, inst, checker.variables)
+        if not ok:
+            return bindings, (
+                f"Construction prerequisite not met: {inst}")
+    return bindings, None
+
+
+def _match_theorem_var_map(
+    thm: ETheorem,
+    step_lits: List[Literal],
+) -> Dict[str, str]:
+    """Derive a variable mapping from step literals matched against
+    the theorem's conclusions.  Falls back to an empty mapping if
+    pattern matching fails (variables happen to be the same).
+    """
+    bindings: Dict[str, str] = {}
+    remaining = list(step_lits)  # track unconsumed step literals
+    for conc in thm.sequent.conclusions:
+        for i, step_lit in enumerate(remaining):
+            result = _try_match_literal(conc, step_lit, bindings)
+            if result is not None:
+                bindings = result
+                remaining.pop(i)  # consume this step literal
+                break
+    return bindings
 
 
 def _infer_sorts_from_atom(atom, sort_ctx: Dict[str, Sort]) -> None:

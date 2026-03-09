@@ -4,6 +4,117 @@ All notable changes to the Euclid Elements Simulator project.
 
 ## [7.9.1] - 2025-XX-XX
 
+### Added — Crash logging for debugging (proof_panel.py, __main__.py)
+
+- **`euclid_crash.log`**: All unhandled exceptions are now logged with full stack traces to `euclid_crash.log` in the workspace root directory. Users can attach this file when reporting bugs.
+- **Global exception hook**: `__main__.py` installs `sys.excepthook` that writes any unhandled exception (including those in Qt signal handlers) to the crash log before printing to stderr.
+- **`_get_crash_logger()`**: Centralized logger in `proof_panel.py` using Python's `logging` module. Writes timestamped entries at DEBUG level and above.
+- **`_eval_all` crash guard**: Top-level try/except in `_eval_all` catches exceptions from `_eval_all_inner` (autofill, proof JSON building, thread launch). Shows ⚠ in the goal status with a tooltip pointing to the crash log.
+- **`_on_verify_finished` crash guard**: Catches exceptions from the result-handling code path. Shows ⚠ status without crashing the UI.
+- **`switch_system` crash guard**: Catches exceptions from formula translation. Shows ⚠ status with details.
+- **Autofill exception logging**: When `_generate_autofill` throws (e.g., from the pattern matcher or parser), the exception is logged at WARNING level with the step number, justification, and refs for context. The step is marked ✗ with "Incorrect justification" tooltip.
+- **Verifier thread exception logging**: `_VerifyWorker.run()` logs exceptions at ERROR level before emitting them to the UI thread.
+
+### Fixed — UI freeze ("Not Responding") during proof verification (proof_panel.py, main_window.py, __main__.py)
+
+- **Background thread verification**: `_eval_all()` in the proof panel and `_run_verification()` in the verifier screen now run `verify_e_proof_json` on a background `QThread` instead of blocking the UI thread. The consequence engine's ground-clause generation uses Cartesian products of all declared variables × all axioms, which scales combinatorially and caused multi-second freezes (Windows "Not Responding") on proofs with many points, lines, or circles.
+- **`_VerifyWorker` (QObject)**: New worker class in `proof_panel.py` that wraps `verify_e_proof_json` and emits the result via a `finished(object)` signal. Shared by both the proof panel and verifier screen.
+- **Busy indicator**: Eval/All buttons are disabled during verification and the goal status shows ⏳. The verifier screen's Verify button and status label also show a "Verifying…" state.
+- **Synchronous fallback for tests**: When no Qt event loop is running (detected via `app.property("_euclid_event_loop_running")`), verification falls back to synchronous execution so existing tests continue to work without an event loop.
+- **RuntimeError protection**: `_on_verify_finished` wraps widget access (`refresh_from_step`, `setEnabled`) in `try/except RuntimeError` to handle the case where widgets are deleted by C++ between thread start and result delivery.
+
+### Fixed — Broken tests referencing removed `_detail` widget (test_system_e_integration.py)
+
+- **Three tests updated**: `test_all_48_open_without_verifier_error`, `test_no_steps_shows_neutral_prompt`, and `test_ui_invalid_proof_detail_no_crash` referenced `pp._detail.text()` which was removed in a prior release. Updated to use `pp._goal_status.toolTip()` which replaced the detail bar's role per the changelog.
+
+### Fixed — Autofill marks ✗ on incorrect justification instead of filling bad text (proof_panel.py)
+
+- **Autofill failure validation**: When a construction rule or theorem autofill cannot match prerequisites/hypotheses against the referenced lines (wrong refs, missing refs, etc.), the step is now marked ✗ immediately with an "Incorrect justification" tooltip instead of generating a formula with unbound template variables.
+- **`_AUTOFILL_FAIL` sentinel**: `_generate_autofill` returns a sentinel value when a known rule or theorem name is recognised but pattern matching fails. Unknown justifications (e.g. `Diagrammatic`) still return `None` and proceed normally to the verifier.
+- **`_match_hypotheses` returns match count**: Now returns `(bindings, matched_count)` so callers can verify all patterns were successfully matched before generating output.
+- **Autofill exception guard**: `_generate_autofill` calls are now wrapped in `try/except` so that any unexpected exception from the parser or pattern matcher marks the step ✗ instead of crashing the application.
+
+### Fixed — Crash when switching systems (E/T/H) during verification (proof_panel.py, main_window.py)
+
+- **`_cancel_verification` helper**: New method on both `ProofPanel` and `_VerifierScreen` that disconnects the background thread's `finished` signal, waits for the thread to quit, and re-enables eval buttons. This prevents stale verification results from being applied to rewritten formulas after a system switch.
+- **`switch_system` cancels in-flight verification**: Calls `_cancel_verification()` before rewriting formulas, preventing a race condition where the background thread finishes and `_on_verify_finished` applies results based on pre-translation line IDs to the post-translation step objects.
+- **`clear()` cancels in-flight verification**: Prevents stale results from applying to a freshly cleared proof panel when a new proposition is loaded.
+- **`load_proof_file` cancels in-flight verification**: Verifier screen cancels any running thread before loading new proof data.
+
+### Fixed — H bridge crash: on(p, α) wrongly translated to IncidL(p, α) (h_bridge.py, proof_panel.py, unified_checker.py)
+
+- **Root cause**: `e_literal_to_h` blindly converted all `On(point, obj)` atoms to `IncidL(point, obj)` without checking whether `obj` is a line or a circle. In System E, `On` is overloaded for both `on(p, L)` (point on line) and `on(p, α)` (point on circle). Hilbert's system has no circles, so `on(p, α)` has no H equivalent and must return `None`. The malformed `IncidL(p, α)` formulas could crash the parser or consequence engine when the proof was evaluated after switching to System H.
+- **`_is_circle_name` helper**: New function in `h_bridge.py` that checks whether a variable name is a circle — uses the passed `sort_ctx` dict when available, otherwise falls back to the System E naming convention (Greek letters α β γ … and spelled-out names like "alpha" = circle).
+- **`e_literal_to_h` accepts optional `sort_ctx`**: When the `On` atom's object is identified as a circle, returns `None` (no H equivalent) instead of `IncidL`.
+- **`switch_system` builds sort context**: Before translating, scans declarations and all premise/step text to build a `sort_ctx` dict. Passes it to `e_literal_to_h` so circle variables are correctly identified even when their names are non-standard.
+- **`unified_checker` passes `sort_ctx` to all `e_literal_to_h` calls**: The three call sites in `verify_e_proof_json` (known-set translation, H-syntax check, H fallback) now pass the sort context.
+
+### Added — Snap toggle on canvas toolbar (canvas_widget.py, main_window.py)
+
+- **Snap toggle button (⊹)**: A checkable button at the end of the drawing toolbar toggles snap-to-circle, snap-to-line, and snap-to-intersection on/off. When enabled (default, highlighted in primary colour), drawing tools snap new points to circle boundaries, segment edges, and circle-circle / segment-circle intersections. When disabled, only existing-point snapping remains active, allowing free placement of points without magnetic pull to nearby geometry. The toggle sets `_snap_enabled` on the canvas scene, which gates `_find_snap` to skip non-point snap passes.
+
+### Added — Fitch auto-fill on Eval (proof_panel.py)
+
+- **Auto-fill sentence from justification**: When a proof line has a justification (e.g. `let-circle`, `Prop.I.1`) and refs filled in but the sentence text is empty, pressing **Eval** auto-generates the sentence before verification. Supports all 20 construction rules and all 48 theorem propositions.
+- **Hypothesis-based variable mapping**: The auto-fill engine parses the referenced lines into AST literals, then pattern-matches them against the rule's prerequisites or theorem's hypotheses using the same `_try_match_literal` algorithm the verifier uses. This produces correct variable bindings (e.g. `¬(a = c)` matched against hypothesis `¬(a = b)` yields `a→a, b→c`). Existential/new variables get fresh names that avoid collisions with all names already in the proof.
+- **Sort-aware fresh names**: New variables follow System E conventions — lowercase for points, uppercase for lines, Greek for circles — and skip any name already used in the proof.
+
+### Changed — Two-click select-then-edit for proof lines (proof_panel.py)
+
+- **First click = red arrow selection**: Clicking a proof line now shows the red arrow indicator without entering edit mode. The text field does not receive focus.
+- **Second click = edit mode**: Clicking an already-selected line (with red arrow) focuses the text field for editing. This prevents accidental edits when selecting lines for reference.
+
+### Fixed — Rays not included in save files (canvas_widget.py, file_format.py, main_window.py)
+
+- **`get_state()`**: Canvas state serialization now includes `"rays"` array with `from`, `through`, and `color` fields for each `RayItem`.
+- **`serialize_to_json()`**: The `.euclid` file format now writes a `"rays"` key in the canvas section, preserving rays alongside segments, circles, and angle marks.
+- **`deserialize_from_json()`**: File parsing now reads the `"rays"` key from saved files. Older files without rays load without error (defaults to empty list).
+- **`_load_canvas_from_data()`**: File loading now restores rays with correct color and dotted-line pen style via `add_ray()`.
+
+### Fixed — Construction rules accepted without prerequisite validation (unified_checker.py)
+
+- **Construction prerequisite checking**: Construction steps (e.g. `let-intersection-circle-line-one`, `let-line`, `let-circle`) were blindly accepted — all user-asserted literals were added to `known` with no prerequisite validation. The handler now derives a variable mapping by pattern-matching the step's literals against the rule's `conclusion_pattern`, then instantiates the rule's `prereq_pattern` and verifies each prerequisite is in `known` (or derivable via the consequence engine). For example, `let-intersection-circle-line-one` now requires `intersects(γ, N)` to be established before accepting `on(g, N), on(g, γ)`.
+
+### Fixed — Theorem application skipped variable substitution (unified_checker.py)
+
+- **Theorem var_map derivation**: Theorem application (`Prop.I.x`) checked hypotheses using the raw template variables from the theorem definition instead of substituting the user's actual variable names. This worked by coincidence when variable names matched but would silently accept invalid proofs when names differed. The handler now derives a variable mapping by pattern-matching step literals against the theorem's conclusions, then applies `substitute_literal` to both hypotheses (for validation) and conclusions (for adding to `known`).
+
+### Fixed — Pattern matcher allowed duplicate step-literal consumption (unified_checker.py)
+
+- **Consumed-literal tracking**: `_match_construction_prereqs` and `_match_theorem_var_map` iterated over all step literals for each pattern literal without tracking which step literals had already been consumed. When two conclusion-pattern literals had the same atom type (e.g. `on(a, L)` and `on(b, L)` in `let-line`), the second pattern would re-match the first step literal, binding both pattern variables to the same concrete value (e.g. `"a"→"a"`, `"b"→"a"`). This produced incorrect prerequisite substitutions like `¬(a = a)` instead of `¬(a = b)`. Both functions now pop matched step literals from a remaining-list so each concrete literal is consumed at most once.
+
+### Added — Soundness test suite (verifier/tests/test_soundness.py)
+
+- **Layered soundness test suite** with 6 layers testing the unified checker at every level:
+  - **L1 — Internal helpers** (31 tests): `_atom_fields`, `_try_match_literal`, `_classify_justification`, `_detect_system`, `_match_theorem_var_map`, `_match_construction_prereqs` unit-tested in isolation with binding-conflict, polarity-mismatch, type-mismatch, and immutability checks.
+  - **L2 — Engine isolation** (25+ tests): Each `StepKind` handler verified for correct rejection/acceptance with error-message inspection. Covers construction prerequisites, theorem hypothesis substitution, diagrammatic consequence, Given premise matching, metric reflexivity/symmetry, transfer derivation, Assume, Reit, Lemma:name citation, unknown justifications.
+  - **L3 — Multi-step chains** (6 tests): Known-set propagation across step types (construction→diagrammatic, Given→construction→diagrammatic chains); failed-step blocking (failed construction doesn't pollute known); circular theorem dependency detection; two-circle intersection chain; derived-set consistency.
+  - **L4 — Answer-key regression** (144 tests): Parametrized `verify_named_proof` for all 48 propositions (×3 checks: no crash, sequent well-formed, no self-availability for circularity).
+  - **L5 — Adversarial** (13 tests): Polarity inversion (¬on vs on), malformed JSON (missing declarations/lines/goal, empty/garbage statements, unparseable goals), goal injection (unknown construction/justification/parse-error lines don't pollute known), duplicate line IDs, zero IDs, very long statements.
+  - **L6 — Solved-proof file integration** (12 tests): Loads `solved_proofs/Proposition I.1.euclid`, converts `.euclid` format to verifier JSON, and verifies every line individually — Given, construction (let-circle ×2), diagrammatic (Intersection, Generality), intersection (circle-circle), transfer (Segment transfer), metric (CN1 Transitivity), goal establishment, and no global errors.
+
+### Fixed — Ray tool objects can now be deleted (canvas_widget.py)
+
+- **Delete tool now removes rays**: `RayItem` was missing from the `isinstance` checks in the delete-tool click handler — both the parent-walk loop (line 1235) and the removal branch (line 1241). Clicking a ray with the delete tool did nothing. Now rays are deletable like segments, circles, and angle marks. Fixes interference when constructing overlapping line segments (e.g. Proposition I.2).
+
+### Fixed — Crash when labelling a point after equality assertion (canvas_widget.py)
+
+- **Deferred proxy widget destruction**: `_dismiss_label_popover()` was synchronously destroying the label popover's `QGraphicsProxyWidget` while still inside the `returnPressed` / `clicked` signal handler of its child widgets (`QLineEdit`, `QPushButton`). CPython's reference counting immediately invoked the C++ destructor, causing a use-after-free crash when Qt returned to the now-destroyed signal emitter. Fixed by calling `widget.deleteLater()` to defer destruction to the next event loop iteration.
+- **Ray undo restore preserves dotted style**: Restoring rays from undo snapshots now uses `DotLine` pen style instead of reverting to solid.
+
+### Fixed — Ray pen overridden to solid in add_ray() (canvas_widget.py)
+
+- **add_ray() preserved dotted style**: `add_ray()` was overriding the `RayItem` constructor's dotted pen with `QPen(color, 2)` (solid 2px) immediately after creation. Now uses `DotLine` at 1.5px matching the constructor.
+
+### Fixed — Equality tool blocked by overlapping rays (canvas_widget.py)
+
+- **Equality tool sees through rays**: The equality tool used `itemAt()` which returns only the topmost item. Since rays render at z=2 (above segments at z=1), clicking an overlapping segment hit the ray instead, and the parent-walk returned `None`, silently losing the click. Now uses `items()` to scan all items at the click position and finds the first `SegmentItem` regardless of overlapping rays.
+
+### Changed — Ray tool is now a dotted visual overlay (canvas_widget.py)
+
+- **Dotted line style**: Rays are now drawn with `Qt.PenStyle.DotLine` at 1.5px width (was solid 2px), making them visually distinct from line segments and clearly a visual aid rather than a replacement.
+- **Higher z-order**: Rays now render at `zValue=2` (above segments at `zValue=1`), so they overlay on top of line segments instead of competing for the same layer.
+
 ### Changed — Rewritten README.md for Git (README.md)
 
 - **Polished README**: Rewrote `README.md` with centered header, shields.io badges (Python, PyQt6, tests, license), highlighted feature summary, architecture diagram, three-system comparison table, verification pipeline explanation, desktop app feature table, proposition library overview, System E syntax reference with constructions and sequent format, axiom system summaries, project structure tree, test commands, requirements section, Python API and CLI usage examples, and academic references.

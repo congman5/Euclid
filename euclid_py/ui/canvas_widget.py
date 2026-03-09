@@ -22,7 +22,7 @@ from __future__ import annotations
 import math
 from typing import Dict, List, Optional, Tuple
 
-from PyQt6.QtCore import Qt, QPointF, QRectF, pyqtSignal
+from PyQt6.QtCore import Qt, QPointF, QRectF, QTimer, pyqtSignal
 from PyQt6.QtGui import (
     QBrush, QColor, QFont, QPainter, QPen,
     QPainterPath, QTransform, QKeySequence, QShortcut,
@@ -225,7 +225,11 @@ class SegmentItem(QGraphicsLineItem):
 
 
 class RayItem(QGraphicsLineItem):
-    """A ray from p1 through p2, extending far beyond p2."""
+    """A ray from p1 through p2, extending far beyond p2.
+
+    Drawn as a dotted overlay above segments so it serves as a visual
+    aid rather than replacing the underlying line segment.
+    """
 
     RAY_EXTEND = 4000  # extend far past p2
 
@@ -234,8 +238,10 @@ class RayItem(QGraphicsLineItem):
         self.p1 = p1
         self.p2 = p2
         self.draw_color: QColor = COLORS["segment"]
-        self.setPen(QPen(self.draw_color, 2))
-        self.setZValue(1)
+        pen = QPen(self.draw_color, 1.5)
+        pen.setStyle(Qt.PenStyle.DotLine)
+        self.setPen(pen)
+        self.setZValue(2)  # above segments (z=1)
         self.update_position()
 
     def shape(self):
@@ -415,6 +421,8 @@ class GeometryScene(QGraphicsScene):
         self._circle_preview_circle: Optional[QGraphicsEllipseItem] = None
         # General tool preview line (segment, ray, angle)
         self._tool_preview_line: Optional[QGraphicsLineItem] = None
+        # Snap toggle (snaps to circle/line/intersection when True)
+        self._snap_enabled: bool = True
 
     def _draw_grid(self):
         grid_color = QColor("#e8eaed")
@@ -552,7 +560,9 @@ class GeometryScene(QGraphicsScene):
                 ray = RayItem(p1, p2)
                 if color_name:
                     ray.draw_color = QColor(color_name)
-                    ray.setPen(QPen(ray.draw_color, 2))
+                    pen = QPen(ray.draw_color, 1.5)
+                    pen.setStyle(Qt.PenStyle.DotLine)
+                    ray.setPen(pen)
                 self.addItem(ray)
                 self._rays.append(ray)
         for entry in snap["circles"]:
@@ -765,8 +775,14 @@ class GeometryScene(QGraphicsScene):
 
     def _dismiss_label_popover(self):
         if self._label_proxy:
-            self.removeItem(self._label_proxy)
+            proxy = self._label_proxy
             self._label_proxy = None
+            self.removeItem(proxy)
+            # Defer destruction so the signal handler that triggered
+            # this dismiss can return before the emitting widget is
+            # destroyed (prevents C++ use-after-free crash).
+            if proxy.widget():
+                proxy.widget().deleteLater()
 
     # ── Add / query API ───────────────────────────────────────────────
 
@@ -823,7 +839,9 @@ class GeometryScene(QGraphicsScene):
             return None
         ray = RayItem(p1, p2)
         ray.draw_color = QColor(self._draw_color)
-        ray.setPen(QPen(self._draw_color, 2))
+        pen = QPen(self._draw_color, 1.5)
+        pen.setStyle(Qt.PenStyle.DotLine)
+        ray.setPen(pen)
         self.addItem(ray)
         self._rays.append(ray)
         self.canvas_changed.emit()
@@ -1008,11 +1026,12 @@ class GeometryScene(QGraphicsScene):
         return {
             "points": [{"label": p.label, "x": p.pos().x(), "y": p.pos().y()} for p in self._points.values()],
             "segments": [{"from": s.p1.label, "to": s.p2.label, "color": s.draw_color.name()} for s in self._segments],
+            "rays": [{"from": r.p1.label, "through": r.p2.label, "color": r.draw_color.name()} for r in self._rays],
             "circles": [{"center": c.center_pt.label, "radius": c.radius,
-                         "radius_point": c.radius_pt.label if c.radius_pt else None,
-                         "color": c.draw_color.name()} for c in self._circles],
+                          "radius_point": c.radius_pt.label if c.radius_pt else None,
+                          "color": c.draw_color.name()} for c in self._circles],
             "angle_marks": [{"from": a.from_pt.label, "vertex": a.vertex_pt.label,
-                             "to": a.to_pt.label, "is_right": a.is_right} for a in self._angles],
+                              "to": a.to_pt.label, "is_right": a.is_right} for a in self._angles],
             "equality_groups": [(tc, pairs) for tc, pairs in self._equality_groups],
         }
 
@@ -1113,11 +1132,14 @@ class GeometryScene(QGraphicsScene):
 
     def _find_snap(self, pos: QPointF) -> Tuple[QPointF, str, List[CircleItem]]:
         """Multi-priority snap: points > intersections > segment > circle > raw pos.
-        Returns (snapped_pos, snap_type, associated_circles)."""
-        # 1. Existing point
+        Returns (snapped_pos, snap_type, associated_circles).
+        When ``_snap_enabled`` is False, only existing-point snapping is active."""
+        # 1. Existing point (always active)
         pt = self._snap_to_point(pos)
         if pt:
             return pt.pos(), "point", []
+        if not self._snap_enabled:
+            return pos, "none", []
         # 2. Circle-circle / segment-circle intersection
         ix = self._snap_to_intersection(pos)
         if ix:
@@ -1212,9 +1234,18 @@ class GeometryScene(QGraphicsScene):
 
         if self._tool == "equal":
             xf = self.views()[0].transform() if self.views() else QTransform()
-            item = self.itemAt(pos, xf)
-            while item and not isinstance(item, SegmentItem):
-                item = item.parentItem()
+            item = None
+            for candidate in self.items(pos, Qt.ItemSelectionMode.IntersectsItemShape,
+                                        Qt.SortOrder.DescendingOrder, xf):
+                if isinstance(candidate, SegmentItem):
+                    item = candidate
+                    break
+                parent = candidate.parentItem()
+                while parent and not isinstance(parent, SegmentItem):
+                    parent = parent.parentItem()
+                if isinstance(parent, SegmentItem):
+                    item = parent
+                    break
             if isinstance(item, SegmentItem):
                 if item in self._eq_selection:
                     item.setPen(QPen(item.draw_color, 2))
@@ -1232,13 +1263,13 @@ class GeometryScene(QGraphicsScene):
         if self._tool == "delete":
             xf = self.views()[0].transform() if self.views() else QTransform()
             item = self.itemAt(pos, xf)
-            while item and not isinstance(item, (PointItem, SegmentItem, CircleItem, AngleMarkItem)):
+            while item and not isinstance(item, (PointItem, SegmentItem, RayItem, CircleItem, AngleMarkItem)):
                 item = item.parentItem()
             if isinstance(item, PointItem):
                 self.push_undo()
                 self._remove_point(item)
                 self.canvas_changed.emit()
-            elif isinstance(item, (SegmentItem, CircleItem, AngleMarkItem)):
+            elif isinstance(item, (SegmentItem, RayItem, CircleItem, AngleMarkItem)):
                 self.push_undo()
                 self._remove_item(item)
                 self.canvas_changed.emit()

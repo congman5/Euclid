@@ -390,6 +390,29 @@ class TestHBridge:
         h_lit = e_literal_to_h(e_lit)
         assert h_lit is None
 
+    def test_e_on_circle_returns_none(self):
+        """on(a, α) where α is a circle should NOT become IncidL."""
+        from verifier.e_ast import On, Literal as ELiteral, Sort as ESort
+        from verifier.h_bridge import e_literal_to_h
+        # Greek letter → circle by naming convention
+        e_lit = ELiteral(On("a", "\u03b1"))
+        h_lit = e_literal_to_h(e_lit)
+        assert h_lit is None, f"on(a, α) should be None, got {h_lit}"
+        # Also test with explicit sort_ctx
+        sort_ctx = {"\u03b1": ESort.CIRCLE, "a": ESort.POINT}
+        h_lit2 = e_literal_to_h(e_lit, sort_ctx)
+        assert h_lit2 is None
+
+    def test_e_on_line_with_sort_ctx(self):
+        """on(a, L) with sort_ctx confirming L is a line → IncidL."""
+        from verifier.e_ast import On, Literal as ELiteral, Sort as ESort
+        from verifier.h_bridge import e_literal_to_h
+        e_lit = ELiteral(On("a", "L"))
+        sort_ctx = {"L": ESort.LINE, "a": ESort.POINT}
+        h_lit = e_literal_to_h(e_lit, sort_ctx)
+        assert h_lit is not None
+        assert h_lit.atom == IncidL("a", "L")
+
     def test_h_incidl_to_e_on(self):
         from verifier.h_bridge import h_literal_to_e
         from verifier.e_ast import On

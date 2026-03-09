@@ -17,11 +17,14 @@ Phase 9.1 of the implementation plan.
 from __future__ import annotations
 
 import json
+import logging
+import os
 import re
+import traceback
 from collections import OrderedDict
 from typing import Dict, List, Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer
+from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer, QThread, QObject
 from PyQt6.QtGui import (
     QColor, QFont, QPainter, QPen, QShortcut, QKeySequence,
     QFontMetrics, QBrush, QPalette,
@@ -32,6 +35,43 @@ from PyQt6.QtWidgets import (
     QFrame, QScrollArea, QMenu, QFileDialog,
     QSizePolicy, QApplication, QAbstractItemView,
 )
+
+
+# ===================================================================
+# CRASH LOGGER — writes to euclid_crash.log for post-mortem debugging
+# ===================================================================
+
+_LOG_FILENAME = "euclid_crash.log"
+
+def _get_crash_logger() -> logging.Logger:
+    """Return (and lazily configure) the proof-panel crash logger.
+
+    Writes timestamped entries to ``euclid_crash.log`` in the workspace
+    root directory so the user can attach the file when reporting bugs.
+    """
+    logger = logging.getLogger("euclid.proof_panel")
+    if not logger.handlers:
+        logger.setLevel(logging.DEBUG)
+        try:
+            # Place the log next to the running script / workspace root
+            log_dir = os.path.dirname(os.path.abspath(__file__))
+            # Walk up from euclid_py/ui/ to the workspace root
+            log_dir = os.path.normpath(os.path.join(log_dir, "..", ".."))
+            log_path = os.path.join(log_dir, _LOG_FILENAME)
+            fh = logging.FileHandler(log_path, encoding="utf-8")
+            fh.setLevel(logging.DEBUG)
+            fmt = logging.Formatter(
+                "%(asctime)s [%(levelname)s] %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+            fh.setFormatter(fmt)
+            logger.addHandler(fh)
+        except Exception:
+            # If we can't write a log file, at least log to stderr
+            sh = logging.StreamHandler()
+            sh.setLevel(logging.WARNING)
+            logger.addHandler(sh)
+    return logger
 
 
 # ===================================================================
@@ -108,6 +148,32 @@ PREDICATES = [
 
 # Greek letters for circle naming in System E
 GREEK_LETTERS = ["α", "β", "γ"]
+
+
+# ===================================================================
+# BACKGROUND VERIFICATION WORKER
+# ===================================================================
+
+class _VerifyWorker(QObject):
+    """Runs verify_e_proof_json on a background thread to avoid UI freeze."""
+    finished = pyqtSignal(object)  # emits PanelCheckResult or Exception
+
+    def __init__(self, proof_json: dict):
+        super().__init__()
+        self._proof_json = proof_json
+
+    def run(self):
+        try:
+            from verifier.unified_checker import verify_e_proof_json
+            result = verify_e_proof_json(self._proof_json)
+            self.finished.emit(result)
+        except Exception as exc:
+            log = _get_crash_logger()
+            log.error(
+                "Verifier thread exception:\n%s",
+                traceback.format_exc(),
+            )
+            self.finished.emit(exc)
 
 
 # ===================================================================
@@ -355,7 +421,12 @@ class FitchLineWidget(QFrame):
         return self._text_edit
 
     def mousePressEvent(self, event):
-        self.selected.emit(self.step.line_number)
+        if self._is_selected:
+            # Second click on already-selected line → enter edit mode
+            self._text_edit.setFocus()
+        else:
+            # First click → select (red arrow), don't focus text
+            self.selected.emit(self.step.line_number)
         super().mousePressEvent(event)
 
     def paintEvent(self, event):
@@ -620,6 +691,9 @@ class ProofPanel(QWidget):
         self._prem_widgets = []
         self._focused_text_field = None
         self._lemmas: List[LoadedLemma] = []
+        self._verify_thread: Optional[QThread] = None
+        self._verify_worker: Optional[_VerifyWorker] = None
+        self._eval_buttons: List[QPushButton] = []
         self.setMinimumWidth(380)
         self.setStyleSheet(
             "ProofPanel { background:" + _BG_PANEL + ";"
@@ -664,6 +738,7 @@ class ProofPanel(QWidget):
                 "QPushButton:hover{background:#2e7358;}")
             b.clicked.connect(cb)
             row1.addWidget(b)
+            self._eval_buttons.append(b)
         hvbox.addLayout(row1)
 
         # Row 2: E/T/H system switchers (left) + file/edit buttons (right)
@@ -1181,6 +1256,7 @@ class ProofPanel(QWidget):
         self._update_counts()
 
     def clear(self):
+        self._cancel_verification()
         self._steps = []
         self._premises = []
         self._conclusion = ""
@@ -1198,6 +1274,30 @@ class ProofPanel(QWidget):
         self._lines_input.clear()
         self._rebuild_lines()
 
+    def _cancel_verification(self):
+        """Cancel any in-flight background verification.
+
+        Disconnects signals so the stale result is not applied after a
+        system switch or other state change, then tears down the thread.
+        """
+        if self._verify_thread is not None:
+            # Disconnect so _on_verify_finished is NOT called with stale data
+            try:
+                self._verify_worker.finished.disconnect(self._on_verify_finished)
+            except (TypeError, RuntimeError):
+                pass
+            self._verify_thread.quit()
+            self._verify_thread.wait(500)
+            self._verify_thread.deleteLater()
+            self._verify_thread = None
+            self._verify_worker = None
+        # Re-enable eval buttons in case they were disabled
+        for btn in self._eval_buttons:
+            try:
+                btn.setEnabled(True)
+            except RuntimeError:
+                pass
+
     def switch_system(self, target: str):
         """Rewrite all premises, goal, and steps into *target* notation.
 
@@ -1206,9 +1306,57 @@ class ProofPanel(QWidget):
         translated to the target system via the bridge modules, and
         written back.  Formulas that cannot be translated are kept as-is.
         """
+        try:
+            self._switch_system_inner(target)
+        except Exception as exc:
+            log = _get_crash_logger()
+            log.error(
+                "Unhandled exception in switch_system(%r):\n%s",
+                target, traceback.format_exc(),
+            )
+            self._goal_status.setText("\u26a0")
+            self._goal_status.setStyleSheet(
+                "color:#cc8800; font-weight:bold;"
+                " background:transparent;")
+            self._goal_status.setToolTip(
+                f"System switch error: {type(exc).__name__}: {exc}\n"
+                f"See {_LOG_FILENAME} for details.")
+
+    def _switch_system_inner(self, target: str):
+        # Cancel any running verification — its result is stale now
+        self._cancel_verification()
+
+        from verifier.e_ast import Sort as _ESort
         from verifier.e_parser import parse_literal_list, EParseError
         from verifier.t_bridge import e_literal_to_t
         from verifier.h_bridge import e_literal_to_h
+
+        # Build a sort context so the bridge can distinguish lines from
+        # circles (both use the On atom in System E).
+        sort_ctx: dict[str, _ESort] = {}
+        for p in self._decl_points:
+            sort_ctx[p] = _ESort.POINT
+        for ln in self._decl_lines:
+            sort_ctx[ln] = _ESort.LINE
+        # Also parse every premise/step to infer circle sorts from
+        # center(a, α) and inside(a, α) atoms.
+        for text in list(self._premises) + [s.text for s in self._steps]:
+            if not text.strip():
+                continue
+            try:
+                for lit in parse_literal_list(text):
+                    from verifier.e_ast import Center, Inside, On
+                    a = lit.atom
+                    if isinstance(a, Center):
+                        sort_ctx[a.circle] = _ESort.CIRCLE
+                        sort_ctx.setdefault(a.point, _ESort.POINT)
+                    elif isinstance(a, Inside):
+                        sort_ctx[a.circle] = _ESort.CIRCLE
+                        sort_ctx.setdefault(a.point, _ESort.POINT)
+                    elif isinstance(a, On):
+                        sort_ctx.setdefault(a.point, _ESort.POINT)
+            except EParseError:
+                pass
 
         def _translate_text(text: str) -> str:
             """Translate a single formula string to *target* notation."""
@@ -1228,7 +1376,7 @@ class ProofPanel(QWidget):
                     else:
                         parts.append(str(lit))  # no T equivalent
                 elif target == "H":
-                    h_lit = e_literal_to_h(lit)
+                    h_lit = e_literal_to_h(lit, sort_ctx)
                     if h_lit is not None:
                         parts.append(str(h_lit))
                     else:
@@ -1655,18 +1803,142 @@ class ProofPanel(QWidget):
             self._update_counts()
             return
 
-        proof_json = self._build_proof_json()
+        # Ignore if a verification is already running
+        if self._verify_thread is not None:
+            return
+
         try:
-            from verifier.unified_checker import verify_e_proof_json
-            result = verify_e_proof_json(proof_json)
+            self._eval_all_inner()
         except Exception as exc:
-            err_msg = str(exc)
+            log = _get_crash_logger()
+            log.error(
+                "Unhandled exception in _eval_all:\n%s",
+                traceback.format_exc(),
+            )
+            self._goal_status.setText("\u26a0")
+            self._goal_status.setStyleSheet(
+                "color:#cc8800; font-weight:bold;"
+                " background:transparent;")
+            self._goal_status.setToolTip(
+                f"Internal error: {type(exc).__name__}: {exc}\n"
+                f"See {_LOG_FILENAME} for details.")
+
+    def _eval_all_inner(self):
+
+        # ── Auto-fill: populate empty sentences before verification ──
+        autofill_changed = False
+        autofill_failed = False
+        for step in self._steps:
+            if step.text.strip() == "" and step.justification.strip() != "":
+                try:
+                    filled = self._generate_autofill(step)
+                except Exception as exc:
+                    log = _get_crash_logger()
+                    log.warning(
+                        "Autofill exception for step %d "
+                        "(just=%r, refs=%r):\n%s",
+                        step.line_number, step.justification,
+                        step.refs, traceback.format_exc(),
+                    )
+                    filled = self._AUTOFILL_FAIL
+                if filled is self._AUTOFILL_FAIL:
+                    # Known rule/theorem but matching failed
+                    step.status = "\u2717"
+                    step._autofill_error = "Incorrect justification"
+                    autofill_failed = True
+                elif filled:
+                    step.text = filled
+                    autofill_changed = True
+        if autofill_changed or autofill_failed:
+            for lw in self._line_widgets:
+                lw.refresh_from_step()
+                if lw.step.status == "\u2717" and hasattr(lw.step, '_autofill_error'):
+                    lw.setToolTip(lw.step._autofill_error)
+
+        proof_json = self._build_proof_json()
+
+        # When no event loop is running (e.g. tests), fall back to
+        # synchronous verification to avoid hanging.
+        app = QApplication.instance()
+        if app is None or not app.property("_euclid_event_loop_running"):
+            try:
+                from verifier.unified_checker import verify_e_proof_json
+                result = verify_e_proof_json(proof_json)
+            except Exception as exc:
+                err_msg = str(exc)
+                self._goal_status.setText("\u26a0")
+                self._goal_status.setStyleSheet(
+                    "color:#cc8800; font-weight:bold;"
+                    " background:transparent;")
+                self._goal_status.setToolTip("Verifier error: " + err_msg)
+                return
+            self._on_verify_finished(result)
+            return
+
+        # Disable eval buttons and show a busy indicator
+        for btn in self._eval_buttons:
+            btn.setEnabled(False)
+        self._goal_status.setText("\u23f3")
+        self._goal_status.setStyleSheet(
+            "color:#888; font-weight:bold; background:transparent;")
+        self._goal_status.setToolTip("Verifying\u2026")
+
+        # Run verification on a background thread
+        self._verify_thread = QThread()
+        self._verify_worker = _VerifyWorker(proof_json)
+        self._verify_worker.moveToThread(self._verify_thread)
+        self._verify_thread.started.connect(self._verify_worker.run)
+        self._verify_worker.finished.connect(self._on_verify_finished)
+        self._verify_worker.finished.connect(self._verify_thread.quit)
+        self._verify_thread.start()
+
+    def _on_verify_finished(self, result_or_exc):
+        """Handle verification result delivered from the background thread."""
+        try:
+            self._on_verify_finished_inner(result_or_exc)
+        except Exception as exc:
+            log = _get_crash_logger()
+            log.error(
+                "Unhandled exception in _on_verify_finished:\n%s",
+                traceback.format_exc(),
+            )
+            try:
+                self._goal_status.setText("\u26a0")
+                self._goal_status.setStyleSheet(
+                    "color:#cc8800; font-weight:bold;"
+                    " background:transparent;")
+                self._goal_status.setToolTip(
+                    f"Internal error: {type(exc).__name__}: {exc}\n"
+                    f"See {_LOG_FILENAME} for details.")
+            except RuntimeError:
+                pass  # widget deleted
+
+    def _on_verify_finished_inner(self, result_or_exc):
+        """Inner implementation — unwrapped for crash logging."""
+        # Clean up thread references
+        if self._verify_thread is not None:
+            self._verify_thread.deleteLater()
+        self._verify_thread = None
+        self._verify_worker = None
+
+        # Re-enable eval buttons
+        for btn in self._eval_buttons:
+            try:
+                btn.setEnabled(True)
+            except RuntimeError:
+                pass  # widget already deleted by C++
+
+        # Handle verifier exception
+        if isinstance(result_or_exc, Exception):
+            err_msg = str(result_or_exc)
             self._goal_status.setText("\u26a0")
             self._goal_status.setStyleSheet(
                 "color:#cc8800; font-weight:bold;"
                 " background:transparent;")
             self._goal_status.setToolTip("Verifier error: " + err_msg)
             return
+
+        result = result_or_exc
 
         error_ids: set = set()
         for lid, lr in result.line_results.items():
@@ -1683,7 +1955,10 @@ class ProofPanel(QWidget):
                 s.status = "?"
 
         for lw in self._line_widgets:
-            lw.refresh_from_step()
+            try:
+                lw.refresh_from_step()
+            except RuntimeError:
+                pass  # widget already deleted by C++
 
         if self._conclusion:
             goal_syntax_ok = False
@@ -1810,6 +2085,223 @@ class ProofPanel(QWidget):
         # Also extract standalone identifiers (for a ≠ b style)
         syms += re.findall(r'\b([A-Za-z])\b', stmt)
         return list(set(syms))
+
+    # ===============================================================
+    # AUTO-FILL ENGINE
+    # ===============================================================
+
+    # Sentinel returned when autofill detects the justification or refs
+    # are incorrect and the step should be marked ✗ immediately.
+    _AUTOFILL_FAIL = object()
+
+    def _generate_autofill(self, step):
+        """Generate sentence text for a step from its justification and refs.
+
+        Called when the user has filled in a justification (and optionally
+        refs) but left the sentence empty, then pressed Eval.  Returns:
+          - A non-empty string on success (the generated formula text).
+          - ``None`` if auto-fill is not applicable (e.g. empty or
+            unrecognised justification like ``Diagrammatic``).
+          - ``_AUTOFILL_FAIL`` if the justification names a known rule
+            or theorem but the prerequisite / hypothesis matching failed
+            (wrong refs, missing refs, etc.).
+
+        The var_map is derived by parsing the referenced lines into AST
+        literals and pattern-matching them against the rule's or theorem's
+        hypotheses — the same technique the verifier itself uses.
+        """
+        just = step.justification.strip()
+        if not just:
+            return None
+
+        # Collect parsed literals from all referenced lines
+        ref_lits = self._parse_ref_literals(step.refs)
+
+        # ── Construction rules ────────────────────────────────────
+        try:
+            from verifier.e_construction import CONSTRUCTION_RULE_BY_NAME
+            rule = CONSTRUCTION_RULE_BY_NAME.get(just)
+            if rule is not None:
+                result = self._autofill_construction(step, rule, ref_lits)
+                # None from a known construction rule means matching failed
+                return result if result is not None else self._AUTOFILL_FAIL
+        except ImportError:
+            pass
+
+        # ── Theorem application (Prop.I.x) ────────────────────────
+        if just.startswith("Prop.") or just.startswith("prop."):
+            result = self._autofill_theorem(step, just, ref_lits)
+            # None from a recognised theorem name means matching failed
+            return result if result is not None else self._AUTOFILL_FAIL
+
+        return None
+
+    def _parse_ref_literals(self, refs):
+        """Parse all referenced lines into a flat list of AST Literals."""
+        try:
+            from verifier.e_parser import parse_literal_list, EParseError
+        except ImportError:
+            return []
+        lits = []
+        for ref in refs:
+            text = self._get_line_text(ref)
+            if not text:
+                continue
+            try:
+                parsed = parse_literal_list(text)
+                lits.extend(parsed)
+            except EParseError:
+                pass
+        return lits
+
+    def _autofill_construction(self, step, rule, ref_lits):
+        """Auto-fill a construction step by matching ref'd literals
+        against the rule's prerequisite pattern to derive a var_map,
+        then substituting into the conclusion pattern.
+
+        Returns the generated text, or None if matching failed.
+        """
+        from verifier.e_ast import substitute_literal, literal_vars
+
+        if not rule.conclusion_pattern:
+            return None
+
+        # Match ref'd literals against the rule's prereq pattern
+        bindings, matched = self._match_hypotheses(
+            rule.prereq_pattern, ref_lits)
+
+        # All prerequisite patterns must match for a valid autofill
+        if matched < len(rule.prereq_pattern):
+            return None
+
+        # For new_vars (the constructed objects), pick fresh names
+        # if not already bound from prereqs
+        used_names = set(bindings.values())
+        for name, sort in rule.new_vars:
+            if name not in bindings:
+                fresh = self._pick_fresh_name(name, sort, used_names)
+                bindings[name] = fresh
+                used_names.add(fresh)
+
+        # Generate conclusion text
+        parts = []
+        for lit in rule.conclusion_pattern:
+            inst = substitute_literal(lit, bindings)
+            parts.append(repr(inst))
+        return ", ".join(parts)
+
+    def _autofill_theorem(self, step, theorem_name, ref_lits):
+        """Auto-fill a theorem application step by matching ref'd literals
+        against the theorem's hypotheses to derive a var_map, then
+        substituting into the conclusions.
+
+        Returns the generated text, or None if matching failed.
+        """
+        try:
+            from verifier.e_library import E_THEOREM_LIBRARY
+            from verifier.e_ast import substitute_literal
+        except ImportError:
+            return None
+
+        thm = E_THEOREM_LIBRARY.get(theorem_name)
+        if thm is None:
+            return None
+
+        # Match ref'd literals against the theorem's hypotheses
+        bindings, matched = self._match_hypotheses(
+            thm.sequent.hypotheses, ref_lits)
+
+        # All hypothesis patterns must match for a valid autofill
+        if matched < len(thm.sequent.hypotheses):
+            return None
+
+        # For existential vars, pick fresh names that don't collide
+        used_names = set(bindings.values())
+        # Also include all names already in the proof
+        for prem in self._premises:
+            used_names.update(self._extract_symbols(prem))
+        for s in self._steps:
+            if s.text.strip():
+                used_names.update(self._extract_symbols(s.text))
+
+        for name, sort in thm.sequent.exists_vars:
+            if name not in bindings:
+                fresh = self._pick_fresh_name(name, sort, used_names)
+                bindings[name] = fresh
+                used_names.add(fresh)
+
+        # Generate substituted conclusion text
+        parts = []
+        for conc in thm.sequent.conclusions:
+            inst = substitute_literal(conc, bindings)
+            parts.append(repr(inst))
+        return ", ".join(parts)
+
+    @staticmethod
+    def _match_hypotheses(patterns, concrete_lits):
+        """Match a list of pattern literals against concrete literals
+        to derive variable bindings, using the same algorithm as
+        the verifier's _try_match_literal.
+
+        Returns a tuple ``(bindings, matched_count)`` where *bindings*
+        maps template variable names to concrete names and
+        *matched_count* is how many patterns were successfully matched.
+        """
+        from verifier.unified_checker import _try_match_literal
+        bindings = {}
+        matched = 0
+        remaining = list(concrete_lits)
+        for pat in patterns:
+            for i, conc in enumerate(remaining):
+                result = _try_match_literal(pat, conc, bindings)
+                if result is not None:
+                    bindings = result
+                    remaining.pop(i)
+                    matched += 1
+                    break
+        return bindings, matched
+
+    @staticmethod
+    def _pick_fresh_name(template_name, sort, used_names):
+        """Pick a fresh variable name that doesn't collide with used_names.
+
+        Follows System E naming conventions:
+          - Points: lowercase single letters (a, b, c, ...)
+          - Lines: uppercase single letters (L, M, N, ...)
+          - Circles: Greek letters (α, β, γ, ...)
+        """
+        from verifier.e_ast import Sort
+
+        if sort == Sort.LINE:
+            candidates = [chr(c) for c in range(ord('L'), ord('Z') + 1)]
+        elif sort == Sort.CIRCLE:
+            candidates = ["\u03b1", "\u03b2", "\u03b3", "\u03b4",
+                          "\u03b5", "\u03b6", "\u03b7", "\u03b8"]
+        else:
+            # Point: try the template name first, then a-z
+            candidates = [template_name] + [
+                chr(c) for c in range(ord('a'), ord('z') + 1)]
+
+        for name in candidates:
+            if name not in used_names:
+                return name
+        # Fallback: numbered names
+        for i in range(1, 100):
+            candidate = template_name + str(i)
+            if candidate not in used_names:
+                return candidate
+        return template_name
+
+    def _get_line_text(self, line_number):
+        """Return the text of a proof line or premise by line number."""
+        # Check premises first
+        if 1 <= line_number <= len(self._premises):
+            return self._premises[line_number - 1]
+        # Then proof steps
+        for s in self._steps:
+            if s.line_number == line_number:
+                return s.text
+        return None
 
     def _update_counts(self):
         valid = sum(

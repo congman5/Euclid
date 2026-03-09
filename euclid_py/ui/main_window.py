@@ -19,7 +19,7 @@ import os
 from collections import Counter
 from typing import Dict, List, Optional
 
-from PyQt6.QtCore import Qt, QSize, QTimer
+from PyQt6.QtCore import Qt, QSize, QTimer, QThread, QObject
 from PyQt6.QtGui import QAction, QFont, QIcon, QColor, QPixmap
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -314,6 +314,8 @@ class _VerifierScreen(QWidget):
         self._mw = main_win
         self._proof_data: dict | None = None
         self._dirty = False
+        self._verify_thread: QThread | None = None
+        self._verify_worker: QObject | None = None
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -352,6 +354,7 @@ class _VerifierScreen(QWidget):
         btn_verify.setStyleSheet(f"background: {C.valid}; color: white; border: none; border-radius: 4px; padding: 6px 16px; font-weight: bold; font-size: 13px;")
         btn_verify.clicked.connect(self._run_verification)
         tl.addWidget(btn_verify)
+        self._verify_btn = btn_verify
 
         layout.addWidget(topbar)
 
@@ -416,6 +419,20 @@ class _VerifierScreen(QWidget):
 
     # ── File loading ──────────────────────────────────────────────────
 
+    def _cancel_verification(self):
+        """Cancel any in-flight background verification."""
+        if self._verify_thread is not None:
+            try:
+                self._verify_worker.finished.disconnect(self._on_verify_finished)
+            except (TypeError, RuntimeError):
+                pass
+            self._verify_thread.quit()
+            self._verify_thread.wait(500)
+            self._verify_thread.deleteLater()
+            self._verify_thread = None
+            self._verify_worker = None
+        self._verify_btn.setEnabled(True)
+
     def _open_file(self):
         path, _ = QFileDialog.getOpenFileName(
             self, "Open Proof JSON", "", "JSON Files (*.json);;All Files (*)"
@@ -424,6 +441,8 @@ class _VerifierScreen(QWidget):
             self.load_proof_file(path)
 
     def load_proof_file(self, path: str):
+        # Cancel any in-flight verification before loading new data
+        self._cancel_verification()
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -482,14 +501,60 @@ class _VerifierScreen(QWidget):
     def _run_verification(self):
         if self._proof_data is None:
             return
-
-        try:
-            from verifier.unified_checker import verify_e_proof_json
-
-            result = verify_e_proof_json(self._proof_data)
-        except Exception as e:
-            QMessageBox.warning(self, "Verification Error", f"Verifier raised an exception:\n{e}")
+        # Ignore if a verification is already running
+        if self._verify_thread is not None:
             return
+
+        # When no event loop is running (e.g. tests), fall back to
+        # synchronous verification to avoid hanging.
+        app = QApplication.instance()
+        if app is None or not app.property("_euclid_event_loop_running"):
+            try:
+                from verifier.unified_checker import verify_e_proof_json
+                result = verify_e_proof_json(self._proof_data)
+            except Exception as exc:
+                return
+            self._on_verify_finished(result)
+            return
+
+        # Disable Verify button and show busy status
+        self._verify_btn.setEnabled(False)
+        self._status_label.setText(" \u23f3 Verifying\u2026 ")
+        self._status_label.setStyleSheet(
+            f"color:{C.header_text}; padding: 4px 12px;"
+            f" border-radius: 4px; font-weight: bold;")
+        self._mw.statusBar().showMessage("Verifying\u2026")
+
+        # Import the worker from proof_panel (shared implementation)
+        from .proof_panel import _VerifyWorker
+
+        self._verify_thread = QThread()
+        self._verify_worker = _VerifyWorker(self._proof_data)
+        self._verify_worker.moveToThread(self._verify_thread)
+        self._verify_thread.started.connect(self._verify_worker.run)
+        self._verify_worker.finished.connect(self._on_verify_finished)
+        self._verify_worker.finished.connect(self._verify_thread.quit)
+        self._verify_thread.start()
+
+    def _on_verify_finished(self, result_or_exc):
+        """Handle verification result from the background thread."""
+        # Clean up thread references
+        if self._verify_thread is not None:
+            self._verify_thread.deleteLater()
+        self._verify_thread = None
+        self._verify_worker = None
+
+        # Re-enable Verify button
+        self._verify_btn.setEnabled(True)
+
+        # Handle verifier exception
+        if isinstance(result_or_exc, Exception):
+            QMessageBox.warning(
+                self, "Verification Error",
+                f"Verifier raised an exception:\n{result_or_exc}")
+            return
+
+        result = result_or_exc
 
         # Determine which lines passed / failed
         error_line_ids = {lid for lid, lr in result.line_results.items()
@@ -543,7 +608,7 @@ class _VerifierScreen(QWidget):
         self._diagnostics.set_diagnostics(all_diags)
 
         num_errors = sum(1 for lr in result.line_results.values()
-                         if not lr.valid) + len(result.errors)
+                          if not lr.valid) + len(result.errors)
 
         # Update summary panel
         self._summary.set_result(
@@ -812,6 +877,30 @@ class _WorkspaceScreen(QWidget):
         btn_reset.setFixedHeight(26)
         btn_reset.clicked.connect(self._reset_canvas)
         draw_row.addWidget(btn_reset)
+
+        sep_snap = QFrame()
+        sep_snap.setFixedSize(1, 22)
+        sep_snap.setStyleSheet(f"background:{COLORS['border']};")
+        draw_row.addWidget(sep_snap)
+
+        self._snap_btn = QPushButton("⊹")
+        self._snap_btn.setToolTip(
+            "Toggle snap to circle / line / intersection")
+        self._snap_btn.setCheckable(True)
+        self._snap_btn.setChecked(True)
+        self._snap_btn.setFixedHeight(26)
+        self._snap_btn.setStyleSheet(
+            f"QPushButton {{ background:{COLORS['surface']};"
+            f" color:{COLORS['text']};"
+            f" border:1px solid {COLORS['border']};"
+            " border-radius:3px; padding:3px 8px;"
+            " font-size:14px; min-width:24px; }}"
+            f" QPushButton:hover {{ background:#f0f4ff;"
+            f" border-color:{COLORS['primary']}; }}"
+            f" QPushButton:checked {{ background:{COLORS['primary']};"
+            " color:white; }}")
+        self._snap_btn.toggled.connect(self._toggle_snap)
+        draw_row.addWidget(self._snap_btn)
 
         draw_inner.setFixedSize(draw_inner.sizeHint())
 
@@ -1161,6 +1250,10 @@ class _WorkspaceScreen(QWidget):
             self._load_given_objects(self._current_prop)
             QTimer.singleShot(50, self._canvas.fit_to_contents)
 
+    def _toggle_snap(self, enabled: bool):
+        """Toggle snap-to-circle/line/intersection on the canvas."""
+        self._canvas.scene._snap_enabled = enabled
+
     def _set_tool(self, tid: str):
         for name, btn in self._tools.items():
             btn.setChecked(name == tid)
@@ -1278,6 +1371,16 @@ class _WorkspaceScreen(QWidget):
                     from PyQt6.QtGui import QColor, QPen
                     s.draw_color = QColor(seg["color"])
                     s.setPen(QPen(s.draw_color, 2))
+            for ray in data.get("rays", []):
+                r = self._canvas.scene.add_ray(
+                    ray["from"], ray["through"])
+                if r and ray.get("color"):
+                    from PyQt6.QtGui import QColor, QPen
+                    from PyQt6.QtCore import Qt
+                    r.draw_color = QColor(ray["color"])
+                    pen = QPen(r.draw_color, 1.5)
+                    pen.setStyle(Qt.PenStyle.DotLine)
+                    r.setPen(pen)
             for circ in data.get("circles", []):
                 rp = circ.get("radius_point")
                 if rp:

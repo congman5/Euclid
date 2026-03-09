@@ -1,0 +1,73 @@
+{
+  "format": "euclid-journal",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "proof": {
+    "name": "Proposition 1.2 Canvas",
+    "premises": [
+      "on(b, L)",
+      "on(c, L)",
+      "¬(b = c)",
+      "¬(a = b)",
+      "¬(a = c)"
+    ],
+    "goal": "af = bc",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C"
+      ],
+      "lines": []
+    },
+    "steps": [
+      {
+        "lineNumber": 6,
+        "text": "ab = ad, ab = bd, ¬(d = a), ¬(d = b)",
+        "justification": "Prop.I.1",
+        "dependencies": [],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 7,
+        "text": "on(d, M), on(a, M)",
+        "justification": "let-line",
+        "dependencies": [
+          6
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 8,
+        "text": "on(d, N), on(b, N)",
+        "justification": "let-line",
+        "dependencies": [
+          6
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 9,
+        "text": "center(b, γ), on(c, γ)",
+        "justification": "let-circle",
+        "dependencies": [
+          6
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 10,
+        "text": "on(g, N), on(g, γ), ¬(g = b)",
+        "justification": "let-intersection-circle-line-one",
+        "dependencies": [],
+        "depth": 0,
+        "status": "✓"
+      }
+    ]
+  },
+  "exportedAt": "2026-03-09T01:41:57Z"
+}

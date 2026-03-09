@@ -48,17 +48,51 @@ from .h_ast import (
 # E → H Translation
 # ═══════════════════════════════════════════════════════════════════════
 
-def e_literal_to_h(lit: ELiteral) -> Optional[HLiteral]:
+def _is_circle_name(name: str, sort_ctx: Optional[dict] = None) -> bool:
+    """Return True if *name* is a circle variable.
+
+    Uses *sort_ctx* when available, otherwise falls back to the
+    System E naming convention: Greek letters (α β γ …) and
+    spelled-out Greek names (alpha, beta, …) are circles.
+    """
+    if sort_ctx is not None:
+        from .e_ast import Sort as ESort
+        sort = sort_ctx.get(name)
+        if sort is not None:
+            return sort == ESort.CIRCLE
+    # Naming convention fallback
+    if any('\u03b1' <= ch <= '\u03c9' for ch in name):
+        return True
+    _GREEK_NAMES = {
+        "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta",
+        "theta", "iota", "kappa", "lambda", "mu", "nu", "xi",
+        "omicron", "pi", "rho", "sigma", "tau", "upsilon", "phi",
+        "chi", "psi", "omega",
+    }
+    return name.lower() in _GREEK_NAMES
+
+
+def e_literal_to_h(
+    lit: ELiteral,
+    sort_ctx: Optional[dict] = None,
+) -> Optional[HLiteral]:
     """Translate a System E literal to a System H literal.
 
     Returns None for literals that have no direct H counterpart
     (e.g., center, inside, circle-related predicates).
+
+    *sort_ctx* is an optional ``{name: Sort}`` dict used to
+    distinguish ``on(p, L)`` (line → IncidL) from ``on(p, α)``
+    (circle → no H equivalent).  When absent, the System E naming
+    convention (Greek letters = circles) is used as a fallback.
     """
     atom = lit.atom
     pol = lit.polarity
 
-    # on(a, L) → IncidL(a, L)
+    # on(a, L) → IncidL(a, L)  — but NOT on(a, α) (circle)
     if isinstance(atom, On):
+        if _is_circle_name(atom.obj, sort_ctx):
+            return None  # Hilbert has no circles
         return HLiteral(IncidL(atom.point, atom.obj), pol)
 
     # between(a, b, c) → BetH(a, b, c)
