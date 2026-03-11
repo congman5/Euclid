@@ -254,11 +254,20 @@ class EChecker:
 
         When ``theorem_name`` is set the step is justified by a
         previously proved proposition — assertions are accepted.
+
+        The diagrammatic closure is computed first so that derived
+        negative facts (e.g. ``¬between(g,h,d)``) are available
+        for the transfer axiom grounding.
         """
         if step.theorem_name:
             for assertion in step.assertions:
                 self.known.add(assertion)
             return
+        # Compute diagrammatic closure so transfer axioms have access
+        # to derived negative betweenness / on / same-side facts.
+        closure = self.consequence_engine.direct_consequences(
+            self.known, self.variables)
+        self.known.update(closure)
         diagram_known = {l for l in self.known if l.is_diagrammatic}
         metric_known = {l for l in self.known if l.is_metric}
         derived = self.transfer_engine.apply_transfers(
@@ -427,10 +436,21 @@ class EChecker:
     def _register_literal_vars(
         self, lit: Literal, result: ECheckResult
     ) -> None:
-        """Register variables found in a literal."""
+        """Register variables found in a literal, inferring sorts from context.
+
+        Uses the consequence engine's sort-inference logic so that line
+        and circle variables appearing in ``On``, ``Center``, etc. are
+        classified correctly instead of defaulting to POINT.
+        """
+        inferred: Dict[str, Sort] = {}
+        self.consequence_engine._collect_atom_var_sorts(lit.atom, inferred)
+        for var_name, sort in inferred.items():
+            if var_name not in self.variables:
+                self.variables[var_name] = sort
+        # Fallback: any remaining names from the literal default to POINT
         for var_name in literal_vars(lit):
             if var_name not in self.variables:
-                self.variables[var_name] = Sort.POINT  # default
+                self.variables[var_name] = Sort.POINT
 
     def _derives_point_inequality(self, lit: Literal) -> bool:
         """Check if a point inequality ¬(x = y) follows by Leibniz.

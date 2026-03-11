@@ -290,7 +290,11 @@ class TConsequenceEngine:
         schema_vars: List[str],
         points: List[str],
     ) -> List[Dict[str, str]]:
-        """Fill any remaining unbound schema variables with point pool."""
+        """Fill any remaining unbound schema variables with point pool.
+
+        Skips expansion when the estimated number of combinations
+        exceeds ``_MAX_FILL`` to prevent combinatorial blowup.
+        """
         if not subs:
             return []
         # Quick check — any sub missing a variable?
@@ -299,11 +303,14 @@ class TConsequenceEngine:
         if not needs_fill:
             return subs
 
+        _MAX_FILL = 50_000
         filled: List[Dict[str, str]] = []
         for sub in subs:
             missing = [v for v in schema_vars if v not in sub]
             if not missing:
                 filled.append(sub)
+                continue
+            if len(points) ** len(missing) > _MAX_FILL:
                 continue
             for combo in iprod(points, repeat=len(missing)):
                 new_sub = dict(sub)
@@ -315,9 +322,15 @@ class TConsequenceEngine:
     def _enumerate_subs(
         self, schema_vars: List[str], points: List[str]
     ) -> List[Dict[str, str]]:
-        """Enumerate all substitutions for schema variables from points."""
+        """Enumerate all substitutions for schema variables from points.
+
+        Returns an empty list when the combination count would exceed
+        the safety limit.
+        """
         if not schema_vars:
             return [{}]
+        if len(points) ** len(schema_vars) > 50_000:
+            return []
         result: List[Dict[str, str]] = []
         for combo in iprod(points, repeat=len(schema_vars)):
             result.append(dict(zip(schema_vars, combo)))

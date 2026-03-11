@@ -34,9 +34,24 @@ from typing import Dict, List, Optional, Set, Tuple
 from .e_ast import (
     Sort, Literal,
     On, SameSide, Between, Equals,
-    SegmentTerm, AngleTerm,
+    SegmentTerm, AngleTerm, AreaTerm,
     substitute_literal,
 )
+
+
+def _seg_eq_in_known(known: Set[Literal], a: str, b: str,
+                     c: str, d: str) -> bool:
+    """Check if segment equality ab=cd is in known, allowing symmetry.
+
+    Checks all four orderings: ab=cd, ba=cd, ab=dc, ba=dc
+    (Equals itself is symmetric, so ab=cd also matches cd=ab.)
+    """
+    for p, q in [(a, b), (b, a)]:
+        for r, s in [(c, d), (d, c)]:
+            if Literal(Equals(SegmentTerm(p, q),
+                              SegmentTerm(r, s))) in known:
+                return True
+    return False
 
 
 @dataclass
@@ -164,19 +179,17 @@ def apply_sas_superposition(
     """
     result = SuperpositionResult()
 
-    # Check SAS prerequisites
-    ab_de = Literal(Equals(SegmentTerm(a, b), SegmentTerm(d, e)))
-    ac_df = Literal(Equals(SegmentTerm(a, c), SegmentTerm(d, f)))
-    angle_eq = Literal(Equals(AngleTerm(b, a, c), AngleTerm(e, d, f)))
+    # Check SAS prerequisites (segment equality with symmetry)
+    if not _seg_eq_in_known(known, a, b, d, e):
+        result.valid = False
+        result.error = f"Missing: {a}{b} = {d}{e}"
+        return result
+    if not _seg_eq_in_known(known, a, c, d, f):
+        result.valid = False
+        result.error = f"Missing: {a}{c} = {d}{f}"
+        return result
 
-    if ab_de not in known:
-        result.valid = False
-        result.error = f"Missing: {ab_de}"
-        return result
-    if ac_df not in known:
-        result.valid = False
-        result.error = f"Missing: {ac_df}"
-        return result
+    angle_eq = Literal(Equals(AngleTerm(b, a, c), AngleTerm(e, d, f)))
     if angle_eq not in known:
         result.valid = False
         result.error = f"Missing: {angle_eq}"
@@ -189,6 +202,8 @@ def apply_sas_superposition(
         # Remaining angles
         Literal(Equals(AngleTerm(a, b, c), AngleTerm(d, e, f))),
         Literal(Equals(AngleTerm(a, c, b), AngleTerm(d, f, e))),
+        # Area equality (M9: full congruence → equal areas)
+        Literal(Equals(AreaTerm(a, b, c), AreaTerm(d, e, f))),
     ]
     return result
 
@@ -205,28 +220,26 @@ def apply_sss_superposition(
     """
     result = SuperpositionResult()
 
-    # Check SSS prerequisites
-    ab_de = Literal(Equals(SegmentTerm(a, b), SegmentTerm(d, e)))
-    bc_ef = Literal(Equals(SegmentTerm(b, c), SegmentTerm(e, f)))
-    ca_fd = Literal(Equals(SegmentTerm(c, a), SegmentTerm(f, d)))
-
-    if ab_de not in known:
+    # Check SSS prerequisites (segment equality with symmetry)
+    if not _seg_eq_in_known(known, a, b, d, e):
         result.valid = False
-        result.error = f"Missing: {ab_de}"
+        result.error = f"Missing: {a}{b} = {d}{e}"
         return result
-    if bc_ef not in known:
+    if not _seg_eq_in_known(known, b, c, e, f):
         result.valid = False
-        result.error = f"Missing: {bc_ef}"
+        result.error = f"Missing: {b}{c} = {e}{f}"
         return result
-    if ca_fd not in known:
+    if not _seg_eq_in_known(known, c, a, f, d):
         result.valid = False
-        result.error = f"Missing: {ca_fd}"
+        result.error = f"Missing: {c}{a} = {f}{d}"
         return result
 
-    # SSS conclusion: all corresponding angles are equal
+    # SSS conclusion: all corresponding angles are equal + area
     result.derived = [
         Literal(Equals(AngleTerm(b, a, c), AngleTerm(e, d, f))),
         Literal(Equals(AngleTerm(a, b, c), AngleTerm(d, e, f))),
         Literal(Equals(AngleTerm(a, c, b), AngleTerm(d, f, e))),
+        # Area equality (M9: full congruence → equal areas)
+        Literal(Equals(AreaTerm(a, b, c), AreaTerm(d, e, f))),
     ]
     return result

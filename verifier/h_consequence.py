@@ -105,12 +105,20 @@ class HConsequenceEngine:
             return literals[unknown_idx]
         return None
 
+    # Maximum ground clauses per axiom before the axiom is skipped.
+    _MAX_GROUND_PER_AXIOM = 50_000
+
     def _ground_clauses(
         self,
         axioms: List[HClause],
         variables: Dict[str, HSort],
     ) -> List[HClause]:
-        """Generate ground instances of axiom schemas."""
+        """Generate ground instances of axiom schemas.
+
+        Axioms whose variable-sort combination would exceed
+        ``_MAX_GROUND_PER_AXIOM`` ground instances are skipped to
+        prevent combinatorial explosion.
+        """
         points = [v for v, s in variables.items() if s == HSort.POINT]
         lines = [v for v, s in variables.items() if s == HSort.LINE]
         planes = [v for v, s in variables.items() if s == HSort.PLANE]
@@ -120,6 +128,18 @@ class HConsequenceEngine:
             schema_vars = self._clause_schema_vars(axiom)
             if not schema_vars:
                 ground.append(axiom)
+                continue
+
+            # Estimate combination count and skip if too large
+            est = 1
+            for _, sort in schema_vars:
+                if sort == HSort.POINT:
+                    est *= len(points)
+                elif sort == HSort.LINE:
+                    est *= len(lines)
+                elif sort == HSort.PLANE:
+                    est *= len(planes)
+            if est > self._MAX_GROUND_PER_AXIOM:
                 continue
 
             for sub in self._all_substitutions(schema_vars, points, lines,

@@ -89,6 +89,7 @@ def _build_rule_groups():
         ("metric", "Metric (§3.5)"),
         ("transfer", "Transfer (§3.6)"),
         ("superposition", "Superposition (§3.7)"),
+        ("structural", "Structural (§3.2)"),
         ("proposition", "Propositions"),
     ])
     groups = OrderedDict()
@@ -147,7 +148,7 @@ PREDICATES = [
 ]
 
 # Greek letters for circle naming in System E
-GREEK_LETTERS = ["α", "β", "γ"]
+GREEK_LETTERS = ["α", "β", "γ", "δ"]
 
 
 # ===================================================================
@@ -783,6 +784,36 @@ class ProofPanel(QWidget):
             b.clicked.connect(cb)
             row2.addWidget(b)
         hvbox.addLayout(row2)
+
+        # Row 3: Subproof shortcut buttons
+        row3 = QHBoxLayout()
+        row3.setSpacing(3)
+        _sub_style = (
+            "QPushButton{background:transparent;color:#5a5a72;"
+            "border:1px solid #c0c2c8;border-radius:3px;"
+            "padding:2px 6px;font-size:10px;}"
+            "QPushButton:hover{background:#e0e2e8;"
+            "border-color:#888;}")
+        btn_begin = QPushButton("Begin Subproof")
+        btn_begin.setFont(QFont("Segoe UI", 9))
+        btn_begin.setToolTip(
+            "Open a subproof: inserts an Assume line at depth+1")
+        btn_begin.setFixedHeight(22)
+        btn_begin.setStyleSheet(_sub_style)
+        btn_begin.clicked.connect(self._begin_subproof)
+        row3.addWidget(btn_begin)
+        btn_end = QPushButton("End Subproof")
+        btn_end.setFont(QFont("Segoe UI", 9))
+        btn_end.setToolTip(
+            "Close a subproof: inserts a Reductio line at depth\u22121, "
+            "referencing the Assume line")
+        btn_end.setFixedHeight(22)
+        btn_end.setStyleSheet(_sub_style)
+        btn_end.clicked.connect(self._end_subproof)
+        row3.addWidget(btn_end)
+        row3.addStretch()
+        hvbox.addLayout(row3)
+
         root.addWidget(header)
 
         # -- Predicate palette --
@@ -1287,7 +1318,11 @@ class ProofPanel(QWidget):
             except (TypeError, RuntimeError):
                 pass
             self._verify_thread.quit()
-            self._verify_thread.wait(500)
+            if not self._verify_thread.wait(3000):
+                # Thread didn't stop in time — force-terminate to avoid
+                # "QThread: Destroyed while thread is still running" crash.
+                self._verify_thread.terminate()
+                self._verify_thread.wait(1000)
             self._verify_thread.deleteLater()
             self._verify_thread = None
             self._verify_worker = None
@@ -1610,6 +1645,81 @@ class ProofPanel(QWidget):
             len(self._steps), "", "", [],
             depth=0)
 
+    def _begin_subproof(self):
+        """Open a subproof by inserting an Assume line at depth+1.
+
+        If a line is selected, the Assume is inserted after it and
+        inherits its depth + 1.  Otherwise it is appended at the end.
+        """
+        self._push_undo()
+        # Determine insertion point and depth
+        if self._selected > 0:
+            idx = None
+            for i, s in enumerate(self._steps):
+                if s.line_number == self._selected:
+                    idx = i
+                    break
+            if idx is not None:
+                current_depth = self._steps[idx].depth
+                pos = idx + 1
+            else:
+                current_depth = self._steps[-1].depth if self._steps else 0
+                pos = len(self._steps)
+        else:
+            current_depth = self._steps[-1].depth if self._steps else 0
+            pos = len(self._steps)
+
+        new_depth = current_depth + 1
+        step = ProofStep(0, "", "Assume", [], new_depth)
+        self._steps.insert(pos, step)
+        self._renumber()
+        self._rebuild_lines()
+        self.step_changed.emit()
+        # Focus the new Assume line for typing
+        if 0 <= pos < len(self._line_widgets):
+            QTimer.singleShot(
+                50, self._line_widgets[pos].focus_text)
+
+    def _end_subproof(self):
+        """Close a subproof by inserting a Reductio line at depth\u22121.
+
+        Finds the nearest Assume line above the current position and
+        inserts a Reductio line referencing it.
+        """
+        self._push_undo()
+        # Find the most recent Assume line (searching backward)
+        assume_idx = None
+        assume_line_num = None
+        assume_depth = 0
+        search_from = len(self._steps) - 1
+        if self._selected > 0:
+            for i, s in enumerate(self._steps):
+                if s.line_number == self._selected:
+                    search_from = i
+                    break
+        for i in range(search_from, -1, -1):
+            if self._steps[i].justification == "Assume":
+                assume_idx = i
+                assume_line_num = self._steps[i].line_number
+                assume_depth = self._steps[i].depth
+                break
+
+        if assume_idx is None:
+            return  # no Assume to close
+
+        # Insert Reductio at depth - 1, after the selected line (or end)
+        outer_depth = max(0, assume_depth - 1)
+        pos = search_from + 1 if self._selected > 0 else len(self._steps)
+        step = ProofStep(0, "", "Reductio", [assume_line_num], outer_depth)
+        self._steps.insert(pos, step)
+        self._renumber()
+        self._rebuild_lines()
+        self.step_changed.emit()
+        # Focus the new Reductio line for typing the conclusion
+        if 0 <= pos < len(self._line_widgets):
+            QTimer.singleShot(
+                50, self._line_widgets[pos].focus_text)
+
     def _on_add_premise_bar(self):
         """Add a new empty premise above the Fitch bar."""
         self._push_undo()
@@ -1915,8 +2025,12 @@ class ProofPanel(QWidget):
 
     def _on_verify_finished_inner(self, result_or_exc):
         """Inner implementation — unwrapped for crash logging."""
-        # Clean up thread references
+        # Clean up thread references — wait for the thread to fully exit
+        # before destroying it to avoid "QThread: Destroyed while still
+        # running" crashes.
         if self._verify_thread is not None:
+            self._verify_thread.quit()
+            self._verify_thread.wait(2000)
             self._verify_thread.deleteLater()
         self._verify_thread = None
         self._verify_worker = None
@@ -2080,10 +2194,15 @@ class ProofPanel(QWidget):
         Uses a regex scan for identifiers that look like point or line
         names in System E syntax.
         """
-        # Extract identifiers from predicate arguments (inside parens)
-        syms = re.findall(r'(?<=[\(,])\s*([A-Za-z_]\w*)\s*(?=[,\)])', stmt)
+        # Extract identifiers from predicate arguments (inside parens).
+        # Include Greek letters (U+0370–U+03FF) and other Unicode letters
+        # so that circle names like α, β are detected.
+        syms = re.findall(
+            r'(?<=[\(,])\s*([A-Za-z\u0370-\u03ff_]\w*)\s*(?=[,\)])', stmt)
         # Also extract standalone identifiers (for a ≠ b style)
-        syms += re.findall(r'\b([A-Za-z])\b', stmt)
+        syms += re.findall(r'(?<![A-Za-z\u0370-\u03ff_])'
+                           r'([A-Za-z\u0370-\u03ff])'
+                           r'(?![A-Za-z\u0370-\u03ff\w])', stmt)
         return list(set(syms))
 
     # ===============================================================
@@ -2106,23 +2225,29 @@ class ProofPanel(QWidget):
             or theorem but the prerequisite / hypothesis matching failed
             (wrong refs, missing refs, etc.).
 
-        The var_map is derived by parsing the referenced lines into AST
-        literals and pattern-matching them against the rule's or theorem's
-        hypotheses — the same technique the verifier itself uses.
+        Prerequisite matching mirrors the verifier: all known facts from
+        premises and prior accepted steps are available for matching,
+        with ref'd literals prioritised for variable-binding order.
         """
         just = step.justification.strip()
         if not just:
             return None
 
-        # Collect parsed literals from all referenced lines
+        # Collect parsed literals from all referenced lines (prioritised)
         ref_lits = self._parse_ref_literals(step.refs)
+
+        # Collect ALL known literals from premises + prior steps so that
+        # prerequisite matching mirrors the verifier (which checks against
+        # the full known-fact set, not just cited refs).
+        all_known = self._collect_known_literals(step.line_number)
 
         # ── Construction rules ────────────────────────────────────
         try:
             from verifier.e_construction import CONSTRUCTION_RULE_BY_NAME
             rule = CONSTRUCTION_RULE_BY_NAME.get(just)
             if rule is not None:
-                result = self._autofill_construction(step, rule, ref_lits)
+                result = self._autofill_construction(
+                    step, rule, ref_lits, all_known)
                 # None from a known construction rule means matching failed
                 return result if result is not None else self._AUTOFILL_FAIL
         except ImportError:
@@ -2130,11 +2255,47 @@ class ProofPanel(QWidget):
 
         # ── Theorem application (Prop.I.x) ────────────────────────
         if just.startswith("Prop.") or just.startswith("prop."):
-            result = self._autofill_theorem(step, just, ref_lits)
+            result = self._autofill_theorem(
+                step, just, ref_lits, all_known)
             # None from a recognised theorem name means matching failed
             return result if result is not None else self._AUTOFILL_FAIL
 
+        # ── Diagrammatic / Transfer / Metric named axioms ─────────
+        # Justifications like "Generality 3", "Intersection 3",
+        # "Segment transfer 1", etc.
+        result = self._autofill_named_axiom(
+            step, just, ref_lits, all_known)
+        if result is not None:
+            return result
+
         return None
+
+    def _collect_known_literals(self, before_line):
+        """Parse all premises and prior step texts into a flat literal list.
+
+        Returns literals from every line whose line_number < *before_line*,
+        mirroring the verifier's known-fact accumulation.  Ref'd literals
+        are NOT deduplicated here — callers merge them as needed.
+        """
+        try:
+            from verifier.e_parser import parse_literal_list, EParseError
+        except ImportError:
+            return []
+        lits = []
+        for prem in self._premises:
+            try:
+                lits.extend(parse_literal_list(prem))
+            except EParseError:
+                pass
+        for s in self._steps:
+            if s.line_number >= before_line:
+                break
+            if s.text.strip():
+                try:
+                    lits.extend(parse_literal_list(s.text))
+                except EParseError:
+                    pass
+        return lits
 
     def _parse_ref_literals(self, refs):
         """Parse all referenced lines into a flat list of AST Literals."""
@@ -2154,10 +2315,14 @@ class ProofPanel(QWidget):
                 pass
         return lits
 
-    def _autofill_construction(self, step, rule, ref_lits):
-        """Auto-fill a construction step by matching ref'd literals
-        against the rule's prerequisite pattern to derive a var_map,
-        then substituting into the conclusion pattern.
+    def _autofill_construction(self, step, rule, ref_lits, all_known):
+        """Auto-fill a construction step by matching prerequisite patterns
+        against known facts to derive a var_map, then substituting into
+        the conclusion pattern.
+
+        Ref'd literals are tried first (user intent), then remaining
+        known facts are used as a fallback pool — mirroring the verifier
+        which checks prerequisites against ALL known facts.
 
         Returns the generated text, or None if matching failed.
         """
@@ -2166,9 +2331,16 @@ class ProofPanel(QWidget):
         if not rule.conclusion_pattern:
             return None
 
-        # Match ref'd literals against the rule's prereq pattern
+        # Build candidate pool: ref'd literals first (priority), then
+        # the remaining known facts (deduped) so binding order reflects
+        # the user's cited refs.
+        ref_set = set(id(l) for l in ref_lits)
+        extra = [l for l in all_known if id(l) not in ref_set]
+        candidate_pool = list(ref_lits) + extra
+
+        # Match candidate pool against the rule's prereq pattern
         bindings, matched = self._match_hypotheses(
-            rule.prereq_pattern, ref_lits)
+            rule.prereq_pattern, candidate_pool)
 
         # All prerequisite patterns must match for a valid autofill
         if matched < len(rule.prereq_pattern):
@@ -2177,6 +2349,13 @@ class ProofPanel(QWidget):
         # For new_vars (the constructed objects), pick fresh names
         # if not already bound from prereqs
         used_names = set(bindings.values())
+        # Also include all names already in the proof so we don't
+        # reuse e.g. α when it was already introduced by a prior step.
+        for prem in self._premises:
+            used_names.update(self._extract_symbols(prem))
+        for s in self._steps:
+            if s.text.strip():
+                used_names.update(self._extract_symbols(s.text))
         for name, sort in rule.new_vars:
             if name not in bindings:
                 fresh = self._pick_fresh_name(name, sort, used_names)
@@ -2190,10 +2369,13 @@ class ProofPanel(QWidget):
             parts.append(repr(inst))
         return ", ".join(parts)
 
-    def _autofill_theorem(self, step, theorem_name, ref_lits):
-        """Auto-fill a theorem application step by matching ref'd literals
+    def _autofill_theorem(self, step, theorem_name, ref_lits, all_known):
+        """Auto-fill a theorem application step by matching known facts
         against the theorem's hypotheses to derive a var_map, then
         substituting into the conclusions.
+
+        Ref'd literals are tried first, with remaining known facts as
+        fallback — mirroring the verifier.
 
         Returns the generated text, or None if matching failed.
         """
@@ -2207,9 +2389,14 @@ class ProofPanel(QWidget):
         if thm is None:
             return None
 
-        # Match ref'd literals against the theorem's hypotheses
+        # Build candidate pool: ref'd literals first, then known facts
+        ref_set = set(id(l) for l in ref_lits)
+        extra = [l for l in all_known if id(l) not in ref_set]
+        candidate_pool = list(ref_lits) + extra
+
+        # Match candidate pool against the theorem's hypotheses
         bindings, matched = self._match_hypotheses(
-            thm.sequent.hypotheses, ref_lits)
+            thm.sequent.hypotheses, candidate_pool)
 
         # All hypothesis patterns must match for a valid autofill
         if matched < len(thm.sequent.hypotheses):
@@ -2233,6 +2420,134 @@ class ProofPanel(QWidget):
         # Generate substituted conclusion text
         parts = []
         for conc in thm.sequent.conclusions:
+            inst = substitute_literal(conc, bindings)
+            parts.append(repr(inst))
+        return ", ".join(parts)
+
+    # ── Named axiom index (lazy-initialised) ─────────────────────
+    _AXIOM_BY_NAME: Optional[dict] = None
+
+    @classmethod
+    def _get_axiom_by_name(cls) -> dict:
+        """Build or return the cached name→Clause index for all named
+        diagrammatic, transfer and metric axioms.
+
+        Keys are the rule names shown in the UI dropdown, e.g.
+        ``"Generality 3"``, ``"Segment transfer 1"``.
+        """
+        if cls._AXIOM_BY_NAME is not None:
+            return cls._AXIOM_BY_NAME
+        try:
+            from verifier.e_axioms import (
+                GENERALITY_AXIOMS, BETWEEN_AXIOMS, SAME_SIDE_AXIOMS,
+                PASCH_AXIOMS, TRIPLE_INCIDENCE_AXIOMS, CIRCLE_AXIOMS,
+                INTERSECTION_AXIOMS,
+                DIAGRAM_SEGMENT_TRANSFER, DIAGRAM_ANGLE_TRANSFER,
+                DIAGRAM_AREA_TRANSFER,
+            )
+        except ImportError:
+            cls._AXIOM_BY_NAME = {}
+            return cls._AXIOM_BY_NAME
+
+        groups = [
+            ("Generality", GENERALITY_AXIOMS),
+            ("Betweenness", BETWEEN_AXIOMS),
+            ("Same-side", SAME_SIDE_AXIOMS),
+            ("Pasch", PASCH_AXIOMS),
+            ("Triple incidence", TRIPLE_INCIDENCE_AXIOMS),
+            ("Circle", CIRCLE_AXIOMS),
+            ("Intersection", INTERSECTION_AXIOMS),
+            ("Segment transfer", DIAGRAM_SEGMENT_TRANSFER),
+            ("Angle transfer", DIAGRAM_ANGLE_TRANSFER),
+            ("Area transfer", DIAGRAM_AREA_TRANSFER),
+        ]
+        idx: dict = {}
+        for group_name, axioms in groups:
+            for i, ax in enumerate(axioms):
+                idx[f"{group_name} {i + 1}"] = ax
+        cls._AXIOM_BY_NAME = idx
+        return idx
+
+    def _autofill_named_axiom(self, step, just, ref_lits, all_known):
+        """Auto-fill a step justified by a named axiom clause.
+
+        Named axioms are clauses ``{¬P₁, ¬P₂, …, Q}`` where the negated
+        literals are prerequisites and the remaining positive literals are
+        the conclusion.  We match known facts against the prerequisites
+        (with polarity flipped) to derive bindings, then substitute into
+        the conclusion.
+
+        Ref'd literals are tried first, with remaining known facts as
+        fallback — mirroring the verifier.
+
+        Returns the generated text, ``_AUTOFILL_FAIL`` if the justification
+        names a known axiom but matching failed, or ``None`` if the
+        justification is not a known named axiom.
+        """
+        from verifier.unified_checker import _try_match_literal
+        from verifier.e_ast import substitute_literal, Literal
+
+        ax_index = self._get_axiom_by_name()
+        clause = ax_index.get(just)
+        if clause is None:
+            return None  # not a known named axiom
+
+        # Split clause into prereqs (negated) and conclusions (positive).
+        # In the clause representation, prerequisites appear as negative
+        # literals (their negation must be true in the known facts).
+        prereqs = []
+        conclusions = []
+        for lit in clause.literals:
+            if not lit.polarity:
+                # Negative literal in clause → prerequisite
+                # The positive version is what we match against known facts
+                prereqs.append(Literal(lit.atom, polarity=True))
+            else:
+                conclusions.append(lit)
+
+        if not conclusions:
+            return self._AUTOFILL_FAIL
+
+        # For disjunctive clauses with multiple positive literals,
+        # we cannot determine which conclusion the user intends.
+        # Skip autofill and let the user type the statement manually.
+        if len(conclusions) > 1:
+            return None
+
+        # Clause.literals is a frozenset, so iteration order is
+        # non-deterministic.  Sort prereqs so that ``On`` patterns bind
+        # primary variables (point + object) before ``Inside`` patterns,
+        # which prevents circle-name swaps in axioms like Intersection 9
+        # where on(a,α) and inside(b,α) share schema variable α.
+        from verifier.e_ast import On, Inside
+        _ATOM_PRIORITY = {On: 0, Inside: 1}
+        prereqs.sort(key=lambda l: (
+            _ATOM_PRIORITY.get(type(l.atom), 2), repr(l)))
+
+        # Build candidate pool: ref'd literals first, then known facts
+        ref_set = set(id(l) for l in ref_lits)
+        extra = [l for l in all_known if id(l) not in ref_set]
+        candidate_pool = list(ref_lits) + extra
+
+        # Match candidate pool against prereqs to derive bindings
+        bindings: dict = {}
+        remaining = list(candidate_pool)
+        matched = 0
+        for pat in prereqs:
+            for i, conc in enumerate(remaining):
+                result = _try_match_literal(pat, conc, bindings)
+                if result is not None:
+                    bindings = result
+                    remaining.pop(i)
+                    matched += 1
+                    break
+
+        if matched < len(prereqs):
+            return self._AUTOFILL_FAIL
+
+        # Substitute bindings into conclusions
+        parts = []
+        for conc in conclusions:
             inst = substitute_literal(conc, bindings)
             parts.append(repr(inst))
         return ", ".join(parts)

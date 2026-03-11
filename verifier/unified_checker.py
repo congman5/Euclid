@@ -28,11 +28,12 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from .e_ast import (
     Sort, Literal, Sequent, EProof, ETheorem,
     ProofStep, StepKind, EProofLine,
-    substitute_literal,
+    substitute_literal, literal_vars,
 )
 from .e_checker import EChecker, ECheckResult
 from .e_consequence import ConsequenceEngine
 from .e_library import E_THEOREM_LIBRARY, get_theorems_up_to
+from .e_superposition import apply_sas_superposition, apply_sss_superposition
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -269,13 +270,39 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
 
     # ── 4. Build checker state ────────────────────────────────────
     checker = EChecker(E_THEOREM_LIBRARY)
-    # Register declared variables
-    for name, sort in sort_ctx.items():
-        if name not in checker.variables:
-            checker.variables[name] = sort
-    # Load premises as known facts
+
+    # When verifying a proof *of* Prop.I.N, the prover may only cite
+    # earlier propositions (I.1 … I.(N-1)), not the theorem being proved.
+    proof_name = proof_json.get("name", "")
+    if proof_name and proof_name in E_THEOREM_LIBRARY:
+        available_theorems = get_theorems_up_to(proof_name)
+    else:
+        # For non-proposition proofs or unnamed proofs, all theorems
+        # are available (user-level proof checking in the UI).
+        available_theorems = E_THEOREM_LIBRARY
+
+    # Register declared variables — only the original names, not the
+    # lowercase/uppercase parsing helpers, to avoid combinatorial
+    # explosion in axiom grounding.
+    declared_names: Set[str] = set()
+    for p in decl.get("points", []):
+        declared_names.add(p)
+    for ln in decl.get("lines", []):
+        declared_names.add(ln)
+    for name in declared_names:
+        if name in sort_ctx and name not in checker.variables:
+            checker.variables[name] = sort_ctx[name]
+    # Load premises as known facts and register their variables.
+    # Infer variable sorts from premises so that the consequence and
+    # transfer engines see correct point/line/circle classification.
+    _premise_vars: Dict[str, Sort] = {}
     for lit in premise_lits:
         checker.known.add(lit)
+        checker.consequence_engine._collect_atom_var_sorts(
+            lit.atom, _premise_vars)
+    for vname, vsort in _premise_vars.items():
+        if vname not in checker.variables:
+            checker.variables[vname] = vsort
 
     # ── 4b. T and H consequence engines for cross-system steps ────
     from .t_consequence import TConsequenceEngine
@@ -311,21 +338,44 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
     lines = proof_json.get("lines", [])
     premise_ids: Set[int] = set()
 
+    # Track literals derived per line so that ref-restricted checking
+    # can build a known-set from only the cited lines.
+    line_lits: Dict[int, Set[Literal]] = {}
+
+    # Track depth per line id for subproof scoping.
+    line_depth: Dict[int, int] = {}
+
+    def _ref_known(refs: List[int]) -> Set[Literal]:
+        """Collect literals from referenced lines only."""
+        rk: Set[Literal] = set()
+        for r in refs:
+            if r in premise_ids:
+                rk.update(line_lits.get(r, set()))
+            elif r in line_lits:
+                rk.update(line_lits[r])
+        return rk
+
     for line in lines:
         lid = line.get("id", 0)
         just = line.get("justification", "")
         stmt_str = line.get("statement", "")
         refs = line.get("refs", [])
+        depth = line.get("depth", 0)
         lr = LineCheckResult(line_id=lid)
+
+        # Record depth for subproof scoping
+        line_depth[lid] = depth
 
         # Given lines → check against premises
         if just == "Given":
             premise_ids.add(lid)
+            given_lits: Set[Literal] = set()
             try:
                 lits = parse_literal_list(stmt_str, sort_ctx)
                 for lit in lits:
                     if lit in premise_lits or lit in checker.known:
                         checker.known.add(lit)
+                        given_lits.add(lit)
                     else:
                         lr.valid = False
                         lr.errors.append(
@@ -333,6 +383,7 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
             except EParseError as exc:
                 lr.valid = False
                 lr.errors.append(f"Parse error: {exc}")
+            line_lits[lid] = given_lits
             if lr.valid:
                 result.derived.add(lid)
             result.line_results[lid] = lr
@@ -383,16 +434,32 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                                 checker.variables[vname] = _infer_sort(
                                     vname, sort_ctx)
         elif step_kind == StepKind.DIAGRAMMATIC:
+            # Named axiom rules (e.g. "Intersection 9", "Generality 3")
+            # must cite the specific lines providing their prerequisites.
+            # When a named axiom step has explicit refs, restrict the
+            # known-fact pool to only the literals from those lines.
+            # Generic "Diagrammatic" steps (no named rule) still use
+            # the full known set.
+            _is_named_axiom = (
+                just not in ("Diagrammatic", "diagrammatic",
+                             "Given", "Reit")
+                and refs
+            )
+            if _is_named_axiom:
+                eff_known = _ref_known(refs)
+            else:
+                eff_known = checker.known
+
             for lit in step_lits:
                 if lit in checker.known:
                     continue
                 # Try E engine first
                 ok = checker.consequence_engine.is_consequence(
-                    checker.known, lit, checker.variables)
+                    eff_known, lit)
                 # If E doesn't accept and the step uses T syntax,
                 # bridge known facts to T and check via T engine
                 if not ok and step_system == "T":
-                    t_known = _e_known_to_t(checker.known)
+                    t_known = _e_known_to_t(eff_known)
                     t_lits = e_literal_to_t(lit)
                     if t_lits:
                         ok = all(
@@ -403,7 +470,7 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                 # If E doesn't accept and the step uses H syntax,
                 # bridge known facts to H and check via H engine
                 if not ok and step_system == "H":
-                    h_known = _e_known_to_h(checker.known)
+                    h_known = _e_known_to_h(eff_known)
                     h_lit = e_literal_to_h(lit, sort_ctx)
                     if h_lit is not None:
                         ok = (h_lit in h_known or
@@ -411,7 +478,7 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                 # As a last resort for any system, try the other engines
                 if not ok and step_system == "E":
                     # Try T fallback
-                    t_known = _e_known_to_t(checker.known)
+                    t_known = _e_known_to_t(eff_known)
                     t_lits = e_literal_to_t(lit)
                     if t_lits and all(
                         tl in t_known or t_engine.is_consequence(
@@ -421,7 +488,7 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                         ok = True
                     # Try H fallback
                     if not ok:
-                        h_known = _e_known_to_h(checker.known)
+                        h_known = _e_known_to_h(eff_known)
                         h_lit = e_literal_to_h(lit, sort_ctx)
                         if h_lit is not None and (
                             h_lit in h_known or
@@ -433,6 +500,9 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                 else:
                     lr.valid = False
                     lr.errors.append(
+                        f"Diagrammatic assertion {lit} is not a "
+                        f"direct consequence of referenced facts."
+                        if refs else
                         f"Diagrammatic assertion {lit} is not a "
                         f"direct consequence of known facts.")
         elif step_kind == StepKind.METRIC:
@@ -448,8 +518,17 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                         f"Metric assertion {lit} is not a "
                         f"consequence of known facts.")
         elif step_kind == StepKind.TRANSFER:
+            # Compute diagrammatic closure first so that derived
+            # negative facts (e.g. ¬between(g,h,d)) are available
+            # for the transfer axiom grounding.
+            closure = checker.consequence_engine.direct_consequences(
+                checker.known, checker.variables)
+            checker.known.update(closure)
             diagram_known = {l for l in checker.known if l.is_diagrammatic}
             metric_known = {l for l in checker.known if l.is_metric}
+            # Pass checker.variables so that grounding uses properly
+            # sorted variables (points vs lines) without extracting
+            # from the closure (which can misclassify line names).
             derived = checker.transfer_engine.apply_transfers(
                 diagram_known, metric_known, checker.variables)
             for lit in step_lits:
@@ -459,6 +538,47 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                     lr.valid = False
                     lr.errors.append(
                         f"Transfer assertion {lit} is not derivable.")
+        elif step_kind == StepKind.SUPERPOSITION_SAS:
+            # SAS superposition (§3.7): extract 6 point names from the
+            # step literals and delegate to apply_sas_superposition.
+            pts = _extract_superposition_points(step_lits)
+            if pts is None or len(pts) < 6:
+                lr.valid = False
+                lr.errors.append(
+                    "SAS requires conclusions mentioning exactly "
+                    "6 distinct point variables (a,b,c,d,e,f).")
+            else:
+                a, b, c, d, e, f = pts[:6]
+                sas_r = apply_sas_superposition(
+                    checker.known, a, b, c, d, e, f)
+                if not sas_r.valid:
+                    lr.valid = False
+                    lr.errors.append(f"SAS failed: {sas_r.error}")
+                else:
+                    for lit in sas_r.derived:
+                        checker.known.add(lit)
+                    for lit in step_lits:
+                        checker.known.add(lit)
+        elif step_kind == StepKind.SUPERPOSITION_SSS:
+            # SSS superposition (§3.7): same pattern as SAS.
+            pts = _extract_superposition_points(step_lits)
+            if pts is None or len(pts) < 6:
+                lr.valid = False
+                lr.errors.append(
+                    "SSS requires conclusions mentioning exactly "
+                    "6 distinct point variables (a,b,c,d,e,f).")
+            else:
+                a, b, c, d, e, f = pts[:6]
+                sss_r = apply_sss_superposition(
+                    checker.known, a, b, c, d, e, f)
+                if not sss_r.valid:
+                    lr.valid = False
+                    lr.errors.append(f"SSS failed: {sss_r.error}")
+                else:
+                    for lit in sss_r.derived:
+                        checker.known.add(lit)
+                    for lit in step_lits:
+                        checker.known.add(lit)
         elif step_kind == StepKind.THEOREM_APP:
             # Theorem application (§3.2): look up the theorem, check that
             # every hypothesis is a consequence of known facts, then add
@@ -503,16 +623,24 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                         f"Unknown lemma '{lemma_name}'. "
                         f"Load the lemma before citing it.")
             else:
-                thm = E_THEOREM_LIBRARY.get(just)
+                thm = available_theorems.get(just)
                 if thm is None:
-                    lr.valid = False
-                    lr.errors.append(
-                        f"Unknown theorem '{just}'.")
+                    if just in E_THEOREM_LIBRARY:
+                        lr.valid = False
+                        lr.errors.append(
+                            f"Cannot cite '{just}' when proving "
+                            f"'{proof_name}' — only earlier "
+                            f"propositions are allowed.")
+                    else:
+                        lr.valid = False
+                        lr.errors.append(
+                            f"Unknown theorem '{just}'.")
             if thm is not None:
                 # Derive variable mapping from step literals vs
                 # theorem conclusions so hypotheses can be checked
                 # with the user's actual variable names.
-                var_map = _match_theorem_var_map(thm, step_lits)
+                var_map = _match_theorem_var_map(
+                    thm, step_lits, known=checker.known)
                 # Check hypotheses of the theorem are met
                 for hyp in thm.sequent.hypotheses:
                     inst = substitute_literal(hyp, var_map)
@@ -520,7 +648,7 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                         # Try via consequence engines
                         if inst.is_diagrammatic:
                             ok = checker.consequence_engine.is_consequence(
-                                checker.known, inst, checker.variables)
+                                checker.known, inst)
                         elif inst.is_metric:
                             ok = checker.metric_engine.is_consequence(
                                 checker.known, inst)
@@ -533,13 +661,230 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                                 f"met: {inst}")
                 if lr.valid:
                     # Add substituted theorem conclusions to known
+                    thm_derived: Set[Literal] = set()
                     for conc in thm.sequent.conclusions:
                         inst_conc = substitute_literal(conc, var_map)
                         checker.known.add(inst_conc)
-                    # Also add step's own literals (which may be
-                    # a subset of the conclusions)
+                        thm_derived.add(inst_conc)
+                    # Validate that each step literal is a consequence
+                    # of the theorem's conclusions (not arbitrary).
                     for lit in step_lits:
-                        checker.known.add(lit)
+                        if lit in thm_derived or lit in checker.known:
+                            thm_derived.add(lit)
+                        elif lit.is_metric:
+                            if checker.metric_engine.is_consequence(
+                                    checker.known, lit):
+                                checker.known.add(lit)
+                                thm_derived.add(lit)
+                            else:
+                                lr.valid = False
+                                lr.errors.append(
+                                    f"Step literal {lit} is not a "
+                                    f"conclusion of '{just}'.")
+                        elif lit.is_diagrammatic:
+                            if checker.consequence_engine.is_consequence(
+                                    checker.known, lit):
+                                checker.known.add(lit)
+                                thm_derived.add(lit)
+                            else:
+                                lr.valid = False
+                                lr.errors.append(
+                                    f"Step literal {lit} is not a "
+                                    f"conclusion of '{just}'.")
+                        else:
+                            lr.valid = False
+                            lr.errors.append(
+                                f"Step literal {lit} is not a "
+                                f"conclusion of '{just}'.")
+                    # Record all theorem-derived literals for this line
+                    line_lits[lid] = thm_derived
+        elif step_kind == StepKind.INDIRECT:
+            # Indirect proof (reductio ad absurdum).
+            # Format: "Indirect[Prop.I.3,Prop.I.4]"
+            # The cited propositions must all be available (earlier than
+            # the proof being checked).  The step's assertions are
+            # accepted as conclusions of the indirect argument.
+            import re as _re
+            cited_match = _re.search(r'\[([^\]]+)\]', just)
+            cited_names = []
+            if cited_match:
+                cited_names = [s.strip()
+                               for s in cited_match.group(1).split(",")]
+            if not cited_names:
+                lr.valid = False
+                lr.errors.append(
+                    "Indirect proof must cite at least one earlier "
+                    "proposition, e.g. Indirect[Prop.I.3,Prop.I.4].")
+            else:
+                for cn in cited_names:
+                    if cn not in available_theorems:
+                        if cn in E_THEOREM_LIBRARY:
+                            lr.valid = False
+                            lr.errors.append(
+                                f"Cannot cite '{cn}' — only earlier "
+                                f"propositions are allowed.")
+                        else:
+                            lr.valid = False
+                            lr.errors.append(
+                                f"Unknown proposition '{cn}'.")
+            if lr.valid:
+                for lit in step_lits:
+                    checker.known.add(lit)
+        elif step_kind == StepKind.CONTRADICTION:
+            # Fitch ⊥-intro: derive ⊥ from contradictory refs.
+            #
+            # Protocol:
+            #   The refs must include lines whose literals contain
+            #   ψ and ¬ψ for some ψ, or a metric contradiction
+            #   (X = Y and X < Y).  The step asserts ⊥.
+            #
+            from .e_ast import BOTTOM, Equals as _Eq, LessThan as _Lt
+            ref_lits: Set[Literal] = set()
+            for r in refs:
+                ref_lits.update(line_lits.get(r, set()))
+            found_contra = False
+            for rl in ref_lits:
+                if rl.negated() in ref_lits:
+                    found_contra = True
+                    break
+            if not found_contra:
+                # Check metric contradictions in ref lits
+                m_lits = [l for l in ref_lits if l.is_metric]
+                for m1 in m_lits:
+                    for m2 in m_lits:
+                        if m1 == m2:
+                            continue
+                        if (m1.polarity and m2.polarity
+                                and isinstance(m1.atom, _Eq)
+                                and isinstance(m2.atom, _Lt)):
+                            if ((m1.atom.left == m2.atom.left
+                                    and m1.atom.right == m2.atom.right)
+                                or (m1.atom.left == m2.atom.right
+                                    and m1.atom.right == m2.atom.left)):
+                                found_contra = True
+                                break
+                    if found_contra:
+                        break
+            if not found_contra:
+                lr.valid = False
+                lr.errors.append(
+                    "⊥-intro requires refs containing ψ and ¬ψ "
+                    "(or X = Y and X < Y) but none found.")
+            if lr.valid:
+                checker.known.add(BOTTOM)
+                # Record BOTTOM as this line's literal so Reductio
+                # / ⊥-elim can reference it.
+                line_lits[lid] = {BOTTOM}
+        elif step_kind == StepKind.REDUCTIO:
+            # Structured reductio ad absurdum.
+            #
+            # Protocol:
+            #   1. An earlier "Assume" line introduced ¬φ (or φ).
+            #   2. Subsequent steps derived facts from the assumption.
+            #   3. This "Reductio" step asserts φ (the negation of the
+            #      assumed literal), provided the current known set
+            #      contains a contradiction: ψ and ¬ψ for some ψ.
+            #
+            # refs[0] must point to the Assume line.
+            #
+            if not refs:
+                lr.valid = False
+                lr.errors.append(
+                    "Reductio must reference the Assume line as "
+                    "refs[0].")
+            else:
+                assume_lid = refs[0]
+                assume_lits = line_lits.get(assume_lid, set())
+                if not assume_lits:
+                    lr.valid = False
+                    lr.errors.append(
+                        f"Reductio refs[0] (line {assume_lid}) has "
+                        f"no recorded literals.")
+                else:
+                    # The assumed literal(s) — usually a single ¬φ
+                    assumed = list(assume_lits)
+                    # Verify that each step literal is the negation of
+                    # an assumed literal.
+                    for lit in step_lits:
+                        neg_lit = lit.negated()
+                        if neg_lit not in assume_lits:
+                            lr.valid = False
+                            lr.errors.append(
+                                f"Reductio conclusion {lit} is not "
+                                f"the negation of any assumed "
+                                f"literal.")
+
+                    # Check for contradiction in known facts.
+                    # Accept either:
+                    #   (a) Fitch ⊥-elim: BOTTOM is in known (from a
+                    #       prior ⊥-intro / Contradiction step), or
+                    #   (b) Classic Reductio: ψ and ¬ψ both in known,
+                    #       or a metric contradiction (X = Y and X < Y).
+                    if lr.valid:
+                        from .e_ast import BOTTOM as _BOTTOM
+                        found_contradiction = _BOTTOM in checker.known
+                        if not found_contradiction:
+                            for kf in checker.known:
+                                neg_kf = kf.negated()
+                                if neg_kf in checker.known:
+                                    found_contradiction = True
+                                    break
+                        if not found_contradiction:
+                            # Also check metric contradictions:
+                            # e.g. ψ < φ and φ < ψ, or ψ = φ and ψ < φ
+                            from .e_ast import Equals, LessThan
+                            metric_lits = [
+                                l for l in checker.known if l.is_metric]
+                            for m1 in metric_lits:
+                                for m2 in metric_lits:
+                                    if m1 == m2:
+                                        continue
+                                    # area(X) = area(Y) and area(X) < area(Y)
+                                    if (m1.polarity and m2.polarity
+                                            and isinstance(m1.atom, Equals)
+                                            and isinstance(m2.atom, LessThan)):
+                                        if (m1.atom.left == m2.atom.left
+                                                and m1.atom.right == m2.atom.right):
+                                            found_contradiction = True
+                                            break
+                                        if (m1.atom.left == m2.atom.right
+                                                and m1.atom.right == m2.atom.left):
+                                            found_contradiction = True
+                                            break
+                                    if found_contradiction:
+                                        break
+
+                        if not found_contradiction:
+                            lr.valid = False
+                            lr.errors.append(
+                                "Reductio requires a contradiction "
+                                "in the known facts (ψ and ¬ψ for "
+                                "some ψ), but none was found.")
+
+                    # If valid, retract all facts derived inside the
+                    # subproof (at the Assume's depth or deeper) and
+                    # add only the Reductio conclusion at the outer
+                    # depth.  This prevents subproof-scoped facts from
+                    # leaking into the enclosing proof.
+                    if lr.valid:
+                        assume_depth = line_depth.get(assume_lid, 0)
+                        # Collect all line ids at subproof depth between
+                        # the Assume line and this Reductio line.
+                        subproof_lits: Set[Literal] = set()
+                        for prev_line in lines:
+                            plid = prev_line.get("id", 0)
+                            if plid == lid:
+                                break  # stop at the current Reductio line
+                            pdepth = line_depth.get(plid, 0)
+                            if plid >= assume_lid and pdepth >= assume_depth:
+                                subproof_lits.update(
+                                    line_lits.get(plid, set()))
+                        # Retract subproof-scoped facts
+                        for sl in subproof_lits:
+                            checker.known.discard(sl)
+                        # Add Reductio conclusion
+                        for lit in step_lits:
+                            checker.known.add(lit)
         elif just == "Assume":
             # Assumptions in subproofs
             for lit in step_lits:
@@ -550,10 +895,16 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
             lr.errors.append(
                 f"Unknown justification '{just}'. Use a recognized "
                 f"rule name (e.g. let-line, let-circle, Diagrammatic, "
-                f"Metric, Transfer, SAS, Prop.I.x).")
+                f"Metric, Transfer, SAS, Prop.I.x, "
+                f"Indirect[Prop.I.x,...], Assume, Reductio).")
 
         if lr.valid:
             result.derived.add(lid)
+            # Record per-line literals for ref-restricted checking.
+            # Theorem application already sets line_lits[lid] with
+            # the full conclusion set; other step kinds use step_lits.
+            if lid not in line_lits:
+                line_lits[lid] = set(step_lits)
         result.line_results[lid] = lr
 
     # ── 6. Check goal ─────────────────────────────────────────────
@@ -580,6 +931,43 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
     return result
 
 
+def _extract_superposition_points(
+    step_lits: List[Literal],
+) -> Optional[List[str]]:
+    """Extract the 6 triangle point names from SAS/SSS conclusion literals.
+
+    SAS conclusions look like:  bc = ef, ∠abc = ∠def, ∠acb = ∠dfe
+    SSS conclusions look like:  ∠bac = ∠edf, ∠abc = ∠def, ∠acb = ∠dfe
+
+    We extract (a,b,c,d,e,f) by finding the first angle equality and
+    reading its three point names on each side.
+
+    Returns a list of 6 point name strings [a,b,c,d,e,f] where:
+      - a,b,c are the first triangle
+      - d,e,f are the second triangle (same vertex correspondence)
+    Or None if extraction fails.
+    """
+    from .e_ast import Equals, AngleTerm
+
+    # Find the first angle equality to get the 3+3 triangle points
+    for lit in step_lits:
+        if not lit.polarity:
+            continue
+        atom = lit.atom
+        if not isinstance(atom, Equals):
+            continue
+        lhs, rhs = atom.left, atom.right
+        if isinstance(lhs, AngleTerm) and isinstance(rhs, AngleTerm):
+            # ∠p1p2p3 = ∠q1q2q3
+            # Triangle 1 = (p1, p2, p3), Triangle 2 = (q1, q2, q3)
+            # The vertex correspondence is p1↔q1, p2↔q2, p3↔q3
+            tri1 = [lhs.p1, lhs.p2, lhs.p3]
+            tri2 = [rhs.p1, rhs.p2, rhs.p3]
+            return tri1 + tri2
+
+    return None
+
+
 def _classify_justification(just: str) -> Optional[StepKind]:
     """Map a justification string to a StepKind."""
     from .e_construction import CONSTRUCTION_RULE_BY_NAME
@@ -597,18 +985,20 @@ def _classify_justification(just: str) -> Optional[StepKind]:
 
     # Explicit step kind labels
     _MAP = {
-        "diagrammatic": StepKind.DIAGRAMMATIC,
-        "Diagrammatic": StepKind.DIAGRAMMATIC,
-        "metric": StepKind.METRIC,
-        "Metric": StepKind.METRIC,
-        "transfer": StepKind.TRANSFER,
-        "Transfer": StepKind.TRANSFER,
-        "SAS": StepKind.SUPERPOSITION_SAS,
-        "SSS": StepKind.SUPERPOSITION_SSS,
-        "SAS Superposition": StepKind.SUPERPOSITION_SAS,
-        "SSS Superposition": StepKind.SUPERPOSITION_SSS,
-        "Reit": StepKind.DIAGRAMMATIC,
-        "Given": StepKind.DIAGRAMMATIC,
+        "diagrammatic": StepKind.AXIOM_ELIM,
+        "Diagrammatic": StepKind.AXIOM_ELIM,
+        "metric": StepKind.AXIOM_ELIM,
+        "Metric": StepKind.AXIOM_ELIM,
+        "transfer": StepKind.AXIOM_ELIM,
+        "Transfer": StepKind.AXIOM_ELIM,
+        "SAS": StepKind.SUPERPOSITION,
+        "SSS": StepKind.SUPERPOSITION,
+        "SAS Superposition": StepKind.SUPERPOSITION,
+        "SSS Superposition": StepKind.SUPERPOSITION,
+        "SAS-elim": StepKind.SUPERPOSITION,
+        "SSS-elim": StepKind.SUPERPOSITION,
+        "Reit": StepKind.AXIOM_ELIM,
+        "Given": StepKind.AXIOM_ELIM,
     }
     kind = _MAP.get(just)
     if kind is not None:
@@ -632,10 +1022,26 @@ def _classify_justification(just: str) -> Optional[StepKind]:
             return StepKind.METRIC
 
     _TRANSFER_PREFIXES = ("Segment transfer", "Angle transfer",
-                          "Area transfer")
+                           "Area transfer")
     for pfx in _TRANSFER_PREFIXES:
         if just.startswith(pfx):
             return StepKind.TRANSFER
+
+    # Indirect proof (reductio ad absurdum) citing earlier propositions
+    if just.startswith("Indirect"):
+        return StepKind.INDIRECT
+
+    # Structured reductio: Assume ¬φ, derive ψ ∧ ¬ψ, conclude φ
+    if just == "Reductio":
+        return StepKind.REDUCTIO
+
+    # Fitch ⊥-intro: derive ⊥ from ψ and ¬ψ
+    if just in ("Contradiction", "⊥-intro"):
+        return StepKind.CONTRADICTION
+
+    # Fitch ⊥-elim: discharge Assume by citing ⊥ line
+    if just in ("⊥-elim",):
+        return StepKind.REDUCTIO
 
     # Default: unrecognised
     return None
@@ -681,12 +1087,13 @@ def _literal_var_names(lit: Literal) -> Set[str]:
 def _atom_fields(atom) -> Optional[Tuple[type, Tuple[str, ...]]]:
     """Return (atom_class, (string_fields...)) for pattern matching.
 
-    Only handles atoms whose fields are all plain strings (the kind used
-    in construction-rule patterns).  Returns ``None`` for atoms that
-    contain ``Term`` sub-expressions (Equals on magnitudes, LessThan).
+    Handles both diagrammatic atoms (On, Between, etc.) whose fields
+    are plain strings, and metric Equals atoms whose fields are Term
+    sub-expressions containing point-name strings.
     """
     from .e_ast import (On, SameSide, Between, Center, Inside,
-                        Intersects, Equals)
+                        Intersects, Equals, LessThan,
+                        SegmentTerm, AngleTerm, AreaTerm)
     if isinstance(atom, On):
         return (On, (atom.point, atom.obj))
     if isinstance(atom, SameSide):
@@ -702,6 +1109,43 @@ def _atom_fields(atom) -> Optional[Tuple[type, Tuple[str, ...]]]:
     if isinstance(atom, Equals):
         if isinstance(atom.left, str) and isinstance(atom.right, str):
             return (Equals, (atom.left, atom.right))
+        # Metric Equals: flatten Term sub-expressions into string tuples
+        lf = _term_fields(atom.left)
+        rf = _term_fields(atom.right)
+        if lf is not None and rf is not None:
+            tag = (Equals, type(atom.left).__name__,
+                   type(atom.right).__name__)
+            return (tag, lf + rf)
+    if isinstance(atom, LessThan):
+        lf = _term_fields(atom.left)
+        rf = _term_fields(atom.right)
+        if lf is not None and rf is not None:
+            tag = (LessThan, type(atom.left).__name__,
+                   type(atom.right).__name__)
+            return (tag, lf + rf)
+    return None
+
+
+def _term_fields(t) -> Optional[Tuple[str, ...]]:
+    """Extract point-name strings from a Term for pattern matching."""
+    from .e_ast import SegmentTerm, AngleTerm, AreaTerm, MagAdd, RightAngle, ZeroMag
+    if isinstance(t, str):
+        return (t,)
+    if isinstance(t, SegmentTerm):
+        return (t.p1, t.p2)
+    if isinstance(t, AngleTerm):
+        return (t.p1, t.p2, t.p3)
+    if isinstance(t, AreaTerm):
+        return (t.p1, t.p2, t.p3)
+    if isinstance(t, RightAngle):
+        return ("__right_angle__",)
+    if isinstance(t, ZeroMag):
+        return ("__zero__",)
+    if isinstance(t, MagAdd):
+        left_f = _term_fields(t.left)
+        right_f = _term_fields(t.right)
+        if left_f is not None and right_f is not None:
+            return left_f + right_f
     return None
 
 
@@ -712,6 +1156,7 @@ def _try_match_literal(
 
     Returns updated bindings on success, ``None`` on failure.
     The original *bindings* dict is not mutated.
+    Handles Equals symmetry: tries both orderings for Equals atoms.
     """
     if pattern.polarity != concrete.polarity:
         return None
@@ -721,8 +1166,36 @@ def _try_match_literal(
         return None
     pat_cls, pat_args = pf
     con_cls, con_args = cf
-    if pat_cls is not con_cls or len(pat_args) != len(con_args):
+    if pat_cls != con_cls or len(pat_args) != len(con_args):
         return None
+
+    # Try direct match
+    result = _try_bind(pat_args, con_args, bindings)
+    if result is not None:
+        return result
+
+    # For Equals-like atoms, try swapped match (symmetry)
+    from .e_ast import Equals
+    is_eq = (pat_cls is Equals or
+             (isinstance(pat_cls, tuple) and pat_cls[0] is Equals))
+    if is_eq and len(pat_args) >= 2:
+        # Determine the split point: for Equals on Terms, each side
+        # contributes half the fields.
+        half = len(pat_args) // 2
+        swapped_con = con_args[half:] + con_args[:half]
+        result = _try_bind(pat_args, swapped_con, bindings)
+        if result is not None:
+            return result
+
+    return None
+
+
+def _try_bind(
+    pat_args: Tuple[str, ...],
+    con_args: Tuple[str, ...],
+    bindings: Dict[str, str],
+) -> Optional[Dict[str, str]]:
+    """Try to unify pattern args with concrete args."""
     new_bindings = dict(bindings)
     for pvar, cval in zip(pat_args, con_args):
         if pvar in new_bindings:
@@ -758,19 +1231,48 @@ def _match_construction_prereqs(
                 matched = True
                 break
         if not matched:
-            # Could not match this conclusion pattern element — skip
-            # prerequisite checking (rule may be used in a non-standard
-            # way; we'll still add the step's literals below).
-            return None, None
+            # Could not match this conclusion pattern element.
+            # The step text does not match the rule's expected output,
+            # so the construction is invalid.
+            return None, (
+                f"Statement does not match '{rule.name}' "
+                f"conclusion pattern. Expected literals matching: "
+                f"{', '.join(repr(p) for p in rule.conclusion_pattern)}")
 
-    # All conclusion patterns matched — now check prerequisites
+    # All conclusion patterns matched — now check prerequisites.
+    # Some prerequisites may contain schema variables not present in the
+    # conclusion pattern (e.g. ``center(c, α)`` where ``c`` only appears
+    # in the prereqs).  We attempt to bind these by searching *known*
+    # for a matching literal.
     for prereq in rule.prereq_pattern:
+        inst = substitute_literal(prereq, bindings)
+        if inst in known:
+            continue
+
+        # Check if the instantiated prereq still contains unbound schema
+        # variables (variables that were in the original prereq but not
+        # yet in bindings).  If so, try to find a known literal that
+        # matches and extends the bindings.
+        prereq_vars = set(literal_vars(prereq))
+        unbound = prereq_vars - set(bindings.keys())
+        if unbound:
+            resolved = False
+            for klit in known:
+                result = _try_match_literal(inst, klit, bindings)
+                if result is not None:
+                    bindings = result
+                    resolved = True
+                    break
+            if resolved:
+                continue
+
+        # Re-instantiate with potentially updated bindings
         inst = substitute_literal(prereq, bindings)
         if inst in known:
             continue
         # Try consequence engine
         ok = checker.consequence_engine.is_consequence(
-            known, inst, checker.variables)
+            known, inst)
         if not ok:
             return bindings, (
                 f"Construction prerequisite not met: {inst}")
@@ -780,10 +1282,17 @@ def _match_construction_prereqs(
 def _match_theorem_var_map(
     thm: ETheorem,
     step_lits: List[Literal],
+    known: Optional[Set[Literal]] = None,
 ) -> Dict[str, str]:
     """Derive a variable mapping from step literals matched against
     the theorem's conclusions.  Falls back to an empty mapping if
     pattern matching fails (variables happen to be the same).
+
+    When *known* is provided, hypothesis variables that don't appear in
+    the conclusions are bound by matching hypotheses against known facts.
+    This handles theorems like Prop.I.2 where the line variable ``L``
+    appears only in hypotheses (``on(b, L)``) but not in the conclusion
+    (``af = bc``).
     """
     bindings: Dict[str, str] = {}
     remaining = list(step_lits)  # track unconsumed step literals
@@ -794,6 +1303,86 @@ def _match_theorem_var_map(
                 bindings = result
                 remaining.pop(i)  # consume this step literal
                 break
+
+    # If known facts are available, try to bind hypothesis-only variables
+    # by matching each unresolved hypothesis against known facts.
+    # First tries the identity mapping (same variable names) since many
+    # proofs use the theorem's variable names directly.
+    if known is not None:
+        from .e_ast import atom_vars, literal_vars, Equals
+
+        conc_vars: Set[str] = set()
+        for conc in thm.sequent.conclusions:
+            conc_vars |= literal_vars(conc)
+
+        # Collect all hypothesis variables that need binding
+        all_hyp_vars: Set[str] = set()
+        for hyp in thm.sequent.hypotheses:
+            all_hyp_vars |= literal_vars(hyp)
+        unbound_vars = all_hyp_vars - set(bindings.keys())
+
+        if unbound_vars:
+            # Strategy 1: identity mapping — use the theorem's own names
+            identity = dict(bindings)
+            for v in unbound_vars:
+                identity[v] = v
+            all_met = True
+            for hyp in thm.sequent.hypotheses:
+                inst = substitute_literal(hyp, identity)
+                if inst not in known:
+                    all_met = False
+                    break
+            if all_met:
+                bindings = identity
+            else:
+                # Strategy 2: greedy matching with backtracking
+                hyps_needing_bind = []
+                for hyp in thm.sequent.hypotheses:
+                    hyp_vars = literal_vars(hyp)
+                    if hyp_vars - set(bindings.keys()) - conc_vars:
+                        hyps_needing_bind.append(hyp)
+
+                def _validate(candidate: Dict[str, str]) -> bool:
+                    for h in thm.sequent.hypotheses:
+                        inst = substitute_literal(h, candidate)
+                        if (not inst.polarity
+                                and isinstance(inst.atom, Equals)
+                                and isinstance(inst.atom.left, str)
+                                and inst.atom.left == inst.atom.right):
+                            return False
+                        if inst not in known:
+                            # Check if all variables are bound
+                            inst_vars = literal_vars(inst)
+                            fully_bound = all(
+                                v in candidate.values()
+                                for v in inst_vars)
+                            if fully_bound:
+                                return False
+                    return True
+
+                def _backtrack(
+                    idx: int, current: Dict[str, str]
+                ) -> Optional[Dict[str, str]]:
+                    if idx >= len(hyps_needing_bind):
+                        return current if _validate(current) else None
+                    hyp = hyps_needing_bind[idx]
+                    hyp_vars = literal_vars(hyp)
+                    unbound = hyp_vars - set(current.keys()) - conc_vars
+                    if not unbound:
+                        return _backtrack(idx + 1, current)
+                    for kf in known:
+                        candidate = _try_match_literal(hyp, kf, current)
+                        if candidate is not None:
+                            result = _backtrack(idx + 1, candidate)
+                            if result is not None:
+                                return result
+                    return _backtrack(idx + 1, current)
+
+                if hyps_needing_bind:
+                    result = _backtrack(0, dict(bindings))
+                    if result is not None:
+                        bindings = result
+
     return bindings
 
 
@@ -1114,8 +1703,20 @@ def get_available_rules() -> List[RuleInfo]:
     # ── Structural rules ──────────────────────────────────────────
     rules.append(RuleInfo(
         name="Reit",
-        category="construction",
+        category="structural",
         description="Reiteration: restate a previously established fact",
+        section="§3.2",
+    ))
+    rules.append(RuleInfo(
+        name="Assume",
+        category="structural",
+        description="Assume: open a subproof by assuming ¬φ (or φ)",
+        section="§3.2",
+    ))
+    rules.append(RuleInfo(
+        name="Reductio",
+        category="structural",
+        description="Reductio ad absurdum: derive φ from Assume ¬φ + contradiction (ψ ∧ ¬ψ)",
         section="§3.2",
     ))
 

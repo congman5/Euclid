@@ -70,11 +70,28 @@ GENERALITY_AXIOMS: List[Clause] = [
     _clause(_neg(Center("a", "\u03b1")), _neg(Center("b", "\u03b1")),
             _pos(Equals("a", "b"))),
 
+    # G2'. center(a,α) ∧ center(b,β) ∧ a≠b → α≠β
+    # (Derived from G2 by equality substitution: if α=β then
+    # center(a,α) ∧ center(b,α) → a=b, contradicting a≠b.)
+    _clause(_neg(Center("a", "\u03b1")), _neg(Center("b", "\u03b2")),
+            _pos(Equals("a", "b")),
+            _neg(Equals("\u03b1", "\u03b2"))),
+
     # G3. center(a,α) → inside(a,α)
     _clause(_neg(Center("a", "\u03b1")), _pos(Inside("a", "\u03b1"))),
 
     # G4. inside(a,α) → ¬on(a,α)
     _clause(_neg(Inside("a", "\u03b1")), _neg(On("a", "\u03b1"))),
+
+    # G5. on(a,L) ∧ ¬on(a,M) → L≠M
+    # (If L=M then on(a,L)→on(a,M), contradicting ¬on(a,M).)
+    _clause(_neg(On("a", "L")), _pos(On("a", "M")),
+            _neg(Equals("L", "M"))),
+
+    # G6. on(a,L) ∧ ¬on(b,L) → a≠b
+    # (If a=b then on(a,L)→on(b,L), contradicting ¬on(b,L).)
+    _clause(_neg(On("a", "L")), _pos(On("b", "L")),
+            _neg(Equals("a", "b"))),
 ]
 
 # ── Between axioms ────────────────────────────────────────────────────
@@ -380,6 +397,18 @@ DIAGRAM_SEGMENT_TRANSFER: List[Clause] = [
     _clause(_neg(Center("a", "\u03b1")), _neg(On("b", "\u03b1")),
             _neg(Inside("c", "\u03b1")),
             _pos(LessThan(SegmentTerm("a", "c"), SegmentTerm("a", "b")))),
+
+    # DS3/DS4 negative directions (contrapositives of biconditionals):
+    # When a point is strictly farther from the center than the radius,
+    # it is neither inside nor on the circle.
+    # DS4c: center(a,α) ∧ on(b,α) ∧ ab < ac → ¬inside(c,α)
+    _clause(_neg(Center("a", "\u03b1")), _neg(On("b", "\u03b1")),
+            _neg(LessThan(SegmentTerm("a", "b"), SegmentTerm("a", "c"))),
+            _neg(Inside("c", "\u03b1"))),
+    # DS4d: center(a,α) ∧ on(b,α) ∧ ab < ac → ¬on(c,α)
+    _clause(_neg(Center("a", "\u03b1")), _neg(On("b", "\u03b1")),
+            _neg(LessThan(SegmentTerm("a", "b"), SegmentTerm("a", "c"))),
+            _neg(On("c", "\u03b1"))),
 ]
 
 DIAGRAM_ANGLE_TRANSFER: List[Clause] = [

@@ -625,13 +625,15 @@ class TestAtomFields:
         result = _atom_fields(Equals("a", "b"))
         assert result == (Equals, ("a", "b"))
 
-    def test_magnitude_equals_returns_none(self):
-        """Equals on magnitudes should return None (not pattern-matchable)."""
+    def test_magnitude_equals_returns_fields(self):
+        """Equals on magnitudes should return flattened Term fields."""
         from verifier.unified_checker import _atom_fields
         from verifier.e_ast import Equals, SegmentTerm
         result = _atom_fields(Equals(SegmentTerm("a", "b"),
                                      SegmentTerm("c", "d")))
-        assert result is None
+        assert result is not None
+        cls, fields = result
+        assert fields == ("a", "b", "c", "d")
 
 
 class TestTryMatchLiteral:
@@ -1541,8 +1543,8 @@ class TestSolvedProofPropositionI1:
         assert len(prop_i1_json["premises"]) == 1
         assert prop_i1_json["premises"][0] == "\u00ac(a = b)"
         assert "ab = ac" in prop_i1_json["goal"]
-        # 1 Given line + 12 proof steps = 13 total lines
-        assert len(prop_i1_json["lines"]) == 13
+        # 1 Given line + 13 proof steps = 14 total lines
+        assert len(prop_i1_json["lines"]) == 14
 
     def test_proof_accepted(self, prop_i1_result):
         """The complete Proposition I.1 proof is accepted."""
@@ -1587,22 +1589,21 @@ class TestSolvedProofPropositionI1:
                 f"{_line_errors(prop_i1_result, lid)}")
 
     def test_construction_intersection_valid(self, prop_i1_result):
-        """Lines 7-8 (circle-circle intersection) are valid."""
-        for lid in [7, 8]:
-            assert _line_valid(prop_i1_result, lid), (
-                f"Intersection line {lid} failed: "
-                f"{_line_errors(prop_i1_result, lid)}")
+        """Line 7 (circle-circle intersection) is valid."""
+        assert _line_valid(prop_i1_result, 7), (
+            f"Intersection line 7 failed: "
+            f"{_line_errors(prop_i1_result, 7)}")
 
     def test_transfer_lines_valid(self, prop_i1_result):
-        """Lines 9-10 (Segment transfer) derive segment equalities."""
-        for lid in [9, 10]:
+        """Lines 8-9 (Segment transfer) derive segment equalities."""
+        for lid in [8, 9]:
             assert _line_valid(prop_i1_result, lid), (
                 f"Transfer line {lid} failed: "
                 f"{_line_errors(prop_i1_result, lid)}")
 
     def test_metric_lines_valid(self, prop_i1_result):
-        """Lines 11-13 (CN1 Transitivity) derive final equalities."""
-        for lid in [11, 12, 13]:
+        """Lines 10-12 (CN1 Transitivity) derive final equalities."""
+        for lid in [10, 11, 12]:
             assert _line_valid(prop_i1_result, lid), (
                 f"Metric line {lid} failed: "
                 f"{_line_errors(prop_i1_result, lid)}")

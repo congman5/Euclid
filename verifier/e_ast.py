@@ -386,15 +386,34 @@ class ConstructionRule:
 # ═══════════════════════════════════════════════════════════════════════
 
 class StepKind(Enum):
-    """The type of a proof step in System E."""
+    """The type of a proof step in System E.
+
+    Naming follows an intro/elim convention where possible:
+    - CONSTRUCTION = object introduction (let-line, let-circle, …)
+    - AXIOM_ELIM   = derive facts from diag/metric/transfer axiom schemas
+    - SUPERPOSITION= SAS/SSS superposition elimination
+    - THEOREM_APP  = apply a previously proved proposition
+    - INDIRECT     = reductio citing earlier props (legacy wrapper)
+    - BOT_INTRO    = ⊥-intro: derive ⊥ from ψ and ¬ψ
+    - BOT_ELIM     = ⊥-elim: discharge Assume subproof via ⊥
+    """
     CONSTRUCTION = auto()      # introduces new objects
-    DIAGRAMMATIC = auto()      # infers diagrammatic assertion
-    METRIC = auto()            # infers metric assertion
-    TRANSFER = auto()          # infers from mixed diagram+metric
+    AXIOM_ELIM = auto()        # derive from axiom schemas (diag/metric/transfer)
+    SUPERPOSITION = auto()     # SAS or SSS superposition
     THEOREM_APP = auto()       # applies a previously proved theorem
-    CASE_SPLIT = auto()        # proof by cases on atom φ / ¬φ
-    SUPERPOSITION_SAS = auto() # SAS superposition (Prop I.4)
-    SUPERPOSITION_SSS = auto() # SSS superposition (Prop I.8)
+    INDIRECT = auto()          # reductio ad absurdum citing earlier props
+    BOT_INTRO = auto()         # ⊥-intro: derive ⊥ from ψ and ¬ψ
+    BOT_ELIM = auto()          # ⊥-elim: discharge Assume via ⊥
+
+    # ── Backward-compatibility aliases ──────────────────────────────
+    DIAGRAMMATIC = AXIOM_ELIM
+    METRIC = AXIOM_ELIM
+    TRANSFER = AXIOM_ELIM
+    SUPERPOSITION_SAS = SUPERPOSITION
+    SUPERPOSITION_SSS = SUPERPOSITION
+    CASE_SPLIT = AXIOM_ELIM    # unused; alias prevents import errors
+    REDUCTIO = BOT_ELIM
+    CONTRADICTION = BOT_INTRO
 
 
 @dataclass

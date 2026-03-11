@@ -64,6 +64,8 @@ class MetricState:
         self._terms: Set[Term] = set()
         # M1 support: known point disequalities {a, b} means a ≠ b
         self._point_diseq: Set[FrozenSet[str]] = set()
+        # M1 forward: known point equalities {a, b} derived from ab = 0
+        self._point_eq: Set[FrozenSet[str]] = set()
         # Magnitude terms known to be ≠ 0
         self._nonzero: Set[Term] = set()
 
@@ -104,11 +106,15 @@ class MetricState:
         """Record a < b."""
         self.add_term(a)
         self.add_term(b)
-        self._less.add((self.find(a), self.find(b)))
+        self._less.add((a, b))
 
     def is_less(self, a: Term, b: Term) -> bool:
-        """Check if a < b is known."""
-        return (self.find(a), self.find(b)) in self._less
+        """Check if a < b is known (resolving through union-find)."""
+        ra, rb = self.find(a), self.find(b)
+        for x, y in self._less:
+            if self.find(x) == ra and self.find(y) == rb:
+                return True
+        return False
 
     def has_contradiction(self) -> bool:
         """Check for inconsistency (a < a, or a < b and b < a)."""
@@ -116,8 +122,9 @@ class MetricState:
             ra, rb = self.find(a), self.find(b)
             if ra == rb:
                 return True  # a < a
-            if (rb, ra) in self._less:
-                return True  # a < b and b < a
+            for c, d in self._less:
+                if self.find(c) == rb and self.find(d) == ra:
+                    return True  # a < b and b < a
         return False
 
 
@@ -161,9 +168,29 @@ class MetricEngine:
         return derived
 
     def is_consequence(self, known: Set[Literal], query: Literal) -> bool:
-        """Check if a metric literal is a consequence of known literals."""
+        """Check if a metric literal is a consequence of known literals.
+
+        The query's own terms are pre-loaded into the state so that
+        built-in symmetry rules (M3/M4/M8) can fire on them.  This is
+        sound because those rules hold for all well-formed terms, not
+        just terms that appear explicitly in the known set.
+        """
         self.process_literals(known)
+        # Pre-load query terms so M3/M4/M8 can apply
+        self._preload_query_terms(query)
+        # Re-run rules after introducing query terms
+        self._apply_rules()
         return self._check_literal(query)
+
+    def _preload_query_terms(self, lit: Literal) -> None:
+        """Add the magnitude terms from a query literal to the state."""
+        atom = lit.atom
+        if isinstance(atom, Equals):
+            self._to_term(atom.left)
+            self._to_term(atom.right)
+        elif isinstance(atom, LessThan):
+            self._to_term(atom.left)
+            self._to_term(atom.right)
 
     # ── Internal methods ──────────────────────────────────────────────
 
@@ -205,6 +232,12 @@ class MetricEngine:
         """Check if a literal is satisfied by the current state."""
         atom = lit.atom
         if isinstance(atom, Equals):
+            # Point equality: a = b where a, b are point variables
+            if (lit.polarity and
+                    isinstance(atom.left, str) and
+                    isinstance(atom.right, str)):
+                return (frozenset({atom.left, atom.right})
+                        in self.state._point_eq)
             # Point disequality: ¬(a = b) where a, b are point variables
             if (not lit.polarity and
                     isinstance(atom.left, str) and
@@ -305,9 +338,22 @@ class MetricEngine:
                         pass
 
         # M1: ab = 0 ↔ a = b
+        # Forward: ab = 0 → a = b (point equality from zero segment)
         # Contrapositive: a ≠ b → ab ≠ 0 (segment is nonzero)
         zero_seg = ZeroMag(Sort.SEGMENT)
         self.state.add_term(zero_seg)
+
+        # Forward direction: ab = 0 → a = b
+        for t in list(self.state._terms):
+            if isinstance(t, SegmentTerm):
+                if self.state.are_equal(t, zero_seg):
+                    # Segment is zero → endpoints are equal (point equality)
+                    pair = frozenset({t.p1, t.p2})
+                    if pair not in self.state._point_eq:
+                        self.state._point_eq.add(pair)
+                        new.add(Literal(Equals(t.p1, t.p2)))
+
+        # Contrapositive: a ≠ b → ab ≠ 0
         for pair in list(self.state._point_diseq):
             pts = sorted(pair)
             if len(pts) == 2:
@@ -330,6 +376,115 @@ class MetricEngine:
                     if pair not in self.state._point_diseq:
                         self.state._point_diseq.add(pair)
                         new.add(Literal(Equals(t.p1, t.p2), False))
+
+        # ── CN5: Whole > Part ─────────────────────────────────────
+        # If a + b = c and b > 0 then a < c   (and symmetrically
+        # if a + b = c and a > 0 then b < c).
+        #
+        # A magnitude is > 0 when:
+        #   • it appears in _nonzero (from M1 contrapositive), OR
+        #   • 0 < t is in _less, OR
+        #   • it is a MagAdd of two terms where at least one is > 0
+        #     and neither is known = 0 (not needed here; handled by
+        #     the fixpoint loop).
+
+        def _is_positive(term: Term) -> bool:
+            """Check if a term is known to be strictly > 0."""
+            rep = self.state.find(term)
+            # Check _nonzero set (includes segments from M1 contra)
+            if any(self.state.find(nz) == rep
+                   for nz in self.state._nonzero):
+                return True
+            # Check explicit 0 < term in _less
+            for z in (ZeroMag(Sort.SEGMENT), ZeroMag(Sort.ANGLE),
+                      ZeroMag(Sort.AREA)):
+                self.state.add_term(z)
+                if self.state.is_less(z, term):
+                    return True
+            return False
+
+        for t in list(self.state._terms):
+            if not isinstance(t, MagAdd):
+                continue
+            left, right = t.left, t.right
+            self.state.add_term(left)
+            self.state.add_term(right)
+            # Find all terms c where t (= left + right) = c
+            for c in list(self.state._terms):
+                if c is t or isinstance(c, MagAdd):
+                    continue
+                if not self.state.are_equal(t, c):
+                    continue
+                # left + right = c
+                # If right > 0 → left < c
+                if _is_positive(right):
+                    if not self.state.is_less(left, c):
+                        self.state.add_less(left, c)
+                        new.add(Literal(LessThan(left, c)))
+                # If left > 0 → right < c
+                if _is_positive(left):
+                    if not self.state.is_less(right, c):
+                        self.state.add_less(right, c)
+                        new.add(Literal(LessThan(right, c)))
+
+        # ── CN2: Addition congruence ──────────────────────────────
+        # If a = b and c = d then a + c = b + d.
+        # We look for MagAdd terms whose components have known-equal
+        # counterparts in other MagAdd terms.
+        mag_adds = [t for t in self.state._terms if isinstance(t, MagAdd)]
+        for t1 in mag_adds:
+            for t2 in mag_adds:
+                if t1 is t2:
+                    continue
+                if self.state.are_equal(t1, t2):
+                    continue
+                if (self.state.are_equal(t1.left, t2.left) and
+                        self.state.are_equal(t1.right, t2.right)):
+                    self.state.union(t1, t2)
+                    new.add(Literal(Equals(t1, t2)))
+                elif (self.state.are_equal(t1.left, t2.right) and
+                      self.state.are_equal(t1.right, t2.left)):
+                    self.state.union(t1, t2)
+                    new.add(Literal(Equals(t1, t2)))
+
+        # ── + Monotonicity ────────────────────────────────────────
+        # If a < b then a + c < b + c (for every known term c).
+        for a_rep, b_rep in list(self.state._less):
+            for t in mag_adds:
+                # Check if t = a + c  and  b + c exists
+                a_t = t.left if self.state.find(t.left) == a_rep else (
+                    t.right if self.state.find(t.right) == a_rep else None)
+                if a_t is None:
+                    continue
+                c_t = t.right if a_t is t.left else t.left
+                # Look for a MagAdd b + c
+                for t2 in mag_adds:
+                    if t2 is t:
+                        continue
+                    b_side = None
+                    c_side = None
+                    if self.state.find(t2.left) == b_rep:
+                        b_side = t2.left
+                        c_side = t2.right
+                    elif self.state.find(t2.right) == b_rep:
+                        b_side = t2.right
+                        c_side = t2.left
+                    if b_side is None:
+                        continue
+                    if self.state.are_equal(c_t, c_side):
+                        if not self.state.is_less(t, t2):
+                            self.state.add_less(t, t2)
+                            new.add(Literal(LessThan(t, t2)))
+
+        # ── < Transitivity ────────────────────────────────────────
+        # If a < b and b < c then a < c.
+        less_list = list(self.state._less)
+        for a, b in less_list:
+            for b2, c in less_list:
+                if self.state.find(b) == self.state.find(b2):
+                    if not self.state.is_less(a, c):
+                        self.state.add_less(a, c)
+                        new.add(Literal(LessThan(a, c)))
 
         return new
 

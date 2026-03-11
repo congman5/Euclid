@@ -7,18 +7,18 @@
     "points": [
       {
         "label": "A",
-        "x": 401.0937304101733,
-        "y": 321.0006265848213
+        "x": 200.0,
+        "y": 300.0
       },
       {
         "label": "B",
-        "x": 599.1644071280964,
-        "y": 320.0152505587978
+        "x": 450.0,
+        "y": 300.0
       },
       {
-        "label": "C",
-        "x": 498.8485323179025,
-        "y": 149.42002113673698
+        "label": "_p0",
+        "x": 325.0,
+        "y": 83.49364905389035
       }
     ],
     "segments": [
@@ -29,26 +29,27 @@
       },
       {
         "from": "A",
-        "to": "C",
+        "to": "_p0",
         "color": "#2d70b3"
       },
       {
-        "from": "C",
+        "from": "_p0",
         "to": "B",
         "color": "#2d70b3"
       }
     ],
+    "rays": [],
     "circles": [
       {
-        "center": "B",
-        "radius": 197.7336144240808,
-        "radius_point": "A",
+        "center": "A",
+        "radius": 250.0,
+        "radius_point": "B",
         "color": "#2d70b3"
       },
       {
-        "center": "A",
-        "radius": 198.0731277619674,
-        "radius_point": "B",
+        "center": "B",
+        "radius": 250.0,
+        "radius_point": "A",
         "color": "#2d70b3"
       }
     ],
@@ -58,22 +59,22 @@
         1,
         [
           [
-            "C",
+            "_p0",
             "B"
           ],
           [
             "A",
-            "C"
+            "B"
           ],
           [
             "A",
-            "B"
+            "_p0"
           ]
         ]
       ]
     ]
   },
-  "exportedAt": "2026-03-08T23:31:26Z",
+  "exportedAt": "2026-03-11T07:00:05Z",
   "proof": {
     "name": "Prop.I.1",
     "premises": [
@@ -90,7 +91,7 @@
     "steps": [
       {
         "lineNumber": 2,
-        "text": "center(a,α), on(b,α)",
+        "text": "center(a, α), on(b, α)",
         "justification": "let-circle",
         "dependencies": [
           1
@@ -100,7 +101,7 @@
       },
       {
         "lineNumber": 3,
-        "text": "center(b,β), on(a,β)",
+        "text": "center(b, β), on(a, β)",
         "justification": "let-circle",
         "dependencies": [
           1
@@ -110,18 +111,7 @@
       },
       {
         "lineNumber": 4,
-        "text": "intersects(α,β)",
-        "justification": "Intersection 3",
-        "dependencies": [
-          2,
-          3
-        ],
-        "depth": 0,
-        "status": "?"
-      },
-      {
-        "lineNumber": 5,
-        "text": "inside(a,α)",
+        "text": "inside(a, α)",
         "justification": "Generality 3",
         "dependencies": [
           2
@@ -130,8 +120,8 @@
         "status": "?"
       },
       {
-        "lineNumber": 6,
-        "text": "inside(b,β)",
+        "lineNumber": 5,
+        "text": "inside(b, β)",
         "justification": "Generality 3",
         "dependencies": [
           3
@@ -140,30 +130,45 @@
         "status": "?"
       },
       {
-        "lineNumber": 7,
-        "text": "on(c,α)",
-        "justification": "let-intersection-circle-circle-two",
+        "lineNumber": 6,
+        "text": "intersects(α, β)",
+        "justification": "Intersection 9",
         "dependencies": [
-          4
+          4,
+          5,
+          2,
+          3
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 7,
+        "text": "on(c, α), on(c, β)",
+        "justification": "let-intersection-circle-circle-one",
+        "dependencies": [
+          6
         ],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 8,
-        "text": "on(c,β)",
-        "justification": "let-intersection-circle-line-two",
+        "text": "ab = ac",
+        "justification": "Segment transfer 4",
         "dependencies": [
-          4
+          7,
+          2
         ],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 9,
-        "text": "ab = ac",
-        "justification": "Segment transfer 1",
+        "text": "bc = ba",
+        "justification": "Segment transfer 4",
         "dependencies": [
+          3,
           7
         ],
         "depth": 0,
@@ -171,11 +176,9 @@
       },
       {
         "lineNumber": 10,
-        "text": "bc = ba",
-        "justification": "Segment transfer 1",
-        "dependencies": [
-          8
-        ],
+        "text": "ab = ba",
+        "justification": "M3 — Symmetry",
+        "dependencies": [],
         "depth": 0,
         "status": "?"
       },
@@ -184,6 +187,7 @@
         "text": "ab = bc",
         "justification": "CN1 — Transitivity",
         "dependencies": [
+          8,
           10
         ],
         "depth": 0,
@@ -191,6 +195,17 @@
       },
       {
         "lineNumber": 12,
+        "text": "ab = ac",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          8,
+          10
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
         "text": "¬(c = a)",
         "justification": "CN1 — Transitivity",
         "dependencies": [],
@@ -198,7 +213,7 @@
         "status": "?"
       },
       {
-        "lineNumber": 13,
+        "lineNumber": 14,
         "text": "¬(c = b)",
         "justification": "CN1 — Transitivity",
         "dependencies": [],

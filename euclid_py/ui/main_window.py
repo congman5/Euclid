@@ -427,7 +427,9 @@ class _VerifierScreen(QWidget):
             except (TypeError, RuntimeError):
                 pass
             self._verify_thread.quit()
-            self._verify_thread.wait(500)
+            if not self._verify_thread.wait(3000):
+                self._verify_thread.terminate()
+                self._verify_thread.wait(1000)
             self._verify_thread.deleteLater()
             self._verify_thread = None
             self._verify_worker = None
@@ -538,8 +540,11 @@ class _VerifierScreen(QWidget):
 
     def _on_verify_finished(self, result_or_exc):
         """Handle verification result from the background thread."""
-        # Clean up thread references
+        # Clean up thread references — wait for thread exit before
+        # destroying to avoid 'QThread: Destroyed while still running'.
         if self._verify_thread is not None:
+            self._verify_thread.quit()
+            self._verify_thread.wait(2000)
             self._verify_thread.deleteLater()
         self._verify_thread = None
         self._verify_worker = None

@@ -135,9 +135,10 @@ HILBERT_RULES: List[Rule] = [
 # ═══════════════════════════════════════════════════════════════════════════
 
 FITCH_LOGIC_RULES: List[Rule] = [
-    Rule("RAA.Assume", "Open temporary assumption for indirect proof", "Fitch Logic", None),
-    Rule("Contradiction", "Introduce contradiction from φ and ¬φ", "Fitch Logic", ["Contradiction"]),
-    Rule("RAA", "Discharge assumption by contradiction", "Fitch Logic", None),
+    Rule("Assume", "Open temporary assumption for indirect proof", "Fitch Logic", None),
+    Rule("Contradiction", "⊥-intro: derive ⊥ from φ and ¬φ", "Fitch Logic", ["⊥"]),
+    Rule("⊥-elim", "Discharge assumption by ⊥ (reductio ad absurdum)", "Fitch Logic", None),
+    Rule("Reductio", "Discharge assumption by contradiction (classic)", "Fitch Logic", None),
 ]
 
 # ═══════════════════════════════════════════════════════════════════════════
