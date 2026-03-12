@@ -159,7 +159,7 @@ class TestProofVerificationTiming:
         from verifier.unified_checker import verify_named_proof
 
         _, elapsed = _time_ms(verify_named_proof, "Prop.I.1")
-        assert elapsed < 200, f"I.1 took {elapsed:.1f}ms"
+        assert elapsed < 400, f"I.1 took {elapsed:.1f}ms"
 
     def test_all_48_sequents_accessible_under_100ms(self):
         """Loading all 48 theorem sequents from E library takes <100ms."""

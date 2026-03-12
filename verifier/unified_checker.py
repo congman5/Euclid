@@ -433,7 +433,7 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                             if vname not in checker.variables:
                                 checker.variables[vname] = _infer_sort(
                                     vname, sort_ctx)
-        elif step_kind == StepKind.DIAGRAMMATIC:
+        elif step_kind in (StepKind.DIAGRAMMATIC, StepKind.AXIOM_ELIM):
             # Named axiom rules (e.g. "Intersection 9", "Generality 3")
             # must cite the specific lines providing their prerequisites.
             # When a named axiom step has explicit refs, restrict the
@@ -538,7 +538,7 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                     lr.valid = False
                     lr.errors.append(
                         f"Transfer assertion {lit} is not derivable.")
-        elif step_kind == StepKind.SUPERPOSITION_SAS:
+        elif step_kind in (StepKind.SUPERPOSITION_SAS, StepKind.SUPERPOSITION):
             # SAS superposition (§3.7): extract 6 point names from the
             # step literals and delegate to apply_sas_superposition.
             pts = _extract_superposition_points(step_lits)
@@ -968,6 +968,52 @@ def _extract_superposition_points(
     return None
 
 
+def _justification_tag(just: str) -> str:
+    """Return a fine-grained tag for *just* that distinguishes between
+    DIAGRAMMATIC / METRIC / TRANSFER (all aliased to AXIOM_ELIM in
+    the StepKind enum) and between SAS / SSS (both aliased to
+    SUPERPOSITION).  The returned tag is one of:
+
+        "diagrammatic", "metric", "transfer",
+        "sas", "sss",
+        ""  (for all other step kinds — the StepKind enum suffices)
+    """
+    _EXPLICIT = {
+        "diagrammatic": "diagrammatic", "Diagrammatic": "diagrammatic",
+        "metric": "metric", "Metric": "metric",
+        "transfer": "transfer", "Transfer": "transfer",
+        "SAS": "sas", "SSS": "sss",
+        "SAS Superposition": "sas", "SSS Superposition": "sss",
+        "SAS-elim": "sas", "SSS-elim": "sss",
+        "Reit": "diagrammatic", "Given": "diagrammatic",
+    }
+    tag = _EXPLICIT.get(just)
+    if tag is not None:
+        return tag
+
+    _DIAG_PREFIXES = (
+        "Generality", "Betweenness", "Same-side", "Pasch",
+        "Triple incidence", "Circle", "Intersection",
+    )
+    for pfx in _DIAG_PREFIXES:
+        if just.startswith(pfx):
+            return "diagrammatic"
+
+    _METRIC_PREFIXES = ("CN", "M1", "M2", "M3", "M4", "M5", "M6",
+                        "M7", "M8", "M9", "< ", "+ ")
+    for pfx in _METRIC_PREFIXES:
+        if just.startswith(pfx):
+            return "metric"
+
+    _TRANSFER_PREFIXES = ("Segment transfer", "Angle transfer",
+                           "Area transfer")
+    for pfx in _TRANSFER_PREFIXES:
+        if just.startswith(pfx):
+            return "transfer"
+
+    return ""
+
+
 def _classify_justification(just: str) -> Optional[StepKind]:
     """Map a justification string to a StepKind."""
     from .e_construction import CONSTRUCTION_RULE_BY_NAME
@@ -983,49 +1029,18 @@ def _classify_justification(just: str) -> Optional[StepKind]:
     if just.startswith("Lemma:"):
         return StepKind.THEOREM_APP
 
-    # Explicit step kind labels
-    _MAP = {
-        "diagrammatic": StepKind.AXIOM_ELIM,
-        "Diagrammatic": StepKind.AXIOM_ELIM,
-        "metric": StepKind.AXIOM_ELIM,
-        "Metric": StepKind.AXIOM_ELIM,
-        "transfer": StepKind.AXIOM_ELIM,
-        "Transfer": StepKind.AXIOM_ELIM,
-        "SAS": StepKind.SUPERPOSITION,
-        "SSS": StepKind.SUPERPOSITION,
-        "SAS Superposition": StepKind.SUPERPOSITION,
-        "SSS Superposition": StepKind.SUPERPOSITION,
-        "SAS-elim": StepKind.SUPERPOSITION,
-        "SSS-elim": StepKind.SUPERPOSITION,
-        "Reit": StepKind.AXIOM_ELIM,
-        "Given": StepKind.AXIOM_ELIM,
+    # Use the fine-grained tag to map to StepKind
+    tag = _justification_tag(just)
+    _TAG_TO_KIND = {
+        "diagrammatic": StepKind.DIAGRAMMATIC,
+        "metric": StepKind.METRIC,
+        "transfer": StepKind.TRANSFER,
+        "sas": StepKind.SUPERPOSITION_SAS,
+        "sss": StepKind.SUPERPOSITION_SSS,
     }
-    kind = _MAP.get(just)
+    kind = _TAG_TO_KIND.get(tag)
     if kind is not None:
         return kind
-
-    # Named axiom rules from the rule catalogue (§3.4–§3.7).
-    # Match by category-based prefixes so every rule shown in the
-    # dropdown is accepted as a valid justification.
-    _DIAG_PREFIXES = (
-        "Generality", "Betweenness", "Same-side", "Pasch",
-        "Triple incidence", "Circle", "Intersection",
-    )
-    for pfx in _DIAG_PREFIXES:
-        if just.startswith(pfx):
-            return StepKind.DIAGRAMMATIC
-
-    _METRIC_PREFIXES = ("CN", "M1", "M2", "M3", "M4", "M5", "M6",
-                        "M7", "M8", "M9", "< ", "+ ")
-    for pfx in _METRIC_PREFIXES:
-        if just.startswith(pfx):
-            return StepKind.METRIC
-
-    _TRANSFER_PREFIXES = ("Segment transfer", "Angle transfer",
-                           "Area transfer")
-    for pfx in _TRANSFER_PREFIXES:
-        if just.startswith(pfx):
-            return StepKind.TRANSFER
 
     # Indirect proof (reductio ad absurdum) citing earlier propositions
     if just.startswith("Indirect"):
