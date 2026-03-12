@@ -398,22 +398,22 @@ class StepKind(Enum):
     - BOT_ELIM     = ⊥-elim: discharge Assume subproof via ⊥
     """
     CONSTRUCTION = auto()      # introduces new objects
-    AXIOM_ELIM = auto()        # derive from axiom schemas (diag/metric/transfer)
-    SUPERPOSITION = auto()     # SAS or SSS superposition
+    AXIOM_ELIM = auto()        # derive from axiom schemas (generic)
+    SUPERPOSITION = auto()     # SAS or SSS superposition (generic)
     THEOREM_APP = auto()       # applies a previously proved theorem
     INDIRECT = auto()          # reductio ad absurdum citing earlier props
     BOT_INTRO = auto()         # ⊥-intro: derive ⊥ from ψ and ¬ψ
     BOT_ELIM = auto()          # ⊥-elim: discharge Assume via ⊥
 
-    # ── Backward-compatibility aliases ──────────────────────────────
-    DIAGRAMMATIC = AXIOM_ELIM
-    METRIC = AXIOM_ELIM
-    TRANSFER = AXIOM_ELIM
-    SUPERPOSITION_SAS = SUPERPOSITION
-    SUPERPOSITION_SSS = SUPERPOSITION
-    CASE_SPLIT = AXIOM_ELIM    # unused; alias prevents import errors
-    REDUCTIO = BOT_ELIM
-    CONTRADICTION = BOT_INTRO
+    # ── Fine-grained step kinds (distinct values) ─────────────────
+    DIAGRAMMATIC = auto()      # diagrammatic consequence (§3.4)
+    METRIC = auto()            # metric consequence (§3.5)
+    TRANSFER = auto()          # transfer axiom (§3.6)
+    SUPERPOSITION_SAS = auto() # SAS superposition (§3.7)
+    SUPERPOSITION_SSS = auto() # SSS superposition (§3.7)
+    CASE_SPLIT = auto()        # disjunction elimination
+    REDUCTIO = auto()          # ⊥-elim / structured reductio
+    CONTRADICTION = auto()     # ⊥-intro
 
 
 @dataclass

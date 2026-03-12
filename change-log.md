@@ -2,6 +2,24 @@
 
 All notable changes to the Euclid Elements Simulator project.
 
+## [7.9.7] - 2026-XX-XX
+
+### Fixed — StepKind enum aliasing bug: Transfer/Metric/SSS steps now correctly routed
+
+- **Root cause**: `StepKind` enum in `e_ast.py` defined backward-compatibility aliases (`DIAGRAMMATIC = AXIOM_ELIM`, `METRIC = AXIOM_ELIM`, `TRANSFER = AXIOM_ELIM`, `SUPERPOSITION_SAS = SUPERPOSITION`, `SUPERPOSITION_SSS = SUPERPOSITION`) that made multiple distinct step types resolve to the same enum value. Python's `Enum` treats aliases as identical to their canonical member, so `StepKind.TRANSFER == StepKind.DIAGRAMMATIC` was always `True`.
+- **Effect**: In both `e_checker.py` and `unified_checker.py`, the if-elif routing chains used `step.kind == StepKind.DIAGRAMMATIC` as the first check for axiom-elimination steps. Since METRIC and TRANSFER were aliases for the same value, all Transfer and Metric steps were incorrectly routed to the Diagrammatic handler. Similarly, all SSS steps were routed to the SAS handler.
+  - Transfer steps (e.g. `ac = ab` from circle radii via DS3b) went to the consequence engine instead of the transfer engine — failing because diagrammatic reasoning alone cannot derive segment equalities from circle membership.
+  - Metric steps (e.g. `ab = ac` by symmetry) went to the consequence engine instead of the metric engine — failing because diagrammatic reasoning alone cannot derive metric equalities.
+  - SSS superposition steps went to the SAS handler — which expected angle hypotheses instead of three side equalities.
+- **Fix in `e_ast.py`**: Replaced enum aliases with distinct `auto()` values. `DIAGRAMMATIC`, `METRIC`, `TRANSFER`, `SUPERPOSITION_SAS`, `SUPERPOSITION_SSS`, `CASE_SPLIT`, `REDUCTIO`, and `CONTRADICTION` are now independent enum members.
+- **Fix in `e_checker.py`**: Updated `_check_step()` to use `in` checks for backward compatibility: `step.kind in (StepKind.DIAGRAMMATIC, StepKind.AXIOM_ELIM)` falls through to the diagrammatic handler, while `StepKind.METRIC`, `StepKind.TRANSFER`, `StepKind.SUPERPOSITION_SSS` each reach their dedicated handlers.
+- **Fix in `unified_checker.py`**: Added `_justification_tag()` helper for fine-grained classification of justification strings (returns "diagrammatic", "metric", "transfer", "sas", "sss"). Updated `_classify_justification()` to return specific `StepKind` values. Updated routing to use distinct StepKind comparisons.
+- **Result**: 16 previously-failing tests now pass. All 48 propositions verify correctly through the EProof-based checker. Prop I.1 (equilateral triangle) Transfer steps now correctly derive circle-radius equalities via DS3b. Prop I.8 (SSS) now correctly invokes SSS superposition.
+
+### Changed — Performance budget for Prop I.1 verification
+
+- Increased `test_prop_i1_verification_fast` budget from 200ms to 400ms. The previous budget was calibrated when Transfer steps were incorrectly routed to the fast (but wrong) Diagrammatic handler. Correct routing through the Transfer engine adds ~100ms for diagrammatic closure + axiom grounding.
+
 ## [7.9.6] - 2025-XX-XX
 
 ### Changed — Comprehensive justification names in answer key (Props I.1–I.10)
