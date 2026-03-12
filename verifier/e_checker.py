@@ -134,7 +134,7 @@ class EChecker:
             self._check_sss(step, result)
         elif step.kind == StepKind.THEOREM_APP:
             self._check_theorem(step, result)
-        elif step.kind in (StepKind.CASE_SPLIT,):
+        elif step.kind == StepKind.CASE_SPLIT:
             self._check_case_split(step, result)
         else:
             result.add_error(f"Unknown step kind: {step.kind}")
