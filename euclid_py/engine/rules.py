@@ -244,9 +244,9 @@ def map_axiom_system(system: Optional[str]) -> str:
 RULE_DERIVABILITY: Dict[str, Dict[str, dict]] = {
     "Given":         {"F": {"kind": "axiom"}, "E": {"kind": "axiom"}, "H": {"kind": "axiom"}},
     "Existence":     {"F": {"kind": "axiom"}, "E": {"kind": "axiom"}, "H": {"kind": "axiom"}},
-    "RAA.Assume":    {"F": {"kind": "axiom"}, "E": {"kind": "derived", "from": ["F"]}, "H": {"kind": "derived", "from": ["F"]}},
-    "Contradiction": {"F": {"kind": "axiom"}, "E": {"kind": "derived", "from": ["F"]}, "H": {"kind": "derived", "from": ["F"]}},
-    "RAA":           {"F": {"kind": "axiom"}, "E": {"kind": "derived", "from": ["F"]}, "H": {"kind": "derived", "from": ["F"]}},
+    "Assume":        {"F": {"kind": "axiom"}, "E": {"kind": "derived", "from": ["F"]}, "H": {"kind": "derived", "from": ["F"]}},
+    "\u22a5-intro":       {"F": {"kind": "axiom"}, "E": {"kind": "derived", "from": ["F"]}, "H": {"kind": "derived", "from": ["F"]}},
+    "\u22a5-elim":        {"F": {"kind": "axiom"}, "E": {"kind": "derived", "from": ["F"]}, "H": {"kind": "derived", "from": ["F"]}},
 
     "Post.1":       {"E": {"kind": "axiom", "from": ["Postulate 1"]}},
     "Post.2":       {"E": {"kind": "axiom", "from": ["Postulate 2"]}},
