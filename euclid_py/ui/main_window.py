@@ -370,8 +370,7 @@ class _VerifierScreen(QWidget):
         self._proof_panel.line_selected.connect(self._on_line_selected)
         body_splitter.addWidget(self._proof_panel)
 
-        # Right: Tabbed diagnostics + rule reference + translations + glossary
-        from .translation_view import TranslationView, GlossaryPanel
+        # Right: Tabbed diagnostics + rule reference
         right_tabs = QTabWidget()
         right_tabs.setStyleSheet(f"""
             QTabWidget::pane {{
@@ -403,12 +402,8 @@ class _VerifierScreen(QWidget):
         self._diagnostics = DiagnosticsPanel()
         self._diagnostics.navigate_to_line.connect(self._navigate_to_line)
         self._rule_ref = RuleReferencePanel()
-        self._verifier_translation_view = TranslationView()
-        self._glossary_panel = GlossaryPanel()
         right_tabs.addTab(self._diagnostics, "Diagnostics")
         right_tabs.addTab(self._rule_ref, "Rules")
-        right_tabs.addTab(self._glossary_panel, "Glossary")
-        right_tabs.addTab(self._verifier_translation_view, "E / T / H")
         body_splitter.addWidget(right_tabs)
 
         body_splitter.setStretchFactor(0, 1)   # summary — narrow
@@ -965,50 +960,12 @@ class _WorkspaceScreen(QWidget):
         body_splitter.addWidget(canvas_container)
         body_splitter.addWidget(self._proof_panel)
 
-        # Right sidebar: tabbed Reference + Translations + Glossary (hidden by default)
-        from .translation_view import TranslationView, GlossaryPanel
-        self._right_tabs = QTabWidget()
-        self._right_tabs.setStyleSheet(f"""
-            QTabWidget::pane {{
-                border: none;
-                border-left: 1px solid {COLORS['border']};
-                background: #ffffff;
-            }}
-            QTabBar {{
-                background: {C.header_bg};
-            }}
-            QTabBar::tab {{
-                padding: 8px 16px;
-                font-size: 12px;
-                color: rgba(255, 255, 255, 0.7);
-                border: none;
-                border-bottom: 2px solid transparent;
-                background: transparent;
-            }}
-            QTabBar::tab:hover {{
-                color: #ffffff;
-                background: rgba(255, 255, 255, 0.08);
-            }}
-            QTabBar::tab:selected {{
-                color: #ffffff;
-                border-bottom: 2px solid {COLORS['primary']};
-                background: rgba(255, 255, 255, 0.05);
-            }}
-        """)
+        # Right sidebar: Rule Reference panel (hidden by default)
         self._ref_panel = RuleReferencePanel()
-        self._translation_view = TranslationView()
-        self._glossary_view = GlossaryPanel()
-        self._right_tabs.addTab(self._ref_panel, "Reference")
-        self._right_tabs.addTab(self._glossary_view, "Glossary")
-        self._right_tabs.addTab(self._translation_view, "E / T / H")
-        self._right_tabs.setMinimumWidth(300)
-        self._right_tabs.setMaximumWidth(460)
-        self._right_tabs.setVisible(False)
-        body_splitter.addWidget(self._right_tabs)
-
-        # Clicking a system badge in the E/T/H tab rewrites the proof
-        self._translation_view.system_selected.connect(
-            self._proof_panel.switch_system)
+        self._ref_panel.setMinimumWidth(300)
+        self._ref_panel.setMaximumWidth(460)
+        self._ref_panel.setVisible(False)
+        body_splitter.addWidget(self._ref_panel)
 
         body_splitter.setStretchFactor(0, 3)
         body_splitter.setStretchFactor(1, 2)
@@ -1097,8 +1054,8 @@ class _WorkspaceScreen(QWidget):
         self._left_tab.setVisible(sizes[0] < 10)
         # Proof panel collapsed (pushed all the way right)
         self._right_tab.setVisible(sizes[1] < 10)
-        # Reference tabs collapsed (only when they were visible)
-        if self._right_tabs.isVisible():
+        # Reference panel collapsed (only when it was visible)
+        if self._ref_panel.isVisible():
             self._right_tab2.setVisible(sizes[2] < 10)
         else:
             self._right_tab2.setVisible(False)
@@ -1110,9 +1067,9 @@ class _WorkspaceScreen(QWidget):
         total = sum(sizes)
         if total <= 0:
             return
-        if panel_index == 2 and not self._right_tabs.isVisible():
+        if panel_index == 2 and not self._ref_panel.isVisible():
             # Reference panel was hidden via toggle button, re-show it
-            self._right_tabs.setVisible(True)
+            self._ref_panel.setVisible(True)
             self._btn_ref.setChecked(True)
         target_size = saved[panel_index] if saved[panel_index] > 50 else total // 3
         sizes[panel_index] = target_size
@@ -1129,7 +1086,7 @@ class _WorkspaceScreen(QWidget):
         self._body_splitter.setSizes(sizes)
         self._left_tab.setVisible(sizes[0] < 10)
         self._right_tab.setVisible(sizes[1] < 10)
-        if self._right_tabs.isVisible():
+        if self._ref_panel.isVisible():
             self._right_tab2.setVisible(sizes[2] < 10)
         else:
             self._right_tab2.setVisible(False)
@@ -1176,8 +1133,6 @@ class _WorkspaceScreen(QWidget):
             if goal_text:
                 self._proof_panel.set_conclusion(goal_text)
 
-        # Phase 9.3: Update the translation view with E/T/H sequents
-        self._translation_view.set_proposition(prop)
         self._dirty = False
 
     @staticmethod
@@ -1326,8 +1281,8 @@ class _WorkspaceScreen(QWidget):
 
     def _toggle_reference(self):
         """Show or hide the reference / translation sidebar."""
-        visible = not self._right_tabs.isVisible()
-        self._right_tabs.setVisible(visible)
+        visible = not self._ref_panel.isVisible()
+        self._ref_panel.setVisible(visible)
         self._btn_ref.setChecked(visible)
         # Hide the reference restore tab when the panel is toggled off
         if not visible:

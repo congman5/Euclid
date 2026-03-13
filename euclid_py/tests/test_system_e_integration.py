@@ -101,17 +101,6 @@ class TestSmokeAllPropositions:
 
         assert missing == [], f"Missing E library entries: {missing}"
 
-    def test_all_48_have_h_library_entry(self):
-        """Every Euclid proposition has an H library theorem."""
-        from euclid_py.engine.proposition_data import PROPOSITIONS
-
-        missing = []
-        for p in PROPOSITIONS:
-            if p.source == "euclid" and p.get_h_theorem() is None:
-                missing.append(p.name)
-
-        assert missing == [], f"Missing H library entries: {missing}"
-
 
 # ═══════════════════════════════════════════════════════════════════════
 # UI INTERACTION TESTS — add/remove steps, construction syntax

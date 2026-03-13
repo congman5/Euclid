@@ -540,6 +540,13 @@ class EChecker:
         engine = MetricEngine()
         if engine.is_consequence(self.known, assertion):
             return True
+        # Transfer consequence (diagrammatic + metric)
+        diagram_known = {l for l in self.known if l.is_diagrammatic}
+        metric_known = {l for l in self.known if l.is_metric}
+        derived = self.transfer_engine.apply_transfers(
+            diagram_known, metric_known, self.variables)
+        if assertion in derived:
+            return True
         return False
 
 

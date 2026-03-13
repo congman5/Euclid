@@ -1,5 +1,5 @@
 """
-Tests for Props I.33–I.48 in both System E and System H libraries.
+Tests for Props I.33–I.48 in System E library.
 
 Covers Phase 6.4 of the implementation plan (Parallelograms, Area,
 Pythagorean Theorem).
@@ -18,7 +18,6 @@ from verifier.e_ast import (
     On, SameSide, Between, Equals, LessThan, Intersects,
     SegmentTerm, AngleTerm, AreaTerm, MagAdd, RightAngle, ZeroMag,
 )
-from verifier.h_ast import HSort, HLiteral, HSequent
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -225,113 +224,6 @@ class TestELibraryI33I48:
         assert i47_has_right_angle_hyp
         assert i48_has_right_angle_conc
 
-
-# ═══════════════════════════════════════════════════════════════════════
-# System H library tests — Props I.33–I.48
-# ═══════════════════════════════════════════════════════════════════════
-
-class TestHLibraryI33I48:
-    """Tests for Props I.33–I.48 in h_library."""
-
-    def test_h_library_has_48_theorems(self):
-        from verifier.h_library import H_THEOREM_LIBRARY
-        assert len(H_THEOREM_LIBRARY) == 48
-
-    def test_h_theorem_order_complete(self):
-        from verifier.h_library import H_THEOREM_ORDER
-        assert len(H_THEOREM_ORDER) == 48
-        assert H_THEOREM_ORDER[0] == "Prop.I.1"
-        assert H_THEOREM_ORDER[-1] == "Prop.I.48"
-
-    def test_h_prop_i33_uses_para(self):
-        from verifier.h_library import PROP_I_33
-        from verifier.h_ast import Para
-        para_hyps = [
-            h for h in PROP_I_33.sequent.hypotheses
-            if isinstance(h.atom, Para)
-        ]
-        assert len(para_hyps) == 1
-
-    def test_h_prop_i34_parallelogram(self):
-        from verifier.h_library import PROP_I_34
-        from verifier.h_ast import Para, CongH, CongaH
-        seq = PROP_I_34.sequent
-        # Two Para hypotheses (opposite sides)
-        para_hyps = [
-            h for h in seq.hypotheses if isinstance(h.atom, Para)
-        ]
-        assert len(para_hyps) == 2
-        # CongH and CongaH conclusions
-        assert len(seq.conclusions) == 3
-
-    def test_h_prop_i46_square(self):
-        from verifier.h_library import PROP_I_46
-        from verifier.h_ast import CongH
-        seq = PROP_I_46.sequent
-        assert len(seq.exists_vars) == 2
-        cong_concs = [
-            c for c in seq.conclusions if isinstance(c.atom, CongH)
-        ]
-        assert len(cong_concs) == 3
-
-    def test_h_prop_i47_non_collinear(self):
-        from verifier.h_library import PROP_I_47
-        from verifier.h_ast import ColH
-        col_hyps = [
-            h for h in PROP_I_47.sequent.hypotheses
-            if isinstance(h.atom, ColH) and not h.is_positive
-        ]
-        assert len(col_hyps) == 1
-
-    def test_get_h_theorems_up_to_i48(self):
-        from verifier.h_library import get_h_theorems_up_to
-        before = get_h_theorems_up_to("Prop.I.48")
-        assert "Prop.I.47" in before
-        assert "Prop.I.48" not in before
-        assert len(before) == 47
-
-    def test_get_h_theorems_up_to_i33(self):
-        from verifier.h_library import get_h_theorems_up_to
-        before = get_h_theorems_up_to("Prop.I.33")
-        assert len(before) == 32
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# Cross-library consistency — all 48 propositions
-# ═══════════════════════════════════════════════════════════════════════
-
-class TestCrossLibraryI33I48:
-    """Verify E and H libraries agree on all 48 proposition names."""
-
-    def test_same_proposition_names(self):
-        from verifier.e_library import E_THEOREM_LIBRARY
-        from verifier.h_library import H_THEOREM_LIBRARY
-        e_names = set(E_THEOREM_LIBRARY.keys())
-        h_names = set(H_THEOREM_LIBRARY.keys())
-        assert e_names == h_names
-
-    def test_all_props_i1_through_i48(self):
-        from verifier.e_library import E_THEOREM_LIBRARY
-        for i in range(1, 49):
-            name = f"Prop.I.{i}"
-            assert name in E_THEOREM_LIBRARY, f"Missing {name} from E library"
-
-    def test_all_h_props_i1_through_i48(self):
-        from verifier.h_library import H_THEOREM_LIBRARY
-        for i in range(1, 49):
-            name = f"Prop.I.{i}"
-            assert name in H_THEOREM_LIBRARY, f"Missing {name} from H library"
-
-    def test_all_statements_nonempty(self):
-        """All 48 propositions have non-empty statement text."""
-        from verifier.e_library import E_THEOREM_LIBRARY
-        from verifier.h_library import H_THEOREM_LIBRARY
-        for i in range(1, 49):
-            name = f"Prop.I.{i}"
-            assert len(E_THEOREM_LIBRARY[name].statement) > 10, \
-                f"{name} E statement too short"
-            assert len(H_THEOREM_LIBRARY[name].statement) > 10, \
-                f"{name} H statement too short"
 
     def test_area_props_use_area_term(self):
         """I.35–I.41 in E use AreaTerm in hypotheses or conclusions."""

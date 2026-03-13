@@ -70,13 +70,6 @@ GENERALITY_AXIOMS: List[Clause] = [
     _clause(_neg(Center("a", "\u03b1")), _neg(Center("b", "\u03b1")),
             _pos(Equals("a", "b"))),
 
-    # G2'. center(a,α) ∧ center(b,β) ∧ a≠b → α≠β
-    # (Derived from G2 by equality substitution: if α=β then
-    # center(a,α) ∧ center(b,α) → a=b, contradicting a≠b.)
-    _clause(_neg(Center("a", "\u03b1")), _neg(Center("b", "\u03b2")),
-            _pos(Equals("a", "b")),
-            _neg(Equals("\u03b1", "\u03b2"))),
-
     # G3. center(a,α) → inside(a,α)
     _clause(_neg(Center("a", "\u03b1")), _pos(Inside("a", "\u03b1"))),
 
@@ -491,7 +484,7 @@ DIAGRAM_ANGLE_TRANSFER: List[Clause] = [
                         AngleTerm("d", "c", "b")))),
 
     # DA4. on(a,L), on(b,L), on(b',L), on(a,M), on(c,M), on(c',M),
-    #      b≠a, b'≠a, c≠a, c'≠a, ¬between(a,b,b'), ¬between(a,c,c')
+    #      b≠a, b'≠a, c≠a, c'≠a, ¬between(b,a,b'), ¬between(c,a,c')
     #      → ∠bac = ∠b'ac'
     _clause(_neg(On("a", "L")), _neg(On("b", "L")),
             _neg(On("bp", "L")),
@@ -499,8 +492,8 @@ DIAGRAM_ANGLE_TRANSFER: List[Clause] = [
             _neg(On("cp", "M")),
             _pos(Equals("b", "a")), _pos(Equals("bp", "a")),
             _pos(Equals("c", "a")), _pos(Equals("cp", "a")),
-            _pos(Between("a", "b", "bp")),
-            _pos(Between("a", "c", "cp")),
+            _pos(Between("b", "a", "bp")),
+            _pos(Between("c", "a", "cp")),
             _pos(Equals(AngleTerm("b", "a", "c"),
                         AngleTerm("bp", "a", "cp")))),
 
@@ -548,6 +541,11 @@ DIAGRAM_AREA_TRANSFER: List[Clause] = [
             _pos(Equals("a", "b")),
             _neg(On("c", "L")),
             _pos(Equals(AreaTerm("a", "b", "c"), ZeroMag(Sort.AREA)))),
+    # DAr1c (contrapositive of DAr1b): ... ∧ ¬on(c,L) → ¬(△abc = 0)
+    _clause(_neg(On("a", "L")), _neg(On("b", "L")),
+            _pos(Equals("a", "b")),
+            _pos(On("c", "L")),
+            _neg(Equals(AreaTerm("a", "b", "c"), ZeroMag(Sort.AREA)))),
 
     # DAr2. on(a,L) ∧ on(b,L) ∧ on(c,L) ∧ distinct(a,b,c) ∧ ¬on(d,L)
     #       → (between(a,c,b) ↔ △acd + △dcb = △adb)

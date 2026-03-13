@@ -60,6 +60,8 @@ class MetricState:
         self._rank: Dict[Term, int] = {}
         # Known strict inequalities: (a, b) means a < b
         self._less: Set[Tuple[Term, Term]] = set()
+        # Known negated strict inequalities: (a, b) means ¬(a < b)
+        self._not_less: Set[Tuple[Term, Term]] = set()
         # Known terms
         self._terms: Set[Term] = set()
         # M1 support: known point disequalities {a, b} means a ≠ b
@@ -211,12 +213,35 @@ class MetricEngine:
                     # Point disequality: a ≠ b
                     self.state._point_diseq.add(
                         frozenset({atom.left, atom.right}))
+                else:
+                    # Magnitude disequality: if ¬(t = 0) then t is nonzero
+                    left = self._to_term(atom.left)
+                    right = self._to_term(atom.right)
+                    if left is not None and right is not None:
+                        for zero_sort in (Sort.SEGMENT, Sort.ANGLE,
+                                          Sort.AREA):
+                            z = ZeroMag(zero_sort)
+                            self.state.add_term(z)
+                            if ((isinstance(right, ZeroMag)
+                                    and right.sort == zero_sort)
+                                    or self.state.are_equal(right, z)):
+                                self.state._nonzero.add(left)
+                            if ((isinstance(left, ZeroMag)
+                                    and left.sort == zero_sort)
+                                    or self.state.are_equal(left, z)):
+                                self.state._nonzero.add(right)
         elif isinstance(atom, LessThan):
             if lit.polarity:
                 left = self._to_term(atom.left)
                 right = self._to_term(atom.right)
                 if left is not None and right is not None:
                     self.state.add_less(left, right)
+            else:
+                # ¬(a < b) — record for trichotomy
+                left = self._to_term(atom.left)
+                right = self._to_term(atom.right)
+                if left is not None and right is not None:
+                    self.state._not_less.add((left, right))
 
     def _to_term(self, x) -> Optional[Term]:
         """Convert a literal argument to a Term."""
@@ -323,6 +348,27 @@ class MetricEngine:
                                     self.state.union(t.right, t2.right)
                                     new.add(Literal(
                                         Equals(t.right, t2.right)))
+
+        # Absorption: if x + y = x (or = y) then the other component is 0
+        # This is a special case of CN3 where one "sum" is x + 0.
+        for t in list(self.state._terms):
+            if not isinstance(t, MagAdd):
+                continue
+            ms = mag_sort(t)
+            if ms is None:
+                continue
+            zero = ZeroMag(ms)
+            self.state.add_term(zero)
+            # x + y = x → y = 0
+            if self.state.are_equal(t, t.left):
+                if not self.state.are_equal(t.right, zero):
+                    self.state.union(t.right, zero)
+                    new.add(Literal(Equals(t.right, zero)))
+            # x + y = y → x = 0
+            if self.state.are_equal(t, t.right):
+                if not self.state.are_equal(t.left, zero):
+                    self.state.union(t.left, zero)
+                    new.add(Literal(Equals(t.left, zero)))
 
         # Congruence: if a = b then f(a) = f(b) for magnitude terms
         # E.g. if a = c then ab = cb
@@ -485,6 +531,23 @@ class MetricEngine:
                     if not self.state.is_less(a, c):
                         self.state.add_less(a, c)
                         new.add(Literal(LessThan(a, c)))
+
+        # ── Trichotomy ────────────────────────────────────────────
+        # For a linear ordering: ¬(a < b) ∧ ¬(b < a) → a = b.
+        for a, b in list(self.state._not_less):
+            ra, rb = self.state.find(a), self.state.find(b)
+            if ra == rb:
+                continue  # already equal
+            # Check ¬(b < a) via representatives
+            reverse_found = False
+            for c, d in self.state._not_less:
+                if (self.state.find(c) == rb and
+                        self.state.find(d) == ra):
+                    reverse_found = True
+                    break
+            if reverse_found:
+                self.state.union(a, b)
+                new.add(Literal(Equals(a, b)))
 
         return new
 

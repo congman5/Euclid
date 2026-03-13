@@ -2,8 +2,7 @@
 geocoq_compat.py — GeoCoq compatibility layer and statement comparison.
 
 Maps our axiom/theorem names to GeoCoq's Coq identifiers and provides
-reference descriptions of each Book I proposition in both our System E
-notation and GeoCoq's Tarski-based notation.
+reference descriptions of each Book I proposition in System E notation.
 
 Phase 7.2 (name mapping) + Phase 10.3 (statement comparison) of the
 implementation plan.
@@ -11,7 +10,7 @@ implementation plan.
 Reference:
   - GeoCoq: https://geocoq.github.io/GeoCoq/
   - GeoCoq Elements/Statements/Book_1.v
-  - GeoCoq tarski_axioms.v, euclidean_axioms.v
+  - GeoCoq euclidean_axioms.v
 """
 from __future__ import annotations
 
@@ -25,10 +24,10 @@ from typing import Dict, List, Optional, Tuple
 
 @dataclass(frozen=True)
 class PredicateMapping:
-    """Maps an E/T/H predicate to its GeoCoq Coq identifier."""
+    """Maps an E predicate to its GeoCoq Coq identifier."""
     our_name: str
     geocoq_name: str
-    our_system: str        # "E", "T", or "H"
+    our_system: str        # "E"
     geocoq_module: str     # Source Coq file
     arity: int
     description: str = ""
@@ -71,47 +70,7 @@ E_PREDICATE_MAPPINGS: List[PredicateMapping] = [
                      "Point equality"),
 ]
 
-# System T predicates → GeoCoq equivalents
-T_PREDICATE_MAPPINGS: List[PredicateMapping] = [
-    PredicateMapping("B(a, b, c)", "Bet A B C",
-                     "T", "tarski_axioms.v", 3,
-                     "Nonstrict betweenness (Tarski)"),
-    PredicateMapping("Cong(a, b, c, d)", "Cong A B C D",
-                     "T", "tarski_axioms.v", 4,
-                     "Equidistance (Tarski)"),
-    PredicateMapping("Neq(a, b)", "A <> B",
-                     "T", "tarski_axioms.v", 2,
-                     "Point inequality"),
-    PredicateMapping("NotB(a, b, c)", "~ Bet A B C",
-                     "T", "tarski_axioms.v", 3,
-                     "Negation of betweenness"),
-    PredicateMapping("NotCong(a, b, c, d)", "~ Cong A B C D",
-                     "T", "tarski_axioms.v", 4,
-                     "Negation of equidistance"),
-]
-
-# System H predicates → GeoCoq equivalents
-H_PREDICATE_MAPPINGS: List[PredicateMapping] = [
-    PredicateMapping("IncidL(a, L)", "IncidL a l",
-                     "H", "hilbert_axioms.v", 2,
-                     "Point incident with line (Hilbert)"),
-    PredicateMapping("BetH(a, b, c)", "BetH A B C",
-                     "H", "hilbert_axioms.v", 3,
-                     "Strict betweenness (Hilbert)"),
-    PredicateMapping("CongH(a, b, c, d)", "CongH A B C D",
-                     "H", "hilbert_axioms.v", 4,
-                     "Segment congruence (Hilbert)"),
-    PredicateMapping("CongaH(a, b, c, d, e, f)", "CongaH A B C D E F",
-                     "H", "hilbert_axioms.v", 6,
-                     "Angle congruence (Hilbert)"),
-    PredicateMapping("ColH(a, b, c)", "ColH A B C",
-                     "H", "hilbert_axioms.v", 3,
-                     "Collinearity (Hilbert)"),
-]
-
-ALL_PREDICATE_MAPPINGS = (
-    E_PREDICATE_MAPPINGS + T_PREDICATE_MAPPINGS + H_PREDICATE_MAPPINGS
-)
+ALL_PREDICATE_MAPPINGS = E_PREDICATE_MAPPINGS
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -123,35 +82,9 @@ class AxiomMapping:
     """Maps an axiom from our system to its GeoCoq identifier."""
     our_name: str
     geocoq_name: str
-    system: str       # "E", "T", or "H"
+    system: str       # "E"
     description: str
 
-
-# Tarski axiom mappings (Paper §5.2 → GeoCoq tarski_axioms.v)
-T_AXIOM_MAPPINGS: List[AxiomMapping] = [
-    AxiomMapping("E1", "cong_pseudo_reflexivity",
-                 "T", "Equidistance symmetry: Cong(a,b,b,a)"),
-    AxiomMapping("E2", "cong_inner_transitivity",
-                 "T", "Equidistance transitivity"),
-    AxiomMapping("E3", "cong_identity",
-                 "T", "Identity of equidistance: Cong(a,b,c,c) → a=b"),
-    AxiomMapping("B", "inner_connectivity_of_betweenness",
-                 "T", "Betweenness connectivity"),
-    AxiomMapping("SC", "segment_construction",
-                 "T", "Segment construction (existential)"),
-    AxiomMapping("5S", "five_segment",
-                 "T", "Five-segment axiom"),
-    AxiomMapping("P", "inner_pasch",
-                 "T", "Inner Pasch axiom"),
-    AxiomMapping("2L", "lower_dim",
-                 "T", "Lower 2D dimension axiom"),
-    AxiomMapping("2U", "upper_dim",
-                 "T", "Upper 2D dimension axiom"),
-    AxiomMapping("PP", "euclid",
-                 "T", "Parallel postulate (Tarski form)"),
-    AxiomMapping("Int", "continuity",
-                 "T", "Intersection / continuity axiom"),
-]
 
 # System E axiom group mappings (Paper §3.3–3.7 → GeoCoq euclidean_axioms.v)
 E_AXIOM_MAPPINGS: List[AxiomMapping] = [
@@ -183,7 +116,7 @@ class PropositionComparison:
     statement (number of hypotheses, conclusions, existential variables).
 
     These reference descriptions allow automated comparison against our
-    ``e_library`` and ``h_library`` entries.
+    ``e_library`` entries.
     """
     number: int
     our_name: str              # "Prop.I.1" etc.
@@ -495,76 +428,3 @@ def validate_library_alignment() -> List[str]:
     return issues
 
 
-def validate_h_library_alignment() -> List[str]:
-    """Validate that our H library aligns with the GeoCoq reference.
-
-    Same checks as validate_library_alignment but for System H.
-    """
-    from .h_library import H_THEOREM_LIBRARY
-
-    issues: List[str] = []
-
-    for comp in PROPOSITION_COMPARISONS:
-        thm = H_THEOREM_LIBRARY.get(comp.our_name)
-        if thm is None:
-            issues.append(f"{comp.our_name}: missing from H library")
-            continue
-
-        seq = thm.sequent
-
-        if comp.has_existentials and len(seq.exists_vars) == 0:
-            issues.append(
-                f"{comp.our_name} (H): construction should have existential vars"
-            )
-
-        if len(seq.hypotheses) < comp.min_hypotheses:
-            issues.append(
-                f"{comp.our_name} (H): expected ≥{comp.min_hypotheses} hypotheses, "
-                f"got {len(seq.hypotheses)}"
-            )
-
-        if len(seq.conclusions) < comp.min_conclusions:
-            issues.append(
-                f"{comp.our_name} (H): expected ≥{comp.min_conclusions} conclusions, "
-                f"got {len(seq.conclusions)}"
-            )
-
-    return issues
-
-
-def validate_translation_alignment() -> List[str]:
-    """Validate that E→T translation produces Tarski-compatible statements.
-
-    For each proposition, translate the E sequent to T and verify:
-      1. Translation succeeds
-      2. T sequent uses only Tarski primitives (Cong, B, Neq)
-      3. T existential variables include the E existentials (point-typed)
-
-    Returns:
-        List of alignment issues (empty = all good).
-    """
-    from .e_library import E_THEOREM_LIBRARY
-    from .t_pi_translation import pi_sequent
-
-    issues: List[str] = []
-
-    for comp in PROPOSITION_COMPARISONS:
-        thm = E_THEOREM_LIBRARY.get(comp.our_name)
-        if thm is None:
-            continue
-
-        try:
-            t_seq, _ = pi_sequent(thm.sequent)
-            t_str = str(t_seq)
-            # T sequents should not contain E-specific predicates
-            for e_pred in ["on(", "between(", "same-side(", "center(",
-                           "inside(", "intersects("]:
-                if e_pred in t_str:
-                    issues.append(
-                        f"{comp.our_name}: T translation contains E predicate "
-                        f"'{e_pred}'"
-                    )
-        except Exception as exc:
-            issues.append(f"{comp.our_name}: T translation error: {exc}")
-
-    return issues

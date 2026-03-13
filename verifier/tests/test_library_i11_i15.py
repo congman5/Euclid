@@ -1,6 +1,6 @@
 """
-Tests for Props I.6, I.7, I.9, I.11–I.15 in both System E and System H
-libraries, and proof encodings in e_proofs.
+Tests for Props I.6, I.7, I.9, I.11–I.15 in System E library,
+and proof encodings in e_proofs.
 
 Covers Phase 6.1 of the implementation plan.
 """
@@ -11,7 +11,6 @@ from verifier.e_ast import (
     SegmentTerm, AngleTerm, AreaTerm, MagAdd, RightAngle, ZeroMag,
     StepKind,
 )
-from verifier.h_ast import HSort, HLiteral, HSequent
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -35,8 +34,8 @@ class TestELibraryNewProps:
     def test_prop_i6_sequent(self):
         from verifier.e_library import PROP_I_6
         seq = PROP_I_6.sequent
-        # Hypotheses: ∠abc = ∠acb, a≠b, a≠c, b≠c
-        assert len(seq.hypotheses) == 4
+        # Hypotheses: ∠abc = ∠acb, a≠b, a≠c, b≠c, on(a,L), on(b,L), ¬on(c,L)
+        assert len(seq.hypotheses) == 7
         # No existential
         assert len(seq.exists_vars) == 0
         # Conclusion: ab = ac
@@ -126,97 +125,6 @@ class TestELibraryNewProps:
         assert "Prop.I.6" not in before
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# System H library tests — new propositions
-# ═══════════════════════════════════════════════════════════════════════
-
-class TestHLibraryNewProps:
-    """Tests for Props I.6–I.15 in h_library."""
-
-    def test_h_library_has_at_least_15_theorems(self):
-        from verifier.h_library import H_THEOREM_LIBRARY
-        assert len(H_THEOREM_LIBRARY) >= 15
-
-    def test_h_theorem_order_includes_i15(self):
-        from verifier.h_library import H_THEOREM_ORDER
-        assert len(H_THEOREM_ORDER) >= 15
-        assert H_THEOREM_ORDER[0] == "Prop.I.1"
-        assert "Prop.I.15" in H_THEOREM_ORDER
-
-    def test_h_prop_i6_sequent(self):
-        from verifier.h_library import PROP_I_6
-        seq = PROP_I_6.sequent
-        assert len(seq.hypotheses) == 2  # ¬ColH, CongaH
-        assert len(seq.exists_vars) == 0
-        assert len(seq.conclusions) == 1  # CongH
-
-    def test_h_prop_i7_sequent(self):
-        from verifier.h_library import PROP_I_7
-        seq = PROP_I_7.sequent
-        assert len(seq.hypotheses) == 6
-        assert len(seq.conclusions) == 1
-
-    def test_h_prop_i8_sequent(self):
-        from verifier.h_library import PROP_I_8
-        seq = PROP_I_8.sequent
-        # ¬ColH×2, CongH×3
-        assert len(seq.hypotheses) == 5
-        # CongaH×3
-        assert len(seq.conclusions) == 3
-
-    def test_h_prop_i9_sequent(self):
-        from verifier.h_library import PROP_I_9
-        seq = PROP_I_9.sequent
-        assert len(seq.hypotheses) == 1  # ¬ColH
-        assert len(seq.exists_vars) == 1  # e
-        assert seq.exists_vars[0][1] == HSort.POINT
-
-    def test_h_prop_i10_sequent(self):
-        from verifier.h_library import PROP_I_10
-        seq = PROP_I_10.sequent
-        assert len(seq.hypotheses) == 3
-        assert len(seq.exists_vars) == 1
-        assert len(seq.conclusions) == 2  # BetH, CongH
-
-    def test_h_prop_i11_sequent(self):
-        from verifier.h_library import PROP_I_11
-        seq = PROP_I_11.sequent
-        assert len(seq.exists_vars) == 1
-        assert seq.exists_vars[0] == ("f", HSort.POINT)
-
-    def test_h_prop_i12_sequent(self):
-        from verifier.h_library import PROP_I_12
-        seq = PROP_I_12.sequent
-        # ¬IncidL(p,l) in hypotheses
-        assert any(
-            h.is_negative for h in seq.hypotheses
-        )
-        assert len(seq.exists_vars) == 1
-
-    def test_h_prop_i13_sequent(self):
-        from verifier.h_library import PROP_I_13
-        seq = PROP_I_13.sequent
-        assert len(seq.hypotheses) == 2  # BetH, ¬ColH
-        assert len(seq.exists_vars) == 0
-
-    def test_h_prop_i14_sequent(self):
-        from verifier.h_library import PROP_I_14
-        seq = PROP_I_14.sequent
-        assert len(seq.conclusions) == 1  # BetH(c,b,d)
-
-    def test_h_prop_i15_sequent(self):
-        from verifier.h_library import PROP_I_15
-        seq = PROP_I_15.sequent
-        assert len(seq.hypotheses) == 3  # 2 BetH + ¬ColH
-        assert len(seq.conclusions) == 1  # CongaH
-
-    def test_get_h_theorems_up_to_i11(self):
-        from verifier.h_library import get_h_theorems_up_to
-        before = get_h_theorems_up_to("Prop.I.11")
-        assert "Prop.I.10" in before
-        assert "Prop.I.11" not in before
-        assert len(before) == 10
-
 
 # ═══════════════════════════════════════════════════════════════════════
 # Proof encodings tests — I.9, I.11, I.13, I.15
@@ -287,36 +195,3 @@ class TestEProofsNewProps:
         assert proof.goal[0].is_positive
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# Cross-library consistency tests
-# ═══════════════════════════════════════════════════════════════════════
-
-class TestCrossLibraryConsistency:
-    """Verify that E and H libraries agree on proposition names and counts."""
-
-    def test_same_proposition_names(self):
-        from verifier.e_library import E_THEOREM_LIBRARY
-        from verifier.h_library import H_THEOREM_LIBRARY
-        e_names = set(E_THEOREM_LIBRARY.keys())
-        h_names = set(H_THEOREM_LIBRARY.keys())
-        assert e_names == h_names
-
-    def test_all_theorems_have_names(self):
-        from verifier.e_library import E_THEOREM_LIBRARY
-        from verifier.h_library import H_THEOREM_LIBRARY
-        for name, thm in E_THEOREM_LIBRARY.items():
-            assert thm.name == name
-        for name, thm in H_THEOREM_LIBRARY.items():
-            assert thm.name == name
-
-    def test_all_e_theorems_have_sequents(self):
-        from verifier.e_library import E_THEOREM_LIBRARY
-        for name, thm in E_THEOREM_LIBRARY.items():
-            assert thm.sequent is not None
-            assert isinstance(thm.sequent, Sequent)
-
-    def test_all_h_theorems_have_sequents(self):
-        from verifier.h_library import H_THEOREM_LIBRARY
-        for name, thm in H_THEOREM_LIBRARY.items():
-            assert thm.sequent is not None
-            assert isinstance(thm.sequent, HSequent)

@@ -1,15 +1,11 @@
 """
 unified_checker.py — Single entry point for proof verification.
 
-Routes all verification through System E as the primary engine, with
-automatic T bridge fallback for completeness.
+Routes all verification through System E as the sole formal system.
 
 Usage:
     # Verify a System E proof
     result = verify_proof(eproof)
-
-    # Verify a System E proof with T-bridge fallback
-    result = verify_proof(eproof, use_t_fallback=True)
 
     # Verify proof from UI JSON
     result = verify_e_proof_json(proof_json)
@@ -44,11 +40,10 @@ from .e_superposition import apply_sas_superposition, apply_sss_superposition
 class UnifiedResult:
     """Result of unified verification.
 
-    Wraps an ECheckResult with additional metadata about which engine
-    was used and whether T-bridge fallback was invoked.
+    Wraps an ECheckResult with additional metadata.
     """
     valid: bool = False
-    engine: str = "e"          # "e" or "t_fallback"
+    engine: str = "e"
     e_result: Optional[ECheckResult] = None
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
@@ -78,19 +73,13 @@ class UnifiedResult:
 def verify_proof(
     proof: EProof,
     theorems: Optional[Dict[str, ETheorem]] = None,
-    use_t_fallback: bool = False,
 ) -> UnifiedResult:
     """Verify a System E proof.
-
-    Primary path: System E checker.
-    Fallback path (if use_t_fallback=True and E fails): translate to
-    Tarski's system and check via the completeness pipeline.
 
     Args:
         proof: The System E proof to check.
         theorems: Theorem library for appeals. Defaults to the full
                   E_THEOREM_LIBRARY.
-        use_t_fallback: If True, invoke T bridge when E is inconclusive.
 
     Returns:
         UnifiedResult with validity status and diagnostics.
@@ -98,7 +87,6 @@ def verify_proof(
     if theorems is None:
         theorems = E_THEOREM_LIBRARY
 
-    # ── Primary: System E ─────────────────────────────────────────
     checker = EChecker(theorems)
     e_result = checker.check_proof(proof)
 
@@ -110,47 +98,7 @@ def verify_proof(
         warnings=list(e_result.warnings),
     )
 
-    if e_result.valid:
-        return result
-
-    # ── Fallback: T bridge completeness ───────────────────────────
-    if use_t_fallback:
-        result = _try_t_fallback(proof, result)
-
     return result
-
-
-def _try_t_fallback(proof: EProof, result: UnifiedResult) -> UnifiedResult:
-    """Attempt T-bridge fallback for an E proof that failed direct check."""
-    try:
-        from .t_completeness import is_valid_for_ruler_compass
-
-        seq = Sequent(
-            hypotheses=list(proof.hypotheses),
-            exists_vars=list(proof.exists_vars),
-            conclusions=list(proof.goal),
-        )
-
-        comp_result = is_valid_for_ruler_compass(seq)
-        result.diagnostics.extend(comp_result.diagnostics)
-
-        if comp_result.is_valid:
-            result.valid = True
-            result.engine = "t_fallback"
-            result.warnings.append(
-                "Proof accepted via T-bridge completeness fallback."
-            )
-        else:
-            result.diagnostics.append(
-                "T-bridge fallback also failed to validate the sequent."
-            )
-    except Exception as exc:
-        result.diagnostics.append(
-            f"T-bridge fallback error: {exc}"
-        )
-
-    return result
-
 
 # ═══════════════════════════════════════════════════════════════════════
 # Named proof verification
@@ -158,7 +106,6 @@ def _try_t_fallback(proof: EProof, result: UnifiedResult) -> UnifiedResult:
 
 def verify_named_proof(
     proof_name: str,
-    use_t_fallback: bool = False,
 ) -> UnifiedResult:
     """Verify a named proof from the System E proof catalogue.
 
@@ -167,7 +114,6 @@ def verify_named_proof(
 
     Args:
         proof_name: e.g. "Prop.I.1"
-        use_t_fallback: If True, invoke T bridge when E is inconclusive.
 
     Returns:
         UnifiedResult with validity status.
@@ -176,8 +122,7 @@ def verify_named_proof(
 
     proof = get_proof(proof_name)
     available = get_theorems_up_to(proof_name)
-    return verify_proof(proof, theorems=available,
-                        use_t_fallback=use_t_fallback)
+    return verify_proof(proof, theorems=available)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -200,7 +145,6 @@ class PanelCheckResult:
     derived: Set[int] = field(default_factory=set)
     errors: List[str] = field(default_factory=list)
     diagnostics: List[Any] = field(default_factory=list)
-    t_bridge_accepted: bool = False
 
 
 def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
@@ -304,36 +248,6 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
         if vname not in checker.variables:
             checker.variables[vname] = vsort
 
-    # ── 4b. T and H consequence engines for cross-system steps ────
-    from .t_consequence import TConsequenceEngine
-    from .h_consequence import HConsequenceEngine
-    from .t_bridge import e_literal_to_t, t_literal_to_e
-    from .h_bridge import e_literal_to_h, h_literal_to_e
-    from .t_ast import TLiteral as _TLit, TSort
-    from .h_ast import HLiteral as _HLit, HSort
-
-    t_engine = TConsequenceEngine()
-    h_engine = HConsequenceEngine()
-
-    def _e_known_to_t(known: Set[Literal]) -> Set[_TLit]:
-        """Translate current E known-set to T literals."""
-        t_known: Set[_TLit] = set()
-        for lit in known:
-            result = e_literal_to_t(lit)
-            if result:
-                for tl in result:
-                    t_known.add(tl)
-        return t_known
-
-    def _e_known_to_h(known: Set[Literal]) -> Set[_HLit]:
-        """Translate current E known-set to H literals."""
-        h_known: Set[_HLit] = set()
-        for lit in known:
-            hl = e_literal_to_h(lit, sort_ctx)
-            if hl is not None:
-                h_known.add(hl)
-        return h_known
-
     # ── 5. Check each proof line ──────────────────────────────────
     lines = proof_json.get("lines", [])
     premise_ids: Set[int] = set()
@@ -406,9 +320,10 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
 
         # Determine step kind from justification
         step_kind = _classify_justification(just)
-
-        # Detect which formal system the statement uses
-        step_system = _detect_system(stmt_str)
+        axiom_category = (
+            _classify_axiom_category(just)
+            if step_kind == StepKind.AXIOM_ELIM else None
+        )
 
         if step_kind == StepKind.CONSTRUCTION:
             # Construction rule: match conclusion pattern to derive
@@ -433,111 +348,101 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                             if vname not in checker.variables:
                                 checker.variables[vname] = _infer_sort(
                                     vname, sort_ctx)
-        elif step_kind == StepKind.DIAGRAMMATIC:
-            # Named axiom rules (e.g. "Intersection 9", "Generality 3")
-            # must cite the specific lines providing their prerequisites.
-            # When a named axiom step has explicit refs, restrict the
-            # known-fact pool to only the literals from those lines.
-            # Generic "Diagrammatic" steps (no named rule) still use
-            # the full known set.
-            _is_named_axiom = (
-                just not in ("Diagrammatic", "diagrammatic",
-                             "Given", "Reit")
-                and refs
-            )
-            if _is_named_axiom:
-                eff_known = _ref_known(refs)
+        elif step_kind == StepKind.AXIOM_ELIM:
+            if axiom_category == "metric":
+                for lit in step_lits:
+                    if lit in checker.known:
+                        continue
+                    if checker.metric_engine.is_consequence(
+                            checker.known, lit):
+                        checker.known.add(lit)
+                    else:
+                        # Auto-chain fallback: run transfer first to
+                        # produce intermediate metric facts, then retry.
+                        closure = (
+                            checker.consequence_engine
+                            .direct_consequences(
+                                checker.known, checker.variables))
+                        checker.known.update(closure)
+                        dk = {l for l in checker.known
+                              if l.is_diagrammatic}
+                        mk = {l for l in checker.known
+                              if l.is_metric}
+                        td = (
+                            checker.transfer_engine.apply_transfers(
+                                dk, mk, checker.variables))
+                        combined = checker.known | td
+                        me = checker.metric_engine.__class__()
+                        if me.is_consequence(combined, lit):
+                            checker.known.add(lit)
+                        else:
+                            lr.valid = False
+                            lr.errors.append(
+                                f"Metric assertion {lit} is not a "
+                                f"consequence of known facts.")
+            elif axiom_category == "transfer":
+                # Compute diagrammatic closure first so that derived
+                # negative facts (e.g. ¬between(g,h,d)) are available
+                # for the transfer axiom grounding.
+                closure = checker.consequence_engine.direct_consequences(
+                    checker.known, checker.variables)
+                checker.known.update(closure)
+                diagram_known = {l for l in checker.known if l.is_diagrammatic}
+                metric_known = {l for l in checker.known if l.is_metric}
+                # Pass checker.variables so that grounding uses properly
+                # sorted variables (points vs lines) without extracting
+                # from the closure (which can misclassify line names).
+                derived = checker.transfer_engine.apply_transfers(
+                    diagram_known, metric_known, checker.variables)
+                # Auto-chain: combine transfer-derived facts with known
+                # and run the metric engine as a fallback.
+                combined = checker.known | derived
+                for lit in step_lits:
+                    if lit in checker.known or lit in derived:
+                        checker.known.add(lit)
+                    else:
+                        # Fallback: metric consequence of combined facts
+                        me = checker.metric_engine.__class__()
+                        if me.is_consequence(combined, lit):
+                            checker.known.add(lit)
+                        else:
+                            lr.valid = False
+                            lr.errors.append(
+                                f"Transfer assertion {lit} is not "
+                                f"derivable.")
             else:
-                eff_known = checker.known
+                # Named axiom rules (e.g. "Intersection 9", "Generality 3")
+                # must cite the specific lines providing their prerequisites.
+                # When a named axiom step has explicit refs, restrict the
+                # known-fact pool to only the literals from those lines.
+                # Generic "Diagrammatic" steps (no named rule) still use
+                # the full known set.
+                _is_named_axiom = (
+                    just not in ("Diagrammatic", "diagrammatic",
+                                 "Given", "Reit")
+                    and refs
+                )
+                if _is_named_axiom:
+                    eff_known = _ref_known(refs)
+                else:
+                    eff_known = checker.known
 
-            for lit in step_lits:
-                if lit in checker.known:
-                    continue
-                # Try E engine first
-                ok = checker.consequence_engine.is_consequence(
-                    eff_known, lit)
-                # If E doesn't accept and the step uses T syntax,
-                # bridge known facts to T and check via T engine
-                if not ok and step_system == "T":
-                    t_known = _e_known_to_t(eff_known)
-                    t_lits = e_literal_to_t(lit)
-                    if t_lits:
-                        ok = all(
-                            tl in t_known or t_engine.is_consequence(
-                                t_known, tl)
-                            for tl in t_lits
-                        )
-                # If E doesn't accept and the step uses H syntax,
-                # bridge known facts to H and check via H engine
-                if not ok and step_system == "H":
-                    h_known = _e_known_to_h(eff_known)
-                    h_lit = e_literal_to_h(lit, sort_ctx)
-                    if h_lit is not None:
-                        ok = (h_lit in h_known or
-                              h_engine.is_consequence(h_known, h_lit))
-                # As a last resort for any system, try the other engines
-                if not ok and step_system == "E":
-                    # Try T fallback
-                    t_known = _e_known_to_t(eff_known)
-                    t_lits = e_literal_to_t(lit)
-                    if t_lits and all(
-                        tl in t_known or t_engine.is_consequence(
-                            t_known, tl)
-                        for tl in t_lits
-                    ):
-                        ok = True
-                    # Try H fallback
-                    if not ok:
-                        h_known = _e_known_to_h(eff_known)
-                        h_lit = e_literal_to_h(lit, sort_ctx)
-                        if h_lit is not None and (
-                            h_lit in h_known or
-                            h_engine.is_consequence(h_known, h_lit)
-                        ):
-                            ok = True
-                if ok:
-                    checker.known.add(lit)
-                else:
-                    lr.valid = False
-                    lr.errors.append(
-                        f"Diagrammatic assertion {lit} is not a "
-                        f"direct consequence of referenced facts."
-                        if refs else
-                        f"Diagrammatic assertion {lit} is not a "
-                        f"direct consequence of known facts.")
-        elif step_kind == StepKind.METRIC:
-            for lit in step_lits:
-                if lit in checker.known:
-                    continue
-                if checker.metric_engine.is_consequence(
-                        checker.known, lit):
-                    checker.known.add(lit)
-                else:
-                    lr.valid = False
-                    lr.errors.append(
-                        f"Metric assertion {lit} is not a "
-                        f"consequence of known facts.")
-        elif step_kind == StepKind.TRANSFER:
-            # Compute diagrammatic closure first so that derived
-            # negative facts (e.g. ¬between(g,h,d)) are available
-            # for the transfer axiom grounding.
-            closure = checker.consequence_engine.direct_consequences(
-                checker.known, checker.variables)
-            checker.known.update(closure)
-            diagram_known = {l for l in checker.known if l.is_diagrammatic}
-            metric_known = {l for l in checker.known if l.is_metric}
-            # Pass checker.variables so that grounding uses properly
-            # sorted variables (points vs lines) without extracting
-            # from the closure (which can misclassify line names).
-            derived = checker.transfer_engine.apply_transfers(
-                diagram_known, metric_known, checker.variables)
-            for lit in step_lits:
-                if lit in checker.known or lit in derived:
-                    checker.known.add(lit)
-                else:
-                    lr.valid = False
-                    lr.errors.append(
-                        f"Transfer assertion {lit} is not derivable.")
+                for lit in step_lits:
+                    if lit in checker.known:
+                        continue
+                    # Try E engine first
+                    ok = checker.consequence_engine.is_consequence(
+                        eff_known, lit)
+                    if ok:
+                        checker.known.add(lit)
+                    else:
+                        lr.valid = False
+                        lr.errors.append(
+                            f"Diagrammatic assertion {lit} is not a "
+                            f"direct consequence of referenced facts."
+                            if refs else
+                            f"Diagrammatic assertion {lit} is not a "
+                            f"direct consequence of known facts.")
         elif step_kind == StepKind.SUPERPOSITION_SAS:
             # SAS superposition (§3.7): extract 6 point names from the
             # step literals and delegate to apply_sas_superposition.
@@ -666,6 +571,15 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                         inst_conc = substitute_literal(conc, var_map)
                         checker.known.add(inst_conc)
                         thm_derived.add(inst_conc)
+                    # Register any new variables introduced by the
+                    # theorem (existential witnesses) so that later
+                    # transfer/diagrammatic grounding can use them.
+                    for lit in step_lits:
+                        _infer_sorts_from_atom(lit.atom, sort_ctx)
+                        for vname in _literal_var_names(lit):
+                            if vname not in checker.variables:
+                                checker.variables[vname] = _infer_sort(
+                                    vname, sort_ctx)
                     # Validate that each step literal is a consequence
                     # of the theorem's conclusions (not arbitrary).
                     for lit in step_lits:
@@ -698,38 +612,6 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                                 f"conclusion of '{just}'.")
                     # Record all theorem-derived literals for this line
                     line_lits[lid] = thm_derived
-        elif step_kind == StepKind.INDIRECT:
-            # Indirect proof (reductio ad absurdum).
-            # Format: "Indirect[Prop.I.3,Prop.I.4]"
-            # The cited propositions must all be available (earlier than
-            # the proof being checked).  The step's assertions are
-            # accepted as conclusions of the indirect argument.
-            import re as _re
-            cited_match = _re.search(r'\[([^\]]+)\]', just)
-            cited_names = []
-            if cited_match:
-                cited_names = [s.strip()
-                               for s in cited_match.group(1).split(",")]
-            if not cited_names:
-                lr.valid = False
-                lr.errors.append(
-                    "Indirect proof must cite at least one earlier "
-                    "proposition, e.g. Indirect[Prop.I.3,Prop.I.4].")
-            else:
-                for cn in cited_names:
-                    if cn not in available_theorems:
-                        if cn in E_THEOREM_LIBRARY:
-                            lr.valid = False
-                            lr.errors.append(
-                                f"Cannot cite '{cn}' — only earlier "
-                                f"propositions are allowed.")
-                        else:
-                            lr.valid = False
-                            lr.errors.append(
-                                f"Unknown proposition '{cn}'.")
-            if lr.valid:
-                for lit in step_lits:
-                    checker.known.add(lit)
         elif step_kind == StepKind.CONTRADICTION:
             # Fitch ⊥-intro: derive ⊥ from contradictory refs.
             #
@@ -885,6 +767,123 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                         # Add Reductio conclusion
                         for lit in step_lits:
                             checker.known.add(lit)
+        elif step_kind == StepKind.CASE_SPLIT_ELIM:
+            # Case-split elimination (proof by cases).
+            #
+            # Protocol:
+            #   refs = [assume1_lid, assume2_lid]
+            #   assume1 asserted φ,  assume2 asserted ¬φ (or vice versa)
+            #   Both branches must have derived every literal in
+            #   step_lits before reaching this Cases line.
+            #
+            # The handler retracts both subproof-scoped fact sets and
+            # adds the shared conclusion at the outer depth.
+            #
+            if len(refs) < 2:
+                lr.valid = False
+                lr.errors.append(
+                    "Cases must reference two Assume lines "
+                    "(refs=[assume1, assume2]).")
+            else:
+                a1_lid, a2_lid = refs[0], refs[1]
+                a1_lits = line_lits.get(a1_lid, set())
+                a2_lits = line_lits.get(a2_lid, set())
+                if not a1_lits or not a2_lits:
+                    lr.valid = False
+                    lr.errors.append(
+                        "Cases requires both Assume lines to have "
+                        "recorded literals.")
+                else:
+                    # Verify that the assumed literals are
+                    # complementary (φ and ¬φ).
+                    complement_ok = False
+                    for l1 in a1_lits:
+                        if l1.negated() in a2_lits:
+                            complement_ok = True
+                            break
+                    if not complement_ok:
+                        lr.valid = False
+                        lr.errors.append(
+                            "Cases assumes must be complementary: "
+                            "one must be the negation of the other.")
+
+                    if lr.valid:
+                        # Identify both subproof scopes.
+                        a1_depth = line_depth.get(a1_lid, 0)
+                        a2_depth = line_depth.get(a2_lid, 0)
+
+                        # Branch 1: lines from a1 up to (but not incl.)
+                        # a2 at a1_depth or deeper.
+                        branch1_lits: Set[Literal] = set()
+                        branch1_known: Set[Literal] = set()
+                        for prev_line in lines:
+                            plid = prev_line.get("id", 0)
+                            if plid == lid:
+                                break
+                            pdepth = line_depth.get(plid, 0)
+                            if a1_lid <= plid < a2_lid:
+                                if pdepth >= a1_depth:
+                                    plits = line_lits.get(plid, set())
+                                    branch1_lits.update(plits)
+                                    branch1_known.update(plits)
+
+                        # Branch 2: lines from a2 up to this Cases line
+                        # at a2_depth or deeper.
+                        branch2_lits: Set[Literal] = set()
+                        branch2_known: Set[Literal] = set()
+                        for prev_line in lines:
+                            plid = prev_line.get("id", 0)
+                            if plid == lid:
+                                break
+                            pdepth = line_depth.get(plid, 0)
+                            if plid >= a2_lid and pdepth >= a2_depth:
+                                plits = line_lits.get(plid, set())
+                                branch2_lits.update(plits)
+                                branch2_known.update(plits)
+
+                        # Check that each step literal was derived in
+                        # both branches (or is already known at outer
+                        # scope).
+                        for lit in step_lits:
+                            in_b1 = (lit in branch1_known
+                                     or lit in checker.known)
+                            in_b2 = (lit in branch2_known
+                                     or lit in checker.known)
+                            # Also allow metric consequence check
+                            if not in_b1:
+                                from .e_metric import MetricEngine
+                                me = MetricEngine()
+                                combined = (
+                                    checker.known | branch1_known)
+                                in_b1 = me.is_consequence(
+                                    combined, lit)
+                            if not in_b2:
+                                from .e_metric import MetricEngine
+                                me = MetricEngine()
+                                combined = (
+                                    checker.known | branch2_known)
+                                in_b2 = me.is_consequence(
+                                    combined, lit)
+                            if not in_b1:
+                                lr.valid = False
+                                lr.errors.append(
+                                    f"Cases: {lit} not established "
+                                    f"in branch 1 (Assume at "
+                                    f"L{a1_lid}).")
+                            if not in_b2:
+                                lr.valid = False
+                                lr.errors.append(
+                                    f"Cases: {lit} not established "
+                                    f"in branch 2 (Assume at "
+                                    f"L{a2_lid}).")
+
+                        if lr.valid:
+                            # Retract both subproof scopes
+                            for sl in branch1_lits | branch2_lits:
+                                checker.known.discard(sl)
+                            # Add conclusion at outer depth
+                            for lit in step_lits:
+                                checker.known.add(lit)
         elif just == "Assume":
             # Assumptions in subproofs
             for lit in step_lits:
@@ -896,7 +895,7 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                 f"Unknown justification '{just}'. Use a recognized "
                 f"rule name (e.g. let-line, let-circle, Diagrammatic, "
                 f"Metric, Transfer, SAS, Prop.I.x, "
-                f"Indirect[Prop.I.x,...], Assume, Reductio).")
+                f"Assume, Reductio).")
 
         if lr.valid:
             result.derived.add(lid)
@@ -968,6 +967,16 @@ def _extract_superposition_points(
     return None
 
 
+_DIAG_PREFIXES = (
+    "Generality", "Betweenness", "Same-side", "Pasch",
+    "Triple incidence", "Circle", "Intersection",
+)
+_METRIC_PREFIXES = ("CN", "M1", "M2", "M3", "M4", "M5", "M6",
+                    "M7", "M8", "M9", "< ", "+ ")
+_TRANSFER_PREFIXES = ("Segment transfer", "Angle transfer",
+                       "Area transfer")
+
+
 def _classify_justification(just: str) -> Optional[StepKind]:
     """Map a justification string to a StepKind."""
     from .e_construction import CONSTRUCTION_RULE_BY_NAME
@@ -991,12 +1000,12 @@ def _classify_justification(just: str) -> Optional[StepKind]:
         "Metric": StepKind.AXIOM_ELIM,
         "transfer": StepKind.AXIOM_ELIM,
         "Transfer": StepKind.AXIOM_ELIM,
-        "SAS": StepKind.SUPERPOSITION,
-        "SSS": StepKind.SUPERPOSITION,
-        "SAS Superposition": StepKind.SUPERPOSITION,
-        "SSS Superposition": StepKind.SUPERPOSITION,
-        "SAS-elim": StepKind.SUPERPOSITION,
-        "SSS-elim": StepKind.SUPERPOSITION,
+        "SAS": StepKind.SUPERPOSITION_SAS,
+        "SSS": StepKind.SUPERPOSITION_SSS,
+        "SAS Superposition": StepKind.SUPERPOSITION_SAS,
+        "SSS Superposition": StepKind.SUPERPOSITION_SSS,
+        "SAS-elim": StepKind.SUPERPOSITION_SAS,
+        "SSS-elim": StepKind.SUPERPOSITION_SSS,
         "Reit": StepKind.AXIOM_ELIM,
         "Given": StepKind.AXIOM_ELIM,
     }
@@ -1007,29 +1016,21 @@ def _classify_justification(just: str) -> Optional[StepKind]:
     # Named axiom rules from the rule catalogue (§3.4–§3.7).
     # Match by category-based prefixes so every rule shown in the
     # dropdown is accepted as a valid justification.
-    _DIAG_PREFIXES = (
-        "Generality", "Betweenness", "Same-side", "Pasch",
-        "Triple incidence", "Circle", "Intersection",
-    )
+    # Route through AXIOM_ELIM so the existing dispatch handles them;
+    # _classify_axiom_category provides the subcategory and the
+    # AXIOM_ELIM handler's else-branch applies ref-restricted checking
+    # for named axiom steps.
     for pfx in _DIAG_PREFIXES:
         if just.startswith(pfx):
-            return StepKind.DIAGRAMMATIC
+            return StepKind.AXIOM_ELIM
 
-    _METRIC_PREFIXES = ("CN", "M1", "M2", "M3", "M4", "M5", "M6",
-                        "M7", "M8", "M9", "< ", "+ ")
     for pfx in _METRIC_PREFIXES:
         if just.startswith(pfx):
-            return StepKind.METRIC
+            return StepKind.AXIOM_ELIM
 
-    _TRANSFER_PREFIXES = ("Segment transfer", "Angle transfer",
-                           "Area transfer")
     for pfx in _TRANSFER_PREFIXES:
         if just.startswith(pfx):
-            return StepKind.TRANSFER
-
-    # Indirect proof (reductio ad absurdum) citing earlier propositions
-    if just.startswith("Indirect"):
-        return StepKind.INDIRECT
+            return StepKind.AXIOM_ELIM
 
     # Structured reductio: Assume ¬φ, derive ψ ∧ ¬ψ, conclude φ
     if just == "Reductio":
@@ -1043,35 +1044,36 @@ def _classify_justification(just: str) -> Optional[StepKind]:
     if just in ("⊥-elim",):
         return StepKind.REDUCTIO
 
+    # Case split elimination: both branches derived same conclusion
+    if just in ("Cases", "Case-Split", "CaseSplit", "case-split"):
+        return StepKind.CASE_SPLIT_ELIM
+
     # Default: unrecognised
     return None
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# System detection — identifies E / T / H from statement syntax
-# ═══════════════════════════════════════════════════════════════════════
+def _classify_axiom_category(just: str) -> str:
+    """Return the axiom category for AXIOM_ELIM steps.
 
-_T_PREDICATES = {"B", "Cong", "Eq", "Neq", "NotB", "NotCong"}
-_H_PREDICATES = {"IncidL", "BetH", "CongH", "CongaH", "ColH",
-                 "EqPt", "EqL", "Para", "SameSideH"}
-
-
-def _detect_system(statement: str) -> str:
-    """Detect which formal system a statement uses.
-
-    Returns ``"E"``, ``"T"``, or ``"H"`` by scanning for system-specific
-    predicate names.  Falls back to ``"E"`` when no T/H predicate is found.
+    Returns "diagrammatic", "metric", or "transfer". Defaults to
+    "diagrammatic" when no explicit category is found.
     """
-    import re
-    # Look for predicate names followed by '(' to avoid matching
-    # variable names that happen to be the same letters.
-    for pred in _H_PREDICATES:
-        if re.search(rf'\b{pred}\s*\(', statement):
-            return "H"
-    for pred in _T_PREDICATES:
-        if re.search(rf'\b{pred}\s*\(', statement):
-            return "T"
-    return "E"
+    if just in ("metric", "Metric"):
+        return "metric"
+    if just in ("transfer", "Transfer"):
+        return "transfer"
+    if just in ("diagrammatic", "Diagrammatic"):
+        return "diagrammatic"
+    for pfx in _METRIC_PREFIXES:
+        if just.startswith(pfx):
+            return "metric"
+    for pfx in _TRANSFER_PREFIXES:
+        if just.startswith(pfx):
+            return "transfer"
+    for pfx in _DIAG_PREFIXES:
+        if just.startswith(pfx):
+            return "diagrammatic"
+    return "diagrammatic"
 
 
 def _literal_var_names(lit: Literal) -> Set[str]:
@@ -1357,6 +1359,12 @@ def _match_theorem_var_map(
                                 v in candidate.values()
                                 for v in inst_vars)
                             if fully_bound:
+                                # For metric hypotheses, defer to the
+                                # metric engine (which handles M3/M4
+                                # symmetry and CN1 transitivity) rather
+                                # than rejecting by literal equality.
+                                if inst.is_metric:
+                                    continue
                                 return False
                     return True
 
@@ -1717,6 +1725,36 @@ def get_available_rules() -> List[RuleInfo]:
         name="Reductio",
         category="structural",
         description="Reductio ad absurdum: derive φ from Assume ¬φ + contradiction (ψ ∧ ¬ψ)",
+        section="§3.2",
+    ))
+    rules.append(RuleInfo(
+        name="Contradiction",
+        category="structural",
+        description="⊥-introduction: derive ⊥ from ψ and ¬ψ on cited lines",
+        section="§3.2",
+    ))
+    rules.append(RuleInfo(
+        name="⊥-intro",
+        category="structural",
+        description="⊥-introduction (alias): derive ⊥ from ψ and ¬ψ on cited lines",
+        section="§3.2",
+    ))
+    rules.append(RuleInfo(
+        name="⊥-elim",
+        category="structural",
+        description="⊥-elimination: discharge an assumption by citing a ⊥ line",
+        section="§3.2",
+    ))
+    rules.append(RuleInfo(
+        name="Cases",
+        category="structural",
+        description="Case-split elimination: both branches derived the same conclusion",
+        section="§3.2",
+    ))
+    rules.append(RuleInfo(
+        name="Given",
+        category="structural",
+        description="Given: cite a premise or previously established fact",
         section="§3.2",
     ))
 

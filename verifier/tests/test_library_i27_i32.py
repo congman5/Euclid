@@ -1,5 +1,5 @@
 """
-Tests for Props I.27–I.32 in both System E and System H libraries.
+Tests for Props I.27–I.32 in System E library.
 
 Covers Phase 6.3 of the implementation plan (Parallel Lines).
 
@@ -15,7 +15,6 @@ from verifier.e_ast import (
     On, SameSide, Between, Equals, LessThan, Intersects,
     SegmentTerm, AngleTerm, AreaTerm, MagAdd, RightAngle, ZeroMag,
 )
-from verifier.h_ast import HSort, HLiteral, HSequent
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -192,144 +191,3 @@ class TestELibraryI27I32:
         assert len(before) == 28
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# System H library tests — Props I.27–I.32
-# ═══════════════════════════════════════════════════════════════════════
-
-class TestHLibraryI27I32:
-    """Tests for Props I.27–I.32 in h_library."""
-
-    def test_h_library_has_at_least_32_theorems(self):
-        from verifier.h_library import H_THEOREM_LIBRARY
-        assert len(H_THEOREM_LIBRARY) >= 32
-
-    def test_h_theorem_order_complete(self):
-        from verifier.h_library import H_THEOREM_ORDER
-        assert len(H_THEOREM_ORDER) >= 32
-        assert H_THEOREM_ORDER[0] == "Prop.I.1"
-        assert "Prop.I.32" in H_THEOREM_ORDER
-
-    def test_h_prop_i27_uses_para(self):
-        """I.27 in H system uses Para(l, n) as conclusion."""
-        from verifier.h_library import PROP_I_27
-        from verifier.h_ast import Para
-        seq = PROP_I_27.sequent
-        para_concs = [
-            c for c in seq.conclusions
-            if isinstance(c.atom, Para)
-        ]
-        assert len(para_concs) == 1
-
-    def test_h_prop_i29_hypothesizes_para(self):
-        """I.29 in H system uses Para(l, n) as hypothesis."""
-        from verifier.h_library import PROP_I_29
-        from verifier.h_ast import Para
-        seq = PROP_I_29.sequent
-        para_hyps = [
-            h for h in seq.hypotheses
-            if isinstance(h.atom, Para)
-        ]
-        assert len(para_hyps) == 1
-
-    def test_h_prop_i30_para_transitivity(self):
-        """I.30 in H system: Para(l,m), Para(m,n) → Para(l,n)."""
-        from verifier.h_library import PROP_I_30
-        from verifier.h_ast import Para
-        seq = PROP_I_30.sequent
-        para_hyps = [
-            h for h in seq.hypotheses
-            if isinstance(h.atom, Para) and h.is_positive
-        ]
-        assert len(para_hyps) == 2
-        para_concs = [
-            c for c in seq.conclusions
-            if isinstance(c.atom, Para) and c.is_positive
-        ]
-        assert len(para_concs) == 1
-
-    def test_h_prop_i31_constructs_line(self):
-        """I.31 constructs a new line (existential)."""
-        from verifier.h_library import PROP_I_31
-        seq = PROP_I_31.sequent
-        assert len(seq.exists_vars) == 1
-        assert seq.exists_vars[0] == ("m", HSort.LINE)
-
-    def test_h_prop_i32_non_collinear(self):
-        """I.32 uses ¬ColH as hypothesis (triangle)."""
-        from verifier.h_library import PROP_I_32
-        from verifier.h_ast import ColH
-        seq = PROP_I_32.sequent
-        col_hyps = [
-            h for h in seq.hypotheses
-            if isinstance(h.atom, ColH) and not h.is_positive
-        ]
-        assert len(col_hyps) == 1
-
-    def test_get_h_theorems_up_to_i32(self):
-        from verifier.h_library import get_h_theorems_up_to
-        before = get_h_theorems_up_to("Prop.I.32")
-        assert "Prop.I.31" in before
-        assert "Prop.I.32" not in before
-        assert len(before) == 31
-
-    def test_get_h_theorems_up_to_i27(self):
-        from verifier.h_library import get_h_theorems_up_to
-        before = get_h_theorems_up_to("Prop.I.27")
-        assert len(before) == 26
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# Cross-library consistency — Props I.27–I.32
-# ═══════════════════════════════════════════════════════════════════════
-
-class TestCrossLibraryI27I32:
-    """Verify E and H libraries agree on proposition names for I.27–I.32."""
-
-    def test_same_proposition_names(self):
-        from verifier.e_library import E_THEOREM_LIBRARY
-        from verifier.h_library import H_THEOREM_LIBRARY
-        e_names = set(E_THEOREM_LIBRARY.keys())
-        h_names = set(H_THEOREM_LIBRARY.keys())
-        assert e_names == h_names
-
-    def test_all_props_i1_through_i32(self):
-        from verifier.e_library import E_THEOREM_LIBRARY
-        for i in range(1, 33):
-            name = f"Prop.I.{i}"
-            assert name in E_THEOREM_LIBRARY, f"Missing {name} from E library"
-
-    def test_all_h_props_i1_through_i32(self):
-        from verifier.h_library import H_THEOREM_LIBRARY
-        for i in range(1, 33):
-            name = f"Prop.I.{i}"
-            assert name in H_THEOREM_LIBRARY, f"Missing {name} from H library"
-
-    def test_matching_statement_texts(self):
-        """Both E and H entries have non-empty statements for I.27–I.32."""
-        from verifier.e_library import E_THEOREM_LIBRARY
-        from verifier.h_library import H_THEOREM_LIBRARY
-        for i in range(27, 33):
-            name = f"Prop.I.{i}"
-            assert len(E_THEOREM_LIBRARY[name].statement) > 20
-            assert len(H_THEOREM_LIBRARY[name].statement) > 20
-
-    def test_parallel_props_use_correct_predicates(self):
-        """I.27–I.31 in E use Intersects; in H use Para."""
-        from verifier.e_library import E_THEOREM_LIBRARY
-        from verifier.h_library import H_THEOREM_LIBRARY
-        from verifier.h_ast import Para
-        for name in ["Prop.I.27", "Prop.I.28", "Prop.I.30", "Prop.I.31"]:
-            e_seq = E_THEOREM_LIBRARY[name].sequent
-            h_seq = H_THEOREM_LIBRARY[name].sequent
-            # E uses Intersects (negated = parallel)
-            e_has_intersects = any(
-                isinstance(lit.atom, Intersects)
-                for lit in e_seq.hypotheses + e_seq.conclusions
-            )
-            # H uses Para
-            h_has_para = any(
-                isinstance(lit.atom, Para)
-                for lit in h_seq.hypotheses + h_seq.conclusions
-            )
-            assert e_has_intersects, f"{name} E missing Intersects"
-            assert h_has_para, f"{name} H missing Para"

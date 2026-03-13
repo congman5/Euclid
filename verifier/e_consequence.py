@@ -86,6 +86,14 @@ class ConsequenceEngine:
 
             for clause in ground_clauses:
                 result = self._apply_clause(clause, closure)
+                if result is self._CLAUSE_CONTRADICTION:
+                    # A ground clause is fully violated — the known
+                    # set is inconsistent.  Inject a contradiction
+                    # pair so that callers can detect it.
+                    from .e_ast import BOTTOM
+                    closure.add(BOTTOM)
+                    closure.add(BOTTOM.negated())
+                    return closure
                 if result is not None and result not in closure:
                     closure.add(result)
                     changed = True
@@ -101,11 +109,20 @@ class ConsequenceEngine:
         """Check if a literal is a direct consequence of the known literals.
 
         This is the key query: "can we read off `query` from the diagram?"
+        If the known set is inconsistent (contains a contradiction),
+        every literal follows — return True.
         """
         closure = self.direct_consequences(known, variables)
+        if self._has_contradiction(closure):
+            return True
         return query in closure
 
     # ── Internal methods ──────────────────────────────────────────────
+
+    # Sentinel returned by _apply_clause when every disjunct in a
+    # ground clause is negated by the known set — i.e. the clause is
+    # violated, indicating the known set is inconsistent.
+    _CLAUSE_CONTRADICTION = object()
 
     def _apply_clause(
         self, clause: Clause, known: Set[Literal]
@@ -115,6 +132,8 @@ class ConsequenceEngine:
         For clause {φ₁, …, φₙ}: if all but one literal have their
         negations in `known`, return the remaining literal.
 
+        Returns ``_CLAUSE_CONTRADICTION`` if every disjunct is negated
+        (the clause is violated — the known set is inconsistent).
         Returns None if no new literal can be derived.
         """
         literals = list(clause.literals)
@@ -138,14 +157,13 @@ class ConsequenceEngine:
         if unknown_idx is not None:
             return literals[unknown_idx]
 
-        # All literals have their negations known — contradiction!
-        # This shouldn't happen in a consistent state
-        return None
+        # All literals have their negations known — clause is violated!
+        return self._CLAUSE_CONTRADICTION
 
     # Maximum number of ground clauses produced per axiom before the
     # axiom is skipped.  Prevents combinatorial explosion when the
     # variable set is large (e.g. 9+ points with 5-point axioms).
-    _MAX_GROUND_PER_AXIOM = 50_000
+    _MAX_GROUND_PER_AXIOM = 200_000
 
     def _ground_clauses(
         self,

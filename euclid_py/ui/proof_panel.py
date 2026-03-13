@@ -112,13 +112,13 @@ for _rules in RULE_GROUPS.values():
 # ===================================================================
 
 CONNECTIVES = ["\u2227", "\u00ac",
-               "=", "\u2260", "<", ">",
+               "=", "\u2260", "<",
                "(", ")",
                "\u25b3"]
 CONNECTIVE_MAP = {
     "\u2227": " \u2227 ", "\u00ac": "\u00ac",
     "=": " = ", "\u2260": " \u2260 ",
-    "<": " < ", ">": " > ",
+    "<": " < ",
     "(": "(", ")": ")",
     "\u25b3": "\u25b3",
 }
@@ -742,29 +742,9 @@ class ProofPanel(QWidget):
             self._eval_buttons.append(b)
         hvbox.addLayout(row1)
 
-        # Row 2: E/T/H system switchers (left) + file/edit buttons (right)
+        # Row 2: undo/redo, begin/end subproof, lemma (single row)
         row2 = QHBoxLayout()
         row2.setSpacing(3)
-        _sys_colors = {"E": "#2d70b3", "T": "#7b3fa0", "H": "#c06020"}
-        _sys_labels = {"E": "System E (Euclid)",
-                       "T": "System T (Tarski)",
-                       "H": "System H (Hilbert)"}
-        for sk in ("E", "T", "H"):
-            sc = _sys_colors[sk]
-            sb = QPushButton(sk)
-            sb.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
-            sb.setFixedHeight(22)
-            sb.setFixedWidth(28)
-            sb.setToolTip(f"Switch proof to {_sys_labels[sk]}")
-            sb.setStyleSheet(
-                f"QPushButton{{background:{sc};color:white;border:none;"
-                f"border-radius:3px;font-weight:bold;font-size:11px;"
-                f"padding:0px;}}"
-                f"QPushButton:hover{{background:#1a1a2e;}}")
-            sb.clicked.connect(
-                lambda _, s=sk: self.switch_system(s))
-            row2.addWidget(sb)
-        row2.addStretch()
         _btn_style = (
             "QPushButton{background:transparent;color:#5a5a72;"
             "border:1px solid #c0c2c8;border-radius:3px;"
@@ -774,7 +754,13 @@ class ProofPanel(QWidget):
         for text_label, tip, cb in [
             ("Undo", "Undo (Ctrl+Z)", self._undo),
             ("Redo", "Redo (Ctrl+Y)", self._redo),
-            ("Lemma", "Load a verified proof as a lemma", self._load_lemma),
+            ("Begin Subproof",
+             "Open a subproof: inserts an Assume line at depth+1",
+             self._begin_subproof),
+            ("End Subproof",
+             "Close a subproof: inserts a Reductio line at depth\u22121, "
+             "referencing the Assume line",
+             self._end_subproof),
         ]:
             b = QPushButton(text_label)
             b.setFont(QFont("Segoe UI", 9))
@@ -783,36 +769,15 @@ class ProofPanel(QWidget):
             b.setStyleSheet(_btn_style)
             b.clicked.connect(cb)
             row2.addWidget(b)
+        row2.addStretch()
+        b = QPushButton("Lemma")
+        b.setFont(QFont("Segoe UI", 9))
+        b.setToolTip("Load a verified proof as a lemma")
+        b.setFixedHeight(22)
+        b.setStyleSheet(_btn_style)
+        b.clicked.connect(self._load_lemma)
+        row2.addWidget(b)
         hvbox.addLayout(row2)
-
-        # Row 3: Subproof shortcut buttons
-        row3 = QHBoxLayout()
-        row3.setSpacing(3)
-        _sub_style = (
-            "QPushButton{background:transparent;color:#5a5a72;"
-            "border:1px solid #c0c2c8;border-radius:3px;"
-            "padding:2px 6px;font-size:10px;}"
-            "QPushButton:hover{background:#e0e2e8;"
-            "border-color:#888;}")
-        btn_begin = QPushButton("Begin Subproof")
-        btn_begin.setFont(QFont("Segoe UI", 9))
-        btn_begin.setToolTip(
-            "Open a subproof: inserts an Assume line at depth+1")
-        btn_begin.setFixedHeight(22)
-        btn_begin.setStyleSheet(_sub_style)
-        btn_begin.clicked.connect(self._begin_subproof)
-        row3.addWidget(btn_begin)
-        btn_end = QPushButton("End Subproof")
-        btn_end.setFont(QFont("Segoe UI", 9))
-        btn_end.setToolTip(
-            "Close a subproof: inserts a Reductio line at depth\u22121, "
-            "referencing the Assume line")
-        btn_end.setFixedHeight(22)
-        btn_end.setStyleSheet(_sub_style)
-        btn_end.clicked.connect(self._end_subproof)
-        row3.addWidget(btn_end)
-        row3.addStretch()
-        hvbox.addLayout(row3)
 
         root.addWidget(header)
 
@@ -864,7 +829,7 @@ class ProofPanel(QWidget):
         pl.addLayout(sym_grid)
         root.addWidget(palette)
 
-        # -- Glossary (E / T / H collapsible tabs with flow buttons) --
+        # -- Predicate glossary (System E, always visible) --
         self._glossary_frame = QFrame()
         self._glossary_frame.setObjectName("glossary_frame")
         self._glossary_frame.setStyleSheet(
@@ -879,34 +844,6 @@ class ProofPanel(QWidget):
         glossary_vbox = QVBoxLayout(self._glossary_frame)
         glossary_vbox.setContentsMargins(8, 4, 8, 4)
         glossary_vbox.setSpacing(0)
-
-        # Header row (clickable to expand/collapse the whole glossary)
-        glossary_hdr = QFrame()
-        glossary_hdr.setCursor(
-            __import__("PyQt6.QtGui", fromlist=["QCursor"]).QCursor(
-                Qt.CursorShape.PointingHandCursor))
-        glossary_hdr.setStyleSheet("background:transparent;")
-        ghdr_row = QHBoxLayout(glossary_hdr)
-        ghdr_row.setContentsMargins(0, 2, 0, 2)
-        ghdr_row.setSpacing(4)
-        self._glossary_arrow = QLabel("\u25b8")
-        self._glossary_arrow.setFont(QFont("Segoe UI", 10))
-        self._glossary_arrow.setStyleSheet("color:#5a5a72;")
-        self._glossary_arrow.setFixedWidth(14)
-        ghdr_row.addWidget(self._glossary_arrow)
-        glossary_title = QLabel("Glossary")
-        glossary_title.setFont(QFont("Segoe UI", 10))
-        glossary_title.setStyleSheet("color:#5a5a72;")
-        ghdr_row.addWidget(glossary_title)
-        ghdr_row.addStretch()
-        glossary_vbox.addWidget(glossary_hdr)
-
-        # Glossary body (starts hidden)
-        self._glossary_body = QWidget()
-        self._glossary_body.setVisible(False)
-        gbody = QVBoxLayout(self._glossary_body)
-        gbody.setContentsMargins(0, 4, 0, 2)
-        gbody.setSpacing(0)
 
         # ── Flow layout helper ──
         from PyQt6.QtWidgets import QLayout as _QLayout
@@ -972,76 +909,8 @@ class ProofPanel(QWidget):
                     row_h = max(row_h, h)
                 return y + row_h - rect.y()
 
-        def _make_section(parent_layout, sys_label, color, buttons):
-            """Create a collapsible section with a badge header and flow buttons."""
-            section = QWidget()
-            sec_lay = QVBoxLayout(section)
-            sec_lay.setContentsMargins(0, 0, 0, 0)
-            sec_lay.setSpacing(0)
-
-            # Clickable header row: arrow + badge + label
-            hdr = QFrame()
-            hdr.setCursor(
-                __import__("PyQt6.QtGui", fromlist=["QCursor"]).QCursor(
-                    Qt.CursorShape.PointingHandCursor))
-            hdr.setStyleSheet("background:transparent;")
-            hdr_row = QHBoxLayout(hdr)
-            hdr_row.setContentsMargins(0, 3, 0, 3)
-            hdr_row.setSpacing(4)
-
-            arrow = QLabel("\u25b8")
-            arrow.setFont(QFont("Segoe UI", 9))
-            arrow.setStyleSheet("color:#5a5a72;")
-            arrow.setFixedWidth(12)
-            hdr_row.addWidget(arrow)
-
-            badge = QLabel(sys_label)
-            badge.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
-            badge.setFixedHeight(16)
-            badge.setFixedWidth(20)
-            badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            badge.setStyleSheet(
-                f"background:{color}; color:white; border:none;"
-                " border-radius:3px; padding:0px 2px;")
-            hdr_row.addWidget(badge)
-
-            _SYS_NAMES = {"E": "System E (Euclid)",
-                          "T": "System T (Tarski)",
-                          "H": "System H (Hilbert)"}
-            title = QLabel(_SYS_NAMES.get(sys_label, sys_label))
-            title.setFont(QFont("Segoe UI", 9))
-            title.setStyleSheet("color:#3a3a50;")
-            hdr_row.addWidget(title)
-            hdr_row.addStretch()
-            sec_lay.addWidget(hdr)
-
-            # Button body (starts collapsed)
-            body = QWidget()
-            body.setVisible(False)
-            flow = _FlowLayout(body, h_spacing=4, v_spacing=4)
-            for label, tmpl in buttons:
-                b = QPushButton(label)
-                b.setToolTip(tmpl)
-                b.setFont(_FONT_SMALL)
-                b.setFixedHeight(20)
-                b.setStyleSheet(
-                    f"QPushButton {{ border-left: 3px solid {color}; }}")
-                b.clicked.connect(
-                    lambda _, t=tmpl: self._insert_into_focused(t))
-                flow.addWidget(b)
-            body.setLayout(flow)
-            sec_lay.addWidget(body)
-
-            def _toggle(event=None):
-                vis = not body.isVisible()
-                body.setVisible(vis)
-                arrow.setText("\u25be" if vis else "\u25b8")
-
-            hdr.mousePressEvent = _toggle
-            parent_layout.addWidget(section)
-
-        # ── System E ──
-        _make_section(gbody, "E", "#2d70b3", [
+        # ── System E predicate buttons ──
+        _e_buttons = [
             ("on(a,L)",            "on(,)"),
             ("on(a,\u03b1)",       "on(,)"),
             ("center(a,\u03b1)",   "center(,)"),
@@ -1058,40 +927,24 @@ class ProofPanel(QWidget):
             ("\u2220abc<\u2220def", "\u2220 < \u2220"),
             ("ab+bc=ac",           " + = "),
             ("\u25b3abc=\u25b3def", "\u25b3 = \u25b3"),
-        ])
+        ]
+        _e_color = "#2d70b3"
+        _e_flow = _FlowLayout(None, h_spacing=4, v_spacing=4)
+        for label, tmpl in _e_buttons:
+            b = QPushButton(label)
+            b.setToolTip(tmpl)
+            b.setFont(_FONT_SMALL)
+            b.setFixedHeight(20)
+            b.setStyleSheet(
+                f"QPushButton {{ border-left: 3px solid {_e_color}; }}")
+            b.clicked.connect(
+                lambda _, t=tmpl: self._insert_into_focused(t))
+            _e_flow.addWidget(b)
+        _e_body = QWidget()
+        _e_body.setLayout(_e_flow)
+        glossary_vbox.addWidget(_e_body)
 
-        # ── System T ──
-        _make_section(gbody, "T", "#7b3fa0", [
-            ("B(a,b,c)",        "B(,,)"),
-            ("Cong(a,b,c,d)",   "Cong(,,,)"),
-            ("Eq(a,b)",         "Eq(,)"),
-            ("Neq(a,b)",        "Neq(,)"),
-            ("NotB(a,b,c)",     "NotB(,,)"),
-            ("NotCong(a,b,c,d)","NotCong(,,,)"),
-        ])
-
-        # ── System H ──
-        _make_section(gbody, "H", "#c06020", [
-            ("IncidL(a,l)",     "IncidL(,)"),
-            ("BetH(a,b,c)",     "BetH(,,)"),
-            ("CongH(a,b,c,d)",  "CongH(,,,)"),
-            ("CongaH(a,b,c,d,e,f)", "CongaH(,,,,,)"),
-            ("SameSideH(a,b,l)","SameSideH(,,)"),
-            ("ColH(a,b,c)",     "ColH(,,)"),
-            ("Para(l,m)",       "Para(,)"),
-            ("EqPt(a,b)",       "EqPt(,)"),
-            ("EqL(l,m)",        "EqL(,)"),
-        ])
-
-        glossary_vbox.addWidget(self._glossary_body)
         root.addWidget(self._glossary_frame)
-
-        def _toggle_glossary(event=None):
-            vis = not self._glossary_body.isVisible()
-            self._glossary_body.setVisible(vis)
-            self._glossary_arrow.setText("\u25be" if vis else "\u25b8")
-
-        glossary_hdr.mousePressEvent = _toggle_glossary
 
         # -- Lemma section (collapsible, matching glossary style) --
         self._lemma_frame = QFrame()
@@ -1332,111 +1185,6 @@ class ProofPanel(QWidget):
                 btn.setEnabled(True)
             except RuntimeError:
                 pass
-
-    def switch_system(self, target: str):
-        """Rewrite all premises, goal, and steps into *target* notation.
-
-        *target* is ``"E"``, ``"T"``, or ``"H"``.  Each formula string is
-        parsed via the E parser (which already accepts E/T/H syntax),
-        translated to the target system via the bridge modules, and
-        written back.  Formulas that cannot be translated are kept as-is.
-        """
-        try:
-            self._switch_system_inner(target)
-        except Exception as exc:
-            log = _get_crash_logger()
-            log.error(
-                "Unhandled exception in switch_system(%r):\n%s",
-                target, traceback.format_exc(),
-            )
-            self._goal_status.setText("\u26a0")
-            self._goal_status.setStyleSheet(
-                "color:#cc8800; font-weight:bold;"
-                " background:transparent;")
-            self._goal_status.setToolTip(
-                f"System switch error: {type(exc).__name__}: {exc}\n"
-                f"See {_LOG_FILENAME} for details.")
-
-    def _switch_system_inner(self, target: str):
-        # Cancel any running verification — its result is stale now
-        self._cancel_verification()
-
-        from verifier.e_ast import Sort as _ESort
-        from verifier.e_parser import parse_literal_list, EParseError
-        from verifier.t_bridge import e_literal_to_t
-        from verifier.h_bridge import e_literal_to_h
-
-        # Build a sort context so the bridge can distinguish lines from
-        # circles (both use the On atom in System E).
-        sort_ctx: dict[str, _ESort] = {}
-        for p in self._decl_points:
-            sort_ctx[p] = _ESort.POINT
-        for ln in self._decl_lines:
-            sort_ctx[ln] = _ESort.LINE
-        # Also parse every premise/step to infer circle sorts from
-        # center(a, α) and inside(a, α) atoms.
-        for text in list(self._premises) + [s.text for s in self._steps]:
-            if not text.strip():
-                continue
-            try:
-                for lit in parse_literal_list(text):
-                    from verifier.e_ast import Center, Inside, On
-                    a = lit.atom
-                    if isinstance(a, Center):
-                        sort_ctx[a.circle] = _ESort.CIRCLE
-                        sort_ctx.setdefault(a.point, _ESort.POINT)
-                    elif isinstance(a, Inside):
-                        sort_ctx[a.circle] = _ESort.CIRCLE
-                        sort_ctx.setdefault(a.point, _ESort.POINT)
-                    elif isinstance(a, On):
-                        sort_ctx.setdefault(a.point, _ESort.POINT)
-            except EParseError:
-                pass
-
-        def _translate_text(text: str) -> str:
-            """Translate a single formula string to *target* notation."""
-            if not text.strip():
-                return text
-            try:
-                e_lits = parse_literal_list(text)
-            except EParseError:
-                return text  # unparseable → keep as-is
-
-            parts: list[str] = []
-            for lit in e_lits:
-                if target == "T":
-                    t_lits = e_literal_to_t(lit)
-                    if t_lits:
-                        parts.extend(str(tl) for tl in t_lits)
-                    else:
-                        parts.append(str(lit))  # no T equivalent
-                elif target == "H":
-                    h_lit = e_literal_to_h(lit, sort_ctx)
-                    if h_lit is not None:
-                        parts.append(str(h_lit))
-                    else:
-                        parts.append(str(lit))  # no H equivalent
-                else:
-                    # E — keep as-is (already in E notation)
-                    parts.append(str(lit))
-            return ", ".join(parts) if parts else text
-
-        # Rewrite premises
-        for i, prem in enumerate(self._premises):
-            self._premises[i] = _translate_text(prem)
-
-        # Rewrite conclusion / goal
-        if self._conclusion:
-            self._conclusion = _translate_text(self._conclusion)
-            self._goal_edit.setText(self._conclusion)
-
-        # Rewrite step text
-        for step in self._steps:
-            step.text = _translate_text(step.text)
-
-        # Reset evaluations since formulas changed
-        self.reset_evaluations()
-        self._rebuild_lines()
 
     def get_steps(self):
         return [{"lineNumber": s.line_number, "text": s.text,
@@ -1903,7 +1651,194 @@ class ProofPanel(QWidget):
     # ===============================================================
 
     def _eval_selected(self):
-        self._eval_all()
+        """Evaluate only the currently selected step.
+
+        Builds a truncated proof containing premises + steps up to and
+        including the selected line so the verifier processes only the
+        minimum context required.
+        """
+        if self._selected < 0 or not self._steps:
+            return
+        # Find the selected step object
+        sel_step = None
+        for s in self._steps:
+            if s.line_number == self._selected:
+                sel_step = s
+                break
+        if sel_step is None:
+            return
+
+        # Ignore if a verification is already running
+        if self._verify_thread is not None:
+            return
+
+        # Auto-fill the selected step if empty
+        if sel_step.text.strip() == "" and sel_step.justification.strip() != "":
+            try:
+                filled = self._generate_autofill(sel_step)
+            except Exception:
+                filled = self._AUTOFILL_FAIL
+            if filled is self._AUTOFILL_FAIL:
+                sel_step.status = "\u2717"
+                sel_step._autofill_error = "Incorrect justification"
+                for lw in self._line_widgets:
+                    if lw.step.line_number == sel_step.line_number:
+                        lw.refresh_from_step()
+                        lw.setToolTip(sel_step._autofill_error)
+                return
+            elif filled:
+                sel_step.text = filled
+                for lw in self._line_widgets:
+                    if lw.step.line_number == sel_step.line_number:
+                        lw.refresh_from_step()
+
+        # Build truncated proof JSON (premises + steps up to selected)
+        proof_json = self._build_proof_json_up_to(sel_step.line_number)
+        self._eval_target_lid = sel_step.line_number
+
+        try:
+            app = QApplication.instance()
+            if app is None or not app.property("_euclid_event_loop_running"):
+                from verifier.unified_checker import verify_e_proof_json
+                result = verify_e_proof_json(proof_json)
+                self._on_verify_selected_finished(result)
+                return
+
+            for btn in self._eval_buttons:
+                btn.setEnabled(False)
+
+            self._verify_thread = QThread()
+            self._verify_worker = _VerifyWorker(proof_json)
+            self._verify_worker.moveToThread(self._verify_thread)
+            self._verify_thread.started.connect(self._verify_worker.run)
+            self._verify_worker.finished.connect(
+                self._on_verify_selected_finished)
+            self._verify_worker.finished.connect(self._verify_thread.quit)
+            self._verify_thread.start()
+        except Exception as exc:
+            log = _get_crash_logger()
+            log.error("Unhandled exception in _eval_selected:\n%s",
+                      traceback.format_exc())
+
+    def _on_verify_selected_finished(self, result_or_exc):
+        """Handle verification result for single-step eval."""
+        # Clean up thread
+        if self._verify_thread is not None:
+            self._verify_thread.quit()
+            self._verify_thread.wait(2000)
+            self._verify_thread.deleteLater()
+        self._verify_thread = None
+        self._verify_worker = None
+
+        for btn in self._eval_buttons:
+            try:
+                btn.setEnabled(True)
+            except RuntimeError:
+                pass
+
+        lid = getattr(self, '_eval_target_lid', None)
+        if lid is None:
+            return
+
+        if isinstance(result_or_exc, Exception):
+            # Mark selected step with warning
+            for s in self._steps:
+                if s.line_number == lid:
+                    s.status = "\u2717"
+                    break
+            for lw in self._line_widgets:
+                if lw.step.line_number == lid:
+                    lw.refresh_from_step()
+                    lw.setToolTip(f"Verifier error: {result_or_exc}")
+            return
+
+        result = result_or_exc
+
+        # Apply result only to the selected step
+        lr = result.line_results.get(lid)
+        for s in self._steps:
+            if s.line_number == lid:
+                if lr and not lr.valid:
+                    s.status = "\u2717"
+                elif lid in result.derived:
+                    s.status = "\u2713"
+                else:
+                    s.status = "?"
+                break
+
+        for lw in self._line_widgets:
+            if lw.step.line_number == lid:
+                try:
+                    lw.refresh_from_step()
+                    if lr and lr.errors:
+                        lw.setToolTip(lr.errors[0])
+                    elif lw.step.status == "\u2713":
+                        lw.setToolTip("Verified")
+                    else:
+                        lw.setToolTip("")
+                except RuntimeError:
+                    pass
+
+    def _build_proof_json_up_to(self, target_lid):
+        """Build proof JSON with only premises + steps up to target_lid."""
+        pts_raw = self._points_input.text().strip()
+        lns_raw = self._lines_input.text().strip()
+        points = ([p.strip() for p in pts_raw.split(",")
+                   if p.strip()] if pts_raw else [])
+        lines_decl = ([el.strip() for el in lns_raw.split(",")
+                       if el.strip()] if lns_raw else [])
+
+        proof_lines = []
+        all_premise_stmts = []
+        for i, p in enumerate(self._premises):
+            all_premise_stmts.append(p)
+            proof_lines.append({
+                "id": i + 1, "depth": 0,
+                "statement": p,
+                "justification": "Given",
+                "refs": [],
+            })
+        for s in self._steps:
+            proof_lines.append({
+                "id": s.line_number, "depth": s.depth,
+                "statement": s.text,
+                "justification": s.justification,
+                "refs": s.refs,
+            })
+            if s.line_number == target_lid:
+                break  # stop after the selected step
+
+        points_set = set(points)
+        lines_set = set(lines_decl)
+        for stmt in all_premise_stmts:
+            for sym in self._extract_symbols(stmt):
+                if sym in points_set or sym in lines_set:
+                    continue
+                if len(sym) == 1 and sym.isupper():
+                    lines_set.add(sym)
+                else:
+                    points_set.add(sym)
+
+        lemma_defs = []
+        for lem in self._lemmas:
+            lemma_defs.append({
+                "name": lem.name,
+                "premises": lem.premises,
+                "goal": lem.goal,
+            })
+
+        out = {
+            "name": self._proof_name,
+            "declarations": {
+                "points": list(points_set),
+                "lines": list(lines_set)},
+            "premises": all_premise_stmts,
+            "goal": "",
+            "lines": proof_lines,
+        }
+        if lemma_defs:
+            out["lemmas"] = lemma_defs
+        return out
 
     def _eval_all(self):
         if not self._steps:

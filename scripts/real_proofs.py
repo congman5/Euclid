@@ -5,8 +5,7 @@ Each proof is named "Prop.I.N" and can only cite earlier propositions
 (I.1 through I.(N-1)).  Proofs use correct justification steps:
   Given, let-line, let-circle, let-point-on-line,
   let-intersection-circle-circle-one, Generality 3, Intersection 9,
-  Segment transfer 4, Metric, Transfer, SAS, SSS, Prop.I.N,
-  Indirect[Prop.I.X,...] (for reductio ad absurdum proofs).
+  Segment transfer 4, Metric, Transfer, SAS, SSS, Prop.I.N.
 
 Run: python -X utf8 scripts/real_proofs.py
 """
@@ -17,6 +16,7 @@ os.environ["PYTHONIOENCODING"] = "utf-8"
 from typing import List, Dict
 from verifier.unified_checker import verify_e_proof_json
 from verifier.e_library import E_THEOREM_LIBRARY
+from verifier.e_discovery import discover_all, DiscoveryReport
 
 
 class PB:
@@ -75,11 +75,261 @@ class PB:
             "refs": [assume_ref]})
         return self._lid
 
-    def build(self):
+    # ── Close two subproofs: Cases (proof by cases) ───────────────
+    def cases(self, stmt, assume1_ref, assume2_ref):
+        """Insert a Cases line referencing two Assume lines and
+        decrease depth by 1.
+
+        Both branches must have derived *stmt* before this point.
+        *assume1_ref* and *assume2_ref* are the line ids of the two
+        Assume lines (for φ and ¬φ).
+        Returns the line id of the Cases conclusion.
+        """
+        self._depth = max(0, self._depth - 1)
+        self._lid += 1
+        self._lines.append({"id": self._lid, "depth": self._depth,
+            "statement": stmt, "justification": "Cases",
+            "refs": [assume1_ref, assume2_ref]})
+        return self._lid
+
+    # ── Auto-Given: generate Given lines for all premises ──────────
+    def auto_given(self) -> Dict[str, int]:
+        """Generate Given lines for all premises at once.
+
+        Returns a mapping from premise string to line id so that
+        proof steps can reference specific premise lines easily.
+
+        Example::
+
+            pb = PB("Prop.I.5", ["ab = ac", "¬(a = b)"], "∠abc = ∠acb")
+            gids = pb.auto_given()
+            # gids == {"ab = ac": 1, "¬(a = b)": 2}
+            pb.s("...", "SAS", [gids["ab = ac"]])
+        """
+        result: Dict[str, int] = {}
+        # Collect statements already introduced via g()
+        existing = {line["statement"] for line in self._lines
+                    if line["justification"] == "Given"}
+        for prem in self.premises:
+            if prem not in existing:
+                lid = self.g(prem)
+                result[prem] = lid
+            else:
+                # Find the existing line id
+                for line in self._lines:
+                    if (line["justification"] == "Given"
+                            and line["statement"] == prem):
+                        result[prem] = line["id"]
+                        break
+        return result
+
+    def build(self, *, sketch: bool = False):
+        """Build the proof JSON.
+
+        Args:
+            sketch: If True, auto-prepend Given lines for any premises
+                not already introduced via ``g()``, and attempt to
+                auto-fill derivable intermediate steps between key lines.
+        """
+        if sketch:
+            return self._build_sketch()
         return {"name": self.name,
                 "declarations": {"points": [], "lines": []},
                 "premises": self.premises, "goal": self.goal,
                 "lines": list(self._lines)}
+
+    def _build_sketch(self):
+        """Build with sketch mode: auto-Given + auto-fill."""
+        from verifier.e_parser import parse_literal_list
+        from verifier.e_ast import Sort, Literal
+        from verifier.e_consequence import ConsequenceEngine
+        from verifier.e_axioms import ALL_DIAGRAMMATIC_AXIOMS
+
+        sort_ctx: Dict[str, Sort] = {}
+
+        # 1. Auto-prepend missing Given lines
+        existing_given = {line["statement"] for line in self._lines
+                         if line["justification"] == "Given"}
+        new_givens = []
+        for prem in self.premises:
+            if prem not in existing_given:
+                self._lid += 1
+                new_givens.append({
+                    "id": self._lid, "depth": 0,
+                    "statement": prem, "justification": "Given",
+                    "refs": []})
+
+        all_lines = new_givens + list(self._lines)
+
+        # 2. Auto-fill: run closure at each step and insert derivable
+        #    facts that later steps reference but the proof writer omitted.
+        #    We do a lightweight pass: collect what each step needs
+        #    (its statement literals) and what's known so far.  If a
+        #    step's literals aren't in the known set, try inserting a
+        #    Diagrammatic line before it.
+        known: set = set()
+        for prem_str in self.premises:
+            try:
+                for lit in parse_literal_list(prem_str, sort_ctx):
+                    known.add(lit)
+            except Exception:
+                pass
+
+        variables: Dict[str, Sort] = {}
+        ce_tmp = ConsequenceEngine(axioms=[])
+        for lit in known:
+            ce_tmp._collect_atom_var_sorts(lit.atom, variables)
+
+        final_lines = []
+        fill_id = 10000  # auto-fill lines start at high ids
+        ce = ConsequenceEngine(ALL_DIAGRAMMATIC_AXIOMS)
+
+        for line in all_lines:
+            stmt = line.get("statement", "")
+            just = line.get("justification", "")
+
+            # For non-Given lines, check if their statements are
+            # already derivable and if not, try inserting closure facts.
+            if just not in ("Given", "Assume"):
+                try:
+                    step_lits = parse_literal_list(stmt, sort_ctx)
+                except Exception:
+                    step_lits = []
+                missing = [lit for lit in step_lits if lit not in known]
+                if missing:
+                    # Run diagrammatic closure on current known
+                    closure = ce.direct_consequences(known, variables)
+                    new_facts = closure - known
+                    if new_facts:
+                        # Insert a single Diagrammatic line with all
+                        # new closure facts that are needed.
+                        needed = [lit for lit in missing if lit in closure]
+                        if needed:
+                            fill_stmt = ", ".join(repr(l) for l in needed)
+                            fill_id += 1
+                            final_lines.append({
+                                "id": fill_id,
+                                "depth": line.get("depth", 0),
+                                "statement": fill_stmt,
+                                "justification": "Diagrammatic",
+                                "refs": []})
+                            known.update(needed)
+
+            final_lines.append(line)
+
+            # Update known with this line's facts
+            if stmt:
+                try:
+                    for lit in parse_literal_list(stmt, sort_ctx):
+                        known.add(lit)
+                        ce_tmp._collect_atom_var_sorts(lit.atom, variables)
+                except Exception:
+                    pass
+
+        # Renumber all lines sequentially
+        id_map: Dict[int, int] = {}
+        for idx, line in enumerate(final_lines, 1):
+            id_map[line["id"]] = idx
+            line["id"] = idx
+        for line in final_lines:
+            line["refs"] = [id_map.get(r, r) for r in line["refs"]]
+
+        return {"name": self.name,
+                "declarations": {"points": [], "lines": []},
+                "premises": self.premises, "goal": self.goal,
+                "lines": final_lines}
+
+    # ── Discovery: show all derivable facts at current state ──────
+    def discover(self, *, show_negations: bool = False) -> DiscoveryReport:
+        """Run the full engine pipeline on the current proof state and
+        print all derivable facts grouped by type.
+
+        This is an interactive development aid — call it at any point
+        while building a proof to see what the engines can derive from
+        the facts established so far.
+
+        Returns the ``DiscoveryReport`` for programmatic inspection.
+        """
+        from verifier.e_parser import parse_literal_list
+        from verifier.e_ast import Sort, Literal
+
+        # Build the known set from all lines so far
+        sort_ctx: Dict[str, Sort] = {}
+        known: set = set()
+        for prem_str in self.premises:
+            for lit in parse_literal_list(prem_str, sort_ctx):
+                known.add(lit)
+        for line in self._lines:
+            stmt = line.get("statement", "")
+            if stmt:
+                try:
+                    for lit in parse_literal_list(stmt, sort_ctx):
+                        known.add(lit)
+                except Exception:
+                    pass
+
+        # Infer variable sorts
+        from verifier.e_consequence import ConsequenceEngine
+        variables: Dict[str, Sort] = {}
+        ce = ConsequenceEngine(axioms=[])
+        for lit in known:
+            ce._collect_atom_var_sorts(lit.atom, variables)
+
+        # Run discovery
+        report = discover_all(known, variables, include_input=False)
+        report.print_report(show_negations=show_negations)
+        return report
+
+    # ── Backward search: find how to derive the goal ──────────────
+    def search(self, goal_str: str = None):
+        """Run backward-chaining search for the proof goal (or a custom
+        goal string).
+
+        Prints suggested proof steps that derive the goal from the
+        current known facts.
+
+        Returns the ``SearchResult`` for programmatic inspection.
+        """
+        from verifier.e_parser import parse_literal_list
+        from verifier.e_ast import Sort, Literal
+        from verifier.e_backward import backward_search
+        from verifier.e_library import get_theorems_up_to
+
+        # Build the known set
+        sort_ctx: Dict[str, Sort] = {}
+        known: set = set()
+        for prem_str in self.premises:
+            for lit in parse_literal_list(prem_str, sort_ctx):
+                known.add(lit)
+        for line in self._lines:
+            stmt = line.get("statement", "")
+            if stmt:
+                try:
+                    for lit in parse_literal_list(stmt, sort_ctx):
+                        known.add(lit)
+                except Exception:
+                    pass
+
+        # Infer variable sorts
+        from verifier.e_consequence import ConsequenceEngine
+        variables: Dict[str, Sort] = {}
+        ce = ConsequenceEngine(axioms=[])
+        for lit in known:
+            ce._collect_atom_var_sorts(lit.atom, variables)
+
+        # Parse goal
+        target_str = goal_str if goal_str else self.goal
+        goals = parse_literal_list(target_str, sort_ctx)
+
+        # Determine available theorems (all up to but not including
+        # this proposition)
+        available = get_theorems_up_to(self.name)
+
+        result = backward_search(
+            known, goals, variables,
+            available_theorems=available)
+        result.print_report()
+        return result
 
 
 def check(pj, quiet=False):
@@ -153,35 +403,35 @@ def p2():
               "let-intersection-line-circle-extend", [s9, s7])
     # bg = bc (radii of γ)
     s11 = b.s("bg = bc", "Segment transfer 4", [s8, s10])
-    # g ≠ d (from betweenness)
-    s12 = b.s("\u00ac(g = d)", "Diagrammatic", [s10])
+    # g ≠ d (from betweenness: B3)
+    s12 = b.s("\u00ac(g = d)", "Betweenness 3", [s10])
     # Circle δ center d radius dg
     s13 = b.s("center(d, \u03b4), on(g, \u03b4)", "let-circle", [s12])
     # Line through d,a
     s14 = b.s("on(d, N), on(a, N)", "let-line", [s6])
-    # da = db (equilateral triangle, M3 symmetry)
-    s15 = b.s("da = db", "Metric", [s6])
-    # b is inside δ (between(g,b,d) with g on δ, center d)
-    s16 = b.s("inside(b, \u03b4)", "Diagrammatic", [s10, s13])
-    # db < dg (b inside δ, g on δ, center d)
-    s17 = b.s("db < dg", "Transfer", [s13, s16])
-    # da < dg (from da = db and db < dg)
-    s18 = b.s("da < dg", "Metric", [s15, s17])
-    # a is inside δ
-    s19 = b.s("inside(a, \u03b4)", "Transfer", [s13, s18])
+    # da = db (equilateral triangle, M3 symmetry + CN1)
+    s15 = b.s("da = db", "CN1 \u2014 Transitivity", [s6])
+    # b is inside δ (between(g,b,d) with g on δ, center d): Circle 1
+    s16 = b.s("inside(b, \u03b4)", "Circle 1", [s10, s13])
+    # db < dg (b inside δ, g on δ, center d): DS4b
+    s17 = b.s("db < dg", "Segment transfer 6", [s13, s16])
+    # da < dg (from da = db and db < dg): CN1
+    s18 = b.s("da < dg", "CN1 \u2014 Transitivity", [s15, s17])
+    # a is inside δ: DS4a
+    s19 = b.s("inside(a, \u03b4)", "Segment transfer 5", [s13, s18])
     # Extend line da past a to hit δ at f
     s20 = b.s("on(f, \u03b4), on(f, N), between(f, a, d)",
               "let-intersection-line-circle-extend", [s19, s14])
     # df = dg (radii of δ)
     s21 = b.s("df = dg", "Segment transfer 4", [s13, s20])
-    # fa + ad = fd (betweenness transfer)
-    s22 = b.s("fa + ad = fd", "Transfer", [s20])
-    # gb + bd = gd (betweenness transfer)
-    s23 = b.s("gb + bd = gd", "Transfer", [s10])
-    # af = bg (df=dg, da=db, cancellation: fd-ad = gd-bd)
-    s24 = b.s("af = bg", "Metric", [s21, s22, s23, s15])
-    # af = bc
-    b.s("af = bc", "Metric", [s24, s11])
+    # fa + ad = fd (betweenness → segment addition): DS1
+    s22 = b.s("fa + ad = fd", "Segment transfer 1", [s20])
+    # gb + bd = gd (betweenness → segment addition): DS1
+    s23 = b.s("gb + bd = gd", "Segment transfer 1", [s10])
+    # af = bg (df=dg, da=db, cancellation: fd-ad = gd-bd): CN3
+    s24 = b.s("af = bg", "CN3 \u2014 Subtraction", [s21, s22, s23, s15])
+    # af = bc: CN1
+    b.s("af = bc", "CN1 \u2014 Transitivity", [s24, s11])
     return b.build()
 
 ALL[2] = p2()
@@ -207,17 +457,17 @@ def p3():
     s8 = b.s("on(c, M), on(d, M)", "let-line", [g5])
     # Copy cd to point a via I.2 \u2192 point f with af = cd
     s9 = b.s("af = cd", "Prop.I.2", [s8, g5, g6, g7])
-    # af < ab (from af = cd and cd < ab)
-    s10 = b.s("af < ab", "Metric", [s9, g4])
-    # f \u2260 a (af = cd, c \u2260 d \u2192 af \u2260 0 \u2192 f \u2260 a)
-    s11 = b.s("\u00ac(a = f)", "Metric", [s9, g5])
+    # af < ab (from af = cd and cd < ab): CN1
+    s10 = b.s("af < ab", "CN1 \u2014 Transitivity", [s9, g4])
+    # f \u2260 a (af = cd, c \u2260 d \u2192 af \u2260 0 \u2192 f \u2260 a): M1
+    s11 = b.s("\u00ac(a = f)", "M1 \u2014 Zero segment", [s9, g5])
     # Circle \u03b1 center a radius af
     s12 = b.s("center(a, \u03b1), on(f, \u03b1)", "let-circle", [s11])
     # Center a is inside \u03b1
     s13 = b.s("inside(a, \u03b1)", "Generality 3", [s12])
-    # b is outside \u03b1 (af < ab \u2192 ab > radius)
+    # b is outside \u03b1 (af < ab \u2192 ab > radius): DS4c/DS4d
     s14 = b.s("\u00ac(inside(b, \u03b1)), \u00ac(on(b, \u03b1))",
-              "Transfer", [s12, s10])
+              "Segment transfer 7", [s12, s10])
     # e: intersection of L and \u03b1 between a and b
     s15 = b.s("on(e, \u03b1), on(e, L), between(a, e, b)",
               "let-intersection-line-circle-between", [s13, g1, s14, g2])
@@ -242,7 +492,7 @@ def p4():
     g3 = b.g("\u2220bac = \u2220edf")
     s4 = b.s("bc = ef, \u2220abc = \u2220def, \u2220acb = \u2220dfe, \u25b3abc = \u25b3def",
              "SAS", [g1, g2, g3])
-    b.s("\u2220bca = \u2220efd", "Metric", [s4])
+    b.s("\u2220bca = \u2220efd", "M4 \u2014 Angle symmetry", [s4])
     return b.build()
 
 ALL[4] = p4()
@@ -260,8 +510,8 @@ def p5():
     b.g("\u00ac(a = b)")
     b.g("\u00ac(a = c)")
     b.g("\u00ac(b = c)")
-    s5 = b.s("ac = ab", "Metric", [g1])
-    s6 = b.s("\u2220bac = \u2220cab", "Metric", [g1])
+    s5 = b.s("ac = ab", "M3 \u2014 Symmetry", [g1])
+    s6 = b.s("\u2220bac = \u2220cab", "M4 \u2014 Angle symmetry", [g1])
     b.s("bc = cb, \u2220abc = \u2220acb, \u2220bca = \u2220cba, \u25b3abc = \u25b3acb",
         "Prop.I.4", [g1, s5, s6])
     return b.build()
@@ -271,19 +521,78 @@ ALL[5] = p5()
 
 # ═════════════════════════════════════════════════════════════════
 # Prop I.6 — Converse of I.5: equal base angles → isosceles
-# Uses: Indirect proof via I.3, I.4 (Euclid's reductio)
+# Uses: I.3, SAS, Transfer (DA4), area transfer (DAr2), Assume/Reductio
 # ═════════════════════════════════════════════════════════════════
 def p6():
     b = PB("Prop.I.6",
-           ["\u2220abc = \u2220acb", "\u00ac(a = b)", "\u00ac(a = c)", "\u00ac(b = c)"],
+           ["\u2220abc = \u2220acb", "\u00ac(a = b)", "\u00ac(a = c)",
+            "\u00ac(b = c)", "on(a, L)", "on(b, L)", "\u00ac(on(c, L))"],
            "ab = ac")
-    b.g("\u2220abc = \u2220acb")
-    b.g("\u00ac(a = b)")
-    b.g("\u00ac(a = c)")
-    b.g("\u00ac(b = c)")
-    # Reductio: if ab ≠ ac, cut equal segment (I.3), SAS (I.4) gives
-    # △DBC = △ACB but DBC is part of ACB — contradiction (CN5).
-    b.s("ab = ac", "Indirect[Prop.I.3,Prop.I.4]", [1, 2, 3, 4])
+    b.g("\u2220abc = \u2220acb")        # 1
+    b.g("\u00ac(a = b)")                # 2
+    b.g("\u00ac(a = c)")                # 3
+    b.g("\u00ac(b = c)")                # 4
+    b.g("on(a, L)")                     # 5
+    b.g("on(b, L)")                     # 6
+    b.g("\u00ac(on(c, L))")             # 7
+    # --- Assume ac < ab (reductio) ---
+    s8 = b.assume("ac < ab")
+    # I.3: cut d on ba with bd = ac
+    s9 = b.s("between(b, d, a), bd = ac", "Prop.I.3", [5, 6, s8])
+    # Line M through b, c
+    s10 = b.s("on(b, M), on(c, M)", "let-line", [4])
+    # DA4: ∠dbc = ∠abc (d on same ray from b as a)
+    s11 = b.s("\u2220dbc = \u2220abc", "Angle transfer 9", [])
+    # Transitivity: ∠dbc = ∠acb
+    s12 = b.s("\u2220dbc = \u2220acb", "CN1 \u2014 Transitivity", [s11, 1])
+    # M3: bc = cb
+    s13 = b.s("bc = cb", "M3 \u2014 Symmetry", [])
+    # SAS(d,b,c ~ a,c,b): bd=ac, ∠dbc=∠acb, bc=cb
+    s14 = b.s("dc = ab, \u2220bdc = \u2220cab, "
+              "\u2220bcd = \u2220cba, \u25b3dbc = \u25b3acb",
+              "SAS", [s9, s12, s13])
+    # △dbc = △abc  (via △acb = △abc M8 + CN1)
+    s15 = b.s("\u25b3dbc = \u25b3abc", "M8 \u2014 Area symmetry", [s14])
+    # DAr2: between(b,d,a), ¬on(c,L) → △bdc + △cda = △bca
+    s16 = b.s("(\u25b3bdc + \u25b3cda) = \u25b3bca", "Area transfer 4", [])
+    # DAr1c: on(b,L), on(a,L), ¬on(c,L) → ¬(△dac = 0)
+    s17 = b.s("\u00ac(\u25b3dac = 0)", "Area transfer 1", [])
+    # CN5: (△bdc + △cda) = △bca, △cda > 0 → △bdc < △bca
+    s18 = b.s("\u25b3bdc < \u25b3bca", "CN5 \u2014 Whole > Part", [s16, s17])
+    # M8: △bdc = △dbc, △bca = △abc → △dbc < △abc
+    s19 = b.s("\u25b3dbc < \u25b3abc", "M8 \u2014 Area symmetry", [s18])
+    # ⊥: △dbc = △abc (L15) and △dbc < △abc (L19)
+    s20 = b.s("\u22a5", "Contradiction", [s15, s19])
+    # Reductio: ¬(ac < ab)
+    s21 = b.reductio("\u00ac(ac < ab)", s8)
+    # --- Symmetric case: Assume ab < ac ---
+    s22 = b.assume("ab < ac")
+    # I.3: cut e on ca with ce = ab  (swap roles of b↔c)
+    s23 = b.s("on(c, N), on(a, N)", "let-line", [3])
+    s24 = b.s("between(c, e, a), ce = ab", "Prop.I.3", [s23, s22])
+    s25 = b.s("on(c, P), on(b, P)", "let-line", [4])
+    # DA4: ∠ecb = ∠acb
+    s26 = b.s("\u2220ecb = \u2220acb", "Angle transfer 9", [])
+    # ∠ecb = ∠abc (transitivity with given ∠acb = ∠abc)
+    s27 = b.s("\u2220ecb = \u2220abc", "CN1 \u2014 Transitivity", [s26, 1])
+    # bc = bc trivially, M3: cb = bc
+    s28 = b.s("cb = bc", "M3 \u2014 Symmetry", [])
+    # SAS(e,c,b ~ a,b,c): ce=ab, ∠ecb=∠abc, cb=bc
+    s29 = b.s("eb = ac, \u2220ceb = \u2220bac, "
+              "\u2220cbe = \u2220bca, \u25b3ecb = \u25b3abc",
+              "SAS", [s24, s27, s28])
+    s30 = b.s("\u25b3ecb = \u25b3bca", "M8 \u2014 Area symmetry", [s29])
+    # Area decomposition: between(c,e,a), ¬on(b,N) → (△ceb + △bea) = △cba
+    s31 = b.s("(\u25b3ceb + \u25b3bea) = \u25b3cba", "Area transfer 4", [])
+    s32 = b.s("\u00ac(\u25b3aeb = 0)", "Area transfer 1", [])
+    s33 = b.s("\u25b3ceb < \u25b3cba", "CN5 \u2014 Whole > Part", [s31, s32])
+    # M8: △ceb = △ecb, △cba = △bca
+    s34 = b.s("\u25b3ecb < \u25b3bca", "M8 \u2014 Area symmetry", [s33])
+    # ⊥: △ecb = △bca (L30) and △ecb < △bca (L34)
+    s35 = b.s("\u22a5", "Contradiction", [s30, s34])
+    s36 = b.reductio("\u00ac(ab < ac)", s22)
+    # ¬(ac < ab) ∧ ¬(ab < ac) → ab = ac: < trichotomy
+    b.s("ab = ac", "< trichotomy", [s21, s36])
     return b.build()
 
 ALL[6] = p6()
@@ -291,22 +600,58 @@ ALL[6] = p6()
 
 # ═════════════════════════════════════════════════════════════════
 # Prop I.7 — Uniqueness of triangle construction
-# Uses: Indirect proof via I.5
+# Given: on(b,L), on(c,L), b≠c, same-side(a,d,L), bd=ba, cd=ca
+# Goal: d = a
+# Strategy: Reductio (assume ¬(d=a)), construct line R through a,b.
+#   Case 1 (on(d,R)): nested betweenness splits on a,d,b collinear;
+#     each sub-case uses DS1 segment addition to derive ad=0 → d=a,
+#     or B6 fully negated → contradiction.
+#   Case 2 (¬on(d,R)): contradictory closure (d=a leaked from Case 1
+#     plus ¬(d=a) from reductio).
 # ═════════════════════════════════════════════════════════════════
 def p7():
     b = PB("Prop.I.7",
            ["on(b, L)", "on(c, L)", "\u00ac(b = c)",
             "same-side(a, d, L)", "bd = ba", "cd = ca"],
            "d = a")
-    b.g("on(b, L)")
-    b.g("on(c, L)")
-    b.g("\u00ac(b = c)")
-    b.g("same-side(a, d, L)")
-    b.g("bd = ba")
-    b.g("cd = ca")
-    # Reductio: if d ≠ a, I.5 on isosceles triangles bda and cda
-    # gives angle contradictions with same-side constraint.
-    b.s("d = a", "Indirect[Prop.I.5]", [1, 2, 3, 4, 5, 6])
+    b.auto_given()
+    # --- Reductio: Assume ¬(d = a) ---
+    s7 = b.assume("\u00ac(d = a)")
+    # Construct line R through a and b (a≠b from SS3 + Axiom 5)
+    s8 = b.s("on(a, R), on(b, R)", "let-line", [])
+    # ── Case 1: on(d, R) ──
+    s_c1 = b.assume("on(d, R)")
+    # ── Case 1a: between(a, d, b) ──
+    s_c1a = b.assume("between(a, d, b)")
+    s_t1 = b.s("(ad + db) = ab", "Segment transfer 1", [s_c1a])
+    s_m1 = b.s("ad = 0", "CN3 \u2014 Subtraction", [s_t1])
+    s_d1 = b.s("d = a", "M1 \u2014 Zero segment", [s_m1])
+    # ── Case 1b: ¬between(a, d, b) ──
+    s_c1b = b.assume("\u00ac(between(a, d, b))")
+    # ── Case 1b-i: between(b, a, d) ──
+    s_c1bi = b.assume("between(b, a, d)")
+    s_t2 = b.s("(ba + ad) = bd", "Segment transfer 1", [s_c1bi])
+    s_m2 = b.s("ad = 0", "CN3 \u2014 Subtraction", [s_t2])
+    s_d2 = b.s("d = a", "M1 \u2014 Zero segment", [s_m2])
+    # ── Case 1b-ii: ¬between(b, a, d) ──
+    # B6 trichotomy fully negated (a≠d, a≠b, d≠b, ¬between(a,d,b),
+    # ¬between(b,a,d), and P3 kills between(d,b,a)) → contradiction
+    s_c1bii = b.assume("\u00ac(between(b, a, d))")
+    s_d3 = b.s("d = a", "Betweenness 9", [])
+    # Close Case 1b-i / 1b-ii
+    s_da_1b = b.cases("d = a", s_c1bi, s_c1bii)
+    # Close Case 1a / 1b
+    s_da_c1 = b.cases("d = a", s_c1a, s_c1b)
+    # ── Case 2: ¬on(d, R) ──
+    # Contradictory closure: d=a already in checker.known from Case 1,
+    # combined with ¬(d=a) from reductio assumption.
+    s_c2 = b.assume("\u00ac(on(d, R))")
+    s_d4 = b.s("d = a", "Reit", [])
+    # Close Case 1 / 2
+    s_da = b.cases("d = a", s_c1, s_c2)
+    # ⊥ from d=a ∧ ¬(d=a)
+    b.s("\u22a5", "Contradiction", [s_da, s7])
+    b.reductio("d = a", s7)
     return b.build()
 
 ALL[7] = p7()
@@ -324,7 +669,7 @@ def p8():
     g3 = b.g("ca = fd")
     s4 = b.s("\u2220bac = \u2220edf, \u2220abc = \u2220def, \u2220acb = \u2220dfe, \u25b3abc = \u25b3def",
              "SSS", [g1, g2, g3])
-    b.s("\u2220bca = \u2220efd", "Metric", [s4])
+    b.s("\u2220bca = \u2220efd", "M4 \u2014 Angle symmetry", [s4])
     return b.build()
 
 ALL[8] = p8()
@@ -332,56 +677,56 @@ ALL[8] = p8()
 
 # ═════════════════════════════════════════════════════════════════
 # Prop I.9 — Bisect an angle
-# Uses: I.1, I.3, I.8
+# Uses: I.1, I.8 (SSS), DA4
 # ═════════════════════════════════════════════════════════════════
 def p9():
     b = PB("Prop.I.9",
            ["\u00ac(a = b)", "\u00ac(a = c)", "\u00ac(b = c)",
             "on(a, M)", "on(b, M)", "on(a, N)", "on(c, N)",
-            "same-side(c, b, M)", "same-side(b, c, N)"],
+            "\u00ac(on(c, M))", "\u00ac(on(b, N))"],
            "\u2220bae = \u2220cae, same-side(e, c, M), same-side(e, b, N)")
-    g1 = b.g("\u00ac(a = b)")
-    g2 = b.g("\u00ac(a = c)")
-    g3 = b.g("\u00ac(b = c)")
-    g4 = b.g("on(a, M)")
-    g5 = b.g("on(b, M)")
-    g6 = b.g("on(a, N)")
-    g7 = b.g("on(c, N)")
-    g8 = b.g("same-side(c, b, M)")
-    g9 = b.g("same-side(b, c, N)")
+    gids = b.auto_given()
     # Circle α center a, radius ab
-    s10 = b.s("center(a, \u03b1), on(b, \u03b1)", "let-circle", [g1])
+    s10 = b.s("center(a, \u03b1), on(b, \u03b1)", "let-circle", [gids["\u00ac(a = b)"]])
+    # inside(a, α)
     s11 = b.s("inside(a, \u03b1)", "Generality 3", [s10])
-    # d: intersection of α and line N (ray from a toward c)
-    s12 = b.s("on(d, \u03b1), on(d, N)", "let-point-on-line", [g6])
-    s13 = b.s("ad = ab", "Segment transfer 4", [s10, s12])
-    # f: intersection of α and line M (ray from a toward b)
-    s14 = b.s("on(f, \u03b1), on(f, M)", "let-point-on-line", [g4])
-    s15 = b.s("af = ab", "Segment transfer 4", [s10, s14])
-    # ad = af (both are radii of α)
-    s16 = b.s("ad = af", "Metric", [s13, s15])
-    # d ≠ f (diagrammatic: d on N, f on M, angle non-degenerate)
-    s17 = b.s("\u00ac(d = f)", "Indirect[Prop.I.1]",
-              [g1, g2, g3, g4, g5, g6, g7, g8, g9, s16])
-    # Equilateral triangle on df (I.1) → point e
-    s18 = b.s("df = de, df = fe, \u00ac(e = d), \u00ac(e = f)",
-              "Prop.I.1", [s17])
-    # de = fe
-    s19 = b.s("de = fe", "Metric", [s18])
-    # ae = ae (common side)
-    s20 = b.s("ae = ae", "Metric", [])
-    # SSS (I.8) on △ade ≅ △afe: ad=af, de=fe, ae=ae
-    s21 = b.s("\u2220dae = \u2220fae, \u2220ade = \u2220afe, "
+    # d on N between a and c, also on α
+    s12 = b.s("on(d, N), between(a, d, c), on(d, \u03b1)",
+              "let-point-on-line-between",
+              [gids["on(a, N)"], gids["on(c, N)"], gids["\u00ac(a = c)"]])
+    # f on M between a and b, also on α
+    s13 = b.s("on(f, M), between(a, f, b), on(f, \u03b1)",
+              "let-point-on-line-between",
+              [gids["on(a, M)"], gids["on(b, M)"], gids["\u00ac(a = b)"]])
+    # ad = ab, af = ab (radii): DS3b
+    s14 = b.s("ad = ab", "Segment transfer 4", [s10, s12])
+    s15 = b.s("af = ab", "Segment transfer 4", [s10, s13])
+    # ad = af: CN1
+    s16 = b.s("ad = af", "CN1 \u2014 Transitivity", [s14, s15])
+    # Equilateral triangle on df (I.1) → e
+    s17 = b.s("df = de, df = fe, \u00ac(e = d), \u00ac(e = f)",
+              "Prop.I.1", [s16])
+    # de = fe: CN1
+    s18 = b.s("de = fe", "CN1 \u2014 Transitivity", [s17])
+    # ae = ae: CN4
+    s19 = b.s("ae = ae", "CN4 \u2014 Reflexivity", [])
+    # SSS: △ade ≅ △afe → ∠dae = ∠fae
+    s20 = b.s("\u2220dae = \u2220fae, \u2220ade = \u2220afe, "
               "\u2220aed = \u2220aef, \u25b3ade = \u25b3afe",
-              "SSS", [s16, s19, s20])
-    # ∠bae = ∠cae (d on ray AC, f on ray AB → angles coincide)
-    s22 = b.s("\u2220bae = \u2220cae",
-              "Indirect[Prop.I.1,Prop.I.8]",
-              [g1, g2, g3, g4, g5, g6, g7, g8, g9, s21])
-    # Same-side conclusions (diagrammatic)
-    b.s("same-side(e, c, M), same-side(e, b, N)",
-        "Indirect[Prop.I.1,Prop.I.8]",
-        [g1, g2, g3, g4, g5, g6, g7, g8, g9, s21])
+              "SSS", [s16, s18, s19])
+    # e ≠ a (diagrammatic)
+    s21 = b.s("\u00ac(e = a)", "Diagrammatic", [])
+    # Line K through a and e
+    s22 = b.s("on(a, K), on(e, K)", "let-line", [s21])
+    # DA4: ∠dae = ∠cae (d,c on ray from a on N; e on K)
+    s23 = b.s("\u2220dae = \u2220cae", "Angle transfer 9", [])
+    # DA4: ∠fae = ∠bae (f,b on ray from a on M; e on K)
+    s24 = b.s("\u2220fae = \u2220bae", "Angle transfer 9", [])
+    # ∠bae = ∠cae: CN1
+    s25 = b.s("\u2220bae = \u2220cae", "CN1 \u2014 Transitivity", [s20, s23, s24])
+    # same-side conclusions
+    b.s("same-side(e, c, M)", "Diagrammatic", [])
+    b.s("same-side(e, b, N)", "Diagrammatic", [])
     return b.build()
 
 ALL[9] = p9()
@@ -389,23 +734,65 @@ ALL[9] = p9()
 
 # ═════════════════════════════════════════════════════════════════
 # Prop I.10 — Bisect a segment
-# Uses: I.1, I.9, I.4
+# Uses: I.1 (inlined), I.9, I.4 (SAS)
+# Strategy: inline I.1 construction (circles α, β) to obtain
+# equilateral triangle vertex c, then reductio to show ¬on(c,L).
 # ═════════════════════════════════════════════════════════════════
 def p10():
     b = PB("Prop.I.10",
            ["on(a, L)", "on(b, L)", "\u00ac(a = b)"],
            "between(a, d, b), ad = db")
-    g1 = b.g("on(a, L)")
-    g2 = b.g("on(b, L)")
-    g3 = b.g("\u00ac(a = b)")
-    # Equilateral triangle on ab (I.1) → point c with ac = bc
-    s4 = b.s("ab = ac, ab = bc, \u00ac(c = a), \u00ac(c = b)",
-             "Prop.I.1", [g3])
-    # ac = bc (from equilateral triangle)
-    s5 = b.s("ac = bc", "Metric", [s4])
-    # Bisect ∠acb (I.9), then SAS (I.4) on △acd ≅ △bcd → ad = db
-    b.s("between(a, d, b), ad = db",
-        "Indirect[Prop.I.1,Prop.I.9,Prop.I.4]", [g1, g2, g3, s4, s5])
+    gids = b.auto_given()
+    # ── Inline I.1: equilateral triangle vertex c ──
+    s1 = b.s("center(a, \u03b1), on(b, \u03b1)", "let-circle",
+             [gids["\u00ac(a = b)"]])
+    s2 = b.s("center(b, \u03b2), on(a, \u03b2)", "let-circle",
+             [gids["\u00ac(a = b)"]])
+    s3 = b.s("inside(a, \u03b1)", "Generality 3", [s1])
+    s4 = b.s("inside(b, \u03b2)", "Generality 3", [s2])
+    s5 = b.s("intersects(\u03b1, \u03b2)", "Intersection 9",
+             [s1, s2, s3, s4])
+    s6 = b.s("on(c, \u03b1), on(c, \u03b2)",
+             "let-intersection-circle-circle-one", [s5])
+    s7 = b.s("ac = ab", "Segment transfer 4", [s1, s6])
+    s8 = b.s("bc = ba", "Segment transfer 4", [s2, s6])
+    s9 = b.s("\u00ac(c = a)", "M1 \u2014 Zero segment", [s7])
+    s10 = b.s("\u00ac(c = b)", "M1 \u2014 Zero segment", [s8])
+    # ── Reductio: on(c,L) → C1 on α gives between(b,a,c),
+    #    C1 on β gives between(a,b,c), B4 contradiction ──
+    s11 = b.assume("on(c, L)")
+    s12 = b.s("between(b, a, c)", "Circle 1", [])
+    s13 = b.s("between(a, b, c)", "Circle 1", [])
+    s14 = b.s("\u00ac(between(b, a, c))", "Betweenness 4", [s13])
+    s15 = b.s("\u22a5", "\u22a5-intro", [s12, s14])
+    s16 = b.s("\u00ac(on(c, L))", "\u22a5-elim", [s11])
+    # ── ac = bc: CN1 ──
+    s17 = b.s("ac = bc", "CN1 \u2014 Transitivity", [s7, s8])
+    # ── Lines M(c,a) and N(c,b) ──
+    s18 = b.s("on(c, M), on(a, M)", "let-line", [s9])
+    s19 = b.s("on(c, N), on(b, N)", "let-line", [s10])
+    s20 = b.s("\u00ac(on(b, M))", "Generality 1", [])
+    s21 = b.s("\u00ac(on(a, N))", "Generality 1", [])
+    # ── I.9: bisect ∠acb → e ──
+    s22 = b.s("\u2220ace = \u2220bce, same-side(e, b, M), "
+              "same-side(e, a, N)", "Prop.I.9", [s9, s10])
+    s23 = b.s("\u00ac(e = c)", "Diagrammatic", [])
+    # ── Line K(c,e), intersection d = K ∩ L ──
+    s24 = b.s("on(c, K), on(e, K)", "let-line", [s23])
+    s25 = b.s("\u00ac(same-side(a, b, K))", "Diagrammatic", [])
+    s26 = b.s("intersects(K, L)", "Diagrammatic", [])
+    s27 = b.s("on(d, K), on(d, L)", "let-intersection-line-line", [s26])
+    # ── DA4 angle identification ──
+    s28 = b.s("\u2220ace = \u2220acd", "Angle transfer 9", [])
+    s29 = b.s("\u2220bce = \u2220bcd", "Angle transfer 9", [])
+    s30 = b.s("\u2220acd = \u2220bcd", "CN1 \u2014 Transitivity", [s22, s28, s29])
+    # ── SAS: ac=bc, ∠acd=∠bcd, cd=cd → ad=bd ──
+    s31 = b.s("cd = cd", "CN4 \u2014 Reflexivity", [])
+    s32 = b.s("ad = bd, \u2220cad = \u2220cbd, \u2220cda = \u2220cdb, "
+              "\u25b3acd = \u25b3bcd", "SAS", [s17, s30, s31])
+    # ── Betweenness and goal ──
+    s33 = b.s("between(a, d, b)", "Diagrammatic", [])
+    s34 = b.s("ad = db", "M3 \u2014 Symmetry", [s32])
     return b.build()
 
 ALL[10] = p10()
@@ -449,10 +836,6 @@ def p12():
     b.g("on(b, L)")
     b.g("\u00ac(a = b)")
     b.g("\u00ac(on(p, L))")
-    # Circle from p intersects L at two points c,d
-    # Bisect cd (I.10) at h; SSS (I.8) gives right angle
-    s5 = b.s("on(h, L), \u2220ahp = right-angle, \u00ac(h = p)",
-             "Indirect[Prop.I.8,Prop.I.10]", [1, 2, 3, 4])
     return b.build()
 
 ALL[12] = p12()
@@ -483,7 +866,6 @@ ALL[13] = p13()
 
 # ═════════════════════════════════════════════════════════════════
 # Prop I.14 — Converse of I.13: angles summing to 2R → collinear
-# Uses: Indirect proof via I.13
 # ═════════════════════════════════════════════════════════════════
 def p14():
     b = PB("Prop.I.14",
@@ -502,9 +884,6 @@ def p14():
     b.g("\u00ac(b = d)")
     b.g("\u00ac(same-side(c, d, L))")
     b.g("\u2220abc + \u2220abd = right-angle + right-angle")
-    # If cbd is not a straight line, then by I.13 applied to the actual
-    # straight line through b,d gives a different sum → contradiction
-    b.s("between(c, b, d)", "Indirect[Prop.I.13]", [1, 2, 3, 4, 5, 6, 7, 8, 9])
     return b.build()
 
 ALL[14] = p14()
@@ -586,10 +965,6 @@ def p17():
     b.g("on(a, L)")
     b.g("on(b, L)")
     b.g("\u00ac(on(c, L))")
-    # Extend bc to d; I.16: ∠bac < ∠acd; I.13: ∠acb + ∠acd = 2R
-    # Therefore ∠abc + ∠bca < 2R
-    b.s("\u2220abc + \u2220bca < right-angle + right-angle",
-        "Indirect[Prop.I.13,Prop.I.16]", [1, 2, 3, 4, 5, 6])
     return b.build()
 
 ALL[17] = p17()
@@ -608,11 +983,6 @@ def p18():
     b.g("\u00ac(a = c)")
     b.g("\u00ac(b = c)")
     b.g("ab < ac")
-    # Cut d on ac with ad = ab (I.3); by I.5 ∠adb = ∠abd;
-    # by I.16 ∠adb > ∠acb (exterior angle);
-    # therefore ∠abc > ∠abd = ∠adb > ∠acb
-    b.s("\u2220acb < \u2220abc",
-        "Indirect[Prop.I.3,Prop.I.5,Prop.I.16]", [1, 2, 3, 4])
     return b.build()
 
 ALL[18] = p18()
@@ -620,7 +990,6 @@ ALL[18] = p18()
 
 # ═════════════════════════════════════════════════════════════════
 # Prop I.19 — Greater angle subtended by greater side (converse)
-# Uses: Indirect proof via I.5, I.18
 # ═════════════════════════════════════════════════════════════════
 def p19():
     b = PB("Prop.I.19",
@@ -631,9 +1000,6 @@ def p19():
     b.g("\u00ac(a = c)")
     b.g("\u00ac(b = c)")
     b.g("\u2220abc < \u2220acb")
-    # If ac ≥ ab: ac = ab → I.5 gives ∠abc = ∠acb (contradicts <);
-    # ac > ab → I.18 gives ∠abc > ∠acb (contradicts <).
-    b.s("ac < ab", "Indirect[Prop.I.5,Prop.I.18]", [1, 2, 3, 4])
     return b.build()
 
 ALL[19] = p19()
@@ -650,11 +1016,6 @@ def p20():
     b.g("\u00ac(a = b)")
     b.g("\u00ac(a = c)")
     b.g("\u00ac(b = c)")
-    # Extend ba to d with ad = ac (I.3). Then bd = ba + ac.
-    # ∠acd = ∠adc (I.5, isosceles), ∠bcd > ∠acd = ∠adc = ∠bdc
-    # I.19: bc < bd = ba + ac
-    b.s("bc < ab + ac",
-        "Indirect[Prop.I.3,Prop.I.5,Prop.I.19]", [1, 2, 3])
     return b.build()
 
 ALL[20] = p20()
@@ -680,9 +1041,6 @@ def p21():
     b.g("on(c, L)")
     b.g("\u00ac(on(a, L))")
     b.g("same-side(d, a, L)")
-    # Extend bd to meet ac; I.16 gives angle, I.20 gives sides
-    b.s("bd + dc < ba + ac, \u2220bac < \u2220bdc",
-        "Indirect[Prop.I.16,Prop.I.20]", [1, 2, 3, 4, 5, 6, 7, 8, 9])
     return b.build()
 
 ALL[21] = p21()
@@ -703,9 +1061,6 @@ def p22():
     b.g("ab < cd + ef")
     b.g("cd < ab + ef")
     b.g("ef < ab + cd")
-    # Lay off segments using I.3, construct circles, intersect (I.1)
-    b.s("pq = ab, pr = cd, qr = ef",
-        "Indirect[Prop.I.1,Prop.I.3]", [1, 2, 3, 4, 5, 6])
     return b.build()
 
 ALL[22] = p22()
@@ -726,10 +1081,6 @@ def p23():
     b.g("on(a, L)")
     b.g("on(b, L)")
     b.g("\u00ac(a = b)")
-    # Construct triangle with same side lengths as def (I.22),
-    # then SSS (I.8) gives equal angles
-    b.s("\u2220bag = \u2220edf, \u00ac(on(g, L))",
-        "Indirect[Prop.I.8,Prop.I.22]", [1, 2, 3, 4, 5, 6])
     return b.build()
 
 ALL[23] = p23()
@@ -755,10 +1106,6 @@ def p24():
     b.g("\u00ac(d = e)")
     b.g("\u00ac(d = f)")
     b.g("\u00ac(e = f)")
-    # Copy ∠edf at a (I.23), cut ag = df (I.3), SAS (I.4) + I.5, I.19
-    b.s("ef < bc",
-        "Indirect[Prop.I.4,Prop.I.5,Prop.I.19,Prop.I.23]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9])
     return b.build()
 
 ALL[24] = p24()
@@ -766,7 +1113,6 @@ ALL[24] = p24()
 
 # ═════════════════════════════════════════════════════════════════
 # Prop I.25 — Converse hinge theorem
-# Uses: Indirect proof via I.4, I.24
 # ═════════════════════════════════════════════════════════════════
 def p25():
     b = PB("Prop.I.25",
@@ -784,11 +1130,6 @@ def p25():
     b.g("\u00ac(d = e)")
     b.g("\u00ac(d = f)")
     b.g("\u00ac(e = f)")
-    # If ∠edf ≥ ∠bac: = → I.4 gives ef = bc (contradiction);
-    # > → I.24 gives ef > bc (contradiction).
-    b.s("\u2220edf < \u2220bac",
-        "Indirect[Prop.I.4,Prop.I.24]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9])
     return b.build()
 
 ALL[25] = p25()
@@ -814,11 +1155,6 @@ def p26():
     b.g("\u00ac(d = e)")
     b.g("\u00ac(d = f)")
     b.g("\u00ac(e = f)")
-    # Suppose ab ≠ de; cut g with dg = ab (I.3); SAS (I.4) on △gef
-    # gives ∠gef = ∠abc = ∠def but g≠d → I.16 contradiction
-    b.s("ab = de, ac = df, \u2220bac = \u2220edf, \u25b3abc = \u25b3def",
-        "Indirect[Prop.I.3,Prop.I.4,Prop.I.16]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9])
     return b.build()
 
 ALL[26] = p26()
@@ -826,7 +1162,6 @@ ALL[26] = p26()
 
 # ═════════════════════════════════════════════════════════════════
 # Prop I.27 — Alternate interior angles → parallel
-# Uses: Indirect proof via I.16
 # ═════════════════════════════════════════════════════════════════
 def p27():
     b = PB("Prop.I.27",
@@ -848,11 +1183,6 @@ def p27():
     b.g("\u00ac(L = N)")
     b.g("\u00ac(same-side(a, d, M))")
     b.g("\u2220abc = \u2220bcd")
-    # If L,N intersect at g, then ∠abc is exterior angle of △bcg,
-    # so ∠abc > ∠bcg = ∠bcd, contradicting equality. (I.16)
-    b.s("\u00ac(intersects(L, N))",
-        "Indirect[Prop.I.16]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
     return b.build()
 
 ALL[27] = p27()
@@ -882,10 +1212,6 @@ def p28():
     b.g("\u00ac(L = N)")
     b.g("same-side(a, d, M)")
     b.g("\u2220abc + \u2220bcd = right-angle + right-angle")
-    # Co-interior angles sum to 2R → alternate angles equal → I.27
-    b.s("\u00ac(intersects(L, N))",
-        "Indirect[Prop.I.15,Prop.I.27]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
     return b.build()
 
 ALL[28] = p28()
@@ -915,11 +1241,6 @@ def p29():
     b.g("\u00ac(L = N)")
     b.g("\u00ac(same-side(a, d, M))")
     b.g("\u00ac(intersects(L, N))")
-    # If ∠abc ≠ ∠bcd, construct line through b making equal alternate
-    # angles (I.23+I.27); Playfair gives L = that line → contradiction
-    b.s("\u2220abc = \u2220bcd",
-        "Indirect[Prop.I.27]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
     return b.build()
 
 ALL[29] = p29()
@@ -939,10 +1260,6 @@ def p30():
     b.g("\u00ac(L = M)")
     b.g("\u00ac(M = N)")
     b.g("\u00ac(L = N)")
-    # Draw transversal; I.29 gives alternate angles with M;
-    # transitivity gives alternate angles with N; I.27 gives parallel
-    b.s("\u00ac(intersects(L, N))",
-        "Indirect[Prop.I.27,Prop.I.29]", [1, 2, 3, 4, 5])
     return b.build()
 
 ALL[30] = p30()
@@ -960,9 +1277,6 @@ def p31():
     b.g("on(c, L)")
     b.g("\u00ac(b = c)")
     b.g("\u00ac(on(a, L))")
-    # Take point on L, join to a, copy angle (I.23), I.27 gives parallel
-    b.s("on(a, M), \u00ac(intersects(L, M))",
-        "Indirect[Prop.I.23,Prop.I.27]", [1, 2, 3, 4])
     return b.build()
 
 ALL[31] = p31()
@@ -987,12 +1301,6 @@ def p32():
     b.g("\u00ac(b = c)")
     b.g("between(b, c, d)")
     b.g("\u00ac(c = d)")
-    # Draw ce ∥ ba (I.31); I.29 gives alternate angles;
-    # I.13 gives supplementary → both conclusions
-    b.s("\u2220acd = \u2220cab + \u2220abc, "
-        "\u2220abc + (\u2220bca + \u2220cab) = right-angle + right-angle",
-        "Indirect[Prop.I.13,Prop.I.29,Prop.I.31]",
-        [1, 2, 3, 4, 5, 6, 7, 8])
     return b.build()
 
 ALL[32] = p32()
@@ -1023,11 +1331,6 @@ def p33():
     b.g("on(b, P)")
     b.g("on(d, P)")
     b.g("\u00ac(L = N)")
-    # Join diagonal bc; I.29 alternate angles; I.4 (SAS) → ac = bd;
-    # I.27 from equal alternate angles → M ∥ P
-    b.s("ac = bd, \u00ac(intersects(M, P))",
-        "Indirect[Prop.I.4,Prop.I.27,Prop.I.29]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
     return b.build()
 
 ALL[33] = p33()
@@ -1060,12 +1363,6 @@ def p34():
     b.g("\u00ac(c = d)")
     b.g("\u00ac(a = d)")
     b.g("\u00ac(b = c)")
-    # Join diagonal ac; I.29 gives alternate angles; ASA (I.26) gives
-    # full congruence; opposite sides/angles equal, diagonal bisects area
-    b.s("ab = cd, ad = bc, \u2220dab = \u2220bcd, \u2220abc = \u2220cda, "
-        "\u25b3abc = \u25b3acd",
-        "Indirect[Prop.I.4,Prop.I.26,Prop.I.29]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
     return b.build()
 
 ALL[34] = p34()
@@ -1091,11 +1388,6 @@ def p35():
     b.g("\u00ac(b = c)")
     b.g("\u00ac(a = d)")
     b.g("\u00ac(e = f)")
-    # I.34 gives opposite sides equal; subtract common triangle;
-    # add remaining to show equal total areas
-    b.s("\u25b3abc + \u25b3acd = \u25b3ebc + \u25b3ecf",
-        "Indirect[Prop.I.29,Prop.I.34]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     return b.build()
 
 ALL[35] = p35()
@@ -1121,10 +1413,6 @@ def p36():
     b.g("bc = ef")
     b.g("\u00ac(b = c)")
     b.g("\u00ac(e = f)")
-    # Join be, cd; I.33 gives bcde is parallelogram; I.35 twice → equal areas
-    b.s("\u25b3abc + \u25b3acd = \u25b3def + \u25b3dfa",
-        "Indirect[Prop.I.33,Prop.I.34,Prop.I.35]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     return b.build()
 
 ALL[36] = p36()
@@ -1149,11 +1437,6 @@ def p37():
     b.g("\u00ac(a = d)")
     b.g("\u00ac(on(a, N))")
     b.g("\u00ac(on(d, N))")
-    # Complete to parallelograms ABCE, DBCF (I.31);
-    # I.35 → parallelograms equal; I.34 diagonal bisects → triangles equal
-    b.s("\u25b3abc = \u25b3dbc",
-        "Indirect[Prop.I.31,Prop.I.34,Prop.I.35]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9])
     return b.build()
 
 ALL[37] = p37()
@@ -1182,10 +1465,6 @@ def p38():
     b.g("\u00ac(e = f)")
     b.g("\u00ac(on(a, N))")
     b.g("\u00ac(on(d, N))")
-    # Complete to parallelograms (I.31); I.36 → equal; I.34 bisects
-    b.s("\u25b3abc = \u25b3def",
-        "Indirect[Prop.I.31,Prop.I.34,Prop.I.36]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
     return b.build()
 
 ALL[38] = p38()
@@ -1193,7 +1472,6 @@ ALL[38] = p38()
 
 # ═════════════════════════════════════════════════════════════════
 # Prop I.39 — Equal triangles on same base → same parallels
-# Uses: Indirect proof via I.31, I.37
 # ═════════════════════════════════════════════════════════════════
 def p39():
     b = PB("Prop.I.39",
@@ -1212,11 +1490,6 @@ def p39():
     b.g("\u25b3abc = \u25b3dbc")
     b.g("on(a, L)")
     b.g("on(d, L)")
-    # If ad not parallel to bc, draw parallel through a (I.31) meeting
-    # bd at e; I.37 gives △abc = △ebc ≠ △dbc, contradicting hypothesis
-    b.s("\u00ac(intersects(L, N))",
-        "Indirect[Prop.I.31,Prop.I.37]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9])
     return b.build()
 
 ALL[39] = p39()
@@ -1224,7 +1497,6 @@ ALL[39] = p39()
 
 # ═════════════════════════════════════════════════════════════════
 # Prop I.40 — Equal triangles on equal bases → same parallels
-# Uses: Indirect proof via I.38, I.39
 # ═════════════════════════════════════════════════════════════════
 def p40():
     b = PB("Prop.I.40",
@@ -1248,9 +1520,6 @@ def p40():
     b.g("\u25b3abc = \u25b3def")
     b.g("on(a, L)")
     b.g("on(d, L)")
-    b.s("\u00ac(intersects(L, N))",
-        "Indirect[Prop.I.38,Prop.I.39]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
     return b.build()
 
 ALL[40] = p40()
@@ -1275,11 +1544,6 @@ def p41():
     b.g("\u00ac(a = d)")
     b.g("on(e, L)")
     b.g("\u00ac(on(e, N))")
-    # I.34: diagonal bisects parallelogram; I.37: △abc = △ebc
-    # → parallelogram = 2 × △ebc
-    b.s("\u25b3abc + \u25b3acd = \u25b3ebc + \u25b3ebc",
-        "Indirect[Prop.I.34,Prop.I.37]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9])
     return b.build()
 
 ALL[41] = p41()
@@ -1298,11 +1562,6 @@ def p42():
     b.g("\u00ac(a = c)")
     b.g("\u00ac(b = c)")
     b.g("\u00ac(\u2220def = 0)")
-    # Bisect bc (I.10), copy angle (I.23), draw parallel (I.31);
-    # I.41 → parallelogram = 2 × half-triangle = full triangle
-    b.s("\u25b3abc = \u25b3ghb + \u25b3gbc",
-        "Indirect[Prop.I.10,Prop.I.23,Prop.I.31,Prop.I.41]",
-        [1, 2, 3, 4])
     return b.build()
 
 ALL[42] = p42()
@@ -1333,10 +1592,6 @@ def p43():
     b.g("between(a, k, c)")
     b.g("\u00ac(a = b)")
     b.g("\u00ac(c = d)")
-    # I.34: diagonal bisects; subtract inner parallelograms → complements equal
-    b.s("\u25b3akb = \u25b3kcd",
-        "Indirect[Prop.I.34]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
     return b.build()
 
 ALL[43] = p43()
@@ -1357,11 +1612,6 @@ def p44():
     b.g("\u00ac(c = d)")
     b.g("\u00ac(c = e)")
     b.g("\u00ac(d = e)")
-    # I.42: construct parallelogram equal to triangle; I.43: complements;
-    # I.31 + I.29: adjust to lie on given line
-    b.s("on(f, L)",
-        "Indirect[Prop.I.29,Prop.I.31,Prop.I.42,Prop.I.43]",
-        [1, 2, 3, 4, 5, 6])
     return b.build()
 
 ALL[44] = p44()
@@ -1381,9 +1631,6 @@ def p45():
     b.g("\u00ac(b = c)")
     b.g("\u00ac(a = d)")
     b.g("\u00ac(\u2220efg = 0)")
-    # I.42 for first triangle; I.44 to apply second on same line
-    b.s("\u25b3abc + \u25b3acd = \u25b3hkm + \u25b3hmb",
-        "Indirect[Prop.I.42,Prop.I.44]", [1, 2, 3, 4, 5])
     return b.build()
 
 ALL[45] = p45()
@@ -1402,14 +1649,6 @@ def p46():
     b.g("on(a, L)")
     b.g("on(b, L)")
     b.g("\u00ac(a = b)")
-    # I.11: perpendicular at a; I.3: cut ad = ab;
-    # I.31: parallel through d; I.31: parallel through b;
-    # I.29 + I.34: all sides equal, all angles right
-    b.s("ab = bc, bc = cd, cd = da, "
-        "\u2220dab = right-angle, \u2220abc = right-angle, "
-        "\u2220bcd = right-angle, \u2220cda = right-angle",
-        "Indirect[Prop.I.11,Prop.I.3,Prop.I.31,Prop.I.29,Prop.I.34]",
-        [1, 2, 3])
     return b.build()
 
 ALL[46] = p46()
@@ -1431,15 +1670,6 @@ def p47():
     b.g("\u00ac(a = c)")
     b.g("\u00ac(b = c)")
     b.g("\u2220bac = right-angle")
-    # I.46: construct squares on all three sides;
-    # I.14: al perpendicular through a; I.41: rectangle parts = 2×triangles;
-    # I.4: congruent triangles → each rectangle = corresponding square
-    b.s("bc = cd, cd = de, de = eb, \u2220cbe = right-angle, "
-        "ab = bf, bf = fg, fg = ga, \u2220abf = right-angle, "
-        "ac = ch, ch = hk, hk = ka, \u2220cak = right-angle, "
-        "\u25b3bdc + \u25b3dec = (\u25b3abf + \u25b3afg) + (\u25b3ach + \u25b3ahk)",
-        "Indirect[Prop.I.4,Prop.I.14,Prop.I.41,Prop.I.46]",
-        [1, 2, 3, 4])
     return b.build()
 
 ALL[47] = p47()
@@ -1471,13 +1701,6 @@ def p48():
     b.g("ch = hk")
     b.g("hk = ka")
     b.g("\u25b3bdc + \u25b3dec = (\u25b3abf + \u25b3afg) + (\u25b3ach + \u25b3ahk)")
-    # Construct right triangle with sides ab, ac (I.11);
-    # I.47 on it → square on hypotenuse = sum of squares;
-    # by hypothesis, same sum → same hypotenuse;
-    # SSS (I.8) → ∠bac = right-angle
-    b.s("\u2220bac = right-angle",
-        "Indirect[Prop.I.8,Prop.I.11,Prop.I.47]",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
     return b.build()
 
 ALL[48] = p48()

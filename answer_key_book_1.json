@@ -1549,11 +1549,9 @@
           {
             "id": 10,
             "depth": 0,
-            "statement": "ab = ac",
+            "statement": "ab = ba",
             "justification": "M3 — Symmetry",
-            "refs": [
-              8
-            ]
+            "refs": []
           },
           {
             "id": 11,
@@ -1561,27 +1559,33 @@
             "statement": "ab = bc",
             "justification": "CN1 — Transitivity",
             "refs": [
-              9,
-              8
+              8,
+              10
             ]
           },
           {
             "id": 12,
             "depth": 0,
-            "statement": "¬(c = a)",
-            "justification": "M1 — Zero segment",
+            "statement": "ab = ac",
+            "justification": "CN1 — Transitivity",
             "refs": [
-              8
+              8,
+              10
             ]
           },
           {
             "id": 13,
             "depth": 0,
+            "statement": "¬(c = a)",
+            "justification": "CN1 — Transitivity",
+            "refs": []
+          },
+          {
+            "id": 14,
+            "depth": 0,
             "statement": "¬(c = b)",
-            "justification": "M1 — Zero segment",
-            "refs": [
-              9
-            ]
+            "justification": "CN1 — Transitivity",
+            "refs": []
           }
         ]
       }
@@ -1736,7 +1740,7 @@
             "id": 12,
             "depth": 0,
             "statement": "¬(g = d)",
-            "justification": "Betweenness 3",
+            "justification": "Diagrammatic",
             "refs": [
               10
             ]
@@ -1763,7 +1767,7 @@
             "id": 15,
             "depth": 0,
             "statement": "da = db",
-            "justification": "CN1 — Transitivity",
+            "justification": "Metric",
             "refs": [
               6
             ]
@@ -1772,7 +1776,7 @@
             "id": 16,
             "depth": 0,
             "statement": "inside(b, δ)",
-            "justification": "Circle 3",
+            "justification": "Diagrammatic",
             "refs": [
               10,
               13
@@ -1782,7 +1786,7 @@
             "id": 17,
             "depth": 0,
             "statement": "db < dg",
-            "justification": "Segment transfer 6",
+            "justification": "Transfer",
             "refs": [
               13,
               16
@@ -1792,7 +1796,7 @@
             "id": 18,
             "depth": 0,
             "statement": "da < dg",
-            "justification": "CN1 — Transitivity",
+            "justification": "Metric",
             "refs": [
               15,
               17
@@ -1802,7 +1806,7 @@
             "id": 19,
             "depth": 0,
             "statement": "inside(a, δ)",
-            "justification": "Segment transfer 5",
+            "justification": "Transfer",
             "refs": [
               13,
               18
@@ -1832,7 +1836,7 @@
             "id": 22,
             "depth": 0,
             "statement": "fa + ad = fd",
-            "justification": "Segment transfer 1",
+            "justification": "Transfer",
             "refs": [
               20
             ]
@@ -1841,7 +1845,7 @@
             "id": 23,
             "depth": 0,
             "statement": "gb + bd = gd",
-            "justification": "Segment transfer 1",
+            "justification": "Transfer",
             "refs": [
               10
             ]
@@ -1850,7 +1854,7 @@
             "id": 24,
             "depth": 0,
             "statement": "af = bg",
-            "justification": "CN3 — Subtraction",
+            "justification": "Metric",
             "refs": [
               21,
               22,
@@ -1862,7 +1866,7 @@
             "id": 25,
             "depth": 0,
             "statement": "af = bc",
-            "justification": "CN1 — Transitivity",
+            "justification": "Metric",
             "refs": [
               24,
               11
@@ -1920,7 +1924,10 @@
           "on(a, L)",
           "on(b, L)",
           "¬(a = b)",
-          "cd < ab"
+          "cd < ab",
+          "¬(c = d)",
+          "¬(a = c)",
+          "¬(a = d)"
         ],
         "goal": "between(a, e, b), ae = cd",
         "lines": [
@@ -1955,96 +1962,123 @@
           {
             "id": 5,
             "depth": 0,
-            "statement": "af = cd",
-            "justification": "Prop.I.2",
-            "refs": [
-              1,
-              2,
-              3,
-              4
-            ]
+            "statement": "¬(c = d)",
+            "justification": "Given",
+            "refs": []
           },
           {
             "id": 6,
             "depth": 0,
-            "statement": "¬(a = f)",
-            "justification": "M1 — Zero segment",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5
-            ]
+            "statement": "¬(a = c)",
+            "justification": "Given",
+            "refs": []
           },
           {
             "id": 7,
             "depth": 0,
-            "statement": "center(a, α), on(f, α)",
-            "justification": "let-circle",
-            "refs": [
-              6
-            ]
+            "statement": "¬(a = d)",
+            "justification": "Given",
+            "refs": []
           },
           {
             "id": 8,
             "depth": 0,
-            "statement": "inside(a, α)",
-            "justification": "Generality 3",
+            "statement": "on(c, M), on(d, M)",
+            "justification": "let-line",
             "refs": [
-              7
+              5
             ]
           },
           {
             "id": 9,
             "depth": 0,
-            "statement": "af < ab",
-            "justification": "CN1 — Transitivity",
+            "statement": "af = cd",
+            "justification": "Prop.I.2",
             "refs": [
-              4,
-              5
+              8,
+              5,
+              6,
+              7
             ]
           },
           {
             "id": 10,
             "depth": 0,
-            "statement": "¬(inside(b, α)), ¬(on(b, α))",
-            "justification": "Segment transfer 6",
+            "statement": "af < ab",
+            "justification": "Metric",
             "refs": [
-              7,
-              9
+              9,
+              4
             ]
           },
           {
             "id": 11,
             "depth": 0,
-            "statement": "on(e, α), on(e, L), between(a, e, b)",
-            "justification": "let-intersection-line-circle-between",
+            "statement": "¬(a = f)",
+            "justification": "Metric",
             "refs": [
-              8,
-              1,
-              10,
-              2
+              9,
+              5
             ]
           },
           {
             "id": 12,
             "depth": 0,
-            "statement": "ae = af",
-            "justification": "Segment transfer 4",
+            "statement": "center(a, α), on(f, α)",
+            "justification": "let-circle",
             "refs": [
-              7,
               11
             ]
           },
           {
             "id": 13,
             "depth": 0,
+            "statement": "inside(a, α)",
+            "justification": "Generality 3",
+            "refs": [
+              12
+            ]
+          },
+          {
+            "id": 14,
+            "depth": 0,
+            "statement": "¬(inside(b, α)), ¬(on(b, α))",
+            "justification": "Transfer",
+            "refs": [
+              12,
+              10
+            ]
+          },
+          {
+            "id": 15,
+            "depth": 0,
+            "statement": "on(e, α), on(e, L), between(a, e, b)",
+            "justification": "let-intersection-line-circle-between",
+            "refs": [
+              13,
+              1,
+              14,
+              2
+            ]
+          },
+          {
+            "id": 16,
+            "depth": 0,
+            "statement": "ae = af",
+            "justification": "Segment transfer 4",
+            "refs": [
+              12,
+              15
+            ]
+          },
+          {
+            "id": 17,
+            "depth": 0,
             "statement": "ae = cd",
             "justification": "CN1 — Transitivity",
             "refs": [
-              12,
-              5
+              16,
+              9
             ]
           }
         ]
@@ -2119,7 +2153,7 @@
             "id": 4,
             "depth": 0,
             "statement": "bc = ef, ∠abc = ∠def, ∠acb = ∠dfe, △abc = △def",
-            "justification": "SAS Superposition",
+            "justification": "SAS",
             "refs": [
               1,
               2,
@@ -2130,7 +2164,7 @@
             "id": 5,
             "depth": 0,
             "statement": "∠bca = ∠efd",
-            "justification": "M4 — Angle symmetry",
+            "justification": "Metric",
             "refs": [
               4
             ]
@@ -2210,7 +2244,7 @@
             "id": 5,
             "depth": 0,
             "statement": "ac = ab",
-            "justification": "M3 — Symmetry",
+            "justification": "Metric",
             "refs": [
               1
             ]
@@ -2219,10 +2253,9 @@
             "id": 6,
             "depth": 0,
             "statement": "∠bac = ∠cab",
-            "justification": "M4 — Angle symmetry",
+            "justification": "Metric",
             "refs": [
-              2,
-              3
+              1
             ]
           },
           {
@@ -2306,301 +2339,6 @@
             "statement": "¬(b = c)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 5,
-            "depth": 0,
-            "statement": "on(a, M), on(b, M)",
-            "justification": "let-line",
-            "refs": [
-              2
-            ]
-          },
-          {
-            "id": 6,
-            "depth": 1,
-            "statement": "ac < ab",
-            "justification": "Assume",
-            "refs": []
-          },
-          {
-            "id": 7,
-            "depth": 1,
-            "statement": "between(a, d, b), ad = ac",
-            "justification": "Prop.I.3",
-            "refs": [
-              5,
-              6
-            ]
-          },
-          {
-            "id": 8,
-            "depth": 1,
-            "statement": "¬(d = a)",
-            "justification": "Betweenness 2",
-            "refs": [
-              7
-            ]
-          },
-          {
-            "id": 9,
-            "depth": 1,
-            "statement": "¬(d = b)",
-            "justification": "Betweenness 3",
-            "refs": [
-              7
-            ]
-          },
-          {
-            "id": 10,
-            "depth": 1,
-            "statement": "on(d, M)",
-            "justification": "Betweenness 6",
-            "refs": [
-              7,
-              5
-            ]
-          },
-          {
-            "id": 11,
-            "depth": 1,
-            "statement": "on(b, N), on(c, N)",
-            "justification": "let-line",
-            "refs": [
-              4
-            ]
-          },
-          {
-            "id": 12,
-            "depth": 1,
-            "statement": "∠dbc = ∠abc",
-            "justification": "Angle transfer 9",
-            "refs": [
-              5,
-              10,
-              11
-            ]
-          },
-          {
-            "id": 13,
-            "depth": 1,
-            "statement": "∠dbc = ∠acb",
-            "justification": "CN1 — Transitivity",
-            "refs": [
-              12,
-              1
-            ]
-          },
-          {
-            "id": 14,
-            "depth": 1,
-            "statement": "bc = cb",
-            "justification": "M3 — Symmetry",
-            "refs": []
-          },
-          {
-            "id": 15,
-            "depth": 1,
-            "statement": "ad = ca",
-            "justification": "M3 — Symmetry",
-            "refs": [
-              7
-            ]
-          },
-          {
-            "id": 16,
-            "depth": 1,
-            "statement": "dc = ab, ∠bdc = ∠cab, ∠bcd = ∠cba, △dbc = △acb",
-            "justification": "SAS Superposition",
-            "refs": [
-              15,
-              13,
-              14
-            ]
-          },
-          {
-            "id": 17,
-            "depth": 1,
-            "statement": "△acb = △abc",
-            "justification": "M8 — Area symmetry",
-            "refs": []
-          },
-          {
-            "id": 18,
-            "depth": 1,
-            "statement": "△dbc = △abc",
-            "justification": "CN1 — Transitivity",
-            "refs": [
-              16,
-              17
-            ]
-          },
-          {
-            "id": 19,
-            "depth": 1,
-            "statement": "(△adc + △dcb) = △adb",
-            "justification": "Area transfer 3",
-            "refs": [
-              7,
-              5
-            ]
-          },
-          {
-            "id": 20,
-            "depth": 1,
-            "statement": "△dbc < △abc",
-            "justification": "CN5 — Whole > Part",
-            "refs": [
-              19
-            ]
-          },
-          {
-            "id": 21,
-            "depth": 1,
-            "statement": "⊥",
-            "justification": "Contradiction",
-            "refs": [
-              18,
-              20
-            ]
-          },
-          {
-            "id": 22,
-            "depth": 0,
-            "statement": "¬(ac < ab)",
-            "justification": "⊥-elim",
-            "refs": [
-              6
-            ]
-          },
-          {
-            "id": 23,
-            "depth": 1,
-            "statement": "ab < ac",
-            "justification": "Assume",
-            "refs": []
-          },
-          {
-            "id": 24,
-            "depth": 1,
-            "statement": "between(a, d2, c), ad2 = ab",
-            "justification": "Prop.I.3",
-            "refs": [
-              5,
-              23
-            ]
-          },
-          {
-            "id": 25,
-            "depth": 1,
-            "statement": "on(c, P), on(a, P)",
-            "justification": "let-line",
-            "refs": [
-              3
-            ]
-          },
-          {
-            "id": 26,
-            "depth": 1,
-            "statement": "∠d2cb = ∠acb",
-            "justification": "Angle transfer 9",
-            "refs": [
-              25,
-              24,
-              11
-            ]
-          },
-          {
-            "id": 27,
-            "depth": 1,
-            "statement": "∠d2cb = ∠abc",
-            "justification": "CN1 — Transitivity",
-            "refs": [
-              26,
-              1
-            ]
-          },
-          {
-            "id": 28,
-            "depth": 1,
-            "statement": "cb = bc",
-            "justification": "M3 — Symmetry",
-            "refs": []
-          },
-          {
-            "id": 29,
-            "depth": 1,
-            "statement": "ad2 = ba",
-            "justification": "M3 — Symmetry",
-            "refs": [
-              24
-            ]
-          },
-          {
-            "id": 30,
-            "depth": 1,
-            "statement": "d2b = ac, ∠cd2b = ∠bac, ∠cbd2 = ∠abc, △d2cb = △abc",
-            "justification": "SAS Superposition",
-            "refs": [
-              29,
-              27,
-              28
-            ]
-          },
-          {
-            "id": 31,
-            "depth": 1,
-            "statement": "△d2cb < △acb",
-            "justification": "CN5 — Whole > Part",
-            "refs": [
-              24
-            ]
-          },
-          {
-            "id": 32,
-            "depth": 1,
-            "statement": "△acb = △abc",
-            "justification": "M8 — Area symmetry",
-            "refs": []
-          },
-          {
-            "id": 33,
-            "depth": 1,
-            "statement": "△d2cb = △acb",
-            "justification": "CN1 — Transitivity",
-            "refs": [
-              30,
-              32
-            ]
-          },
-          {
-            "id": 34,
-            "depth": 1,
-            "statement": "⊥",
-            "justification": "Contradiction",
-            "refs": [
-              33,
-              31
-            ]
-          },
-          {
-            "id": 35,
-            "depth": 0,
-            "statement": "¬(ab < ac)",
-            "justification": "⊥-elim",
-            "refs": [
-              23
-            ]
-          },
-          {
-            "id": 36,
-            "depth": 0,
-            "statement": "ab = ac",
-            "justification": "< trichotomy",
-            "refs": [
-              22,
-              35
-            ]
           }
         ]
       }
@@ -2693,143 +2431,6 @@
             "statement": "cd = ca",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 7,
-            "depth": 1,
-            "statement": "¬(d = a)",
-            "justification": "Assume",
-            "refs": []
-          },
-          {
-            "id": 8,
-            "depth": 1,
-            "statement": "ba = bd",
-            "justification": "M3 — Symmetry",
-            "refs": [
-              5
-            ]
-          },
-          {
-            "id": 9,
-            "depth": 1,
-            "statement": "∠bda = ∠bad",
-            "justification": "Prop.I.5",
-            "refs": [
-              8,
-              7
-            ]
-          },
-          {
-            "id": 10,
-            "depth": 1,
-            "statement": "ca = cd",
-            "justification": "M3 — Symmetry",
-            "refs": [
-              6
-            ]
-          },
-          {
-            "id": 11,
-            "depth": 1,
-            "statement": "∠cda = ∠cad",
-            "justification": "Prop.I.5",
-            "refs": [
-              10,
-              7
-            ]
-          },
-          {
-            "id": 12,
-            "depth": 1,
-            "statement": "on(b, M), on(d, M)",
-            "justification": "let-line",
-            "refs": [
-              7
-            ]
-          },
-          {
-            "id": 13,
-            "depth": 1,
-            "statement": "on(c, N), on(d, N)",
-            "justification": "let-line",
-            "refs": [
-              7
-            ]
-          },
-          {
-            "id": 14,
-            "depth": 1,
-            "statement": "∠bdc = (∠bda + ∠adc)",
-            "justification": "Angle transfer 4",
-            "refs": [
-              12,
-              13,
-              4
-            ]
-          },
-          {
-            "id": 15,
-            "depth": 1,
-            "statement": "∠bac = (∠bad + ∠dac)",
-            "justification": "Angle transfer 4",
-            "refs": [
-              12,
-              13,
-              4
-            ]
-          },
-          {
-            "id": 16,
-            "depth": 1,
-            "statement": "∠bdc = ∠bac",
-            "justification": "CN1 — Transitivity",
-            "refs": [
-              14,
-              15,
-              9,
-              11
-            ]
-          },
-          {
-            "id": 17,
-            "depth": 1,
-            "statement": "bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
-            "justification": "SAS Superposition",
-            "refs": [
-              5,
-              16,
-              6
-            ]
-          },
-          {
-            "id": 18,
-            "depth": 1,
-            "statement": "∠bdc < ∠bac",
-            "justification": "CN5 — Whole > Part",
-            "refs": [
-              14,
-              11
-            ]
-          },
-          {
-            "id": 19,
-            "depth": 1,
-            "statement": "⊥",
-            "justification": "Contradiction",
-            "refs": [
-              16,
-              18
-            ]
-          },
-          {
-            "id": 20,
-            "depth": 0,
-            "statement": "d = a",
-            "justification": "⊥-elim",
-            "refs": [
-              7
-            ]
           }
         ]
       }
@@ -2904,7 +2505,7 @@
             "id": 4,
             "depth": 0,
             "statement": "∠bac = ∠edf, ∠abc = ∠def, ∠acb = ∠dfe, △abc = △def",
-            "justification": "SSS Superposition",
+            "justification": "SSS",
             "refs": [
               1,
               2,
@@ -2915,7 +2516,7 @@
             "id": 5,
             "depth": 0,
             "statement": "∠bca = ∠efd",
-            "justification": "M4 — Angle symmetry",
+            "justification": "Metric",
             "refs": [
               4
             ]
@@ -3107,7 +2708,7 @@
             "id": 16,
             "depth": 0,
             "statement": "ad = af",
-            "justification": "CN1 — Transitivity",
+            "justification": "Metric",
             "refs": [
               13,
               15
@@ -3116,23 +2717,17 @@
           {
             "id": 17,
             "depth": 0,
-            "statement": "¬(d = f)",
-            "justification": "Generality 1",
+            "statement": "df = de, df = fe, ¬(e = d), ¬(e = f)",
+            "justification": "Prop.I.1",
             "refs": [
-              4,
-              5,
-              6,
-              7,
-              8,
-              12,
-              14
+              16
             ]
           },
           {
             "id": 18,
             "depth": 0,
-            "statement": "df = de, df = fe, ¬(e = d), ¬(e = f)",
-            "justification": "Prop.I.1",
+            "statement": "de = fe",
+            "justification": "Metric",
             "refs": [
               17
             ]
@@ -3140,58 +2735,19 @@
           {
             "id": 19,
             "depth": 0,
-            "statement": "de = fe",
-            "justification": "CN1 — Transitivity",
-            "refs": [
-              18
-            ]
+            "statement": "ae = ae",
+            "justification": "Metric",
+            "refs": []
           },
           {
             "id": 20,
             "depth": 0,
-            "statement": "ae = ae",
-            "justification": "CN4 — Reflexivity",
-            "refs": []
-          },
-          {
-            "id": 21,
-            "depth": 0,
             "statement": "∠dae = ∠fae, ∠ade = ∠afe, ∠aed = ∠aef, △ade = △afe",
-            "justification": "SSS Superposition",
+            "justification": "SSS",
             "refs": [
               16,
-              19,
-              20
-            ]
-          },
-          {
-            "id": 22,
-            "depth": 0,
-            "statement": "∠bae = ∠cae",
-            "justification": "Angle transfer 9",
-            "refs": [
-              4,
-              5,
-              6,
-              7,
-              14,
-              12,
-              21
-            ]
-          },
-          {
-            "id": 23,
-            "depth": 0,
-            "statement": "same-side(e, c, M), same-side(e, b, N)",
-            "justification": "Same-side 4",
-            "refs": [
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              21
+              18,
+              19
             ]
           }
         ]
@@ -3282,137 +2838,9 @@
             "id": 5,
             "depth": 0,
             "statement": "ac = bc",
-            "justification": "CN1 — Transitivity",
+            "justification": "Metric",
             "refs": [
               4
-            ]
-          },
-          {
-            "id": 6,
-            "depth": 0,
-            "statement": "¬(c = a)",
-            "justification": "M1 — Zero segment",
-            "refs": [
-              4
-            ]
-          },
-          {
-            "id": 7,
-            "depth": 0,
-            "statement": "¬(c = b)",
-            "justification": "M1 — Zero segment",
-            "refs": [
-              4
-            ]
-          },
-          {
-            "id": 8,
-            "depth": 0,
-            "statement": "on(c, M), on(a, M)",
-            "justification": "let-line",
-            "refs": [
-              6
-            ]
-          },
-          {
-            "id": 9,
-            "depth": 0,
-            "statement": "on(c, N), on(b, N)",
-            "justification": "let-line",
-            "refs": [
-              7
-            ]
-          },
-          {
-            "id": 10,
-            "depth": 0,
-            "statement": "∠ace = ∠bce, same-side(e, b, M), same-side(e, a, N)",
-            "justification": "Prop.I.9",
-            "refs": [
-              6,
-              7,
-              4,
-              8,
-              9
-            ]
-          },
-          {
-            "id": 11,
-            "depth": 0,
-            "statement": "¬(c = e)",
-            "justification": "M1 — Zero segment",
-            "refs": [
-              10
-            ]
-          },
-          {
-            "id": 12,
-            "depth": 0,
-            "statement": "on(c, P), on(e, P)",
-            "justification": "let-line",
-            "refs": [
-              11
-            ]
-          },
-          {
-            "id": 13,
-            "depth": 0,
-            "statement": "intersects(L, P)",
-            "justification": "Pasch 1",
-            "refs": [
-              1,
-              2,
-              8,
-              9,
-              12,
-              10
-            ]
-          },
-          {
-            "id": 14,
-            "depth": 0,
-            "statement": "on(d, L), on(d, P)",
-            "justification": "let-intersection-line-line",
-            "refs": [
-              13
-            ]
-          },
-          {
-            "id": 15,
-            "depth": 0,
-            "statement": "cd = cd",
-            "justification": "CN4 — Reflexivity",
-            "refs": []
-          },
-          {
-            "id": 16,
-            "depth": 0,
-            "statement": "ad = bd, ∠acd = ∠bcd, ∠adc = ∠bdc, △acd = △bcd",
-            "justification": "SAS Superposition",
-            "refs": [
-              5,
-              10,
-              15
-            ]
-          },
-          {
-            "id": 17,
-            "depth": 0,
-            "statement": "between(a, d, b)",
-            "justification": "Betweenness 9",
-            "refs": [
-              1,
-              2,
-              14
-            ]
-          },
-          {
-            "id": 18,
-            "depth": 0,
-            "statement": "ad = db",
-            "justification": "M3 — Symmetry",
-            "refs": [
-              16
             ]
           }
         ]
@@ -3621,18 +3049,6 @@
             "statement": "¬(on(p, L))",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 5,
-            "depth": 0,
-            "statement": "on(h, L), ∠ahp = right-angle, ¬(h = p)",
-            "justification": "Indirect[Prop.I.8,Prop.I.10]",
-            "refs": [
-              1,
-              2,
-              3,
-              4
-            ]
           }
         ]
       }
@@ -3850,23 +3266,6 @@
             "statement": "∠abc + ∠abd = right-angle + right-angle",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 10,
-            "depth": 0,
-            "statement": "between(c, b, d)",
-            "justification": "Indirect[Prop.I.13]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9
-            ]
           }
         ]
       }
@@ -4246,20 +3645,6 @@
             "statement": "¬(on(c, L))",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 7,
-            "depth": 0,
-            "statement": "∠abc + ∠bca < right-angle + right-angle",
-            "justification": "Indirect[Prop.I.13,Prop.I.16]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6
-            ]
           }
         ]
       }
@@ -4328,18 +3713,6 @@
             "statement": "ab < ac",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 5,
-            "depth": 0,
-            "statement": "∠acb < ∠abc",
-            "justification": "Indirect[Prop.I.3,Prop.I.5,Prop.I.16]",
-            "refs": [
-              1,
-              2,
-              3,
-              4
-            ]
           }
         ]
       }
@@ -4408,18 +3781,6 @@
             "statement": "∠abc < ∠acb",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 5,
-            "depth": 0,
-            "statement": "ac < ab",
-            "justification": "Indirect[Prop.I.5,Prop.I.18]",
-            "refs": [
-              1,
-              2,
-              3,
-              4
-            ]
           }
         ]
       }
@@ -4479,17 +3840,6 @@
             "statement": "¬(b = c)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 4,
-            "depth": 0,
-            "statement": "bc < ab + ac",
-            "justification": "Indirect[Prop.I.3,Prop.I.5,Prop.I.19]",
-            "refs": [
-              1,
-              2,
-              3
-            ]
           }
         ]
       }
@@ -4606,23 +3956,6 @@
             "statement": "same-side(d, a, L)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 10,
-            "depth": 0,
-            "statement": "bd + dc < ba + ac, ∠bac < ∠bdc",
-            "justification": "Indirect[Prop.I.16,Prop.I.20]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9
-            ]
           }
         ]
       }
@@ -4745,20 +4078,6 @@
             "statement": "ef < ab + cd",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 7,
-            "depth": 0,
-            "statement": "pq = ab, pr = cd, qr = ef",
-            "justification": "Indirect[Prop.I.1,Prop.I.3]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6
-            ]
           }
         ]
       }
@@ -4862,20 +4181,6 @@
             "statement": "¬(a = b)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 7,
-            "depth": 0,
-            "statement": "∠bag = ∠edf, ¬(on(g, L))",
-            "justification": "Indirect[Prop.I.8,Prop.I.22]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6
-            ]
           }
         ]
       }
@@ -4993,23 +4298,6 @@
             "statement": "¬(e = f)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 10,
-            "depth": 0,
-            "statement": "ef < bc",
-            "justification": "Indirect[Prop.I.4,Prop.I.5,Prop.I.19,Prop.I.23]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9
-            ]
           }
         ]
       }
@@ -5126,23 +4414,6 @@
             "statement": "¬(e = f)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 10,
-            "depth": 0,
-            "statement": "∠edf < ∠bac",
-            "justification": "Indirect[Prop.I.4,Prop.I.24]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9
-            ]
           }
         ]
       }
@@ -5267,23 +4538,6 @@
             "statement": "¬(e = f)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 10,
-            "depth": 0,
-            "statement": "ab = de, ac = df, ∠bac = ∠edf, △abc = △def",
-            "justification": "Indirect[Prop.I.3,Prop.I.4,Prop.I.16]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9
-            ]
           }
         ]
       }
@@ -5435,26 +4689,6 @@
             "statement": "∠abc = ∠bcd",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 13,
-            "depth": 0,
-            "statement": "¬(intersects(L, N))",
-            "justification": "Indirect[Prop.I.16]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10,
-              11,
-              12
-            ]
           }
         ]
       }
@@ -5606,26 +4840,6 @@
             "statement": "∠abc + ∠bcd = right-angle + right-angle",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 13,
-            "depth": 0,
-            "statement": "¬(intersects(L, N))",
-            "justification": "Indirect[Prop.I.15,Prop.I.27]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10,
-              11,
-              12
-            ]
           }
         ]
       }
@@ -5778,26 +4992,6 @@
             "statement": "¬(intersects(L, N))",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 13,
-            "depth": 0,
-            "statement": "∠abc = ∠bcd",
-            "justification": "Indirect[Prop.I.27]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10,
-              11,
-              12
-            ]
           }
         ]
       }
@@ -5881,19 +5075,6 @@
             "statement": "¬(L = N)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 6,
-            "depth": 0,
-            "statement": "¬(intersects(L, N))",
-            "justification": "Indirect[Prop.I.27,Prop.I.29]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5
-            ]
           }
         ]
       }
@@ -5979,18 +5160,6 @@
             "statement": "¬(on(a, L))",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 5,
-            "depth": 0,
-            "statement": "on(a, M), ¬(intersects(L, M))",
-            "justification": "Indirect[Prop.I.23,Prop.I.27]",
-            "refs": [
-              1,
-              2,
-              3,
-              4
-            ]
           }
         ]
       }
@@ -6098,22 +5267,6 @@
             "statement": "¬(c = d)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 9,
-            "depth": 0,
-            "statement": "∠acd = ∠cab + ∠abc, ∠abc + (∠bca + ∠cab) = right-angle + right-angle",
-            "justification": "Indirect[Prop.I.13,Prop.I.29,Prop.I.31]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8
-            ]
           }
         ]
       }
@@ -6274,27 +5427,6 @@
             "statement": "¬(L = N)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 14,
-            "depth": 0,
-            "statement": "ac = bd, ¬(intersects(M, P))",
-            "justification": "Indirect[Prop.I.4,Prop.I.27,Prop.I.29]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10,
-              11,
-              12,
-              13
-            ]
           }
         ]
       }
@@ -6473,28 +5605,6 @@
             "statement": "¬(b = c)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 15,
-            "depth": 0,
-            "statement": "ab = cd, ad = bc, ∠dab = ∠bcd, ∠abc = ∠cda, △abc = △acd",
-            "justification": "Indirect[Prop.I.4,Prop.I.26,Prop.I.29]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10,
-              11,
-              12,
-              13,
-              14
-            ]
           }
         ]
       }
@@ -6624,24 +5734,6 @@
             "statement": "¬(e = f)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 11,
-            "depth": 0,
-            "statement": "△abc + △acd = △ebc + △ecf",
-            "justification": "Indirect[Prop.I.29,Prop.I.34]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10
-            ]
           }
         ]
       }
@@ -6772,24 +5864,6 @@
             "statement": "¬(e = f)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 11,
-            "depth": 0,
-            "statement": "△abc + △acd = △def + △dfa",
-            "justification": "Indirect[Prop.I.33,Prop.I.34,Prop.I.35]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10
-            ]
           }
         ]
       }
@@ -6910,23 +5984,6 @@
             "statement": "¬(on(d, N))",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 10,
-            "depth": 0,
-            "statement": "△abc = △dbc",
-            "justification": "Indirect[Prop.I.31,Prop.I.34,Prop.I.35]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9
-            ]
           }
         ]
       }
@@ -7077,26 +6134,6 @@
             "statement": "¬(on(d, N))",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 13,
-            "depth": 0,
-            "statement": "△abc = △def",
-            "justification": "Indirect[Prop.I.31,Prop.I.34,Prop.I.36]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10,
-              11,
-              12
-            ]
           }
         ]
       }
@@ -7215,23 +6252,6 @@
             "statement": "on(d, L)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 10,
-            "depth": 0,
-            "statement": "¬(intersects(L, N))",
-            "justification": "Indirect[Prop.I.31,Prop.I.37]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9
-            ]
           }
         ]
       }
@@ -7390,27 +6410,6 @@
             "statement": "on(d, L)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 14,
-            "depth": 0,
-            "statement": "¬(intersects(L, N))",
-            "justification": "Indirect[Prop.I.38,Prop.I.39]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10,
-              11,
-              12,
-              13
-            ]
           }
         ]
       }
@@ -7531,23 +6530,6 @@
             "statement": "¬(on(e, N))",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 10,
-            "depth": 0,
-            "statement": "△abc + △acd = △ebc + △ebc",
-            "justification": "Indirect[Prop.I.34,Prop.I.37]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9
-            ]
           }
         ]
       }
@@ -7635,18 +6617,6 @@
             "statement": "¬(∠def = 0)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 5,
-            "depth": 0,
-            "statement": "△abc = △ghb + △gbc",
-            "justification": "Indirect[Prop.I.10,Prop.I.23,Prop.I.31,Prop.I.41]",
-            "refs": [
-              1,
-              2,
-              3,
-              4
-            ]
           }
         ]
       }
@@ -7805,27 +6775,6 @@
             "statement": "¬(c = d)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 14,
-            "depth": 0,
-            "statement": "△akb = △kcd",
-            "justification": "Indirect[Prop.I.34]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10,
-              11,
-              12,
-              13
-            ]
           }
         ]
       }
@@ -7935,20 +6884,6 @@
             "statement": "¬(d = e)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 7,
-            "depth": 0,
-            "statement": "on(f, L)",
-            "justification": "Indirect[Prop.I.29,Prop.I.31,Prop.I.42,Prop.I.43]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6
-            ]
           }
         ]
       }
@@ -8053,19 +6988,6 @@
             "statement": "¬(∠efg = 0)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 6,
-            "depth": 0,
-            "statement": "△abc + △acd = △hkm + △hmb",
-            "justification": "Indirect[Prop.I.42,Prop.I.44]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5
-            ]
           }
         ]
       }
@@ -8156,17 +7078,6 @@
             "statement": "¬(a = b)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 4,
-            "depth": 0,
-            "statement": "ab = bc, bc = cd, cd = da, ∠dab = right-angle, ∠abc = right-angle, ∠bcd = right-angle, ∠cda = right-angle",
-            "justification": "Indirect[Prop.I.11,Prop.I.3,Prop.I.31,Prop.I.29,Prop.I.34]",
-            "refs": [
-              1,
-              2,
-              3
-            ]
           }
         ]
       }
@@ -8274,18 +7185,6 @@
             "statement": "∠bac = right-angle",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 5,
-            "depth": 0,
-            "statement": "bc = cd, cd = de, de = eb, ∠cbe = right-angle, ab = bf, bf = fg, fg = ga, ∠abf = right-angle, ac = ch, ch = hk, hk = ka, ∠cak = right-angle, △bdc + △dec = (△abf + △afg) + (△ach + △ahk)",
-            "justification": "Indirect[Prop.I.4,Prop.I.14,Prop.I.41,Prop.I.46]",
-            "refs": [
-              1,
-              2,
-              3,
-              4
-            ]
           }
         ]
       }
@@ -8444,28 +7343,6 @@
             "statement": "△bdc + △dec = (△abf + △afg) + (△ach + △ahk)",
             "justification": "Given",
             "refs": []
-          },
-          {
-            "id": 15,
-            "depth": 0,
-            "statement": "∠bac = right-angle",
-            "justification": "Indirect[Prop.I.8,Prop.I.11,Prop.I.47]",
-            "refs": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10,
-              11,
-              12,
-              13,
-              14
-            ]
           }
         ]
       }

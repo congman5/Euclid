@@ -752,30 +752,6 @@ class TestClassifyJustification:
         assert _classify_justification("") is None
 
 
-class TestDetectSystem:
-    """L1: _detect_system identifies E/T/H from statement syntax."""
-
-    def test_e_statement(self):
-        from verifier.unified_checker import _detect_system
-        assert _detect_system("on(a, L)") == "E"
-        assert _detect_system("between(a, b, c)") == "E"
-
-    def test_t_statement(self):
-        from verifier.unified_checker import _detect_system
-        assert _detect_system("B(a, b, c)") == "T"
-        assert _detect_system("Cong(a, b, c, d)") == "T"
-
-    def test_h_statement(self):
-        from verifier.unified_checker import _detect_system
-        assert _detect_system("IncidL(a, L)") == "H"
-        assert _detect_system("BetH(a, b, c)") == "H"
-
-    def test_fallback_to_e(self):
-        from verifier.unified_checker import _detect_system
-        assert _detect_system("ab = cd") == "E"
-        assert _detect_system("") == "E"
-
-
 class TestMatchTheoremVarMap:
     """L1: _match_theorem_var_map derives correct variable substitution."""
 

@@ -358,7 +358,7 @@ class TestDiagrammaticAxioms:
 
     def test_generality_axiom_count(self):
         from verifier.e_axioms import GENERALITY_AXIOMS
-        assert len(GENERALITY_AXIOMS) == 7
+        assert len(GENERALITY_AXIOMS) == 6
 
     def test_between_axiom_count(self):
         from verifier.e_axioms import BETWEEN_AXIOMS
@@ -955,8 +955,8 @@ class TestNewAxiomCounts:
 
     def test_all_transfer_axioms_increased(self):
         from verifier.e_axioms import ALL_TRANSFER_AXIOMS
-        # DS: 6, DA: 11, DAr: 3, inside/outside: 2 = 22
-        assert len(ALL_TRANSFER_AXIOMS) == 22
+        # DS: 6, DA: 11, DAr: 4 (incl. DAr1c contrapositive) = 23
+        assert len(ALL_TRANSFER_AXIOMS) == 23
 
     def test_da5_parallel_postulate_present(self):
         """DA5 clauses should contain Intersects and angle sum."""

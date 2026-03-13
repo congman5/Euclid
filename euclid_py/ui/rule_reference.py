@@ -27,6 +27,7 @@ _SECTION_ORDER = [
     ("metric", "Metric Axioms", "§3.5"),
     ("transfer", "Transfer Axioms", "§3.6"),
     ("superposition", "Superposition", "§3.7"),
+    ("structural", "Structural Rules", "§3.2"),
     ("proposition", "Propositions", "Book I"),
 ]
 
@@ -36,6 +37,7 @@ _BADGE_COLORS = {
     "metric": "#1565c0",
     "transfer": "#6a1b9a",
     "superposition": "#e65100",
+    "structural": "#546e7a",
     "proposition": "#6b4c8a",
     "lemma": "#8b5e3c",
 }

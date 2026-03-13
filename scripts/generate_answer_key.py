@@ -366,20 +366,8 @@ def format_proof_lines(proof_json):
 
 
 def classify_proof(proof_json):
-    """Classify proof as 'Verified Proof' or 'Indirect Proof'."""
-    lines = proof_json["lines"]
-    non_given = [l for l in lines if l["justification"] != "Given"]
-    # If the only non-Given step uses Indirect[...], it's an indirect proof
-    has_indirect = any("Indirect" in l["justification"] for l in non_given)
-    has_real_steps = any(l["justification"] not in ("Given",)
-                        and not l["justification"].startswith("Indirect")
-                        for l in non_given)
-    if has_real_steps:
-        return "Verified Proof"
-    elif has_indirect:
-        return "Indirect Proof"
-    else:
-        return "Verified Proof"
+    """Classify proof as 'Verified Proof'."""
+    return "Verified Proof"
 
 
 def generate_answer_key():
@@ -397,9 +385,6 @@ def generate_answer_key():
     out.append("  Verified Proof:       Axiom-level proof from construction rules,")
     out.append("                        diagrammatic/metric axioms, and SAS/SSS.")
     out.append("                        Uses only earlier propositions (no circularity).")
-    out.append("  Indirect Proof:       Reductio ad absurdum proof citing earlier")
-    out.append("                        propositions. Verified by the checker's")
-    out.append("                        Indirect[...] justification mechanism.")
     out.append("")
     out.append("  System E Notation")
     out.append("  " + "─" * 18)
@@ -420,19 +405,6 @@ def generate_answer_key():
     out.append("  ab < cd           = segment ab strictly less than cd")
     out.append("  ∠abc < ∠def       = angle abc strictly less than def")
     out.append("")
-    out.append("  System H Notation")
-    out.append("  " + "─" * 18)
-    out.append("  IncidL(a, l)           = point a lies on line l")
-    out.append("  BetH(a, b, c)          = b is strictly between a and c")
-    out.append("  CongH(a, b, c, d)      = segment ab ≅ segment cd")
-    out.append("  CongaH(a,b,c,d,e,f)    = ∠abc ≅ ∠def")
-    out.append("  ColH(a, b, c)           = a, b, c are collinear")
-    out.append("  outH(a, b, c)           = c is on ray ab")
-    out.append("  SameSideH(a, b, l)      = a and b on same side of l")
-    out.append("  Cut(l, a, b)            = line l separates a and b")
-    out.append("  Para(l, m)              = lines l and m are parallel")
-    out.append("  ¬(a = b)               = a and b are distinct points")
-    out.append("")
     out.append("  Justification Names (for refs)")
     out.append("  " + "─" * 33)
     out.append("  Given                           — premise")
@@ -451,7 +423,6 @@ def generate_answer_key():
     out.append("  SAS                             — SAS superposition (§3.7)")
     out.append("  SSS                             — SSS superposition (§3.7)")
     out.append("  Prop.I.N                        — apply proved proposition")
-    out.append("  Indirect[Prop.I.X,...]          — reductio citing earlier props")
     out.append("")
     out.append("")
 

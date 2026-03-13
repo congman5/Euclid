@@ -238,6 +238,9 @@ PROP_I_6 = ETheorem(
             _neg(Equals("a", "b")),
             _neg(Equals("a", "c")),
             _neg(Equals("b", "c")),
+            _pos(On("a", "L")),
+            _pos(On("b", "L")),
+            _neg(On("c", "L")),
         ],
         exists_vars=[],
         conclusions=[
@@ -299,8 +302,8 @@ PROP_I_9 = ETheorem(
             _pos(On("b", "M")),
             _pos(On("a", "N")),
             _pos(On("c", "N")),
-            _pos(SameSide("c", "b", "M")),
-            _pos(SameSide("b", "c", "N")),
+            _neg(On("c", "M")),
+            _neg(On("b", "N")),
         ],
         exists_vars=[("e", Sort.POINT)],
         conclusions=[

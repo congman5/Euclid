@@ -8,8 +8,6 @@
   Verified Proof:       Axiom-level proof from construction rules,
                         diagrammatic/metric axioms, and SAS/SSS.
                         Uses only earlier propositions (no circularity).
-                        Indirect arguments use Assume/Reductio subproofs
-                        with specific axiom names at each step.
 
   System E Notation
   ──────────────────
@@ -30,19 +28,6 @@
   ab < cd           = segment ab strictly less than cd
   ∠abc < ∠def       = angle abc strictly less than def
 
-  System H Notation
-  ──────────────────
-  IncidL(a, l)           = point a lies on line l
-  BetH(a, b, c)          = b is strictly between a and c
-  CongH(a, b, c, d)      = segment ab ≅ segment cd
-  CongaH(a,b,c,d,e,f)    = ∠abc ≅ ∠def
-  ColH(a, b, c)           = a, b, c are collinear
-  outH(a, b, c)           = c is on ray ab
-  SameSideH(a, b, l)      = a and b on same side of l
-  Cut(l, a, b)            = line l separates a and b
-  Para(l, m)              = lines l and m are parallel
-  ¬(a = b)               = a and b are distinct points
-
   Justification Names (for refs)
   ─────────────────────────────────
   Given                           — premise
@@ -51,41 +36,36 @@
   let-point-on-line               — introduce point on line (§3.3)
   let-point-on-circle             — introduce point on circle (§3.3)
   let-intersection-*              — intersection constructions (§3.3)
-  Generality N                    — named generality axiom (§3.4)
-  Betweenness N                   — named betweenness axiom (§3.4)
-  Same-side N                     — named same-side axiom (§3.4)
-  Pasch N                         — named Pasch axiom (§3.4)
-  Triple incidence N              — named triple incidence axiom (§3.4)
-  Circle N                        — named circle axiom (§3.4)
-  Intersection N                  — named intersection axiom (§3.4)
-  CN1 — Transitivity              — equals to same are equal (§3.5)
-  CN2 — Addition                  — equals added to equals (§3.5)
-  CN3 — Subtraction               — equals subtracted from equals (§3.5)
-  CN4 — Reflexivity               — things coincide are equal (§3.5)
-  CN5 — Whole > Part              — whole is greater than part (§3.5)
+  Diagrammatic                    — diagram axioms, full closure (§3.4)
+  Generality N                    — generality axiom N (§3.4)
+  Betweenness N                   — betweenness axiom N (§3.4)
+  Same-side N                     — same-side axiom N (§3.4)
+  Pasch N                         — Pasch axiom N (§3.4)
+  Triple incidence N              — triple incidence axiom N (§3.4)
+  Circle N                        — circle axiom N (§3.4)
+  Intersection N                  — intersection axiom N (§3.4)
+  CN1 — Transitivity              — a = b ∧ b = c → a = c (§3.5)
+  CN2 — Addition                  — a = b ∧ c = d → a+c = b+d (§3.5)
+  CN3 — Subtraction               — a+c = b+c → a = b (§3.5)
+  CN4 — Reflexivity               — a = a (§3.5)
+  CN5 — Whole > Part              — 0 < b → a < a+b (§3.5)
   M1 — Zero segment               — ab = 0 ↔ a = b (§3.5)
-  M2 — Non-negative               — ab ≥ 0 (§3.5)
   M3 — Symmetry                   — ab = ba (§3.5)
   M4 — Angle symmetry             — ∠abc = ∠cba (§3.5)
-  M5 — Angle bounds               — 0 ≤ ∠abc ≤ 2·right-angle (§3.5)
-  M6 — Degenerate area            — △aab = 0 (§3.5)
-  M7 — Non-negative area          — △abc ≥ 0 (§3.5)
   M8 — Area symmetry              — △abc = △cab = △acb (§3.5)
-  M9 — Congruence → area          — full congruence → equal areas (§3.5)
-  < trichotomy                    — exactly one of a<b, a=b, b<a (§3.5)
-  < transitivity                  — a<b ∧ b<c → a<c (§3.5)
-  + monotonicity                  — a<b → a+c < b+c (§3.5)
-  Segment transfer N              — named segment transfer axiom (§3.6)
-  Angle transfer N                — named angle transfer axiom (§3.6)
-  Area transfer N                 — named area transfer axiom (§3.6)
-  SAS Superposition               — side-angle-side superposition (§3.7)
-  SSS Superposition               — side-side-side superposition (§3.7)
-  Assume                          — assume for reductio subproof
-  Contradiction                   — ⊥-intro: derive ⊥ from ψ and ¬ψ
-  ⊥-elim                          — discharge assumption by ⊥ (Fitch)
-  Reductio                        — conclude reductio (classic, scans known)
-  Reit                            — reiteration of earlier fact
+  < trichotomy                    — exactly one: a<b, a=b, b<a (§3.5)
+  Segment transfer N              — segment transfer axiom N (§3.6)
+  Angle transfer N                — angle transfer axiom N (§3.6)
+  Area transfer N                 — area transfer axiom N (§3.6)
+  SAS                             — SAS superposition (§3.7)
+  SSS                             — SSS superposition (§3.7)
   Prop.I.N                        — apply proved proposition
+  Reit                            — reiterate known fact
+  Assume                          — assume for subproof
+  Contradiction / ⊥-intro         — derive ⊥ from ψ ∧ ¬ψ
+  ⊥-elim                          — discharge assumption via ⊥
+  Reductio                        — conclude ¬φ from assumed φ → ⊥
+  Cases                           — case split elimination
 
 
 ================================================================================
@@ -106,7 +86,7 @@
 
   Dependencies: (none)
 
-  Verified Proof (13 steps) [✓]:
+  Verified Proof (14 steps) [✓]:
   ──────────────────────────────
    1. [Given]  [refs: ]
        → ¬(a = b)
@@ -126,13 +106,15 @@
        → ac = ab
    9. [Segment transfer 4]  [refs: 3, 7]
        → bc = ba
-  10. [M3 — Symmetry]  [refs: 8]
-       → ab = ac
-  11. [CN1 — Transitivity]  [refs: 9, 8]
+  10. [M3 — Symmetry]  [refs: ]
+       → ab = ba
+  11. [CN1 — Transitivity]  [refs: 8, 10]
        → ab = bc
-  12. [M1 — Zero segment]  [refs: 8]
+  12. [CN1 — Transitivity]  [refs: 8, 10]
+       → ab = ac
+  13. [CN1 — Transitivity]  [refs: ]
        → ¬(c = a)
-  13. [M1 — Zero segment]  [refs: 9]
+  14. [CN1 — Transitivity]  [refs: ]
        → ¬(c = b)
 
   Q.E.D. ■
@@ -188,7 +170,7 @@
        → on(d, N), on(a, N)
   15. [CN1 — Transitivity]  [refs: 6]
        → da = db
-  16. [Circle 3]  [refs: 10, 13]
+  16. [Circle 1]  [refs: 10, 13]
        → inside(b, δ)
   17. [Segment transfer 6]  [refs: 13, 16]
        → db < dg
@@ -230,7 +212,7 @@
 
   Dependencies: I.2
 
-  Verified Proof (13 steps) [✓]:
+  Verified Proof (17 steps) [✓]:
   ──────────────────────────────
    1. [Given]  [refs: ]
        → on(a, L)
@@ -240,23 +222,31 @@
        → ¬(a = b)
    4. [Given]  [refs: ]
        → cd < ab
-   5. [Prop.I.2]  [refs: 1, 2, 3, 4]
+   5. [Given]  [refs: ]
+       → ¬(c = d)
+   6. [Given]  [refs: ]
+       → ¬(a = c)
+   7. [Given]  [refs: ]
+       → ¬(a = d)
+   8. [let-line]  [refs: 5]
+       → on(c, M), on(d, M)
+   9. [Prop.I.2]  [refs: 8, 5, 6, 7]
        → af = cd
-   6. [M1 — Zero segment]  [refs: 1, 2, 3, 4, 5]
-       → ¬(a = f)
-   7. [let-circle]  [refs: 6]
-       → center(a, α), on(f, α)
-   8. [Generality 3]  [refs: 7]
-       → inside(a, α)
-   9. [CN1 — Transitivity]  [refs: 4, 5]
+  10. [CN1 — Transitivity]  [refs: 9, 4]
        → af < ab
-  10. [Segment transfer 6]  [refs: 7, 9]
+  11. [M1 — Zero segment]  [refs: 9, 5]
+       → ¬(a = f)
+  12. [let-circle]  [refs: 11]
+       → center(a, α), on(f, α)
+  13. [Generality 3]  [refs: 12]
+       → inside(a, α)
+  14. [Segment transfer 7]  [refs: 12, 10]
        → ¬(inside(b, α)), ¬(on(b, α))
-  11. [let-intersection-line-circle-between]  [refs: 8, 1, 10, 2]
+  15. [let-intersection-line-circle-between]  [refs: 13, 1, 14, 2]
        → on(e, α), on(e, L), between(a, e, b)
-  12. [Segment transfer 4]  [refs: 7, 11]
+  16. [Segment transfer 4]  [refs: 12, 15]
        → ae = af
-  13. [CN1 — Transitivity]  [refs: 12, 5]
+  17. [CN1 — Transitivity]  [refs: 16, 9]
        → ae = cd
 
   Q.E.D. ■
@@ -286,7 +276,7 @@
       → ac = df
   3. [Given]  [refs: ]
       → ∠bac = ∠edf
-  4. [SAS Superposition]  [refs: 1, 2, 3]
+  4. [SAS]  [refs: 1, 2, 3]
       → bc = ef, ∠abc = ∠def, ∠acb = ∠dfe, △abc = △def
   5. [M4 — Angle symmetry]  [refs: 4]
       → ∠bca = ∠efd
@@ -322,7 +312,7 @@
       → ¬(b = c)
   5. [M3 — Symmetry]  [refs: 1]
       → ac = ab
-  6. [M4 — Angle symmetry]  [refs: 2, 3]
+  6. [M4 — Angle symmetry]  [refs: 1]
       → ∠bac = ∠cab
   7. [Prop.I.4]  [refs: 1, 5, 6]
       → bc = cb, ∠abc = ∠acb, ∠bca = ∠cba, △abc = △acb
@@ -344,82 +334,50 @@
     Given:     ¬(ColH(a, b, c)), CongaH(a, b, c, a, c, b)
     Prove:     CongH(a, b, a, c)
 
-  Dependencies: I.4, I.3
+  Dependencies: I.3, I.4
 
-  Verified Proof (36 steps) [✓]:
+  Verified Proof (37 steps) [✓]:
   ──────────────────────────────
-   1. [Given]  [refs: ]
-       → ∠abc = ∠acb
-   2. [Given]  [refs: ]
-       → ¬(a = b)
-   3. [Given]  [refs: ]
-       → ¬(a = c)
-   4. [Given]  [refs: ]
-       → ¬(b = c)
-   5. [let-line]  [refs: 2]
-       → on(a, M), on(b, M)
-   6. [Assume]  [refs: ]                           depth=1
-       → ac < ab
-   7. [Prop.I.3]  [refs: 5, 6]                     depth=1
-       → between(a, d, b), ad = ac
-   8. [Betweenness 2]  [refs: 7]                    depth=1
-       → ¬(d = a)
-   9. [Betweenness 3]  [refs: 7]                    depth=1
-       → ¬(d = b)
-  10. [Betweenness 6]  [refs: 7, 5]                 depth=1
-       → on(d, M)
-  11. [let-line]  [refs: 4]                          depth=1
-       → on(b, N), on(c, N)
-  12. [Angle transfer 9]  [refs: 5, 10, 11]          depth=1
-       → ∠dbc = ∠abc
-  13. [CN1 — Transitivity]  [refs: 12, 1]            depth=1
-       → ∠dbc = ∠acb
-  14. [M3 — Symmetry]  [refs: ]                      depth=1
-       → bc = cb
-  15. [M3 — Symmetry]  [refs: 7]                     depth=1
-       → ad = ca
-  16. [SAS Superposition]  [refs: 15, 13, 14]        depth=1
-       → dc = ab, ∠bdc = ∠cab, ∠bcd = ∠cba, △dbc = △acb
-  17. [M8 — Area symmetry]  [refs: ]                 depth=1
-       → △acb = △abc
-  18. [CN1 — Transitivity]  [refs: 16, 17]           depth=1
-       → △dbc = △abc
-  19. [Area transfer 3]  [refs: 7, 5]                depth=1
-       → (△adc + △dcb) = △adb
-  20. [CN5 — Whole > Part]  [refs: 19]               depth=1
-       → △dbc < △abc
-  21. [Contradiction]  [refs: 18, 20]                depth=1
-       → ⊥
-  22. [⊥-elim]  [refs: 6]                           depth=0
-       → ¬(ac < ab)
-  23. [Assume]  [refs: ]                             depth=1
-       → ab < ac
-  24. [Prop.I.3]  [refs: 5, 23]                      depth=1
-       → between(a, d2, c), ad2 = ab
-  25. [let-line]  [refs: 3]                           depth=1
-       → on(c, P), on(a, P)
-  26. [Angle transfer 9]  [refs: 25, 24, 11]          depth=1
-       → ∠d2cb = ∠acb
-  27. [CN1 — Transitivity]  [refs: 26, 1]             depth=1
-       → ∠d2cb = ∠abc
-  28. [M3 — Symmetry]  [refs: ]                       depth=1
-       → cb = bc
-  29. [M3 — Symmetry]  [refs: 24]                     depth=1
-       → ad2 = ba
-  30. [SAS Superposition]  [refs: 29, 27, 28]         depth=1
-       → d2b = ac, ∠cd2b = ∠bac, ∠cbd2 = ∠abc, △d2cb = △abc
-  31. [CN5 — Whole > Part]  [refs: 24]                depth=1
-       → △d2cb < △acb
-  32. [M8 — Area symmetry]  [refs: ]                  depth=1
-       → △acb = △abc
-  33. [CN1 — Transitivity]  [refs: 30, 32]            depth=1
-       → △d2cb = △acb
-  34. [Contradiction]  [refs: 33, 31]                 depth=1
-       → ⊥
-  35. [⊥-elim]  [refs: 23]                           depth=0
-       → ¬(ab < ac)
-  36. [< trichotomy]  [refs: 22, 35]                  depth=0
-       → ab = ac
+   1. [Given]             → ∠abc = ∠acb
+   2. [Given]             → ¬(a = b)
+   3. [Given]             → ¬(a = c)
+   4. [Given]             → ¬(b = c)
+   5. [Given]             → on(a, L)
+   6. [Given]             → on(b, L)
+   7. [Given]             → ¬(on(c, L))
+  Case 1 — Reductio: assume ac < ab
+     8. [Assume]          → ac < ab
+     9. [Prop.I.3]        → between(b, d, a), bd = ac
+    10. [let-line]        → on(b, M), on(c, M)
+    11. [Angle transfer 9] → ∠dbc = ∠abc        (DA4)
+    12. [CN1 — Transitivity] → ∠dbc = ∠acb
+    13. [M3 — Symmetry]   → bc = cb
+    14. [SAS]             → dc = ab, ∠bdc = ∠cab, ∠bcd = ∠cba, △dbc = △acb
+    15. [M8 — Area symmetry] → △dbc = △abc
+    16. [Area transfer 4] → (△bdc + △cda) = △bca  (DAr2)
+    17. [Area transfer 1] → ¬(△dac = 0)           (DAr1a)
+    18. [CN5 — Whole > Part] → △bdc < △bca
+    19. [M8 — Area symmetry] → △dbc < △abc
+    20. [Contradiction]   → ⊥
+  21. [Reductio]          → ¬(ac < ab)
+  Case 2 — Reductio: assume ab < ac
+    22. [Assume]          → ab < ac
+    23. [let-line]        → on(c, N), on(a, N)
+    24. [Prop.I.3]        → between(c, e, a), ce = ab
+    25. [let-line]        → on(c, P), on(b, P)
+    26. [Angle transfer 9] → ∠ecb = ∠acb        (DA4)
+    27. [CN1 — Transitivity] → ∠ecb = ∠abc
+    28. [M3 — Symmetry]   → cb = bc
+    29. [SAS]             → eb = ac, ∠ceb = ∠bac, ∠cbe = ∠bca, △ecb = △abc
+    30. [M8 — Area symmetry] → △ecb = △bca
+    31. [Area transfer 4] → (△ceb + △bea) = △cba  (DAr2)
+    32. [Area transfer 1] → ¬(△aeb = 0)           (DAr1a)
+    33. [CN5 — Whole > Part] → △ceb < △cba
+    34. [M8 — Area symmetry] → △ecb < △bca
+    35. [Contradiction]   → ⊥
+  36. [Reductio]          → ¬(ab < ac)
+  Trichotomy:
+  37. [< trichotomy]      → ab = ac
 
   Q.E.D. ■
 
@@ -440,48 +398,42 @@
 
   Dependencies: I.5
 
-  Verified Proof (20 steps) [✓]:
+  Verified Proof (27 steps) [✓]:
   ──────────────────────────────
-   1. [Given]  [refs: ]
-       → on(b, L)
-   2. [Given]  [refs: ]
-       → on(c, L)
-   3. [Given]  [refs: ]
-       → ¬(b = c)
-   4. [Given]  [refs: ]
-       → same-side(a, d, L)
-   5. [Given]  [refs: ]
-       → bd = ba
-   6. [Given]  [refs: ]
-       → cd = ca
-   7. [Assume]  [refs: ]                              depth=1
-       → ¬(d = a)
-   8. [M3 — Symmetry]  [refs: 5]                      depth=1
-       → ba = bd
-   9. [Prop.I.5]  [refs: 8, 7]                        depth=1
-       → ∠bda = ∠bad
-  10. [M3 — Symmetry]  [refs: 6]                       depth=1
-       → ca = cd
-  11. [Prop.I.5]  [refs: 10, 7]                        depth=1
-       → ∠cda = ∠cad
-  12. [let-line]  [refs: 7]                             depth=1
-       → on(b, M), on(d, M)
-  13. [let-line]  [refs: 7]                             depth=1
-       → on(c, N), on(d, N)
-  14. [Angle transfer 4]  [refs: 12, 13, 4]             depth=1
-       → ∠bdc = (∠bda + ∠adc)
-  15. [Angle transfer 4]  [refs: 12, 13, 4]             depth=1
-       → ∠bac = (∠bad + ∠dac)
-  16. [CN1 — Transitivity]  [refs: 14, 15, 9, 11]      depth=1
-       → ∠bdc = ∠bac
-  17. [SAS Superposition]  [refs: 5, 16, 6]             depth=1
-       → bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def
-  18. [CN5 — Whole > Part]  [refs: 14, 11]              depth=1
-       → ∠bdc < ∠bac
-  19. [Contradiction]  [refs: 16, 18]                   depth=1
-       → ⊥
-  20. [⊥-elim]  [refs: 7]                              depth=0
-       → d = a
+   1. [Given]             → on(b, L)
+   2. [Given]             → on(c, L)
+   3. [Given]             → ¬(b = c)
+   4. [Given]             → same-side(a, d, L)
+   5. [Given]             → bd = ba
+   6. [Given]             → cd = ca
+  Reductio: assume ¬(d = a)
+     7. [Assume]          → ¬(d = a)
+     8. [let-line]        → on(a, R), on(b, R)
+  Case 1 — on(d, R):
+       9. [Assume]        → on(d, R)
+  Case 1a — between(a, d, b):
+        10. [Assume]      → between(a, d, b)
+        11. [Segment transfer 1] → (ad + db) = ab  (DS1)
+        12. [CN3 — Subtraction]  → ad = 0
+        13. [M1 — Zero segment]  → d = a
+  Case 1b — ¬between(a, d, b):
+          14. [Assume]    → ¬(between(a, d, b))
+  Case 1b-i — between(b, a, d):
+            15. [Assume]  → between(b, a, d)
+            16. [Segment transfer 1] → (ba + ad) = bd  (DS1)
+            17. [CN3 — Subtraction]  → ad = 0
+            18. [M1 — Zero segment]  → d = a
+  Case 1b-ii — ¬between(b, a, d):
+              19. [Assume] → ¬(between(b, a, d))
+              20. [Betweenness 9] → d = a            (B6 trichotomy fully negated)
+          21. [Cases]     → d = a
+        22. [Cases]       → d = a
+  Case 2 — ¬on(d, R):
+          23. [Assume]    → ¬(on(d, R))
+          24. [Reit]      → d = a                    (from Case 1 conclusion)
+      25. [Cases]         → d = a
+      26. [Contradiction] → ⊥
+  27. [Reductio]          → d = a
 
   Q.E.D. ■
 
@@ -510,7 +462,7 @@
       → bc = ef
   3. [Given]  [refs: ]
       → ca = fd
-  4. [SSS Superposition]  [refs: 1, 2, 3]
+  4. [SSS]  [refs: 1, 2, 3]
       → ∠bac = ∠edf, ∠abc = ∠def, ∠acb = ∠dfe, △abc = △def
   5. [M4 — Angle symmetry]  [refs: 4]
       → ∠bca = ∠efd
@@ -525,7 +477,7 @@
   Statement: To bisect a given rectilineal angle.
 
   System E:
-    Given:     ¬(a = b), ¬(a = c), ¬(b = c), on(a, M), on(b, M), on(a, N), on(c, N), same-side(c, b, M), same-side(b, c, N)
+    Given:     ¬(a = b), ¬(a = c), ¬(b = c), on(a, M), on(b, M), on(a, N), on(c, N), ¬(on(c, M)), ¬(on(b, N))
     Construct: ∃e: POINT
     Prove:     ∠bae = ∠cae, same-side(e, c, M), same-side(e, b, N)
 
@@ -534,56 +486,37 @@
     Construct: ∃e: POINT
     Prove:     CongaH(b, a, e, c, a, e)
 
-  Dependencies: I.1, I.8
+  Dependencies: I.1, I.8 (SSS)
 
-  Verified Proof (23 steps) [✓]:
+  Verified Proof (27 steps) [✓]:
   ──────────────────────────────
-   1. [Given]  [refs: ]
-       → ¬(a = b)
-   2. [Given]  [refs: ]
-       → ¬(a = c)
-   3. [Given]  [refs: ]
-       → ¬(b = c)
-   4. [Given]  [refs: ]
-       → on(a, M)
-   5. [Given]  [refs: ]
-       → on(b, M)
-   6. [Given]  [refs: ]
-       → on(a, N)
-   7. [Given]  [refs: ]
-       → on(c, N)
-   8. [Given]  [refs: ]
-       → same-side(c, b, M)
-   9. [Given]  [refs: ]
-       → same-side(b, c, N)
-  10. [let-circle]  [refs: 1]
-       → center(a, α), on(b, α)
-  11. [Generality 3]  [refs: 10]
-       → inside(a, α)
-  12. [let-point-on-line]  [refs: 6]
-       → on(d, α), on(d, N)
-  13. [Segment transfer 4]  [refs: 10, 12]
-       → ad = ab
-  14. [let-point-on-line]  [refs: 4]
-       → on(f, α), on(f, M)
-  15. [Segment transfer 4]  [refs: 10, 14]
-       → af = ab
-  16. [CN1 — Transitivity]  [refs: 13, 15]
-       → ad = af
-  17. [Generality 1]  [refs: 4, 5, 6, 7, 8, 12, 14]
-       → ¬(d = f)
-  18. [Prop.I.1]  [refs: 17]
-       → df = de, df = fe, ¬(e = d), ¬(e = f)
-  19. [CN1 — Transitivity]  [refs: 18]
-       → de = fe
-  20. [CN4 — Reflexivity]  [refs: ]
-       → ae = ae
-  21. [SSS Superposition]  [refs: 16, 19, 20]
-       → ∠dae = ∠fae, ∠ade = ∠afe, ∠aed = ∠aef, △ade = △afe
-  22. [Angle transfer 9]  [refs: 4, 5, 6, 7, 14, 12, 21]
-       → ∠bae = ∠cae
-  23. [Same-side 4]  [refs: 4, 5, 6, 7, 8, 9, 21]
-       → same-side(e, c, M), same-side(e, b, N)
+   1. [Given]                      → ¬(a = b)
+   2. [Given]                      → ¬(a = c)
+   3. [Given]                      → ¬(b = c)
+   4. [Given]                      → on(a, M)
+   5. [Given]                      → on(b, M)
+   6. [Given]                      → on(a, N)
+   7. [Given]                      → on(c, N)
+   8. [Given]                      → ¬(on(c, M))
+   9. [Given]                      → ¬(on(b, N))
+  10. [let-circle]                 → center(a, α), on(b, α)
+  11. [Generality 3]               → inside(a, α)
+  12. [let-point-on-line-between]  → on(d, N), between(a, d, c), on(d, α)
+  13. [let-point-on-line-between]  → on(f, M), between(a, f, b), on(f, α)
+  14. [Segment transfer 4]        → ad = ab
+  15. [Segment transfer 4]        → af = ab
+  16. [CN1 — Transitivity]        → ad = af
+  17. [Prop.I.1]                   → df = de, df = fe, ¬(e = d), ¬(e = f)
+  18. [CN1 — Transitivity]        → de = fe
+  19. [CN4 — Reflexivity]         → ae = ae
+  20. [SSS]                        → ∠dae = ∠fae, ∠ade = ∠afe, ∠aed = ∠aef, △ade = △afe
+  21. [Diagrammatic]               → ¬(e = a)
+  22. [let-line]                   → on(a, K), on(e, K)
+  23. [Angle transfer 9]          → ∠dae = ∠cae          (DA4)
+  24. [Angle transfer 9]          → ∠fae = ∠bae          (DA4)
+  25. [CN1 — Transitivity]        → ∠bae = ∠cae
+  26. [Diagrammatic]               → same-side(e, c, M)
+  27. [Diagrammatic]               → same-side(e, b, N)
 
   Q.E.D. ■
 
@@ -604,46 +537,50 @@
     Construct: ∃d: POINT
     Prove:     BetH(a, d, b), CongH(a, d, d, b)
 
-  Dependencies: I.1, I.9, I.4
+  Dependencies: I.1 (inlined), I.9, I.4 (SAS)
 
-  Verified Proof (18 steps) [✓]:
+  Verified Proof (34 steps) [✓]:
   ──────────────────────────────
-   1. [Given]  [refs: ]
-       → on(a, L)
-   2. [Given]  [refs: ]
-       → on(b, L)
-   3. [Given]  [refs: ]
-       → ¬(a = b)
-   4. [Prop.I.1]  [refs: 3]
-       → ab = ac, ab = bc, ¬(c = a), ¬(c = b)
-   5. [CN1 — Transitivity]  [refs: 4]
-       → ac = bc
-   6. [M1 — Zero segment]  [refs: 4]
-       → ¬(c = a)
-   7. [M1 — Zero segment]  [refs: 4]
-       → ¬(c = b)
-   8. [let-line]  [refs: 6]
-       → on(c, M), on(a, M)
-   9. [let-line]  [refs: 7]
-       → on(c, N), on(b, N)
-  10. [Prop.I.9]  [refs: 6, 7, 4, 8, 9]
-       → ∠ace = ∠bce, same-side(e, b, M), same-side(e, a, N)
-  11. [M1 — Zero segment]  [refs: 10]
-       → ¬(c = e)
-  12. [let-line]  [refs: 11]
-       → on(c, P), on(e, P)
-  13. [Pasch 1]  [refs: 1, 2, 8, 9, 12, 10]
-       → intersects(L, P)
-  14. [let-intersection-line-line]  [refs: 13]
-       → on(d, L), on(d, P)
-  15. [CN4 — Reflexivity]  [refs: ]
-       → cd = cd
-  16. [SAS Superposition]  [refs: 5, 10, 15]
-       → ad = bd, ∠acd = ∠bcd, ∠adc = ∠bdc, △acd = △bcd
-  17. [Betweenness 9]  [refs: 1, 2, 14]
-       → between(a, d, b)
-  18. [M3 — Symmetry]  [refs: 16]
-       → ad = db
+  Inline I.1 construction:
+   1. [Given]          → on(a, L)
+   2. [Given]          → on(b, L)
+   3. [Given]          → ¬(a = b)
+   4. [let-circle]     → center(a, α), on(b, α)
+   5. [let-circle]     → center(b, β), on(a, β)
+   6. [Generality 3]   → inside(a, α)
+   7. [Generality 3]   → inside(b, β)
+   8. [Intersection 9] → intersects(α, β)
+   9. [let-intersection-circle-circle-one] → on(c, α), on(c, β)
+  10. [Segment transfer 4] → ac = ab
+  11. [Segment transfer 4] → bc = ba
+  12. [M1 — Zero segment]  → ¬(c = a)
+  13. [M1 — Zero segment]  → ¬(c = b)
+  Reductio for ¬on(c, L):
+  14. [Assume]          → on(c, L)
+  15. [Circle 1]        → between(b, a, c)    (C1 on α)
+  16. [Circle 1]        → between(a, b, c)    (C1 on β)
+  17. [Betweenness 4]   → ¬(between(b, a, c)) (B4)
+  18. [⊥-intro]         → ⊥
+  19. [⊥-elim]          → ¬(on(c, L))
+  Angle bisection and SAS:
+  20. [CN1 — Transitivity] → ac = bc
+  21. [let-line]        → on(c, M), on(a, M)
+  22. [let-line]        → on(c, N), on(b, N)
+  23. [Generality 1]    → ¬(on(b, M))
+  24. [Generality 1]    → ¬(on(a, N))
+  25. [Prop.I.9]        → ∠ace = ∠bce, same-side(e, b, M), same-side(e, a, N)
+  26. [Diagrammatic]    → ¬(e = c)
+  27. [let-line]        → on(c, K), on(e, K)
+  28. [Diagrammatic]    → ¬(same-side(a, b, K))
+  29. [Diagrammatic]    → intersects(K, L)
+  30. [let-intersection-line-line] → on(d, K), on(d, L)
+  31. [Angle transfer 9] → ∠ace = ∠acd    (DA4)
+  32. [Angle transfer 9] → ∠bce = ∠bcd    (DA4)
+  33. [CN1 — Transitivity] → ∠acd = ∠bcd
+  34. [CN4 — Reflexivity]  → cd = cd
+  35. [SAS]             → ad = bd, ∠cad = ∠cbd, ∠cda = ∠cdb, △acd = △bcd
+  36. [Diagrammatic]    → between(a, d, b)  (Pasch)
+  37. [M3 — Symmetry]   → ad = db
 
   Q.E.D. ■
 
@@ -706,7 +643,7 @@
 
   Dependencies: I.8, I.10
 
-  Indirect Proof (5 steps) [✓]:
+  Verified Proof (4 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → on(a, L)
@@ -716,8 +653,6 @@
       → ¬(a = b)
   4. [Given]  [refs: ]
       → ¬(on(p, L))
-  5. [Indirect[Prop.I.8,Prop.I.10]]  [refs: 1, 2, 3, 4]
-      → on(h, L), ∠ahp = right-angle, ¬(h = p)
 
   Q.E.D. ■
 
@@ -773,28 +708,26 @@
 
   Dependencies: I.13
 
-  Indirect Proof (10 steps) [✓]:
+  Verified Proof (9 steps) [✗]:
   ──────────────────────────────
-   1. [Given]  [refs: ]
-       → on(a, L)
-   2. [Given]  [refs: ]
-       → on(b, L)
-   3. [Given]  [refs: ]
-       → ¬(a = b)
-   4. [Given]  [refs: ]
-       → ¬(on(c, L))
-   5. [Given]  [refs: ]
-       → ¬(on(d, L))
-   6. [Given]  [refs: ]
-       → ¬(b = c)
-   7. [Given]  [refs: ]
-       → ¬(b = d)
-   8. [Given]  [refs: ]
-       → ¬(same-side(c, d, L))
-   9. [Given]  [refs: ]
-       → ∠abc + ∠abd = right-angle + right-angle
-  10. [Indirect[Prop.I.13]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9]
-       → between(c, b, d)
+  1. [Given]  [refs: ]
+      → on(a, L)
+  2. [Given]  [refs: ]
+      → on(b, L)
+  3. [Given]  [refs: ]
+      → ¬(a = b)
+  4. [Given]  [refs: ]
+      → ¬(on(c, L))
+  5. [Given]  [refs: ]
+      → ¬(on(d, L))
+  6. [Given]  [refs: ]
+      → ¬(b = c)
+  7. [Given]  [refs: ]
+      → ¬(b = d)
+  8. [Given]  [refs: ]
+      → ¬(same-side(c, d, L))
+  9. [Given]  [refs: ]
+      → ∠abc + ∠abd = right-angle + right-angle
 
   Q.E.D. ■
 
@@ -903,7 +836,7 @@
 
   Dependencies: I.13, I.16
 
-  Indirect Proof (7 steps) [✓]:
+  Verified Proof (6 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → ¬(a = b)
@@ -917,8 +850,6 @@
       → on(b, L)
   6. [Given]  [refs: ]
       → ¬(on(c, L))
-  7. [Indirect[Prop.I.13,Prop.I.16]]  [refs: 1, 2, 3, 4, 5, 6]
-      → ∠abc + ∠bca < right-angle + right-angle
 
   Q.E.D. ■
 
@@ -938,7 +869,7 @@
 
   Dependencies: I.3, I.5, I.16
 
-  Indirect Proof (5 steps) [✓]:
+  Verified Proof (4 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → ¬(a = b)
@@ -948,8 +879,6 @@
       → ¬(b = c)
   4. [Given]  [refs: ]
       → ab < ac
-  5. [Indirect[Prop.I.3,Prop.I.5,Prop.I.16]]  [refs: 1, 2, 3, 4]
-      → ∠acb < ∠abc
 
   Q.E.D. ■
 
@@ -969,7 +898,7 @@
 
   Dependencies: I.5, I.18
 
-  Indirect Proof (5 steps) [✓]:
+  Verified Proof (4 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → ¬(a = b)
@@ -979,8 +908,6 @@
       → ¬(b = c)
   4. [Given]  [refs: ]
       → ∠abc < ∠acb
-  5. [Indirect[Prop.I.5,Prop.I.18]]  [refs: 1, 2, 3, 4]
-      → ac < ab
 
   Q.E.D. ■
 
@@ -1000,7 +927,7 @@
 
   Dependencies: I.3, I.5, I.19
 
-  Indirect Proof (4 steps) [✓]:
+  Verified Proof (3 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → ¬(a = b)
@@ -1008,8 +935,6 @@
       → ¬(a = c)
   3. [Given]  [refs: ]
       → ¬(b = c)
-  4. [Indirect[Prop.I.3,Prop.I.5,Prop.I.19]]  [refs: 1, 2, 3]
-      → bc < ab + ac
 
   Q.E.D. ■
 
@@ -1029,28 +954,26 @@
 
   Dependencies: I.16, I.20
 
-  Indirect Proof (10 steps) [✓]:
+  Verified Proof (9 steps) [✗]:
   ──────────────────────────────
-   1. [Given]  [refs: ]
-       → ¬(a = b)
-   2. [Given]  [refs: ]
-       → ¬(a = c)
-   3. [Given]  [refs: ]
-       → ¬(b = c)
-   4. [Given]  [refs: ]
-       → ¬(d = b)
-   5. [Given]  [refs: ]
-       → ¬(d = c)
-   6. [Given]  [refs: ]
-       → on(b, L)
-   7. [Given]  [refs: ]
-       → on(c, L)
-   8. [Given]  [refs: ]
-       → ¬(on(a, L))
-   9. [Given]  [refs: ]
-       → same-side(d, a, L)
-  10. [Indirect[Prop.I.16,Prop.I.20]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9]
-       → bd + dc < ba + ac, ∠bac < ∠bdc
+  1. [Given]  [refs: ]
+      → ¬(a = b)
+  2. [Given]  [refs: ]
+      → ¬(a = c)
+  3. [Given]  [refs: ]
+      → ¬(b = c)
+  4. [Given]  [refs: ]
+      → ¬(d = b)
+  5. [Given]  [refs: ]
+      → ¬(d = c)
+  6. [Given]  [refs: ]
+      → on(b, L)
+  7. [Given]  [refs: ]
+      → on(c, L)
+  8. [Given]  [refs: ]
+      → ¬(on(a, L))
+  9. [Given]  [refs: ]
+      → same-side(d, a, L)
 
   Q.E.D. ■
 
@@ -1073,7 +996,7 @@
 
   Dependencies: I.1, I.3, I.20
 
-  Indirect Proof (7 steps) [✓]:
+  Verified Proof (6 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → ¬(a = b)
@@ -1087,8 +1010,6 @@
       → cd < ab + ef
   6. [Given]  [refs: ]
       → ef < ab + cd
-  7. [Indirect[Prop.I.1,Prop.I.3]]  [refs: 1, 2, 3, 4, 5, 6]
-      → pq = ab, pr = cd, qr = ef
 
   Q.E.D. ■
 
@@ -1111,7 +1032,7 @@
 
   Dependencies: I.8, I.22
 
-  Indirect Proof (7 steps) [✓]:
+  Verified Proof (6 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → ¬(d = e)
@@ -1125,8 +1046,6 @@
       → on(b, L)
   6. [Given]  [refs: ]
       → ¬(a = b)
-  7. [Indirect[Prop.I.8,Prop.I.22]]  [refs: 1, 2, 3, 4, 5, 6]
-      → ∠bag = ∠edf, ¬(on(g, L))
 
   Q.E.D. ■
 
@@ -1146,28 +1065,26 @@
 
   Dependencies: I.4, I.5, I.19, I.23
 
-  Indirect Proof (10 steps) [✓]:
+  Verified Proof (9 steps) [✗]:
   ──────────────────────────────
-   1. [Given]  [refs: ]
-       → ab = de
-   2. [Given]  [refs: ]
-       → ac = df
-   3. [Given]  [refs: ]
-       → ∠edf < ∠bac
-   4. [Given]  [refs: ]
-       → ¬(a = b)
-   5. [Given]  [refs: ]
-       → ¬(a = c)
-   6. [Given]  [refs: ]
-       → ¬(b = c)
-   7. [Given]  [refs: ]
-       → ¬(d = e)
-   8. [Given]  [refs: ]
-       → ¬(d = f)
-   9. [Given]  [refs: ]
-       → ¬(e = f)
-  10. [Indirect[Prop.I.4,Prop.I.5,Prop.I.19,Prop.I.23]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9]
-       → ef < bc
+  1. [Given]  [refs: ]
+      → ab = de
+  2. [Given]  [refs: ]
+      → ac = df
+  3. [Given]  [refs: ]
+      → ∠edf < ∠bac
+  4. [Given]  [refs: ]
+      → ¬(a = b)
+  5. [Given]  [refs: ]
+      → ¬(a = c)
+  6. [Given]  [refs: ]
+      → ¬(b = c)
+  7. [Given]  [refs: ]
+      → ¬(d = e)
+  8. [Given]  [refs: ]
+      → ¬(d = f)
+  9. [Given]  [refs: ]
+      → ¬(e = f)
 
   Q.E.D. ■
 
@@ -1187,28 +1104,26 @@
 
   Dependencies: I.4, I.24
 
-  Indirect Proof (10 steps) [✓]:
+  Verified Proof (9 steps) [✗]:
   ──────────────────────────────
-   1. [Given]  [refs: ]
-       → ab = de
-   2. [Given]  [refs: ]
-       → ac = df
-   3. [Given]  [refs: ]
-       → ef < bc
-   4. [Given]  [refs: ]
-       → ¬(a = b)
-   5. [Given]  [refs: ]
-       → ¬(a = c)
-   6. [Given]  [refs: ]
-       → ¬(b = c)
-   7. [Given]  [refs: ]
-       → ¬(d = e)
-   8. [Given]  [refs: ]
-       → ¬(d = f)
-   9. [Given]  [refs: ]
-       → ¬(e = f)
-  10. [Indirect[Prop.I.4,Prop.I.24]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9]
-       → ∠edf < ∠bac
+  1. [Given]  [refs: ]
+      → ab = de
+  2. [Given]  [refs: ]
+      → ac = df
+  3. [Given]  [refs: ]
+      → ef < bc
+  4. [Given]  [refs: ]
+      → ¬(a = b)
+  5. [Given]  [refs: ]
+      → ¬(a = c)
+  6. [Given]  [refs: ]
+      → ¬(b = c)
+  7. [Given]  [refs: ]
+      → ¬(d = e)
+  8. [Given]  [refs: ]
+      → ¬(d = f)
+  9. [Given]  [refs: ]
+      → ¬(e = f)
 
   Q.E.D. ■
 
@@ -1228,28 +1143,26 @@
 
   Dependencies: I.3, I.4, I.16
 
-  Indirect Proof (10 steps) [✓]:
+  Verified Proof (9 steps) [✗]:
   ──────────────────────────────
-   1. [Given]  [refs: ]
-       → ∠abc = ∠def
-   2. [Given]  [refs: ]
-       → ∠bca = ∠efd
-   3. [Given]  [refs: ]
-       → bc = ef
-   4. [Given]  [refs: ]
-       → ¬(a = b)
-   5. [Given]  [refs: ]
-       → ¬(a = c)
-   6. [Given]  [refs: ]
-       → ¬(b = c)
-   7. [Given]  [refs: ]
-       → ¬(d = e)
-   8. [Given]  [refs: ]
-       → ¬(d = f)
-   9. [Given]  [refs: ]
-       → ¬(e = f)
-  10. [Indirect[Prop.I.3,Prop.I.4,Prop.I.16]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9]
-       → ab = de, ac = df, ∠bac = ∠edf, △abc = △def
+  1. [Given]  [refs: ]
+      → ∠abc = ∠def
+  2. [Given]  [refs: ]
+      → ∠bca = ∠efd
+  3. [Given]  [refs: ]
+      → bc = ef
+  4. [Given]  [refs: ]
+      → ¬(a = b)
+  5. [Given]  [refs: ]
+      → ¬(a = c)
+  6. [Given]  [refs: ]
+      → ¬(b = c)
+  7. [Given]  [refs: ]
+      → ¬(d = e)
+  8. [Given]  [refs: ]
+      → ¬(d = f)
+  9. [Given]  [refs: ]
+      → ¬(e = f)
 
   Q.E.D. ■
 
@@ -1269,7 +1182,7 @@
 
   Dependencies: I.16
 
-  Indirect Proof (13 steps) [✓]:
+  Verified Proof (12 steps) [✗]:
   ──────────────────────────────
    1. [Given]  [refs: ]
        → on(a, L)
@@ -1295,8 +1208,6 @@
        → ¬(same-side(a, d, M))
   12. [Given]  [refs: ]
        → ∠abc = ∠bcd
-  13. [Indirect[Prop.I.16]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-       → ¬(intersects(L, N))
 
   Q.E.D. ■
 
@@ -1316,7 +1227,7 @@
 
   Dependencies: I.15, I.27
 
-  Indirect Proof (13 steps) [✓]:
+  Verified Proof (12 steps) [✗]:
   ──────────────────────────────
    1. [Given]  [refs: ]
        → on(a, L)
@@ -1342,8 +1253,6 @@
        → same-side(a, d, M)
   12. [Given]  [refs: ]
        → ∠abc + ∠bcd = right-angle + right-angle
-  13. [Indirect[Prop.I.15,Prop.I.27]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-       → ¬(intersects(L, N))
 
   Q.E.D. ■
 
@@ -1363,7 +1272,7 @@
 
   Dependencies: I.27, Parallel Postulate
 
-  Indirect Proof (13 steps) [✓]:
+  Verified Proof (12 steps) [✗]:
   ──────────────────────────────
    1. [Given]  [refs: ]
        → on(a, L)
@@ -1389,8 +1298,6 @@
        → ¬(same-side(a, d, M))
   12. [Given]  [refs: ]
        → ¬(intersects(L, N))
-  13. [Indirect[Prop.I.27]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-       → ∠abc = ∠bcd
 
   Q.E.D. ■
 
@@ -1410,7 +1317,7 @@
 
   Dependencies: I.27, I.29
 
-  Indirect Proof (6 steps) [✓]:
+  Verified Proof (5 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → ¬(intersects(L, M))
@@ -1422,8 +1329,6 @@
       → ¬(M = N)
   5. [Given]  [refs: ]
       → ¬(L = N)
-  6. [Indirect[Prop.I.27,Prop.I.29]]  [refs: 1, 2, 3, 4, 5]
-      → ¬(intersects(L, N))
 
   Q.E.D. ■
 
@@ -1446,7 +1351,7 @@
 
   Dependencies: I.23, I.27
 
-  Indirect Proof (5 steps) [✓]:
+  Verified Proof (4 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → on(b, L)
@@ -1456,8 +1361,6 @@
       → ¬(b = c)
   4. [Given]  [refs: ]
       → ¬(on(a, L))
-  5. [Indirect[Prop.I.23,Prop.I.27]]  [refs: 1, 2, 3, 4]
-      → on(a, M), ¬(intersects(L, M))
 
   Q.E.D. ■
 
@@ -1477,7 +1380,7 @@
 
   Dependencies: I.13, I.29, I.31
 
-  Indirect Proof (9 steps) [✓]:
+  Verified Proof (8 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → on(b, L)
@@ -1495,8 +1398,6 @@
       → between(b, c, d)
   8. [Given]  [refs: ]
       → ¬(c = d)
-  9. [Indirect[Prop.I.13,Prop.I.29,Prop.I.31]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8]
-      → ∠acd = ∠cab + ∠abc, ∠abc + (∠bca + ∠cab) = right-angle + right-angle
 
   Q.E.D. ■
 
@@ -1516,7 +1417,7 @@
 
   Dependencies: I.4, I.27, I.29
 
-  Indirect Proof (14 steps) [✓]:
+  Verified Proof (13 steps) [✗]:
   ──────────────────────────────
    1. [Given]  [refs: ]
        → on(a, L)
@@ -1544,8 +1445,6 @@
        → on(d, P)
   13. [Given]  [refs: ]
        → ¬(L = N)
-  14. [Indirect[Prop.I.4,Prop.I.27,Prop.I.29]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-       → ac = bd, ¬(intersects(M, P))
 
   Q.E.D. ■
 
@@ -1565,7 +1464,7 @@
 
   Dependencies: I.4, I.26, I.29
 
-  Indirect Proof (15 steps) [✓]:
+  Verified Proof (14 steps) [✗]:
   ──────────────────────────────
    1. [Given]  [refs: ]
        → on(a, L)
@@ -1595,8 +1494,6 @@
        → ¬(a = d)
   14. [Given]  [refs: ]
        → ¬(b = c)
-  15. [Indirect[Prop.I.4,Prop.I.26,Prop.I.29]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
-       → ab = cd, ad = bc, ∠dab = ∠bcd, ∠abc = ∠cda, △abc = △acd
 
   Q.E.D. ■
 
@@ -1616,7 +1513,7 @@
 
   Dependencies: I.29, I.34
 
-  Indirect Proof (11 steps) [✓]:
+  Verified Proof (10 steps) [✗]:
   ──────────────────────────────
    1. [Given]  [refs: ]
        → on(b, N)
@@ -1638,8 +1535,6 @@
        → ¬(a = d)
   10. [Given]  [refs: ]
        → ¬(e = f)
-  11. [Indirect[Prop.I.29,Prop.I.34]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-       → △abc + △acd = △ebc + △ecf
 
   Q.E.D. ■
 
@@ -1659,7 +1554,7 @@
 
   Dependencies: I.33, I.34, I.35
 
-  Indirect Proof (11 steps) [✓]:
+  Verified Proof (10 steps) [✗]:
   ──────────────────────────────
    1. [Given]  [refs: ]
        → on(b, N)
@@ -1681,8 +1576,6 @@
        → ¬(b = c)
   10. [Given]  [refs: ]
        → ¬(e = f)
-  11. [Indirect[Prop.I.33,Prop.I.34,Prop.I.35]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-       → △abc + △acd = △def + △dfa
 
   Q.E.D. ■
 
@@ -1702,28 +1595,26 @@
 
   Dependencies: I.31, I.34, I.35
 
-  Indirect Proof (10 steps) [✓]:
+  Verified Proof (9 steps) [✗]:
   ──────────────────────────────
-   1. [Given]  [refs: ]
-       → on(b, N)
-   2. [Given]  [refs: ]
-       → on(c, N)
-   3. [Given]  [refs: ]
-       → on(a, L)
-   4. [Given]  [refs: ]
-       → on(d, L)
-   5. [Given]  [refs: ]
-       → ¬(intersects(L, N))
-   6. [Given]  [refs: ]
-       → ¬(b = c)
-   7. [Given]  [refs: ]
-       → ¬(a = d)
-   8. [Given]  [refs: ]
-       → ¬(on(a, N))
-   9. [Given]  [refs: ]
-       → ¬(on(d, N))
-  10. [Indirect[Prop.I.31,Prop.I.34,Prop.I.35]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9]
-       → △abc = △dbc
+  1. [Given]  [refs: ]
+      → on(b, N)
+  2. [Given]  [refs: ]
+      → on(c, N)
+  3. [Given]  [refs: ]
+      → on(a, L)
+  4. [Given]  [refs: ]
+      → on(d, L)
+  5. [Given]  [refs: ]
+      → ¬(intersects(L, N))
+  6. [Given]  [refs: ]
+      → ¬(b = c)
+  7. [Given]  [refs: ]
+      → ¬(a = d)
+  8. [Given]  [refs: ]
+      → ¬(on(a, N))
+  9. [Given]  [refs: ]
+      → ¬(on(d, N))
 
   Q.E.D. ■
 
@@ -1743,7 +1634,7 @@
 
   Dependencies: I.31, I.34, I.36
 
-  Indirect Proof (13 steps) [✓]:
+  Verified Proof (12 steps) [✗]:
   ──────────────────────────────
    1. [Given]  [refs: ]
        → on(b, N)
@@ -1769,8 +1660,6 @@
        → ¬(on(a, N))
   12. [Given]  [refs: ]
        → ¬(on(d, N))
-  13. [Indirect[Prop.I.31,Prop.I.34,Prop.I.36]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-       → △abc = △def
 
   Q.E.D. ■
 
@@ -1790,28 +1679,26 @@
 
   Dependencies: I.31, I.37
 
-  Indirect Proof (10 steps) [✓]:
+  Verified Proof (9 steps) [✗]:
   ──────────────────────────────
-   1. [Given]  [refs: ]
-       → on(b, N)
-   2. [Given]  [refs: ]
-       → on(c, N)
-   3. [Given]  [refs: ]
-       → ¬(b = c)
-   4. [Given]  [refs: ]
-       → ¬(on(a, N))
-   5. [Given]  [refs: ]
-       → ¬(on(d, N))
-   6. [Given]  [refs: ]
-       → same-side(a, d, N)
-   7. [Given]  [refs: ]
-       → △abc = △dbc
-   8. [Given]  [refs: ]
-       → on(a, L)
-   9. [Given]  [refs: ]
-       → on(d, L)
-  10. [Indirect[Prop.I.31,Prop.I.37]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9]
-       → ¬(intersects(L, N))
+  1. [Given]  [refs: ]
+      → on(b, N)
+  2. [Given]  [refs: ]
+      → on(c, N)
+  3. [Given]  [refs: ]
+      → ¬(b = c)
+  4. [Given]  [refs: ]
+      → ¬(on(a, N))
+  5. [Given]  [refs: ]
+      → ¬(on(d, N))
+  6. [Given]  [refs: ]
+      → same-side(a, d, N)
+  7. [Given]  [refs: ]
+      → △abc = △dbc
+  8. [Given]  [refs: ]
+      → on(a, L)
+  9. [Given]  [refs: ]
+      → on(d, L)
 
   Q.E.D. ■
 
@@ -1831,7 +1718,7 @@
 
   Dependencies: I.38, I.39
 
-  Indirect Proof (14 steps) [✓]:
+  Verified Proof (13 steps) [✗]:
   ──────────────────────────────
    1. [Given]  [refs: ]
        → on(b, N)
@@ -1859,8 +1746,6 @@
        → on(a, L)
   13. [Given]  [refs: ]
        → on(d, L)
-  14. [Indirect[Prop.I.38,Prop.I.39]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-       → ¬(intersects(L, N))
 
   Q.E.D. ■
 
@@ -1880,28 +1765,26 @@
 
   Dependencies: I.34, I.37
 
-  Indirect Proof (10 steps) [✓]:
+  Verified Proof (9 steps) [✗]:
   ──────────────────────────────
-   1. [Given]  [refs: ]
-       → on(b, N)
-   2. [Given]  [refs: ]
-       → on(c, N)
-   3. [Given]  [refs: ]
-       → on(a, L)
-   4. [Given]  [refs: ]
-       → on(d, L)
-   5. [Given]  [refs: ]
-       → ¬(intersects(L, N))
-   6. [Given]  [refs: ]
-       → ¬(b = c)
-   7. [Given]  [refs: ]
-       → ¬(a = d)
-   8. [Given]  [refs: ]
-       → on(e, L)
-   9. [Given]  [refs: ]
-       → ¬(on(e, N))
-  10. [Indirect[Prop.I.34,Prop.I.37]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9]
-       → △abc + △acd = △ebc + △ebc
+  1. [Given]  [refs: ]
+      → on(b, N)
+  2. [Given]  [refs: ]
+      → on(c, N)
+  3. [Given]  [refs: ]
+      → on(a, L)
+  4. [Given]  [refs: ]
+      → on(d, L)
+  5. [Given]  [refs: ]
+      → ¬(intersects(L, N))
+  6. [Given]  [refs: ]
+      → ¬(b = c)
+  7. [Given]  [refs: ]
+      → ¬(a = d)
+  8. [Given]  [refs: ]
+      → on(e, L)
+  9. [Given]  [refs: ]
+      → ¬(on(e, N))
 
   Q.E.D. ■
 
@@ -1923,7 +1806,7 @@
 
   Dependencies: I.10, I.23, I.31, I.41
 
-  Indirect Proof (5 steps) [✓]:
+  Verified Proof (4 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → ¬(a = b)
@@ -1933,8 +1816,6 @@
       → ¬(b = c)
   4. [Given]  [refs: ]
       → ¬(∠def = 0)
-  5. [Indirect[Prop.I.10,Prop.I.23,Prop.I.31,Prop.I.41]]  [refs: 1, 2, 3, 4]
-      → △abc = △ghb + △gbc
 
   Q.E.D. ■
 
@@ -1954,7 +1835,7 @@
 
   Dependencies: I.34
 
-  Indirect Proof (14 steps) [✓]:
+  Verified Proof (13 steps) [✗]:
   ──────────────────────────────
    1. [Given]  [refs: ]
        → on(a, L)
@@ -1982,8 +1863,6 @@
        → ¬(a = b)
   13. [Given]  [refs: ]
        → ¬(c = d)
-  14. [Indirect[Prop.I.34]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-       → △akb = △kcd
 
   Q.E.D. ■
 
@@ -2003,7 +1882,7 @@
 
   Dependencies: I.29, I.31, I.42, I.43
 
-  Indirect Proof (7 steps) [✓]:
+  Verified Proof (6 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → on(a, L)
@@ -2017,8 +1896,6 @@
       → ¬(c = e)
   6. [Given]  [refs: ]
       → ¬(d = e)
-  7. [Indirect[Prop.I.29,Prop.I.31,Prop.I.42,Prop.I.43]]  [refs: 1, 2, 3, 4, 5, 6]
-      → on(f, L)
 
   Q.E.D. ■
 
@@ -2038,7 +1915,7 @@
 
   Dependencies: I.42, I.44
 
-  Indirect Proof (6 steps) [✓]:
+  Verified Proof (5 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → ¬(a = b)
@@ -2050,8 +1927,6 @@
       → ¬(a = d)
   5. [Given]  [refs: ]
       → ¬(∠efg = 0)
-  6. [Indirect[Prop.I.42,Prop.I.44]]  [refs: 1, 2, 3, 4, 5]
-      → △abc + △acd = △hkm + △hmb
 
   Q.E.D. ■
 
@@ -2073,7 +1948,7 @@
 
   Dependencies: I.11, I.3, I.31, I.29, I.34
 
-  Indirect Proof (4 steps) [✓]:
+  Verified Proof (3 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → on(a, L)
@@ -2081,8 +1956,6 @@
       → on(b, L)
   3. [Given]  [refs: ]
       → ¬(a = b)
-  4. [Indirect[Prop.I.11,Prop.I.3,Prop.I.31,Prop.I.29,Prop.I.34]]  [refs: 1, 2, 3]
-      → ab = bc, bc = cd, cd = da, ∠dab = right-angle, ∠abc = right-angle, ∠bcd = right-angle, ∠cda = right-angle
 
   Q.E.D. ■
 
@@ -2102,7 +1975,7 @@
 
   Dependencies: I.4, I.14, I.41, I.46
 
-  Indirect Proof (5 steps) [✓]:
+  Verified Proof (4 steps) [✗]:
   ──────────────────────────────
   1. [Given]  [refs: ]
       → ¬(a = b)
@@ -2112,8 +1985,6 @@
       → ¬(b = c)
   4. [Given]  [refs: ]
       → ∠bac = right-angle
-  5. [Indirect[Prop.I.4,Prop.I.14,Prop.I.41,Prop.I.46]]  [refs: 1, 2, 3, 4]
-      → bc = cd, cd = de, de = eb, ∠cbe = right-angle, ab = bf, bf = fg, fg = ga, ∠abf = right-angle, ac = ch, ch = hk, hk = ka, ∠cak = right-angle, △bdc + △dec = (△abf + △afg) + (△ach + △ahk)
 
   Q.E.D. ■
 
@@ -2133,7 +2004,7 @@
 
   Dependencies: I.8, I.47
 
-  Indirect Proof (15 steps) [✓]:
+  Verified Proof (14 steps) [✗]:
   ──────────────────────────────
    1. [Given]  [refs: ]
        → ¬(a = b)
@@ -2163,8 +2034,6 @@
        → hk = ka
   14. [Given]  [refs: ]
        → △bdc + △dec = (△abf + △afg) + (△ach + △ahk)
-  15. [Indirect[Prop.I.8,Prop.I.11,Prop.I.47]]  [refs: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
-       → ∠bac = right-angle
 
   Q.E.D. ■
 
