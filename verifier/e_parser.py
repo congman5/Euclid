@@ -32,6 +32,7 @@ from .e_ast import (
     Equals, LessThan,
     Literal, Clause, Sequent, EProofLine,
     SymbolInfo,
+    mag_sort,
 )
 
 
@@ -576,6 +577,24 @@ class EParser:
         lhs = self._parse_magnitude_term()
         return self._parse_magnitude_relation_from(lhs)
 
+    @staticmethod
+    def _fix_zero_sort(lhs: Term, rhs: Term) -> Tuple[Term, Term]:
+        """Infer the correct sort for ZeroMag from the other operand.
+
+        The parser creates ``ZeroMag(Sort.SEGMENT)`` as a default when
+        it encounters a bare ``0``.  This method corrects the sort to
+        match the other operand (e.g. ``∠abc = 0`` → ``ZeroMag(ANGLE)``).
+        """
+        if isinstance(rhs, ZeroMag):
+            s = mag_sort(lhs)
+            if s is not None and s != rhs.sort:
+                rhs = ZeroMag(s)
+        if isinstance(lhs, ZeroMag):
+            s = mag_sort(rhs)
+            if s is not None and s != lhs.sort:
+                lhs = ZeroMag(s)
+        return lhs, rhs
+
     def _parse_magnitude_relation_from(self, lhs: Term) -> Atom:
         """Given a parsed LHS term, parse the rest of the relation."""
         t = self.peek()
@@ -585,22 +604,26 @@ class EParser:
         if t[0] == "EQ":
             self.advance()
             rhs = self._parse_magnitude_term()
+            lhs, rhs = self._fix_zero_sort(lhs, rhs)
             return Equals(lhs, rhs)
 
         if t[0] == "LT":
             self.advance()
             rhs = self._parse_magnitude_term()
+            lhs, rhs = self._fix_zero_sort(lhs, rhs)
             return LessThan(lhs, rhs)
 
         if t[0] == "LEQ":
             # a ≤ b is sugar for ¬(b < a)
             self.advance()
             rhs = self._parse_magnitude_term()
+            lhs, rhs = self._fix_zero_sort(lhs, rhs)
             return LessThan(rhs, lhs)  # caller should negate
 
         if t[0] == "NEQ":
             self.advance()
             rhs = self._parse_magnitude_term()
+            lhs, rhs = self._fix_zero_sort(lhs, rhs)
             return Equals(lhs, rhs)  # caller wraps with polarity=False
 
         # If we have a + next, it's part of a larger expression

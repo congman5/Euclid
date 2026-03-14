@@ -9,8 +9,6 @@ Benchmarks:
   1. Forward-chaining closure time for diagrams with N points
   2. Full proof verification time for each encoded proposition
   3. SMT/TPTP encoding latency
-  4. E→T translation (π) latency per proposition
-  5. Cross-system translation roundtrip latency
 
 Reference: IMPLEMENTATION_PLAN.md §10.4
 """
@@ -233,82 +231,9 @@ class TestSmtEncodingTiming:
         assert total < 500, f"All 48 props TPTP encoding took {total:.1f}ms"
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# 4. E→T TRANSLATION (π) LATENCY
-# ═══════════════════════════════════════════════════════════════════════
-
-class TestPiTranslationTiming:
-    """Measure E→T translation latency per proposition."""
-
-    def test_all_48_pi_translations_under_100ms(self):
-        """All 48 E sequents translate to T via π in <100ms total."""
-        from verifier.e_library import E_THEOREM_LIBRARY
-        from verifier.t_pi_translation import pi_sequent
-
-        total = 0.0
-        for name, thm in E_THEOREM_LIBRARY.items():
-            _, elapsed = _time_ms(pi_sequent, thm.sequent)
-            total += elapsed
-        assert total < 100, f"All 48 π translations took {total:.1f}ms"
-
-    def test_complex_prop_i47_pi_under_10ms(self):
-        """Prop I.47 (Pythagorean theorem) π translation takes <10ms."""
-        from verifier.e_library import E_THEOREM_LIBRARY
-        from verifier.t_pi_translation import pi_sequent
-
-        thm = E_THEOREM_LIBRARY["Prop.I.47"]
-        _, elapsed = _time_ms(pi_sequent, thm.sequent)
-        assert elapsed < 10, f"I.47 π took {elapsed:.1f}ms"
-
-    def test_pi_translation_produces_non_empty_output(self):
-        """Every π translation produces a non-empty T sequent."""
-        from verifier.e_library import E_THEOREM_LIBRARY
-        from verifier.t_pi_translation import pi_sequent
-
-        for name, thm in E_THEOREM_LIBRARY.items():
-            t_seq, _ = pi_sequent(thm.sequent)
-            t_str = str(t_seq)
-            assert len(t_str) > 0, f"{name}: empty T translation"
-
 
 # ═══════════════════════════════════════════════════════════════════════
-# 5. CROSS-SYSTEM TRANSLATION ROUNDTRIP LATENCY
-# ═══════════════════════════════════════════════════════════════════════
-
-class TestCrossSystemRoundtripTiming:
-    """Measure E→T→E and E→H→E roundtrip latency."""
-
-    def test_e_to_t_roundtrip_all_48_under_500ms(self):
-        """E→T→E roundtrip for all 48 props completes in <500ms."""
-        from verifier.e_library import E_THEOREM_LIBRARY
-        from verifier.t_pi_translation import pi_sequent
-        from verifier.t_rho_translation import rho_sequent
-
-        total = 0.0
-        for name, thm in E_THEOREM_LIBRARY.items():
-            t0 = time.perf_counter()
-            t_seq, _ = pi_sequent(thm.sequent)
-            e_seq = rho_sequent(t_seq)
-            elapsed = (time.perf_counter() - t0) * 1000
-            total += elapsed
-        assert total < 500, f"E→T→E roundtrip took {total:.1f}ms"
-
-    def test_e_to_h_roundtrip_all_48_under_500ms(self):
-        """E→H roundtrip for all 48 props completes in <500ms."""
-        from verifier.e_library import E_THEOREM_LIBRARY
-        from verifier.h_bridge import e_sequent_to_h
-
-        total = 0.0
-        for name, thm in E_THEOREM_LIBRARY.items():
-            t0 = time.perf_counter()
-            h_seq = e_sequent_to_h(thm.sequent)
-            elapsed = (time.perf_counter() - t0) * 1000
-            total += elapsed
-        assert total < 500, f"E→H translation took {total:.1f}ms"
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# 6. SMT FALLBACK FREQUENCY (structural check)
+# 4. SMT FALLBACK FREQUENCY (structural check)
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestSmtFallbackFrequency:
@@ -358,7 +283,7 @@ class TestSmtFallbackFrequency:
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# 7. GeoCoq COMPATIBILITY VALIDATION TIMING
+# 5. GeoCoq COMPATIBILITY VALIDATION TIMING
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestGeocoqValidationTiming:
@@ -370,12 +295,4 @@ class TestGeocoqValidationTiming:
 
         result, elapsed = _time_ms(validate_library_alignment)
         assert elapsed < 100, f"E validation took {elapsed:.1f}ms"
-        assert result == []
-
-    def test_t_translation_validation_under_500ms(self):
-        """validate_translation_alignment() completes in <500ms."""
-        from verifier.geocoq_compat import validate_translation_alignment
-
-        result, elapsed = _time_ms(validate_translation_alignment)
-        assert elapsed < 500, f"T validation took {elapsed:.1f}ms"
         assert result == []

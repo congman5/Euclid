@@ -1,22 +1,20 @@
 # Euclid Verifier — Formal Proof Engine
 
-The core verification engine for the Euclid Elements Simulator. Implements three axiom systems (E, T, H) with automatic bridge translations following GeoCoq's architecture.
+The core verification engine for the Euclid Elements Simulator. Implements **System E** (Avigad, Dean, Mumma 2009) as the sole formal axiom system.
 
-**Primary engine**: System E (Avigad, Dean, Mumma 2009)  
-**Bridge system**: System T (Tarski) — invisible completeness fallback  
-**Display system**: System H (Hilbert) — alternative notation
+**Sole engine**: System E (Avigad, Dean, Mumma 2009)
 
 ## Quick Start
 
 ```bash
-# Run all verifier tests (~590 tests)
+# Run all verifier tests
 python -m pytest verifier/tests/ -v
 
 # Verify a proof via CLI
 python -m verifier.cli verifier/examples/valid_inc1.json
 
 # Use the unified checker from Python
-from verifier.unified_checker import verify_proof, verify_old_proof_json
+from verifier.unified_checker import verify_proof, verify_e_proof_json
 ```
 
 ## Architecture
@@ -27,7 +25,7 @@ All verification routes through `unified_checker.py` — the single entry point:
 verifier/
 ├── unified_checker.py        ★ Single entry point for all verification
 │
-├── System E (Primary — Paper §3)
+├── System E (Sole System — Paper §3)
 │   ├── e_ast.py              Sorts: POINT, LINE, CIRCLE
 │   ├── e_axioms.py           Construction (§3.3), Diagrammatic (§3.4),
 │   │                         Metric (§3.5), Transfer (§3.6)
@@ -42,29 +40,10 @@ verifier/
 │   ├── e_proofs.py           Encoded proof steps
 │   └── e_parser.py           System E formula parser
 │
-├── System T (Bridge — Paper §5)
-│   ├── t_ast.py              Sort: POINT only; primitives: B, Cong
-│   ├── t_axioms.py           11 Tarski axioms + 6 negativity clauses
-│   ├── t_consequence.py      T forward-chaining engine
-│   ├── t_checker.py          T proof checker
-│   ├── t_bridge.py           E ↔ T translation (π, ρ)
-│   ├── t_completeness.py     Completeness pipeline (Theorem 5.1)
-│   ├── t_cut_elimination.py  Cut elimination for geometric rule schemes
-│   ├── t_pi_translation.py   Full π: E → T
-│   └── t_rho_translation.py  Full ρ: T → E
-│
-├── System H (Display — Hilbert)
-│   ├── h_ast.py              Sorts: POINT, LINE
-│   ├── h_axioms.py           39 Hilbert axiom clauses (Groups I–IV)
-│   ├── h_consequence.py      H forward-chaining engine
-│   ├── h_checker.py          H proof checker
-│   ├── h_bridge.py           E ↔ H translation
-│   └── h_library.py          All 48 theorems in H notation
-│
 ├── diagnostics.py            Shared error codes and result types
 ├── _legacy/                  Deprecated Fitch checker (reference only)
 ├── examples/                 Example proof JSON files
-└── tests/                    ~590 pytest tests
+└── tests/                    Pytest test suite
 ```
 
 ## Verification Pipeline
@@ -72,10 +51,6 @@ verifier/
 ```
 unified_checker.verify_proof(eproof)
   → EChecker validates via e_consequence + e_construction + e_metric
-  → If inconclusive and use_t_fallback=True:
-      → π translation: E → T
-      → T consequence engine checks in Tarski's system
-      → ρ translation: T → E
   → Returns UnifiedResult (valid, engine, diagnostics)
 ```
 
@@ -84,7 +59,7 @@ unified_checker.verify_proof(eproof)
 ```python
 from verifier.unified_checker import (
     verify_proof,           # Verify a System E proof
-    verify_old_proof_json,  # Verify legacy-format proof JSON
+    verify_e_proof_json,    # Verify proof from UI JSON format
     verify_named_proof,     # Verify a named proof (e.g. "Prop.I.1")
     verify_step,            # Single-step consequence check
     get_available_rules,    # Rule catalogue for UI
@@ -120,7 +95,7 @@ The old Fitch-style proof format (`Point(A)`, `Segment(A,B)`, `Equal(AB,CD)`) is
 
 ## Theorem Library
 
-All 48 propositions of Book I are in `e_library.py` (System E) and `h_library.py` (System H):
+All 48 propositions of Book I are in `e_library.py`:
 
 ```python
 from verifier.e_library import E_THEOREM_LIBRARY
@@ -133,9 +108,9 @@ print(thm.sequent)
 
 ```bash
 python -m pytest verifier/tests/ -v                        # All verifier tests
-python -m pytest verifier/tests/test_t_system.py -v        # Tarski system
-python -m pytest verifier/tests/test_completeness.py -v    # Completeness pipeline
 python -m pytest verifier/tests/test_unified_checker.py -v # Unified checker
+python -m pytest verifier/tests/test_all_48_proofs.py -v   # All 48 Book I proofs
+python -m pytest verifier/tests/test_soundness.py -v       # Soundness test suite
 ```
 
 ## References

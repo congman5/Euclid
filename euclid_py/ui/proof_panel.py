@@ -17,11 +17,14 @@ Phase 9.1 of the implementation plan.
 from __future__ import annotations
 
 import json
+import logging
+import os
 import re
+import traceback
 from collections import OrderedDict
 from typing import Dict, List, Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer
+from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer, QThread, QObject
 from PyQt6.QtGui import (
     QColor, QFont, QPainter, QPen, QShortcut, QKeySequence,
     QFontMetrics, QBrush, QPalette,
@@ -32,6 +35,43 @@ from PyQt6.QtWidgets import (
     QFrame, QScrollArea, QMenu, QFileDialog,
     QSizePolicy, QApplication, QAbstractItemView,
 )
+
+
+# ===================================================================
+# CRASH LOGGER — writes to euclid_crash.log for post-mortem debugging
+# ===================================================================
+
+_LOG_FILENAME = "euclid_crash.log"
+
+def _get_crash_logger() -> logging.Logger:
+    """Return (and lazily configure) the proof-panel crash logger.
+
+    Writes timestamped entries to ``euclid_crash.log`` in the workspace
+    root directory so the user can attach the file when reporting bugs.
+    """
+    logger = logging.getLogger("euclid.proof_panel")
+    if not logger.handlers:
+        logger.setLevel(logging.DEBUG)
+        try:
+            # Place the log next to the running script / workspace root
+            log_dir = os.path.dirname(os.path.abspath(__file__))
+            # Walk up from euclid_py/ui/ to the workspace root
+            log_dir = os.path.normpath(os.path.join(log_dir, "..", ".."))
+            log_path = os.path.join(log_dir, _LOG_FILENAME)
+            fh = logging.FileHandler(log_path, encoding="utf-8")
+            fh.setLevel(logging.DEBUG)
+            fmt = logging.Formatter(
+                "%(asctime)s [%(levelname)s] %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+            fh.setFormatter(fmt)
+            logger.addHandler(fh)
+        except Exception:
+            # If we can't write a log file, at least log to stderr
+            sh = logging.StreamHandler()
+            sh.setLevel(logging.WARNING)
+            logger.addHandler(sh)
+    return logger
 
 
 # ===================================================================
@@ -49,6 +89,7 @@ def _build_rule_groups():
         ("metric", "Metric (§3.5)"),
         ("transfer", "Transfer (§3.6)"),
         ("superposition", "Superposition (§3.7)"),
+        ("structural", "Structural (§3.2)"),
         ("proposition", "Propositions"),
     ])
     groups = OrderedDict()
@@ -71,13 +112,13 @@ for _rules in RULE_GROUPS.values():
 # ===================================================================
 
 CONNECTIVES = ["\u2227", "\u00ac",
-               "=", "\u2260", "<", ">",
+               "=", "\u2260", "<",
                "(", ")",
                "\u25b3"]
 CONNECTIVE_MAP = {
     "\u2227": " \u2227 ", "\u00ac": "\u00ac",
     "=": " = ", "\u2260": " \u2260 ",
-    "<": " < ", ">": " > ",
+    "<": " < ",
     "(": "(", ")": ")",
     "\u25b3": "\u25b3",
 }
@@ -107,7 +148,33 @@ PREDICATES = [
 ]
 
 # Greek letters for circle naming in System E
-GREEK_LETTERS = ["α", "β", "γ"]
+GREEK_LETTERS = ["α", "β", "γ", "δ"]
+
+
+# ===================================================================
+# BACKGROUND VERIFICATION WORKER
+# ===================================================================
+
+class _VerifyWorker(QObject):
+    """Runs verify_e_proof_json on a background thread to avoid UI freeze."""
+    finished = pyqtSignal(object)  # emits PanelCheckResult or Exception
+
+    def __init__(self, proof_json: dict):
+        super().__init__()
+        self._proof_json = proof_json
+
+    def run(self):
+        try:
+            from verifier.unified_checker import verify_e_proof_json
+            result = verify_e_proof_json(self._proof_json)
+            self.finished.emit(result)
+        except Exception as exc:
+            log = _get_crash_logger()
+            log.error(
+                "Verifier thread exception:\n%s",
+                traceback.format_exc(),
+            )
+            self.finished.emit(exc)
 
 
 # ===================================================================
@@ -355,7 +422,12 @@ class FitchLineWidget(QFrame):
         return self._text_edit
 
     def mousePressEvent(self, event):
-        self.selected.emit(self.step.line_number)
+        if self._is_selected:
+            # Second click on already-selected line → enter edit mode
+            self._text_edit.setFocus()
+        else:
+            # First click → select (red arrow), don't focus text
+            self.selected.emit(self.step.line_number)
         super().mousePressEvent(event)
 
     def paintEvent(self, event):
@@ -620,6 +692,9 @@ class ProofPanel(QWidget):
         self._prem_widgets = []
         self._focused_text_field = None
         self._lemmas: List[LoadedLemma] = []
+        self._verify_thread: Optional[QThread] = None
+        self._verify_worker: Optional[_VerifyWorker] = None
+        self._eval_buttons: List[QPushButton] = []
         self.setMinimumWidth(380)
         self.setStyleSheet(
             "ProofPanel { background:" + _BG_PANEL + ";"
@@ -664,31 +739,12 @@ class ProofPanel(QWidget):
                 "QPushButton:hover{background:#2e7358;}")
             b.clicked.connect(cb)
             row1.addWidget(b)
+            self._eval_buttons.append(b)
         hvbox.addLayout(row1)
 
-        # Row 2: E/T/H system switchers (left) + file/edit buttons (right)
+        # Row 2: undo/redo, begin/end subproof, lemma (single row)
         row2 = QHBoxLayout()
         row2.setSpacing(3)
-        _sys_colors = {"E": "#2d70b3", "T": "#7b3fa0", "H": "#c06020"}
-        _sys_labels = {"E": "System E (Euclid)",
-                       "T": "System T (Tarski)",
-                       "H": "System H (Hilbert)"}
-        for sk in ("E", "T", "H"):
-            sc = _sys_colors[sk]
-            sb = QPushButton(sk)
-            sb.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
-            sb.setFixedHeight(22)
-            sb.setFixedWidth(28)
-            sb.setToolTip(f"Switch proof to {_sys_labels[sk]}")
-            sb.setStyleSheet(
-                f"QPushButton{{background:{sc};color:white;border:none;"
-                f"border-radius:3px;font-weight:bold;font-size:11px;"
-                f"padding:0px;}}"
-                f"QPushButton:hover{{background:#1a1a2e;}}")
-            sb.clicked.connect(
-                lambda _, s=sk: self.switch_system(s))
-            row2.addWidget(sb)
-        row2.addStretch()
         _btn_style = (
             "QPushButton{background:transparent;color:#5a5a72;"
             "border:1px solid #c0c2c8;border-radius:3px;"
@@ -698,7 +754,13 @@ class ProofPanel(QWidget):
         for text_label, tip, cb in [
             ("Undo", "Undo (Ctrl+Z)", self._undo),
             ("Redo", "Redo (Ctrl+Y)", self._redo),
-            ("Lemma", "Load a verified proof as a lemma", self._load_lemma),
+            ("Begin Subproof",
+             "Open a subproof: inserts an Assume line at depth+1",
+             self._begin_subproof),
+            ("End Subproof",
+             "Close a subproof: inserts a Reductio line at depth\u22121, "
+             "referencing the Assume line",
+             self._end_subproof),
         ]:
             b = QPushButton(text_label)
             b.setFont(QFont("Segoe UI", 9))
@@ -707,7 +769,16 @@ class ProofPanel(QWidget):
             b.setStyleSheet(_btn_style)
             b.clicked.connect(cb)
             row2.addWidget(b)
+        row2.addStretch()
+        b = QPushButton("Lemma")
+        b.setFont(QFont("Segoe UI", 9))
+        b.setToolTip("Load a verified proof as a lemma")
+        b.setFixedHeight(22)
+        b.setStyleSheet(_btn_style)
+        b.clicked.connect(self._load_lemma)
+        row2.addWidget(b)
         hvbox.addLayout(row2)
+
         root.addWidget(header)
 
         # -- Predicate palette --
@@ -758,7 +829,7 @@ class ProofPanel(QWidget):
         pl.addLayout(sym_grid)
         root.addWidget(palette)
 
-        # -- Glossary (E / T / H collapsible tabs with flow buttons) --
+        # -- Predicate glossary (System E, always visible) --
         self._glossary_frame = QFrame()
         self._glossary_frame.setObjectName("glossary_frame")
         self._glossary_frame.setStyleSheet(
@@ -773,34 +844,6 @@ class ProofPanel(QWidget):
         glossary_vbox = QVBoxLayout(self._glossary_frame)
         glossary_vbox.setContentsMargins(8, 4, 8, 4)
         glossary_vbox.setSpacing(0)
-
-        # Header row (clickable to expand/collapse the whole glossary)
-        glossary_hdr = QFrame()
-        glossary_hdr.setCursor(
-            __import__("PyQt6.QtGui", fromlist=["QCursor"]).QCursor(
-                Qt.CursorShape.PointingHandCursor))
-        glossary_hdr.setStyleSheet("background:transparent;")
-        ghdr_row = QHBoxLayout(glossary_hdr)
-        ghdr_row.setContentsMargins(0, 2, 0, 2)
-        ghdr_row.setSpacing(4)
-        self._glossary_arrow = QLabel("\u25b8")
-        self._glossary_arrow.setFont(QFont("Segoe UI", 10))
-        self._glossary_arrow.setStyleSheet("color:#5a5a72;")
-        self._glossary_arrow.setFixedWidth(14)
-        ghdr_row.addWidget(self._glossary_arrow)
-        glossary_title = QLabel("Glossary")
-        glossary_title.setFont(QFont("Segoe UI", 10))
-        glossary_title.setStyleSheet("color:#5a5a72;")
-        ghdr_row.addWidget(glossary_title)
-        ghdr_row.addStretch()
-        glossary_vbox.addWidget(glossary_hdr)
-
-        # Glossary body (starts hidden)
-        self._glossary_body = QWidget()
-        self._glossary_body.setVisible(False)
-        gbody = QVBoxLayout(self._glossary_body)
-        gbody.setContentsMargins(0, 4, 0, 2)
-        gbody.setSpacing(0)
 
         # ── Flow layout helper ──
         from PyQt6.QtWidgets import QLayout as _QLayout
@@ -866,76 +909,8 @@ class ProofPanel(QWidget):
                     row_h = max(row_h, h)
                 return y + row_h - rect.y()
 
-        def _make_section(parent_layout, sys_label, color, buttons):
-            """Create a collapsible section with a badge header and flow buttons."""
-            section = QWidget()
-            sec_lay = QVBoxLayout(section)
-            sec_lay.setContentsMargins(0, 0, 0, 0)
-            sec_lay.setSpacing(0)
-
-            # Clickable header row: arrow + badge + label
-            hdr = QFrame()
-            hdr.setCursor(
-                __import__("PyQt6.QtGui", fromlist=["QCursor"]).QCursor(
-                    Qt.CursorShape.PointingHandCursor))
-            hdr.setStyleSheet("background:transparent;")
-            hdr_row = QHBoxLayout(hdr)
-            hdr_row.setContentsMargins(0, 3, 0, 3)
-            hdr_row.setSpacing(4)
-
-            arrow = QLabel("\u25b8")
-            arrow.setFont(QFont("Segoe UI", 9))
-            arrow.setStyleSheet("color:#5a5a72;")
-            arrow.setFixedWidth(12)
-            hdr_row.addWidget(arrow)
-
-            badge = QLabel(sys_label)
-            badge.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
-            badge.setFixedHeight(16)
-            badge.setFixedWidth(20)
-            badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            badge.setStyleSheet(
-                f"background:{color}; color:white; border:none;"
-                " border-radius:3px; padding:0px 2px;")
-            hdr_row.addWidget(badge)
-
-            _SYS_NAMES = {"E": "System E (Euclid)",
-                          "T": "System T (Tarski)",
-                          "H": "System H (Hilbert)"}
-            title = QLabel(_SYS_NAMES.get(sys_label, sys_label))
-            title.setFont(QFont("Segoe UI", 9))
-            title.setStyleSheet("color:#3a3a50;")
-            hdr_row.addWidget(title)
-            hdr_row.addStretch()
-            sec_lay.addWidget(hdr)
-
-            # Button body (starts collapsed)
-            body = QWidget()
-            body.setVisible(False)
-            flow = _FlowLayout(body, h_spacing=4, v_spacing=4)
-            for label, tmpl in buttons:
-                b = QPushButton(label)
-                b.setToolTip(tmpl)
-                b.setFont(_FONT_SMALL)
-                b.setFixedHeight(20)
-                b.setStyleSheet(
-                    f"QPushButton {{ border-left: 3px solid {color}; }}")
-                b.clicked.connect(
-                    lambda _, t=tmpl: self._insert_into_focused(t))
-                flow.addWidget(b)
-            body.setLayout(flow)
-            sec_lay.addWidget(body)
-
-            def _toggle(event=None):
-                vis = not body.isVisible()
-                body.setVisible(vis)
-                arrow.setText("\u25be" if vis else "\u25b8")
-
-            hdr.mousePressEvent = _toggle
-            parent_layout.addWidget(section)
-
-        # ── System E ──
-        _make_section(gbody, "E", "#2d70b3", [
+        # ── System E predicate buttons ──
+        _e_buttons = [
             ("on(a,L)",            "on(,)"),
             ("on(a,\u03b1)",       "on(,)"),
             ("center(a,\u03b1)",   "center(,)"),
@@ -952,40 +927,24 @@ class ProofPanel(QWidget):
             ("\u2220abc<\u2220def", "\u2220 < \u2220"),
             ("ab+bc=ac",           " + = "),
             ("\u25b3abc=\u25b3def", "\u25b3 = \u25b3"),
-        ])
+        ]
+        _e_color = "#2d70b3"
+        _e_flow = _FlowLayout(None, h_spacing=4, v_spacing=4)
+        for label, tmpl in _e_buttons:
+            b = QPushButton(label)
+            b.setToolTip(tmpl)
+            b.setFont(_FONT_SMALL)
+            b.setFixedHeight(20)
+            b.setStyleSheet(
+                f"QPushButton {{ border-left: 3px solid {_e_color}; }}")
+            b.clicked.connect(
+                lambda _, t=tmpl: self._insert_into_focused(t))
+            _e_flow.addWidget(b)
+        _e_body = QWidget()
+        _e_body.setLayout(_e_flow)
+        glossary_vbox.addWidget(_e_body)
 
-        # ── System T ──
-        _make_section(gbody, "T", "#7b3fa0", [
-            ("B(a,b,c)",        "B(,,)"),
-            ("Cong(a,b,c,d)",   "Cong(,,,)"),
-            ("Eq(a,b)",         "Eq(,)"),
-            ("Neq(a,b)",        "Neq(,)"),
-            ("NotB(a,b,c)",     "NotB(,,)"),
-            ("NotCong(a,b,c,d)","NotCong(,,,)"),
-        ])
-
-        # ── System H ──
-        _make_section(gbody, "H", "#c06020", [
-            ("IncidL(a,l)",     "IncidL(,)"),
-            ("BetH(a,b,c)",     "BetH(,,)"),
-            ("CongH(a,b,c,d)",  "CongH(,,,)"),
-            ("CongaH(a,b,c,d,e,f)", "CongaH(,,,,,)"),
-            ("SameSideH(a,b,l)","SameSideH(,,)"),
-            ("ColH(a,b,c)",     "ColH(,,)"),
-            ("Para(l,m)",       "Para(,)"),
-            ("EqPt(a,b)",       "EqPt(,)"),
-            ("EqL(l,m)",        "EqL(,)"),
-        ])
-
-        glossary_vbox.addWidget(self._glossary_body)
         root.addWidget(self._glossary_frame)
-
-        def _toggle_glossary(event=None):
-            vis = not self._glossary_body.isVisible()
-            self._glossary_body.setVisible(vis)
-            self._glossary_arrow.setText("\u25be" if vis else "\u25b8")
-
-        glossary_hdr.mousePressEvent = _toggle_glossary
 
         # -- Lemma section (collapsible, matching glossary style) --
         self._lemma_frame = QFrame()
@@ -1181,6 +1140,7 @@ class ProofPanel(QWidget):
         self._update_counts()
 
     def clear(self):
+        self._cancel_verification()
         self._steps = []
         self._premises = []
         self._conclusion = ""
@@ -1198,62 +1158,33 @@ class ProofPanel(QWidget):
         self._lines_input.clear()
         self._rebuild_lines()
 
-    def switch_system(self, target: str):
-        """Rewrite all premises, goal, and steps into *target* notation.
+    def _cancel_verification(self):
+        """Cancel any in-flight background verification.
 
-        *target* is ``"E"``, ``"T"``, or ``"H"``.  Each formula string is
-        parsed via the E parser (which already accepts E/T/H syntax),
-        translated to the target system via the bridge modules, and
-        written back.  Formulas that cannot be translated are kept as-is.
+        Disconnects signals so the stale result is not applied after a
+        system switch or other state change, then tears down the thread.
         """
-        from verifier.e_parser import parse_literal_list, EParseError
-        from verifier.t_bridge import e_literal_to_t
-        from verifier.h_bridge import e_literal_to_h
-
-        def _translate_text(text: str) -> str:
-            """Translate a single formula string to *target* notation."""
-            if not text.strip():
-                return text
+        if self._verify_thread is not None:
+            # Disconnect so _on_verify_finished is NOT called with stale data
             try:
-                e_lits = parse_literal_list(text)
-            except EParseError:
-                return text  # unparseable → keep as-is
-
-            parts: list[str] = []
-            for lit in e_lits:
-                if target == "T":
-                    t_lits = e_literal_to_t(lit)
-                    if t_lits:
-                        parts.extend(str(tl) for tl in t_lits)
-                    else:
-                        parts.append(str(lit))  # no T equivalent
-                elif target == "H":
-                    h_lit = e_literal_to_h(lit)
-                    if h_lit is not None:
-                        parts.append(str(h_lit))
-                    else:
-                        parts.append(str(lit))  # no H equivalent
-                else:
-                    # E — keep as-is (already in E notation)
-                    parts.append(str(lit))
-            return ", ".join(parts) if parts else text
-
-        # Rewrite premises
-        for i, prem in enumerate(self._premises):
-            self._premises[i] = _translate_text(prem)
-
-        # Rewrite conclusion / goal
-        if self._conclusion:
-            self._conclusion = _translate_text(self._conclusion)
-            self._goal_edit.setText(self._conclusion)
-
-        # Rewrite step text
-        for step in self._steps:
-            step.text = _translate_text(step.text)
-
-        # Reset evaluations since formulas changed
-        self.reset_evaluations()
-        self._rebuild_lines()
+                self._verify_worker.finished.disconnect(self._on_verify_finished)
+            except (TypeError, RuntimeError):
+                pass
+            self._verify_thread.quit()
+            if not self._verify_thread.wait(3000):
+                # Thread didn't stop in time — force-terminate to avoid
+                # "QThread: Destroyed while thread is still running" crash.
+                self._verify_thread.terminate()
+                self._verify_thread.wait(1000)
+            self._verify_thread.deleteLater()
+            self._verify_thread = None
+            self._verify_worker = None
+        # Re-enable eval buttons in case they were disabled
+        for btn in self._eval_buttons:
+            try:
+                btn.setEnabled(True)
+            except RuntimeError:
+                pass
 
     def get_steps(self):
         return [{"lineNumber": s.line_number, "text": s.text,
@@ -1462,6 +1393,81 @@ class ProofPanel(QWidget):
             len(self._steps), "", "", [],
             depth=0)
 
+    def _begin_subproof(self):
+        """Open a subproof by inserting an Assume line at depth+1.
+
+        If a line is selected, the Assume is inserted after it and
+        inherits its depth + 1.  Otherwise it is appended at the end.
+        """
+        self._push_undo()
+        # Determine insertion point and depth
+        if self._selected > 0:
+            idx = None
+            for i, s in enumerate(self._steps):
+                if s.line_number == self._selected:
+                    idx = i
+                    break
+            if idx is not None:
+                current_depth = self._steps[idx].depth
+                pos = idx + 1
+            else:
+                current_depth = self._steps[-1].depth if self._steps else 0
+                pos = len(self._steps)
+        else:
+            current_depth = self._steps[-1].depth if self._steps else 0
+            pos = len(self._steps)
+
+        new_depth = current_depth + 1
+        step = ProofStep(0, "", "Assume", [], new_depth)
+        self._steps.insert(pos, step)
+        self._renumber()
+        self._rebuild_lines()
+        self.step_changed.emit()
+        # Focus the new Assume line for typing
+        if 0 <= pos < len(self._line_widgets):
+            QTimer.singleShot(
+                50, self._line_widgets[pos].focus_text)
+
+    def _end_subproof(self):
+        """Close a subproof by inserting a Reductio line at depth\u22121.
+
+        Finds the nearest Assume line above the current position and
+        inserts a Reductio line referencing it.
+        """
+        self._push_undo()
+        # Find the most recent Assume line (searching backward)
+        assume_idx = None
+        assume_line_num = None
+        assume_depth = 0
+        search_from = len(self._steps) - 1
+        if self._selected > 0:
+            for i, s in enumerate(self._steps):
+                if s.line_number == self._selected:
+                    search_from = i
+                    break
+        for i in range(search_from, -1, -1):
+            if self._steps[i].justification == "Assume":
+                assume_idx = i
+                assume_line_num = self._steps[i].line_number
+                assume_depth = self._steps[i].depth
+                break
+
+        if assume_idx is None:
+            return  # no Assume to close
+
+        # Insert Reductio at depth - 1, after the selected line (or end)
+        outer_depth = max(0, assume_depth - 1)
+        pos = search_from + 1 if self._selected > 0 else len(self._steps)
+        step = ProofStep(0, "", "Reductio", [assume_line_num], outer_depth)
+        self._steps.insert(pos, step)
+        self._renumber()
+        self._rebuild_lines()
+        self.step_changed.emit()
+        # Focus the new Reductio line for typing the conclusion
+        if 0 <= pos < len(self._line_widgets):
+            QTimer.singleShot(
+                50, self._line_widgets[pos].focus_text)
+
     def _on_add_premise_bar(self):
         """Add a new empty premise above the Fitch bar."""
         self._push_undo()
@@ -1645,7 +1651,194 @@ class ProofPanel(QWidget):
     # ===============================================================
 
     def _eval_selected(self):
-        self._eval_all()
+        """Evaluate only the currently selected step.
+
+        Builds a truncated proof containing premises + steps up to and
+        including the selected line so the verifier processes only the
+        minimum context required.
+        """
+        if self._selected < 0 or not self._steps:
+            return
+        # Find the selected step object
+        sel_step = None
+        for s in self._steps:
+            if s.line_number == self._selected:
+                sel_step = s
+                break
+        if sel_step is None:
+            return
+
+        # Ignore if a verification is already running
+        if self._verify_thread is not None:
+            return
+
+        # Auto-fill the selected step if empty
+        if sel_step.text.strip() == "" and sel_step.justification.strip() != "":
+            try:
+                filled = self._generate_autofill(sel_step)
+            except Exception:
+                filled = self._AUTOFILL_FAIL
+            if filled is self._AUTOFILL_FAIL:
+                sel_step.status = "\u2717"
+                sel_step._autofill_error = "Incorrect justification"
+                for lw in self._line_widgets:
+                    if lw.step.line_number == sel_step.line_number:
+                        lw.refresh_from_step()
+                        lw.setToolTip(sel_step._autofill_error)
+                return
+            elif filled:
+                sel_step.text = filled
+                for lw in self._line_widgets:
+                    if lw.step.line_number == sel_step.line_number:
+                        lw.refresh_from_step()
+
+        # Build truncated proof JSON (premises + steps up to selected)
+        proof_json = self._build_proof_json_up_to(sel_step.line_number)
+        self._eval_target_lid = sel_step.line_number
+
+        try:
+            app = QApplication.instance()
+            if app is None or not app.property("_euclid_event_loop_running"):
+                from verifier.unified_checker import verify_e_proof_json
+                result = verify_e_proof_json(proof_json)
+                self._on_verify_selected_finished(result)
+                return
+
+            for btn in self._eval_buttons:
+                btn.setEnabled(False)
+
+            self._verify_thread = QThread()
+            self._verify_worker = _VerifyWorker(proof_json)
+            self._verify_worker.moveToThread(self._verify_thread)
+            self._verify_thread.started.connect(self._verify_worker.run)
+            self._verify_worker.finished.connect(
+                self._on_verify_selected_finished)
+            self._verify_worker.finished.connect(self._verify_thread.quit)
+            self._verify_thread.start()
+        except Exception as exc:
+            log = _get_crash_logger()
+            log.error("Unhandled exception in _eval_selected:\n%s",
+                      traceback.format_exc())
+
+    def _on_verify_selected_finished(self, result_or_exc):
+        """Handle verification result for single-step eval."""
+        # Clean up thread
+        if self._verify_thread is not None:
+            self._verify_thread.quit()
+            self._verify_thread.wait(2000)
+            self._verify_thread.deleteLater()
+        self._verify_thread = None
+        self._verify_worker = None
+
+        for btn in self._eval_buttons:
+            try:
+                btn.setEnabled(True)
+            except RuntimeError:
+                pass
+
+        lid = getattr(self, '_eval_target_lid', None)
+        if lid is None:
+            return
+
+        if isinstance(result_or_exc, Exception):
+            # Mark selected step with warning
+            for s in self._steps:
+                if s.line_number == lid:
+                    s.status = "\u2717"
+                    break
+            for lw in self._line_widgets:
+                if lw.step.line_number == lid:
+                    lw.refresh_from_step()
+                    lw.setToolTip(f"Verifier error: {result_or_exc}")
+            return
+
+        result = result_or_exc
+
+        # Apply result only to the selected step
+        lr = result.line_results.get(lid)
+        for s in self._steps:
+            if s.line_number == lid:
+                if lr and not lr.valid:
+                    s.status = "\u2717"
+                elif lid in result.derived:
+                    s.status = "\u2713"
+                else:
+                    s.status = "?"
+                break
+
+        for lw in self._line_widgets:
+            if lw.step.line_number == lid:
+                try:
+                    lw.refresh_from_step()
+                    if lr and lr.errors:
+                        lw.setToolTip(lr.errors[0])
+                    elif lw.step.status == "\u2713":
+                        lw.setToolTip("Verified")
+                    else:
+                        lw.setToolTip("")
+                except RuntimeError:
+                    pass
+
+    def _build_proof_json_up_to(self, target_lid):
+        """Build proof JSON with only premises + steps up to target_lid."""
+        pts_raw = self._points_input.text().strip()
+        lns_raw = self._lines_input.text().strip()
+        points = ([p.strip() for p in pts_raw.split(",")
+                   if p.strip()] if pts_raw else [])
+        lines_decl = ([el.strip() for el in lns_raw.split(",")
+                       if el.strip()] if lns_raw else [])
+
+        proof_lines = []
+        all_premise_stmts = []
+        for i, p in enumerate(self._premises):
+            all_premise_stmts.append(p)
+            proof_lines.append({
+                "id": i + 1, "depth": 0,
+                "statement": p,
+                "justification": "Given",
+                "refs": [],
+            })
+        for s in self._steps:
+            proof_lines.append({
+                "id": s.line_number, "depth": s.depth,
+                "statement": s.text,
+                "justification": s.justification,
+                "refs": s.refs,
+            })
+            if s.line_number == target_lid:
+                break  # stop after the selected step
+
+        points_set = set(points)
+        lines_set = set(lines_decl)
+        for stmt in all_premise_stmts:
+            for sym in self._extract_symbols(stmt):
+                if sym in points_set or sym in lines_set:
+                    continue
+                if len(sym) == 1 and sym.isupper():
+                    lines_set.add(sym)
+                else:
+                    points_set.add(sym)
+
+        lemma_defs = []
+        for lem in self._lemmas:
+            lemma_defs.append({
+                "name": lem.name,
+                "premises": lem.premises,
+                "goal": lem.goal,
+            })
+
+        out = {
+            "name": self._proof_name,
+            "declarations": {
+                "points": list(points_set),
+                "lines": list(lines_set)},
+            "premises": all_premise_stmts,
+            "goal": "",
+            "lines": proof_lines,
+        }
+        if lemma_defs:
+            out["lemmas"] = lemma_defs
+        return out
 
     def _eval_all(self):
         if not self._steps:
@@ -1655,18 +1848,146 @@ class ProofPanel(QWidget):
             self._update_counts()
             return
 
-        proof_json = self._build_proof_json()
+        # Ignore if a verification is already running
+        if self._verify_thread is not None:
+            return
+
         try:
-            from verifier.unified_checker import verify_e_proof_json
-            result = verify_e_proof_json(proof_json)
+            self._eval_all_inner()
         except Exception as exc:
-            err_msg = str(exc)
+            log = _get_crash_logger()
+            log.error(
+                "Unhandled exception in _eval_all:\n%s",
+                traceback.format_exc(),
+            )
+            self._goal_status.setText("\u26a0")
+            self._goal_status.setStyleSheet(
+                "color:#cc8800; font-weight:bold;"
+                " background:transparent;")
+            self._goal_status.setToolTip(
+                f"Internal error: {type(exc).__name__}: {exc}\n"
+                f"See {_LOG_FILENAME} for details.")
+
+    def _eval_all_inner(self):
+
+        # ── Auto-fill: populate empty sentences before verification ──
+        autofill_changed = False
+        autofill_failed = False
+        for step in self._steps:
+            if step.text.strip() == "" and step.justification.strip() != "":
+                try:
+                    filled = self._generate_autofill(step)
+                except Exception as exc:
+                    log = _get_crash_logger()
+                    log.warning(
+                        "Autofill exception for step %d "
+                        "(just=%r, refs=%r):\n%s",
+                        step.line_number, step.justification,
+                        step.refs, traceback.format_exc(),
+                    )
+                    filled = self._AUTOFILL_FAIL
+                if filled is self._AUTOFILL_FAIL:
+                    # Known rule/theorem but matching failed
+                    step.status = "\u2717"
+                    step._autofill_error = "Incorrect justification"
+                    autofill_failed = True
+                elif filled:
+                    step.text = filled
+                    autofill_changed = True
+        if autofill_changed or autofill_failed:
+            for lw in self._line_widgets:
+                lw.refresh_from_step()
+                if lw.step.status == "\u2717" and hasattr(lw.step, '_autofill_error'):
+                    lw.setToolTip(lw.step._autofill_error)
+
+        proof_json = self._build_proof_json()
+
+        # When no event loop is running (e.g. tests), fall back to
+        # synchronous verification to avoid hanging.
+        app = QApplication.instance()
+        if app is None or not app.property("_euclid_event_loop_running"):
+            try:
+                from verifier.unified_checker import verify_e_proof_json
+                result = verify_e_proof_json(proof_json)
+            except Exception as exc:
+                err_msg = str(exc)
+                self._goal_status.setText("\u26a0")
+                self._goal_status.setStyleSheet(
+                    "color:#cc8800; font-weight:bold;"
+                    " background:transparent;")
+                self._goal_status.setToolTip("Verifier error: " + err_msg)
+                return
+            self._on_verify_finished(result)
+            return
+
+        # Disable eval buttons and show a busy indicator
+        for btn in self._eval_buttons:
+            btn.setEnabled(False)
+        self._goal_status.setText("\u23f3")
+        self._goal_status.setStyleSheet(
+            "color:#888; font-weight:bold; background:transparent;")
+        self._goal_status.setToolTip("Verifying\u2026")
+
+        # Run verification on a background thread
+        self._verify_thread = QThread()
+        self._verify_worker = _VerifyWorker(proof_json)
+        self._verify_worker.moveToThread(self._verify_thread)
+        self._verify_thread.started.connect(self._verify_worker.run)
+        self._verify_worker.finished.connect(self._on_verify_finished)
+        self._verify_worker.finished.connect(self._verify_thread.quit)
+        self._verify_thread.start()
+
+    def _on_verify_finished(self, result_or_exc):
+        """Handle verification result delivered from the background thread."""
+        try:
+            self._on_verify_finished_inner(result_or_exc)
+        except Exception as exc:
+            log = _get_crash_logger()
+            log.error(
+                "Unhandled exception in _on_verify_finished:\n%s",
+                traceback.format_exc(),
+            )
+            try:
+                self._goal_status.setText("\u26a0")
+                self._goal_status.setStyleSheet(
+                    "color:#cc8800; font-weight:bold;"
+                    " background:transparent;")
+                self._goal_status.setToolTip(
+                    f"Internal error: {type(exc).__name__}: {exc}\n"
+                    f"See {_LOG_FILENAME} for details.")
+            except RuntimeError:
+                pass  # widget deleted
+
+    def _on_verify_finished_inner(self, result_or_exc):
+        """Inner implementation — unwrapped for crash logging."""
+        # Clean up thread references — wait for the thread to fully exit
+        # before destroying it to avoid "QThread: Destroyed while still
+        # running" crashes.
+        if self._verify_thread is not None:
+            self._verify_thread.quit()
+            self._verify_thread.wait(2000)
+            self._verify_thread.deleteLater()
+        self._verify_thread = None
+        self._verify_worker = None
+
+        # Re-enable eval buttons
+        for btn in self._eval_buttons:
+            try:
+                btn.setEnabled(True)
+            except RuntimeError:
+                pass  # widget already deleted by C++
+
+        # Handle verifier exception
+        if isinstance(result_or_exc, Exception):
+            err_msg = str(result_or_exc)
             self._goal_status.setText("\u26a0")
             self._goal_status.setStyleSheet(
                 "color:#cc8800; font-weight:bold;"
                 " background:transparent;")
             self._goal_status.setToolTip("Verifier error: " + err_msg)
             return
+
+        result = result_or_exc
 
         error_ids: set = set()
         for lid, lr in result.line_results.items():
@@ -1683,7 +2004,10 @@ class ProofPanel(QWidget):
                 s.status = "?"
 
         for lw in self._line_widgets:
-            lw.refresh_from_step()
+            try:
+                lw.refresh_from_step()
+            except RuntimeError:
+                pass  # widget already deleted by C++
 
         if self._conclusion:
             goal_syntax_ok = False
@@ -1805,11 +2129,869 @@ class ProofPanel(QWidget):
         Uses a regex scan for identifiers that look like point or line
         names in System E syntax.
         """
-        # Extract identifiers from predicate arguments (inside parens)
-        syms = re.findall(r'(?<=[\(,])\s*([A-Za-z_]\w*)\s*(?=[,\)])', stmt)
+        # Extract identifiers from predicate arguments (inside parens).
+        # Include Greek letters (U+0370–U+03FF) and other Unicode letters
+        # so that circle names like α, β are detected.
+        syms = re.findall(
+            r'(?<=[\(,])\s*([A-Za-z\u0370-\u03ff_]\w*)\s*(?=[,\)])', stmt)
         # Also extract standalone identifiers (for a ≠ b style)
-        syms += re.findall(r'\b([A-Za-z])\b', stmt)
+        syms += re.findall(r'(?<![A-Za-z\u0370-\u03ff_])'
+                           r'([A-Za-z\u0370-\u03ff])'
+                           r'(?![A-Za-z\u0370-\u03ff\w])', stmt)
         return list(set(syms))
+
+    # ===============================================================
+    # AUTO-FILL ENGINE
+    # ===============================================================
+
+    # Sentinel returned when autofill detects the justification or refs
+    # are incorrect and the step should be marked ✗ immediately.
+    _AUTOFILL_FAIL = object()
+
+    def _generate_autofill(self, step):
+        """Generate sentence text for a step from its justification and refs.
+
+        Called when the user has filled in a justification (and optionally
+        refs) but left the sentence empty, then pressed Eval.  Returns:
+          - A non-empty string on success (the generated formula text).
+          - ``None`` if auto-fill is not applicable (e.g. empty or
+            unrecognised justification like ``Diagrammatic``).
+          - ``_AUTOFILL_FAIL`` if the justification names a known rule
+            or theorem but the prerequisite / hypothesis matching failed
+            (wrong refs, missing refs, etc.).
+
+        Prerequisite matching mirrors the verifier: all known facts from
+        premises and prior accepted steps are available for matching,
+        with ref'd literals prioritised for variable-binding order.
+        """
+        just = step.justification.strip()
+        if not just:
+            return None
+
+        # Collect parsed literals from all referenced lines (prioritised)
+        ref_lits = self._parse_ref_literals(step.refs)
+
+        # Collect ALL known literals from premises + prior steps so that
+        # prerequisite matching mirrors the verifier (which checks against
+        # the full known-fact set, not just cited refs).
+        all_known = self._collect_known_literals(step.line_number)
+
+        # ── Construction rules ────────────────────────────────────
+        try:
+            from verifier.e_construction import CONSTRUCTION_RULE_BY_NAME
+            rule = CONSTRUCTION_RULE_BY_NAME.get(just)
+            if rule is not None:
+                result = self._autofill_construction(
+                    step, rule, ref_lits, all_known)
+                # None from a known construction rule means matching failed
+                return result if result is not None else self._AUTOFILL_FAIL
+        except ImportError:
+            pass
+
+        # ── Theorem application (Prop.I.x) ────────────────────────
+        if just.startswith("Prop.") or just.startswith("prop."):
+            result = self._autofill_theorem(
+                step, just, ref_lits, all_known)
+            # None from a recognised theorem name means matching failed
+            return result if result is not None else self._AUTOFILL_FAIL
+
+        # ── Metric inference ──────────────────────────────────────
+        if just in ("Metric", "metric"):
+            result = self._autofill_metric(step, ref_lits, all_known)
+            return result if result is not None else self._AUTOFILL_FAIL
+
+        # ── Superposition (SAS / SSS) ────────────────────────────
+        if just in ("SAS", "SSS", "SAS Superposition",
+                     "SSS Superposition", "SAS-elim", "SSS-elim"):
+            result = self._autofill_superposition(
+                step, just, ref_lits, all_known)
+            return result if result is not None else self._AUTOFILL_FAIL
+
+        # ── Diagrammatic / Transfer / Metric named axioms ─────────
+        # Justifications like "Generality 3", "Intersection 3",
+        # "Segment transfer 1", etc.
+        result = self._autofill_named_axiom(
+            step, just, ref_lits, all_known)
+        if result is not None:
+            return result
+
+        return None
+
+    def _collect_known_literals(self, before_line):
+        """Parse all premises and prior step texts into a flat literal list.
+
+        Returns literals from every line whose line_number < *before_line*,
+        mirroring the verifier's known-fact accumulation.  Ref'd literals
+        are NOT deduplicated here — callers merge them as needed.
+        """
+        try:
+            from verifier.e_parser import parse_literal_list, EParseError
+        except ImportError:
+            return []
+        lits = []
+        for prem in self._premises:
+            try:
+                lits.extend(parse_literal_list(prem))
+            except EParseError:
+                pass
+        for s in self._steps:
+            if s.line_number >= before_line:
+                break
+            if s.text.strip():
+                try:
+                    lits.extend(parse_literal_list(s.text))
+                except EParseError:
+                    pass
+        return lits
+
+    def _parse_ref_literals(self, refs):
+        """Parse all referenced lines into a flat list of AST Literals."""
+        try:
+            from verifier.e_parser import parse_literal_list, EParseError
+        except ImportError:
+            return []
+        lits = []
+        for ref in refs:
+            text = self._get_line_text(ref)
+            if not text:
+                continue
+            try:
+                parsed = parse_literal_list(text)
+                lits.extend(parsed)
+            except EParseError:
+                pass
+        return lits
+
+    def _autofill_construction(self, step, rule, ref_lits, all_known):
+        """Auto-fill a construction step by matching prerequisite patterns
+        against known facts to derive a var_map, then substituting into
+        the conclusion pattern.
+
+        Ref'd literals are tried first (user intent), then remaining
+        known facts are used as a fallback pool — mirroring the verifier
+        which checks prerequisites against ALL known facts.
+
+        Returns the generated text, or None if matching failed.
+        """
+        from verifier.e_ast import substitute_literal, literal_vars
+
+        if not rule.conclusion_pattern:
+            return None
+
+        # Build candidate pool: ref'd literals first (priority), then
+        # the remaining known facts (deduped) so binding order reflects
+        # the user's cited refs.
+        ref_set = set(id(l) for l in ref_lits)
+        extra = [l for l in all_known if id(l) not in ref_set]
+        candidate_pool = list(ref_lits) + extra
+
+        # Match candidate pool against the rule's prereq pattern
+        bindings, matched = self._match_hypotheses(
+            rule.prereq_pattern, candidate_pool)
+
+        # All prerequisite patterns must match for a valid autofill
+        if matched < len(rule.prereq_pattern):
+            return None
+
+        # For new_vars (the constructed objects), pick fresh names
+        # if not already bound from prereqs
+        used_names = set(bindings.values())
+        # Also include all names already in the proof so we don't
+        # reuse e.g. α when it was already introduced by a prior step.
+        for prem in self._premises:
+            used_names.update(self._extract_symbols(prem))
+        for s in self._steps:
+            if s.text.strip():
+                used_names.update(self._extract_symbols(s.text))
+        for name, sort in rule.new_vars:
+            if name not in bindings:
+                fresh = self._pick_fresh_name(name, sort, used_names)
+                bindings[name] = fresh
+                used_names.add(fresh)
+
+        # Generate conclusion text
+        parts = []
+        for lit in rule.conclusion_pattern:
+            inst = substitute_literal(lit, bindings)
+            parts.append(repr(inst))
+        return ", ".join(parts)
+
+    def _autofill_theorem(self, step, theorem_name, ref_lits, all_known):
+        """Auto-fill a theorem application step by matching known facts
+        against the theorem's hypotheses to derive a var_map, then
+        substituting into the conclusions.
+
+        Ref'd literals are tried first, with remaining known facts as
+        fallback — mirroring the verifier.
+
+        Returns the generated text, or None if matching failed.
+        """
+        try:
+            from verifier.e_library import E_THEOREM_LIBRARY
+            from verifier.e_ast import substitute_literal
+        except ImportError:
+            return None
+
+        thm = E_THEOREM_LIBRARY.get(theorem_name)
+        if thm is None:
+            return None
+
+        # Build candidate pool: ref'd literals first, then known facts
+        ref_set = set(id(l) for l in ref_lits)
+        extra = [l for l in all_known if id(l) not in ref_set]
+        candidate_pool = list(ref_lits) + extra
+
+        # Match candidate pool against the theorem's hypotheses
+        bindings, matched = self._match_hypotheses(
+            thm.sequent.hypotheses, candidate_pool)
+
+        # All hypothesis patterns must match for a valid autofill
+        if matched < len(thm.sequent.hypotheses):
+            return None
+
+        # For existential vars, pick fresh names that don't collide
+        used_names = set(bindings.values())
+        # Also include all names already in the proof
+        for prem in self._premises:
+            used_names.update(self._extract_symbols(prem))
+        for s in self._steps:
+            if s.text.strip():
+                used_names.update(self._extract_symbols(s.text))
+
+        for name, sort in thm.sequent.exists_vars:
+            if name not in bindings:
+                fresh = self._pick_fresh_name(name, sort, used_names)
+                bindings[name] = fresh
+                used_names.add(fresh)
+
+        # Generate substituted conclusion text
+        parts = []
+        for conc in thm.sequent.conclusions:
+            inst = substitute_literal(conc, bindings)
+            parts.append(repr(inst))
+        return ", ".join(parts)
+
+    # ── Named axiom index (lazy-initialised) ─────────────────────
+    _AXIOM_BY_NAME: Optional[dict] = None
+
+    @classmethod
+    def _get_axiom_by_name(cls) -> dict:
+        """Build or return the cached name→Clause index for all named
+        diagrammatic, transfer and metric axioms.
+
+        Keys are the rule names shown in the UI dropdown, e.g.
+        ``"Generality 3"``, ``"Segment transfer 3b"``.
+
+        Paper-label suffixes are used for groups whose axioms have
+        sub-labels (e.g. B1a-d, C2a-d).  Legacy sequential names
+        (e.g. ``"Betweenness 4"`` for B1d) are kept as aliases so that
+        older saved proofs still resolve.
+        """
+        if cls._AXIOM_BY_NAME is not None:
+            return cls._AXIOM_BY_NAME
+        try:
+            from verifier.e_axioms import (
+                GENERALITY_AXIOMS, BETWEEN_AXIOMS, SAME_SIDE_AXIOMS,
+                PASCH_AXIOMS, TRIPLE_INCIDENCE_AXIOMS, CIRCLE_AXIOMS,
+                INTERSECTION_AXIOMS,
+                DIAGRAM_SEGMENT_TRANSFER, DIAGRAM_ANGLE_TRANSFER,
+                DIAGRAM_AREA_TRANSFER,
+            )
+        except ImportError:
+            cls._AXIOM_BY_NAME = {}
+            return cls._AXIOM_BY_NAME
+
+        # Paper-label suffixes for non-sequential axiom groups.
+        # Groups that ARE sequential use None (label == str(i+1)).
+        _BETWEEN_LABELS = ["1a", "1b", "1c", "1d", "2", "3", "4", "5", "6", "7"]
+        _CIRCLE_LABELS  = ["1", "2a", "2b", "2c", "2d", "3a", "3b", "3c", "3d", "4"]
+        _INTER_LABELS   = ["1", "2a", "2b", "2c", "2d", "3", "4a", "4b", "5"]
+        _SEG_LABELS     = ["1", "2", "3a", "3b", "4a", "4b", "4c", "4d"]
+        _ANG_LABELS     = ["1a", "1b", "1c", "2a", "2b", "2c", "3a", "3b", "4", "5a", "5b"]
+        _AREA_LABELS    = ["1a", "1b", "1c", "2"]
+
+        groups = [
+            ("Generality", GENERALITY_AXIOMS, None),
+            ("Betweenness", BETWEEN_AXIOMS, _BETWEEN_LABELS),
+            ("Same-side", SAME_SIDE_AXIOMS, None),
+            ("Pasch", PASCH_AXIOMS, None),
+            ("Triple incidence", TRIPLE_INCIDENCE_AXIOMS, None),
+            ("Circle", CIRCLE_AXIOMS, _CIRCLE_LABELS),
+            ("Intersection", INTERSECTION_AXIOMS, _INTER_LABELS),
+            ("Segment transfer", DIAGRAM_SEGMENT_TRANSFER, _SEG_LABELS),
+            ("Angle transfer", DIAGRAM_ANGLE_TRANSFER, _ANG_LABELS),
+            ("Area transfer", DIAGRAM_AREA_TRANSFER, _AREA_LABELS),
+        ]
+        idx: dict = {}
+        for group_name, axioms, labels in groups:
+            for i, ax in enumerate(axioms):
+                label = labels[i] if labels else str(i + 1)
+                canonical = f"{group_name} {label}"
+                idx[canonical] = ax
+                # Legacy alias: if the paper label differs from the
+                # sequential index, also register "Group N" so that
+                # older proofs still resolve.
+                seq_name = f"{group_name} {i + 1}"
+                if seq_name != canonical and seq_name not in idx:
+                    idx[seq_name] = ax
+        cls._AXIOM_BY_NAME = idx
+        return idx
+
+    def _autofill_named_axiom(self, step, just, ref_lits, all_known):
+        """Auto-fill a step justified by a named axiom clause.
+
+        Named axioms are clauses ``{¬P₁, ¬P₂, …, Q}`` where the negated
+        literals are prerequisites and the remaining positive literals are
+        the conclusion.  We match known facts against the prerequisites
+        (with polarity flipped) to derive bindings, then substitute into
+        the conclusion.
+
+        Ref'd literals are tried first, with remaining known facts as
+        fallback — mirroring the verifier.
+
+        Returns the generated text, ``_AUTOFILL_FAIL`` if the justification
+        names a known axiom but matching failed, or ``None`` if the
+        justification is not a known named axiom.
+        """
+        from verifier.unified_checker import _try_match_literal
+        from verifier.e_ast import substitute_literal, Literal
+
+        ax_index = self._get_axiom_by_name()
+        clause = ax_index.get(just)
+        if clause is None:
+            return None  # not a known named axiom
+
+        # Split clause into prereqs (negated) and conclusions (positive).
+        # In the clause representation, prerequisites appear as negative
+        # literals (their negation must be true in the known facts).
+        prereqs = []
+        conclusions = []
+        for lit in clause.literals:
+            if not lit.polarity:
+                # Negative literal in clause → prerequisite
+                # The positive version is what we match against known facts
+                prereqs.append(Literal(lit.atom, polarity=True))
+            else:
+                conclusions.append(lit)
+
+        if not conclusions:
+            return self._AUTOFILL_FAIL
+
+        # For disjunctive clauses with multiple positive literals,
+        # we cannot determine which conclusion the user intends.
+        # Skip autofill and let the user type the statement manually.
+        if len(conclusions) > 1:
+            return None
+
+        # Clause.literals is a frozenset, so iteration order is
+        # non-deterministic.  Sort prereqs so that ``On`` patterns bind
+        # primary variables (point + object) before ``Inside`` patterns,
+        # which prevents circle-name swaps in axioms like Intersection 9
+        # where on(a,α) and inside(b,α) share schema variable α.
+        from verifier.e_ast import On, Inside
+        _ATOM_PRIORITY = {On: 0, Inside: 1}
+        prereqs.sort(key=lambda l: (
+            _ATOM_PRIORITY.get(type(l.atom), 2), repr(l)))
+
+        # Build candidate pool: ref'd literals first, then known facts
+        ref_set = set(id(l) for l in ref_lits)
+        extra = [l for l in all_known if id(l) not in ref_set]
+        candidate_pool = list(ref_lits) + extra
+
+        # Match candidate pool against prereqs to derive bindings
+        bindings: dict = {}
+        remaining = list(candidate_pool)
+        matched = 0
+        for pat in prereqs:
+            for i, conc in enumerate(remaining):
+                result = _try_match_literal(pat, conc, bindings)
+                if result is not None:
+                    bindings = result
+                    remaining.pop(i)
+                    matched += 1
+                    break
+
+        if matched < len(prereqs):
+            return self._AUTOFILL_FAIL
+
+        # Substitute bindings into conclusions
+        parts = []
+        for conc in conclusions:
+            inst = substitute_literal(conc, bindings)
+            parts.append(repr(inst))
+        return ", ".join(parts)
+
+    def _autofill_metric(self, step, ref_lits, all_known):
+        """Auto-fill a step justified by ``Metric``.
+
+        Uses a sequential pattern-matching strategy, trying the most
+        specific patterns first:
+
+        1. **Multi-ref transitivity** – when ≥ 2 ref lines are cited,
+           derive the cross-ref equality connecting terms from
+           different references (CN1).
+        2. **Angle M4-both-sides rewrite** – for single-ref steps
+           containing angle equalities, apply M4 to both sides
+           simultaneously to produce a novel textual variant.
+        3. **Pure swap** – for single-ref equalities, produce
+           ``Y = X`` from ``X = Y``.  Skipped when the same canonical
+           equality already appears in a non-ref prior step.
+        4. **M1 disequality** – derive ``¬(p = q)`` from segment
+           nonzero.
+        5. **Angle consequences (M9)** – derive angle equalities from
+           segment equalities, preferring angles whose vertex is
+           the shared endpoint of the referenced segment terms.
+
+        Returns the generated text, ``_AUTOFILL_FAIL`` if no new metric
+        facts can be derived, or ``None`` if the engine is unavailable.
+        """
+        try:
+            from verifier.e_metric import MetricEngine
+            from verifier.e_ast import (
+                Literal, Equals, LessThan, SegmentTerm, AngleTerm,
+                AreaTerm, literal_vars, Term,
+            )
+            from verifier.e_parser import parse_literal_list, EParseError
+        except ImportError:
+            return None
+
+        from itertools import permutations
+
+        known_set = set(all_known)
+
+        # Exact-text set of every already-stated literal.
+        known_texts = set()
+        for lit in all_known:
+            known_texts.add(repr(lit))
+        for prem in self._premises:
+            known_texts.add(prem.strip())
+        for s in self._steps:
+            if s.line_number < step.line_number and s.text.strip():
+                known_texts.add(s.text.strip())
+
+        # Canonical-form helpers for semantic redundancy detection.
+        def _term_canon(t):
+            if isinstance(t, SegmentTerm):
+                return ("seg", frozenset([t.p1, t.p2]))
+            if isinstance(t, AngleTerm):
+                return ("ang", t.p2, frozenset([t.p1, t.p3]))
+            if isinstance(t, AreaTerm):
+                return ("area", frozenset([t.p1, t.p2, t.p3]))
+            return ("pt", t) if isinstance(t, str) else ("o", repr(t))
+
+        def _eq_canon(atom):
+            return frozenset(
+                [_term_canon(atom.left), _term_canon(atom.right)])
+
+        known_eq_canons = set()
+        known_diseq_canons = set()
+        for lit in all_known:
+            if isinstance(lit.atom, Equals):
+                c = _eq_canon(lit.atom)
+                if lit.polarity:
+                    known_eq_canons.add(c)
+                else:
+                    known_diseq_canons.add(c)
+
+        # Canonical eq forms from non-ref prior steps (not premises
+        # or Given steps).  Detects when a swap would be redundant
+        # because the equality was already independently stated in
+        # the proof.  "Given" steps restate premises and must be
+        # excluded just like premises themselves.
+        non_ref_eq_canons = set()
+        ref_set = set(step.refs)
+        for s in self._steps:
+            if (s.line_number < step.line_number
+                    and s.line_number not in ref_set
+                    and s.text.strip()
+                    and s.justification.strip() != "Given"):
+                try:
+                    for lit in parse_literal_list(s.text):
+                        if (isinstance(lit.atom, Equals) and lit.polarity
+                                and isinstance(lit.atom.left,
+                                               (SegmentTerm, AngleTerm,
+                                                AreaTerm))):
+                            non_ref_eq_canons.add(_eq_canon(lit.atom))
+                except (EParseError, Exception):
+                    pass
+
+        # ── Build the metric engine from ALL known facts ──────────
+        engine = MetricEngine()
+        engine.process_literals(known_set)
+
+        # Helper: M3/M4/M8 textual variants of a magnitude term
+        def _variants(t):
+            out = [t]
+            if isinstance(t, SegmentTerm):
+                out.append(SegmentTerm(t.p2, t.p1))
+            elif isinstance(t, AngleTerm):
+                out.append(AngleTerm(t.p3, t.p2, t.p1))
+            elif isinstance(t, AreaTerm):
+                out.append(AreaTerm(t.p3, t.p1, t.p2))
+                out.append(AreaTerm(t.p1, t.p3, t.p2))
+            return out
+
+        # Collect ref equalities as (left_term, right_term) pairs
+        ref_eqs = []
+        for lit in ref_lits:
+            if not lit.polarity or not isinstance(lit.atom, Equals):
+                continue
+            a = lit.atom
+            if isinstance(a.left, (SegmentTerm, AngleTerm, AreaTerm)):
+                ref_eqs.append((a.left, a.right))
+
+        if not ref_eqs:
+            return self._AUTOFILL_FAIL
+
+        # Preload ref-term variants into engine
+        for left, right in ref_eqs:
+            for t in _variants(left) + _variants(right):
+                engine.state.add_term(t)
+        engine._apply_rules()
+
+        # Multi-ref means the user cited ≥ 2 distinct reference lines
+        # with ≥ 2 magnitude equalities → transitivity.
+        multi_ref = len(step.refs) >= 2 and len(ref_eqs) >= 2
+
+        def _is_novel(text):
+            return text not in known_texts
+
+        # ══════════════════════════════════════════════════════════
+        # PATTERN 1: Multi-ref transitivity (CN1)
+        # Cross-ref original-term pairings.  Skip trivial M3/M4
+        # self-identities.  Prefer alphabetically first.
+        # ══════════════════════════════════════════════════════════
+        if multi_ref:
+            trans_candidates = []
+            for i in range(len(ref_eqs)):
+                for j in range(i + 1, len(ref_eqs)):
+                    li, ri = ref_eqs[i]
+                    lj, rj = ref_eqs[j]
+                    cross_pairs = [
+                        (li, lj), (lj, li),
+                        (li, rj), (rj, li),
+                        (ri, lj), (lj, ri),
+                        (ri, rj), (rj, ri),
+                    ]
+                    for a, b in cross_pairs:
+                        if not engine.state.are_equal(a, b):
+                            continue
+                        if _term_canon(a) == _term_canon(b):
+                            continue
+                        lit = Literal(Equals(a, b))
+                        text = repr(lit)
+                        if _is_novel(text):
+                            trans_candidates.append(text)
+            if trans_candidates:
+                trans_candidates.sort()
+                return trans_candidates[0]
+
+        # ══════════════════════════════════════════════════════════
+        # PATTERN 2: Angle M4-both-sides rewrite (reversed order)
+        # Only for AngleTerm.  Process in reverse so the last angle
+        # equality (most useful from SAS/SSS conclusions) is first.
+        # ══════════════════════════════════════════════════════════
+        if not multi_ref:
+            for left, right in reversed(ref_eqs):
+                if not isinstance(left, AngleTerm):
+                    continue
+                lv = _variants(left)
+                rv = _variants(right)
+                angle_results = []
+                for vi in range(1, min(len(lv), len(rv))):
+                    for a, b in [(lv[vi], rv[vi]),
+                                 (rv[vi], lv[vi])]:
+                        lit = Literal(Equals(a, b))
+                        text = repr(lit)
+                        if _is_novel(text):
+                            angle_results.append(text)
+                if angle_results:
+                    return angle_results[0]
+
+        # ══════════════════════════════════════════════════════════
+        # PATTERN 3: Pure swap  (Y = X  from  X = Y)
+        # Skip if the same canonical equality already appears in a
+        # non-ref prior step (the fact is already known elsewhere).
+        # ══════════════════════════════════════════════════════════
+        if not multi_ref:
+            swap_results = []
+            for left, right in ref_eqs:
+                lit = Literal(Equals(right, left))
+                text = repr(lit)
+                if not _is_novel(text):
+                    continue
+                canon = _eq_canon(lit.atom)
+                if canon in non_ref_eq_canons:
+                    continue
+                swap_results.append(text)
+            if swap_results:
+                return swap_results[0]
+
+        # ══════════════════════════════════════════════════════════
+        # PATTERN 4: M1 disequality (one per canonical point pair)
+        # Try (p2, p1) order first for conventional form.
+        # ══════════════════════════════════════════════════════════
+        diseq_results = []
+        seen_diseq_canons = set()
+        for left, right in ref_eqs:
+            for t in [left, right]:
+                if isinstance(t, SegmentTerm) and t.p1 != t.p2:
+                    for p, q in [(t.p2, t.p1), (t.p1, t.p2)]:
+                        lit = Literal(Equals(p, q), polarity=False)
+                        text = repr(lit)
+                        canon = _eq_canon(lit.atom)
+                        if canon in known_diseq_canons:
+                            continue
+                        if canon in seen_diseq_canons:
+                            continue
+                        if _is_novel(text) and engine._check_literal(lit):
+                            seen_diseq_canons.add(canon)
+                            diseq_results.append(text)
+        if diseq_results:
+            return diseq_results[0]
+
+        # ══════════════════════════════════════════════════════════
+        # PATTERN 5: Angle consequences from segment equalities (M9)
+        # Prefer angles whose vertex is the shared point of ref
+        # segment terms.
+        # ══════════════════════════════════════════════════════════
+        ref_points = set()
+        for left, right in ref_eqs:
+            for t in [left, right]:
+                if isinstance(t, SegmentTerm):
+                    ref_points.add(t.p1)
+                    ref_points.add(t.p2)
+                elif isinstance(t, AngleTerm):
+                    ref_points.update([t.p1, t.p2, t.p3])
+
+        # Find shared point(s) among ref segment terms
+        shared_points = set()
+        seg_terms = [t for l, r in ref_eqs
+                     for t in [l, r] if isinstance(t, SegmentTerm)]
+        if len(seg_terms) >= 2:
+            point_sets = [frozenset([t.p1, t.p2]) for t in seg_terms]
+            shared_points = point_sets[0]
+            for ps in point_sets[1:]:
+                shared_points = shared_points & ps
+        elif len(seg_terms) == 1:
+            shared_points = {seg_terms[0].p1, seg_terms[0].p2}
+
+        if len(ref_points) >= 3:
+            angle_terms = []
+            angle_reprs = set()
+            for perm in permutations(sorted(ref_points), 3):
+                at = AngleTerm(perm[0], perm[1], perm[2])
+                r = repr(at)
+                if r not in angle_reprs:
+                    angle_reprs.add(r)
+                    angle_terms.append(at)
+                    engine.state.add_term(at)
+
+            engine._apply_rules()
+
+            angle_candidates = []
+            seen_angle_canons = set()
+            for i, a1 in enumerate(angle_terms):
+                for a2 in angle_terms[i + 1:]:
+                    if not engine.state.are_equal(a1, a2):
+                        continue
+                    canon = _eq_canon(Equals(a1, a2))
+                    if canon in known_eq_canons:
+                        continue
+                    if canon in seen_angle_canons:
+                        continue
+                    seen_angle_canons.add(canon)
+                    for a_left, a_right in [(a1, a2), (a2, a1)]:
+                        lit = Literal(Equals(a_left, a_right))
+                        text = repr(lit)
+                        if _is_novel(text):
+                            score = 0
+                            if a_left.p2 in shared_points:
+                                score += 1
+                            if a_right.p2 in shared_points:
+                                score += 1
+                            angle_candidates.append((score, text))
+                            break
+            if angle_candidates:
+                angle_candidates.sort(key=lambda x: (-x[0], x[1]))
+                return angle_candidates[0][1]
+
+        return self._AUTOFILL_FAIL
+
+    def _autofill_superposition(self, step, just, ref_lits, all_known):
+        """Auto-fill a SAS or SSS superposition step.
+
+        Identifies the two triangles from segment and angle equalities
+        in the known facts, then delegates to the verifier's
+        ``apply_sas_superposition`` or ``apply_sss_superposition``
+        to derive the congruence conclusions.
+
+        Returns the generated text, ``_AUTOFILL_FAIL`` if the required
+        hypotheses are not met, or ``None`` if the engine is unavailable.
+        """
+        try:
+            from verifier.e_superposition import (
+                apply_sas_superposition, apply_sss_superposition,
+            )
+            from verifier.e_ast import (
+                Literal, Equals, SegmentTerm, AngleTerm, AreaTerm,
+                literal_vars,
+            )
+        except ImportError:
+            return None
+
+        is_sas = just in ("SAS", "SAS Superposition", "SAS-elim")
+
+        known_set = set(all_known)
+
+        # Collect segment equalities and angle equalities from known facts
+        seg_eqs = []   # (p1, p2, q1, q2) meaning p1p2 = q1q2
+        angle_eqs = []  # (p1,p2,p3, q1,q2,q3) meaning ∠p1p2p3 = ∠q1q2q3
+
+        for lit in (list(ref_lits) + list(all_known)):
+            if not lit.polarity:
+                continue
+            if not isinstance(lit.atom, Equals):
+                continue
+            a = lit.atom
+            if isinstance(a.left, SegmentTerm) and isinstance(a.right, SegmentTerm):
+                seg_eqs.append((a.left.p1, a.left.p2,
+                                a.right.p1, a.right.p2))
+            elif isinstance(a.left, AngleTerm) and isinstance(a.right, AngleTerm):
+                angle_eqs.append((a.left.p1, a.left.p2, a.left.p3,
+                                  a.right.p1, a.right.p2, a.right.p3))
+
+        if is_sas:
+            # SAS: need an angle equality ∠bac = ∠edf and two segment
+            # equalities ab = de, ac = df where a,d are the angle vertices.
+            for (ap1, ap2, ap3, aq1, aq2, aq3) in angle_eqs:
+                # ap2 is vertex of triangle 1, aq2 is vertex of triangle 2
+                # The sides from vertex are: ap2→ap1 and ap2→ap3
+                # Need: seg(ap2,ap1) = seg(aq2,aq1) and
+                #        seg(ap2,ap3) = seg(aq2,aq3)
+                a, b, c = ap2, ap1, ap3
+                d, e, f = aq2, aq1, aq3
+                # Skip self-congruence where both triangles are the same
+                if {a, b, c} == {d, e, f}:
+                    continue
+                result = apply_sas_superposition(known_set, a, b, c, d, e, f)
+                if result.valid:
+                    parts = [repr(lit) for lit in result.derived]
+                    return ", ".join(parts)
+            return self._AUTOFILL_FAIL
+        else:
+            # SSS: need three segment equalities covering all three sides.
+            # Try to identify the triangles from the segment equalities.
+            # Strategy: find two segment equalities sharing a "side mapping"
+            # pattern, then search for the third.
+            from itertools import combinations
+            # Try all triples of segment equalities
+            seen = set()
+            for combo in combinations(range(len(seg_eqs)), 3):
+                eqs = [seg_eqs[i] for i in combo]
+                # Extract all points on each "side" of the equalities
+                left_pts = set()
+                right_pts = set()
+                for (p1, p2, q1, q2) in eqs:
+                    left_pts.update([p1, p2])
+                    right_pts.update([q1, q2])
+                # For SSS we need exactly 3 points on each side
+                if len(left_pts) != 3 or len(right_pts) != 3:
+                    continue
+                # Skip self-congruence
+                if left_pts == right_pts:
+                    continue
+                # Try to establish vertex correspondence from the equalities
+                # Build a correspondence map from the segment equalities
+                tri1 = sorted(left_pts)
+                tri2 = sorted(right_pts)
+                key = (tuple(tri1), tuple(tri2))
+                if key in seen:
+                    continue
+                seen.add(key)
+                # Try all possible orderings: the first segment eq gives
+                # vertex correspondence a↔d, b↔e, then verify the third
+                for (p1, p2, q1, q2) in eqs:
+                    for a, b in [(p1, p2), (p2, p1)]:
+                        for d, e in [(q1, q2), (q2, q1)]:
+                            c_set = left_pts - {a, b}
+                            f_set = right_pts - {d, e}
+                            if len(c_set) != 1 or len(f_set) != 1:
+                                continue
+                            c = c_set.pop()
+                            f = f_set.pop()
+                            result = apply_sss_superposition(
+                                known_set, a, b, c, d, e, f)
+                            if result.valid:
+                                parts = [repr(lit) for lit in result.derived]
+                                return ", ".join(parts)
+            return self._AUTOFILL_FAIL
+
+    @staticmethod
+    def _match_hypotheses(patterns, concrete_lits):
+        """Match a list of pattern literals against concrete literals
+        to derive variable bindings, using the same algorithm as
+        the verifier's _try_match_literal.
+
+        Returns a tuple ``(bindings, matched_count)`` where *bindings*
+        maps template variable names to concrete names and
+        *matched_count* is how many patterns were successfully matched.
+        """
+        from verifier.unified_checker import _try_match_literal
+        bindings = {}
+        matched = 0
+        remaining = list(concrete_lits)
+        for pat in patterns:
+            for i, conc in enumerate(remaining):
+                result = _try_match_literal(pat, conc, bindings)
+                if result is not None:
+                    bindings = result
+                    remaining.pop(i)
+                    matched += 1
+                    break
+        return bindings, matched
+
+    @staticmethod
+    def _pick_fresh_name(template_name, sort, used_names):
+        """Pick a fresh variable name that doesn't collide with used_names.
+
+        Follows System E naming conventions:
+          - Points: lowercase single letters (a, b, c, ...)
+          - Lines: uppercase single letters (L, M, N, ...)
+          - Circles: Greek letters (α, β, γ, ...)
+        """
+        from verifier.e_ast import Sort
+
+        if sort == Sort.LINE:
+            candidates = [chr(c) for c in range(ord('L'), ord('Z') + 1)]
+        elif sort == Sort.CIRCLE:
+            candidates = ["\u03b1", "\u03b2", "\u03b3", "\u03b4",
+                          "\u03b5", "\u03b6", "\u03b7", "\u03b8"]
+        else:
+            # Point: try the template name first, then a-z
+            candidates = [template_name] + [
+                chr(c) for c in range(ord('a'), ord('z') + 1)]
+
+        for name in candidates:
+            if name not in used_names:
+                return name
+        # Fallback: numbered names
+        for i in range(1, 100):
+            candidate = template_name + str(i)
+            if candidate not in used_names:
+                return candidate
+        return template_name
+
+    def _get_line_text(self, line_number):
+        """Return the text of a proof line or premise by line number."""
+        # Check premises first
+        if 1 <= line_number <= len(self._premises):
+            return self._premises[line_number - 1]
+        # Then proof steps
+        for s in self._steps:
+            if s.line_number == line_number:
+                return s.text
+        return None
 
     def _update_counts(self):
         valid = sum(

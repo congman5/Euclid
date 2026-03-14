@@ -1,0 +1,4207 @@
+{
+  "Prop.I.1": {
+    "name": "Prop.I.1",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "¬(a = b)"
+    ],
+    "goal": "ab = ac, ab = bc, ¬(c = a), ¬(c = b)",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "center(a, α), on(b, α)",
+        "justification": "let-circle",
+        "refs": [
+          1
+        ]
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "center(b, β), on(a, β)",
+        "justification": "let-circle",
+        "refs": [
+          1
+        ]
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "inside(a, α)",
+        "justification": "Generality 3",
+        "refs": [
+          2
+        ]
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "inside(b, β)",
+        "justification": "Generality 3",
+        "refs": [
+          3
+        ]
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "intersects(α, β)",
+        "justification": "Intersection 9",
+        "refs": [
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "on(c, α), on(c, β)",
+        "justification": "let-intersection-circle-circle-one",
+        "refs": [
+          6
+        ]
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "ac = ab",
+        "justification": "Segment transfer 4",
+        "refs": [
+          2,
+          7
+        ]
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "bc = ba",
+        "justification": "Segment transfer 4",
+        "refs": [
+          3,
+          7
+        ]
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "ab = ac",
+        "justification": "Metric",
+        "refs": [
+          8
+        ]
+      },
+      {
+        "id": 11,
+        "depth": 0,
+        "statement": "ab = bc",
+        "justification": "Metric",
+        "refs": [
+          9,
+          8
+        ]
+      },
+      {
+        "id": 12,
+        "depth": 0,
+        "statement": "¬(c = a)",
+        "justification": "Metric",
+        "refs": [
+          8
+        ]
+      },
+      {
+        "id": 13,
+        "depth": 0,
+        "statement": "¬(c = b)",
+        "justification": "Metric",
+        "refs": [
+          9
+        ]
+      }
+    ]
+  },
+  "Prop.I.2": {
+    "name": "test-Prop.I.2",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(b, L)",
+      "on(c, L)",
+      "¬(b = c)",
+      "¬(a = b)",
+      "¬(a = c)"
+    ],
+    "goal": "af = bc",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(c, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "af = bc",
+        "justification": "Prop.I.2",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  "Prop.I.3": {
+    "name": "test-Prop.I.3",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)",
+      "cd < ab"
+    ],
+    "goal": "between(a, e, b), ae = cd",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "cd < ab",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "between(a, e, b), ae = cd",
+        "justification": "Prop.I.3",
+        "refs": [
+          1,
+          2,
+          3,
+          4
+        ]
+      }
+    ]
+  },
+  "Prop.I.4": {
+    "name": "Prop.I.4",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "ab = de",
+      "ac = df",
+      "∠bac = ∠edf"
+    ],
+    "goal": "bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "ab = de",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "ac = df",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "∠bac = ∠edf",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "bc = ef, ∠abc = ∠def, ∠acb = ∠dfe, △abc = △def",
+        "justification": "SAS",
+        "refs": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "∠bca = ∠efd",
+        "justification": "Metric",
+        "refs": [
+          4
+        ]
+      }
+    ]
+  },
+  "Prop.I.5": {
+    "name": "Prop.I.5",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "ab = ac",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)"
+    ],
+    "goal": "∠abc = ∠acb",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "ab = ac",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "ac = ab",
+        "justification": "Metric",
+        "refs": [
+          1
+        ]
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "∠bac = ∠cab",
+        "justification": "Metric",
+        "refs": [
+          1
+        ]
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "bc = cb, ∠abc = ∠acb, ∠bca = ∠cba, △abc = △acb",
+        "justification": "Prop.I.4",
+        "refs": [
+          1,
+          5,
+          6
+        ]
+      }
+    ]
+  },
+  "Prop.I.6": {
+    "name": "test-Prop.I.6",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "∠abc = ∠acb",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)"
+    ],
+    "goal": "ab = ac",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "∠abc = ∠acb",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "ab = ac",
+        "justification": "Prop.I.6",
+        "refs": [
+          1,
+          2,
+          3,
+          4
+        ]
+      }
+    ]
+  },
+  "Prop.I.7": {
+    "name": "test-Prop.I.7",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(b, L)",
+      "on(c, L)",
+      "¬(b = c)",
+      "same-side(a, d, L)",
+      "bd = ba",
+      "cd = ca"
+    ],
+    "goal": "d = a",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(c, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "same-side(a, d, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "bd = ba",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "cd = ca",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "d = a",
+        "justification": "Prop.I.7",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    ]
+  },
+  "Prop.I.8": {
+    "name": "Prop.I.8",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "ab = de",
+      "bc = ef",
+      "ca = fd"
+    ],
+    "goal": "∠bac = ∠edf, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "ab = de",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "bc = ef",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "ca = fd",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "∠bac = ∠edf, ∠abc = ∠def, ∠acb = ∠dfe, △abc = △def",
+        "justification": "SSS",
+        "refs": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "∠bca = ∠efd",
+        "justification": "Metric",
+        "refs": [
+          4
+        ]
+      }
+    ]
+  },
+  "Prop.I.9": {
+    "name": "test-Prop.I.9",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "on(a, M)",
+      "on(b, M)",
+      "on(a, N)",
+      "on(c, N)",
+      "same-side(c, b, M)",
+      "same-side(b, c, N)"
+    ],
+    "goal": "∠bae = ∠cae, same-side(e, c, M), same-side(e, b, N)",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(a, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "on(b, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "on(a, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "on(c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "same-side(c, b, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "same-side(b, c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "∠bae = ∠cae, same-side(e, c, M), same-side(e, b, N)",
+        "justification": "Prop.I.9",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      }
+    ]
+  },
+  "Prop.I.10": {
+    "name": "test-Prop.I.10",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)"
+    ],
+    "goal": "between(a, d, b), ad = db",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "between(a, d, b), ad = db",
+        "justification": "Prop.I.10",
+        "refs": [
+          1,
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  "Prop.I.11": {
+    "name": "test-Prop.I.11",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)"
+    ],
+    "goal": "∠baf = right-angle, ¬(f = a), ¬(on(f, L))",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "∠baf = right-angle, ¬(f = a), ¬(on(f, L))",
+        "justification": "Prop.I.11",
+        "refs": [
+          1,
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  "Prop.I.12": {
+    "name": "test-Prop.I.12",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)",
+      "¬(on(p, L))"
+    ],
+    "goal": "on(h, L), ∠ahp = right-angle, ¬(h = p)",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(on(p, L))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "on(h, L), ∠ahp = right-angle, ¬(h = p)",
+        "justification": "Prop.I.12",
+        "refs": [
+          1,
+          2,
+          3,
+          4
+        ]
+      }
+    ]
+  },
+  "Prop.I.13": {
+    "name": "test-Prop.I.13",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(c, L)",
+      "between(a, b, c)",
+      "¬(on(d, L))",
+      "¬(b = d)"
+    ],
+    "goal": "(∠abd + ∠dbc) = (right-angle + right-angle)",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(c, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "between(a, b, c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(on(d, L))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(b = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "(∠abd + ∠dbc) = (right-angle + right-angle)",
+        "justification": "Prop.I.13",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  "Prop.I.14": {
+    "name": "test-Prop.I.14",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)",
+      "¬(on(c, L))",
+      "¬(on(d, L))",
+      "¬(b = c)",
+      "¬(b = d)",
+      "¬(same-side(c, d, L))",
+      "(∠abc + ∠abd) = (right-angle + right-angle)"
+    ],
+    "goal": "between(c, b, d)",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(on(c, L))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(on(d, L))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(b = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "¬(same-side(c, d, L))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "(∠abc + ∠abd) = (right-angle + right-angle)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "between(c, b, d)",
+        "justification": "Prop.I.14",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      }
+    ]
+  },
+  "Prop.I.15": {
+    "name": "test-Prop.I.15",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(c, M)",
+      "on(d, M)",
+      "on(e, L)",
+      "on(e, M)",
+      "between(a, e, b)",
+      "between(c, e, d)",
+      "¬(L = M)"
+    ],
+    "goal": "∠aec = ∠bed",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "on(c, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(d, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "on(e, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "on(e, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "between(a, e, b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "between(c, e, d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "¬(L = M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "∠aec = ∠bed",
+        "justification": "Prop.I.15",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      }
+    ]
+  },
+  "Prop.I.16": {
+    "name": "test-Prop.I.16",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "between(a, b, d)",
+      "¬(on(c, L))",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)"
+    ],
+    "goal": "∠bac < ∠dbc, ∠bca < ∠dbc",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "between(a, b, d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(on(c, L))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "∠bac < ∠dbc, ∠bca < ∠dbc",
+        "justification": "Prop.I.16",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ]
+      }
+    ]
+  },
+  "Prop.I.17": {
+    "name": "test-Prop.I.17",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "on(a, L)",
+      "on(b, L)",
+      "¬(on(c, L))"
+    ],
+    "goal": "(∠abc + ∠bca) < (right-angle + right-angle)",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "¬(on(c, L))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "(∠abc + ∠bca) < (right-angle + right-angle)",
+        "justification": "Prop.I.17",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    ]
+  },
+  "Prop.I.18": {
+    "name": "test-Prop.I.18",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "ab < ac"
+    ],
+    "goal": "∠acb < ∠abc",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "ab < ac",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "∠acb < ∠abc",
+        "justification": "Prop.I.18",
+        "refs": [
+          1,
+          2,
+          3,
+          4
+        ]
+      }
+    ]
+  },
+  "Prop.I.19": {
+    "name": "test-Prop.I.19",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "∠abc < ∠acb"
+    ],
+    "goal": "ac < ab",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "∠abc < ∠acb",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "ac < ab",
+        "justification": "Prop.I.19",
+        "refs": [
+          1,
+          2,
+          3,
+          4
+        ]
+      }
+    ]
+  },
+  "Prop.I.20": {
+    "name": "test-Prop.I.20",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)"
+    ],
+    "goal": "bc < (ab + ac)",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "bc < (ab + ac)",
+        "justification": "Prop.I.20",
+        "refs": [
+          1,
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  "Prop.I.21": {
+    "name": "test-Prop.I.21",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "¬(d = b)",
+      "¬(d = c)",
+      "on(b, L)",
+      "on(c, L)",
+      "¬(on(a, L))",
+      "same-side(d, a, L)"
+    ],
+    "goal": "(bd + dc) < (ba + ac), ∠bac < ∠bdc",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(d = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(d = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "on(c, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "¬(on(a, L))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "same-side(d, a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "(bd + dc) < (ba + ac), ∠bac < ∠bdc",
+        "justification": "Prop.I.21",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      }
+    ]
+  },
+  "Prop.I.22": {
+    "name": "test-Prop.I.22",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "¬(a = b)",
+      "¬(c = d)",
+      "¬(e = f)",
+      "ab < (cd + ef)",
+      "cd < (ab + ef)",
+      "ef < (ab + cd)"
+    ],
+    "goal": "pq = ab, pr = cd, qr = ef",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(c = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(e = f)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "ab < (cd + ef)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "cd < (ab + ef)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "ef < (ab + cd)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "pq = ab, pr = cd, qr = ef",
+        "justification": "Prop.I.22",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    ]
+  },
+  "Prop.I.23": {
+    "name": "test-Prop.I.23",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "¬(d = e)",
+      "¬(d = f)",
+      "¬(e = f)",
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)"
+    ],
+    "goal": "∠bag = ∠edf, ¬(on(g, L))",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "¬(d = e)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(d = f)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(e = f)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "∠bag = ∠edf, ¬(on(g, L))",
+        "justification": "Prop.I.23",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    ]
+  },
+  "Prop.I.24": {
+    "name": "test-Prop.I.24",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "ab = de",
+      "ac = df",
+      "∠edf < ∠bac",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "¬(d = e)",
+      "¬(d = f)",
+      "¬(e = f)"
+    ],
+    "goal": "ef < bc",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "ab = de",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "ac = df",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "∠edf < ∠bac",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(d = e)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "¬(d = f)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "¬(e = f)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "ef < bc",
+        "justification": "Prop.I.24",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      }
+    ]
+  },
+  "Prop.I.25": {
+    "name": "test-Prop.I.25",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "ab = de",
+      "ac = df",
+      "ef < bc",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "¬(d = e)",
+      "¬(d = f)",
+      "¬(e = f)"
+    ],
+    "goal": "∠edf < ∠bac",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "ab = de",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "ac = df",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "ef < bc",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(d = e)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "¬(d = f)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "¬(e = f)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "∠edf < ∠bac",
+        "justification": "Prop.I.25",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      }
+    ]
+  },
+  "Prop.I.26": {
+    "name": "test-Prop.I.26",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "∠abc = ∠def",
+      "∠bca = ∠efd",
+      "bc = ef",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "¬(d = e)",
+      "¬(d = f)",
+      "¬(e = f)"
+    ],
+    "goal": "ab = de, ac = df, ∠bac = ∠edf, △abc = △def",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "∠abc = ∠def",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "∠bca = ∠efd",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "bc = ef",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(d = e)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "¬(d = f)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "¬(e = f)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "ab = de, ac = df, ∠bac = ∠edf, △abc = △def",
+        "justification": "Prop.I.26",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      }
+    ]
+  },
+  "Prop.I.27": {
+    "name": "test-Prop.I.27",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(b, M)",
+      "on(c, M)",
+      "on(c, N)",
+      "on(d, N)",
+      "¬(a = b)",
+      "¬(b = c)",
+      "¬(c = d)",
+      "¬(L = N)",
+      "¬(same-side(a, d, M))",
+      "∠abc = ∠bcd"
+    ],
+    "goal": "¬(intersects(L, N))",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "on(b, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(c, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "on(c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "on(d, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "¬(c = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "¬(L = N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 11,
+        "depth": 0,
+        "statement": "¬(same-side(a, d, M))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 12,
+        "depth": 0,
+        "statement": "∠abc = ∠bcd",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 13,
+        "depth": 0,
+        "statement": "¬(intersects(L, N))",
+        "justification": "Prop.I.27",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      }
+    ]
+  },
+  "Prop.I.28": {
+    "name": "test-Prop.I.28",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(b, M)",
+      "on(c, M)",
+      "on(c, N)",
+      "on(d, N)",
+      "¬(a = b)",
+      "¬(b = c)",
+      "¬(c = d)",
+      "¬(L = N)",
+      "same-side(a, d, M)",
+      "(∠abc + ∠bcd) = (right-angle + right-angle)"
+    ],
+    "goal": "¬(intersects(L, N))",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "on(b, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(c, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "on(c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "on(d, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "¬(c = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "¬(L = N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 11,
+        "depth": 0,
+        "statement": "same-side(a, d, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 12,
+        "depth": 0,
+        "statement": "(∠abc + ∠bcd) = (right-angle + right-angle)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 13,
+        "depth": 0,
+        "statement": "¬(intersects(L, N))",
+        "justification": "Prop.I.28",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      }
+    ]
+  },
+  "Prop.I.29": {
+    "name": "test-Prop.I.29",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(b, M)",
+      "on(c, M)",
+      "on(c, N)",
+      "on(d, N)",
+      "¬(a = b)",
+      "¬(b = c)",
+      "¬(c = d)",
+      "¬(L = N)",
+      "¬(same-side(a, d, M))",
+      "¬(intersects(L, N))"
+    ],
+    "goal": "∠abc = ∠bcd",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "on(b, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(c, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "on(c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "on(d, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "¬(c = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "¬(L = N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 11,
+        "depth": 0,
+        "statement": "¬(same-side(a, d, M))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 12,
+        "depth": 0,
+        "statement": "¬(intersects(L, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 13,
+        "depth": 0,
+        "statement": "∠abc = ∠bcd",
+        "justification": "Prop.I.29",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      }
+    ]
+  },
+  "Prop.I.30": {
+    "name": "test-Prop.I.30",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "¬(intersects(L, M))",
+      "¬(intersects(M, N))",
+      "¬(L = M)",
+      "¬(M = N)",
+      "¬(L = N)"
+    ],
+    "goal": "¬(intersects(L, N))",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "¬(intersects(L, M))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(intersects(M, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(L = M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(M = N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(L = N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "¬(intersects(L, N))",
+        "justification": "Prop.I.30",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  "Prop.I.31": {
+    "name": "test-Prop.I.31",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(b, L)",
+      "on(c, L)",
+      "¬(b = c)",
+      "¬(on(a, L))"
+    ],
+    "goal": "on(a, M), ¬(intersects(L, M))",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(c, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(on(a, L))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "on(a, M), ¬(intersects(L, M))",
+        "justification": "Prop.I.31",
+        "refs": [
+          1,
+          2,
+          3,
+          4
+        ]
+      }
+    ]
+  },
+  "Prop.I.32": {
+    "name": "test-Prop.I.32",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(b, L)",
+      "on(c, L)",
+      "¬(on(a, L))",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "between(b, c, d)",
+      "¬(c = d)"
+    ],
+    "goal": "∠acd = (∠cab + ∠abc), (∠abc + (∠bca + ∠cab)) = (right-angle + right-angle)",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(c, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(on(a, L))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "between(b, c, d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "¬(c = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "∠acd = (∠cab + ∠abc), (∠abc + (∠bca + ∠cab)) = (right-angle + right-angle)",
+        "justification": "Prop.I.32",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    ]
+  },
+  "Prop.I.33": {
+    "name": "test-Prop.I.33",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(c, N)",
+      "on(d, N)",
+      "¬(intersects(L, N))",
+      "¬(a = b)",
+      "¬(c = d)",
+      "ab = cd",
+      "on(a, M)",
+      "on(c, M)",
+      "on(b, P)",
+      "on(d, P)",
+      "¬(L = N)"
+    ],
+    "goal": "ac = bd, ¬(intersects(M, P))",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "on(c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(d, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(intersects(L, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(c = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "ab = cd",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "on(a, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "on(c, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 11,
+        "depth": 0,
+        "statement": "on(b, P)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 12,
+        "depth": 0,
+        "statement": "on(d, P)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 13,
+        "depth": 0,
+        "statement": "¬(L = N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 14,
+        "depth": 0,
+        "statement": "ac = bd, ¬(intersects(M, P))",
+        "justification": "Prop.I.33",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ]
+      }
+    ]
+  },
+  "Prop.I.34": {
+    "name": "test-Prop.I.34",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(c, N)",
+      "on(d, N)",
+      "¬(intersects(L, N))",
+      "on(a, M)",
+      "on(d, M)",
+      "on(b, P)",
+      "on(c, P)",
+      "¬(intersects(M, P))",
+      "¬(a = b)",
+      "¬(c = d)",
+      "¬(a = d)",
+      "¬(b = c)"
+    ],
+    "goal": "ab = cd, ad = bc, ∠dab = ∠bcd, ∠abc = ∠cda, △abc = △acd",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "on(c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(d, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(intersects(L, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "on(a, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "on(d, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "on(b, P)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "on(c, P)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "¬(intersects(M, P))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 11,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 12,
+        "depth": 0,
+        "statement": "¬(c = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 13,
+        "depth": 0,
+        "statement": "¬(a = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 14,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 15,
+        "depth": 0,
+        "statement": "ab = cd, ad = bc, ∠dab = ∠bcd, ∠abc = ∠cda, △abc = △acd",
+        "justification": "Prop.I.34",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14
+        ]
+      }
+    ]
+  },
+  "Prop.I.35": {
+    "name": "test-Prop.I.35",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(b, N)",
+      "on(c, N)",
+      "on(a, L)",
+      "on(d, L)",
+      "on(e, L)",
+      "on(f, L)",
+      "¬(intersects(L, N))",
+      "¬(b = c)",
+      "¬(a = d)",
+      "¬(e = f)"
+    ],
+    "goal": "(△abc + △acd) = (△ebc + △ecf)",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(b, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(d, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "on(e, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "on(f, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(intersects(L, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "¬(a = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "¬(e = f)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 11,
+        "depth": 0,
+        "statement": "(△abc + △acd) = (△ebc + △ecf)",
+        "justification": "Prop.I.35",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      }
+    ]
+  },
+  "Prop.I.36": {
+    "name": "test-Prop.I.36",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(b, N)",
+      "on(c, N)",
+      "on(e, N)",
+      "on(f, N)",
+      "on(a, L)",
+      "on(d, L)",
+      "¬(intersects(L, N))",
+      "bc = ef",
+      "¬(b = c)",
+      "¬(e = f)"
+    ],
+    "goal": "(△abc + △acd) = (△def + △dfa)",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(b, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "on(e, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(f, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "on(d, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(intersects(L, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "bc = ef",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "¬(e = f)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 11,
+        "depth": 0,
+        "statement": "(△abc + △acd) = (△def + △dfa)",
+        "justification": "Prop.I.36",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      }
+    ]
+  },
+  "Prop.I.37": {
+    "name": "test-Prop.I.37",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(b, N)",
+      "on(c, N)",
+      "on(a, L)",
+      "on(d, L)",
+      "¬(intersects(L, N))",
+      "¬(b = c)",
+      "¬(a = d)",
+      "¬(on(a, N))",
+      "¬(on(d, N))"
+    ],
+    "goal": "△abc = △dbc",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(b, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(d, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(intersects(L, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(a = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "¬(on(a, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "¬(on(d, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "△abc = △dbc",
+        "justification": "Prop.I.37",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      }
+    ]
+  },
+  "Prop.I.38": {
+    "name": "test-Prop.I.38",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(b, N)",
+      "on(c, N)",
+      "on(e, N)",
+      "on(f, N)",
+      "on(a, L)",
+      "on(d, L)",
+      "¬(intersects(L, N))",
+      "bc = ef",
+      "¬(b = c)",
+      "¬(e = f)",
+      "¬(on(a, N))",
+      "¬(on(d, N))"
+    ],
+    "goal": "△abc = △def",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(b, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "on(e, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(f, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "on(d, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(intersects(L, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "bc = ef",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "¬(e = f)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 11,
+        "depth": 0,
+        "statement": "¬(on(a, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 12,
+        "depth": 0,
+        "statement": "¬(on(d, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 13,
+        "depth": 0,
+        "statement": "△abc = △def",
+        "justification": "Prop.I.38",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      }
+    ]
+  },
+  "Prop.I.39": {
+    "name": "test-Prop.I.39",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(b, N)",
+      "on(c, N)",
+      "¬(b = c)",
+      "¬(on(a, N))",
+      "¬(on(d, N))",
+      "same-side(a, d, N)",
+      "△abc = △dbc",
+      "on(a, L)",
+      "on(d, L)"
+    ],
+    "goal": "¬(intersects(L, N))",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(b, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(on(a, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(on(d, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "same-side(a, d, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "△abc = △dbc",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "on(d, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "¬(intersects(L, N))",
+        "justification": "Prop.I.39",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      }
+    ]
+  },
+  "Prop.I.40": {
+    "name": "test-Prop.I.40",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(b, N)",
+      "on(c, N)",
+      "on(e, N)",
+      "on(f, N)",
+      "¬(b = c)",
+      "¬(e = f)",
+      "¬(on(a, N))",
+      "¬(on(d, N))",
+      "same-side(a, d, N)",
+      "bc = ef",
+      "△abc = △def",
+      "on(a, L)",
+      "on(d, L)"
+    ],
+    "goal": "¬(intersects(L, N))",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(b, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "on(e, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(f, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "¬(e = f)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(on(a, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "¬(on(d, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "same-side(a, d, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "bc = ef",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 11,
+        "depth": 0,
+        "statement": "△abc = △def",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 12,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 13,
+        "depth": 0,
+        "statement": "on(d, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 14,
+        "depth": 0,
+        "statement": "¬(intersects(L, N))",
+        "justification": "Prop.I.40",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ]
+      }
+    ]
+  },
+  "Prop.I.41": {
+    "name": "test-Prop.I.41",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(b, N)",
+      "on(c, N)",
+      "on(a, L)",
+      "on(d, L)",
+      "¬(intersects(L, N))",
+      "¬(b = c)",
+      "¬(a = d)",
+      "on(e, L)",
+      "¬(on(e, N))"
+    ],
+    "goal": "(△abc + △acd) = (△ebc + △ebc)",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(b, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(d, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(intersects(L, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "¬(a = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "on(e, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "¬(on(e, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "(△abc + △acd) = (△ebc + △ebc)",
+        "justification": "Prop.I.41",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      }
+    ]
+  },
+  "Prop.I.42": {
+    "name": "test-Prop.I.42",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "¬(∠def = 0)"
+    ],
+    "goal": "△abc = (△ghb + △gbc)",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(∠def = 0)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "△abc = (△ghb + △gbc)",
+        "justification": "Prop.I.42",
+        "refs": [
+          1,
+          2,
+          3,
+          4
+        ]
+      }
+    ]
+  },
+  "Prop.I.43": {
+    "name": "test-Prop.I.43",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(c, N)",
+      "on(d, N)",
+      "¬(intersects(L, N))",
+      "on(a, M)",
+      "on(d, M)",
+      "on(b, P)",
+      "on(c, P)",
+      "¬(intersects(M, P))",
+      "between(a, k, c)",
+      "¬(a = b)",
+      "¬(c = d)"
+    ],
+    "goal": "△akb = △kcd",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "on(c, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "on(d, N)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(intersects(L, N))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "on(a, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "on(d, M)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "on(b, P)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "on(c, P)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "¬(intersects(M, P))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 11,
+        "depth": 0,
+        "statement": "between(a, k, c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 12,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 13,
+        "depth": 0,
+        "statement": "¬(c = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 14,
+        "depth": 0,
+        "statement": "△akb = △kcd",
+        "justification": "Prop.I.43",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ]
+      }
+    ]
+  },
+  "Prop.I.44": {
+    "name": "test-Prop.I.44",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)",
+      "¬(c = d)",
+      "¬(c = e)",
+      "¬(d = e)"
+    ],
+    "goal": "on(f, L)",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(c = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(c = e)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "¬(d = e)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "on(f, L)",
+        "justification": "Prop.I.44",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    ]
+  },
+  "Prop.I.45": {
+    "name": "test-Prop.I.45",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "¬(a = d)",
+      "¬(∠efg = 0)"
+    ],
+    "goal": "(△abc + △acd) = (△hkm + △hmb)",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "¬(a = d)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "¬(∠efg = 0)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "(△abc + △acd) = (△hkm + △hmb)",
+        "justification": "Prop.I.45",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  "Prop.I.46": {
+    "name": "test-Prop.I.46",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)"
+    ],
+    "goal": "ab = bc, bc = cd, cd = da, ∠dab = right-angle, ∠abc = right-angle, ∠bcd = right-angle, ∠cda = right-angle",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "on(a, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "on(b, L)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "ab = bc, bc = cd, cd = da, ∠dab = right-angle, ∠abc = right-angle, ∠bcd = right-angle, ∠cda = right-angle",
+        "justification": "Prop.I.46",
+        "refs": [
+          1,
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  "Prop.I.47": {
+    "name": "test-Prop.I.47",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "∠bac = right-angle"
+    ],
+    "goal": "bc = cd, cd = de, de = eb, ∠cbe = right-angle, ab = bf, bf = fg, fg = ga, ∠abf = right-angle, ac = ch, ch = hk, hk = ka, ∠cak = right-angle, (△bdc + △dec) = ((△abf + △afg) + (△ach + △ahk))",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "∠bac = right-angle",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "bc = cd, cd = de, de = eb, ∠cbe = right-angle, ab = bf, bf = fg, fg = ga, ∠abf = right-angle, ac = ch, ch = hk, hk = ka, ∠cak = right-angle, (△bdc + △dec) = ((△abf + △afg) + (△ach + △ahk))",
+        "justification": "Prop.I.47",
+        "refs": [
+          1,
+          2,
+          3,
+          4
+        ]
+      }
+    ]
+  },
+  "Prop.I.48": {
+    "name": "test-Prop.I.48",
+    "declarations": {
+      "points": [],
+      "lines": []
+    },
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "bc = cd",
+      "cd = de",
+      "de = eb",
+      "∠cbe = right-angle",
+      "ab = bf",
+      "bf = fg",
+      "fg = ga",
+      "ac = ch",
+      "ch = hk",
+      "hk = ka",
+      "(△bdc + △dec) = ((△abf + △afg) + (△ach + △ahk))"
+    ],
+    "goal": "∠bac = right-angle",
+    "lines": [
+      {
+        "id": 1,
+        "depth": 0,
+        "statement": "¬(a = b)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 2,
+        "depth": 0,
+        "statement": "¬(a = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 3,
+        "depth": 0,
+        "statement": "¬(b = c)",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 4,
+        "depth": 0,
+        "statement": "bc = cd",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 5,
+        "depth": 0,
+        "statement": "cd = de",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 6,
+        "depth": 0,
+        "statement": "de = eb",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 7,
+        "depth": 0,
+        "statement": "∠cbe = right-angle",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 8,
+        "depth": 0,
+        "statement": "ab = bf",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 9,
+        "depth": 0,
+        "statement": "bf = fg",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 10,
+        "depth": 0,
+        "statement": "fg = ga",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 11,
+        "depth": 0,
+        "statement": "ac = ch",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 12,
+        "depth": 0,
+        "statement": "ch = hk",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 13,
+        "depth": 0,
+        "statement": "hk = ka",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 14,
+        "depth": 0,
+        "statement": "(△bdc + △dec) = ((△abf + △afg) + (△ach + △ahk))",
+        "justification": "Given",
+        "refs": []
+      },
+      {
+        "id": 15,
+        "depth": 0,
+        "statement": "∠bac = right-angle",
+        "justification": "Prop.I.48",
+        "refs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14
+        ]
+      }
+    ]
+  }
+}

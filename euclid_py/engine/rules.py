@@ -135,9 +135,10 @@ HILBERT_RULES: List[Rule] = [
 # ═══════════════════════════════════════════════════════════════════════════
 
 FITCH_LOGIC_RULES: List[Rule] = [
-    Rule("RAA.Assume", "Open temporary assumption for indirect proof", "Fitch Logic", None),
-    Rule("Contradiction", "Introduce contradiction from φ and ¬φ", "Fitch Logic", ["Contradiction"]),
-    Rule("RAA", "Discharge assumption by contradiction", "Fitch Logic", None),
+    Rule("Assume", "Open temporary assumption for reductio subproof", "Fitch Logic", None),
+    Rule("Contradiction", "⊥-intro: derive ⊥ from φ and ¬φ", "Fitch Logic", ["⊥"]),
+    Rule("⊥-elim", "Discharge assumption by ⊥ (reductio ad absurdum)", "Fitch Logic", None),
+    Rule("Reductio", "Discharge assumption by contradiction (classic)", "Fitch Logic", None),
 ]
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -243,9 +244,9 @@ def map_axiom_system(system: Optional[str]) -> str:
 RULE_DERIVABILITY: Dict[str, Dict[str, dict]] = {
     "Given":         {"F": {"kind": "axiom"}, "E": {"kind": "axiom"}, "H": {"kind": "axiom"}},
     "Existence":     {"F": {"kind": "axiom"}, "E": {"kind": "axiom"}, "H": {"kind": "axiom"}},
-    "RAA.Assume":    {"F": {"kind": "axiom"}, "E": {"kind": "derived", "from": ["F"]}, "H": {"kind": "derived", "from": ["F"]}},
-    "Contradiction": {"F": {"kind": "axiom"}, "E": {"kind": "derived", "from": ["F"]}, "H": {"kind": "derived", "from": ["F"]}},
-    "RAA":           {"F": {"kind": "axiom"}, "E": {"kind": "derived", "from": ["F"]}, "H": {"kind": "derived", "from": ["F"]}},
+    "Assume":        {"F": {"kind": "axiom"}, "E": {"kind": "derived", "from": ["F"]}, "H": {"kind": "derived", "from": ["F"]}},
+    "\u22a5-intro":       {"F": {"kind": "axiom"}, "E": {"kind": "derived", "from": ["F"]}, "H": {"kind": "derived", "from": ["F"]}},
+    "\u22a5-elim":        {"F": {"kind": "axiom"}, "E": {"kind": "derived", "from": ["F"]}, "H": {"kind": "derived", "from": ["F"]}},
 
     "Post.1":       {"E": {"kind": "axiom", "from": ["Postulate 1"]}},
     "Post.2":       {"E": {"kind": "axiom", "from": ["Postulate 2"]}},

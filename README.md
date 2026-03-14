@@ -9,7 +9,7 @@
 [![Tests](https://img.shields.io/badge/Tests-~890_passing-brightgreen)](#running-tests)
 [![License](https://img.shields.io/badge/License-MIT-blue)](#license)
 
-Implements three axiom systems (**Euclid E**, **Tarski T**, **Hilbert H**) with automatic bridge translations, all 48 Book I propositions formalized and verified, and a desktop GUI for constructing and checking proofs interactively.
+Implements **System E** (Avigad, Dean & Mumma 2009) as the sole formal axiom system, with all 48 Book I propositions formalized and verified, and a desktop GUI for constructing and checking proofs interactively.
 
 *Inspired by [GeoCoq](https://geocoq.github.io/GeoCoq/) · Based on Avigad, Dean & Mumma (2009), ["A Formal System for Euclid's Elements"](https://doi.org/10.1017/S1755020309990098)*
 
@@ -20,9 +20,9 @@ Implements three axiom systems (**Euclid E**, **Tarski T**, **Hilbert H**) with 
 ## ✨ Highlights
 
 - **All 48 propositions** of Book I — from equilateral triangle construction (I.1) to the Pythagorean theorem (I.47) — formalized with hand-written, machine-verified proofs
-- **Three axiom systems** (E / T / H) connected by automatic π and ρ translations — users write in Euclid's style, verification falls back through Tarski invisibly
-- **Interactive desktop app** with a geometry canvas, step-by-step proof editor, real-time diagnostics, a 152-rule reference catalog, and E/T/H translation view
-- **~890 automated tests** covering all three axiom systems, the completeness pipeline, theorem application, and the UI layer
+- **System E** — the sole formal axiom system, directly based on Euclid's geometric language with construction, diagrammatic, metric, transfer, and superposition axioms
+- **Interactive desktop app** with a geometry canvas, step-by-step proof editor, real-time diagnostics, and a 152-rule reference catalog
+- **Automated tests** covering the axiom system, theorem application, and the UI layer
 
 ---
 
@@ -50,51 +50,39 @@ python -m pytest verifier/tests/ euclid_py/tests/ -v
 
 ## 🏗️ Architecture
 
-The project follows GeoCoq's layered design: proofs are authored in **System E** (Euclid's geometric language), with **System T** (Tarski) acting as an invisible computational bridge for completeness, and **System H** (Hilbert) available as an alternative notation.
+All proofs are authored and verified in **System E** (Euclid's geometric language) — the sole formal system.
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
 │                     euclid_py  (PyQt6 UI)                     │
 │   main_window · proof_panel · canvas_widget · diagnostics     │
-│   rule_reference · translation_view · summary_panel           │
+│   rule_reference · summary_panel                              │
 ├───────────────────────────────────────────────────────────────┤
 │                    unified_checker.py                          │
 │             Single entry point for all verification            │
-├──────────────────┬───────────────────┬────────────────────────┤
-│   System E       │   System T        │   System H             │
-│   (Primary)      │   (Bridge)        │   (Display)            │
-│                  │                   │                        │
-│   e_ast          │   t_ast           │   h_ast                │
-│   e_axioms       │   t_axioms        │   h_axioms             │
-│   e_consequence  │   t_consequence   │   h_consequence        │
-│   e_construction │   t_bridge (E↔T)  │   h_bridge (E↔H)      │
-│   e_metric       │   t_checker       │   h_checker            │
-│   e_transfer     │   t_completeness  │   h_library            │
-│   e_superposition│   t_cut_elim      │                        │
-│   e_checker      │   t_pi / t_rho    │                        │
-│   e_library      │                   │                        │
-│   e_proofs       │                   │                        │
-└──────────────────┴───────────────────┴────────────────────────┘
+├───────────────────────────────────────────────────────────────┤
+│                        System E                                │
+│                                                               │
+│   e_ast            e_axioms          e_consequence             │
+│   e_construction   e_metric          e_transfer                │
+│   e_superposition  e_checker         e_library                 │
+│   e_parser         e_elaborator      e_proofs                  │
+└───────────────────────────────────────────────────────────────┘
 ```
 
-### The Three Systems
+### System E — Euclid (Avigad, Dean & Mumma 2009)
 
-| System | Sorts | Primitives | Role |
-|--------|-------|-----------|------|
-| **E** (Euclid) | Points, Lines, Circles | `on`, `between`, `same-side`, `center`, `inside`, `intersects`, `=` | Primary proof language — what users write in |
-| **T** (Tarski) | Points only | `B` (betweenness), `Cong` (equidistance) | Invisible bridge for completeness verification |
-| **H** (Hilbert) | Points, Lines | `IncidL`, `BetH`, `CongH`, `CongaH` | Alternative display notation |
+| Sorts | Primitives |
+|-------|------------|
+| Points, Lines, Circles | `on`, `between`, `same-side`, `center`, `inside`, `intersects`, `=` |
 
 ### Verification Pipeline
 
 ```
 User writes proof in System E
   → e_checker validates (consequence + construction + metric engines)
-  → If inconclusive → automatic π translation → Tarski T → ρ back to E
   → Result: ✓ / ✗ with diagnostics in E notation
 ```
-
-> **Invisible bridging** — The user never sees Tarski's system. Cross-system facts are automatically translated via `t_bridge` (E↔T) and `h_bridge` (E↔H).
 
 ---
 
@@ -108,8 +96,6 @@ The PyQt6 GUI provides a complete workbench for exploring Euclidean proofs:
 | **Proof Editor** | Step-by-step proof journal with premises, goal, declarations; symbol palette for connectives & Greek letters; rule dropdown per line |
 | **Diagnostics** | Real-time ✓/✗ status per step with detailed error messages and goal verification |
 | **Rule Reference** | Searchable catalog of all 152 axiom rules (§3.3–§3.7) plus 48 proposition sequents |
-| **E / T / H View** | Side-by-side translation of the current proposition across all three systems with human-readable "Given / Prove" formatting |
-| **Glossary** | Every formal predicate across E, T, and H with plain English translations |
 | **File I/O** | Save/load `.euclid` files — canvas only, proof only, or both; smart format detection on open |
 
 ---
@@ -181,14 +167,6 @@ Prop I.47:  right-angle triangle  ⇒  BC² = AB² + AC²  (via area decompositi
 | Transfer | ~8 | §3.6 | Cross-predicate transfer rules |
 | Superposition | 2 | §3.7 | SAS, SSS |
 
-### System T — Tarski (Paper §5.2)
-
-11 axioms + 6 negativity clauses (30 GRS clauses total). Sorts: **POINT** only. Primitives: `B` (betweenness), `Cong` (equidistance).
-
-### System H — Hilbert (*Grundlagen der Geometrie*)
-
-40 clauses across Groups I–IV: Incidence (8), Order (4), Congruence (6), Parallels (1) + derived theorems.
-
 ---
 
 ## 📁 Project Structure
@@ -202,11 +180,8 @@ Euclid/
 ├── verifier/                      # ── Core verification engine ──
 │   ├── unified_checker.py         # ★ Single entry point for all verification
 │   ├── e_*.py                     # System E  (AST, axioms, consequence, …)
-│   ├── t_*.py                     # System T  (AST, axioms, bridge, π/ρ, …)
-│   ├── h_*.py                     # System H  (AST, axioms, bridge, …)
-│   ├── diagnostics.py             # Shared error codes & result types
 │   ├── examples/                  # Example proof JSON files
-│   └── tests/                     # ~790 pytest tests
+│   └── tests/                     # pytest tests
 │
 ├── euclid_py/                     # ── PyQt6 desktop application ──
 │   ├── __main__.py                # App entry point
@@ -215,7 +190,6 @@ Euclid/
 │   │   ├── proof_panel.py         # Interactive proof editor
 │   │   ├── canvas_widget.py       # Geometry diagram canvas
 │   │   ├── rule_reference.py      # Rule reference panel (152 rules)
-│   │   ├── translation_view.py    # E/T/H translation + glossary
 │   │   ├── diagnostics_panel.py   # Error/warning display
 │   │   └── summary_panel.py       # Proof summary
 │   ├── engine/
@@ -241,8 +215,6 @@ python -m pytest verifier/tests/ -v
 python -m pytest euclid_py/tests/ -v
 
 # Specific subsystems
-python -m pytest verifier/tests/test_t_system.py -v         # Tarski axioms
-python -m pytest verifier/tests/test_completeness.py -v      # Completeness pipeline
 python -m pytest verifier/tests/test_unified_checker.py -v   # Unified checker
 python -m pytest verifier/tests/test_e_system.py -v          # All 48 propositions
 ```
@@ -295,10 +267,7 @@ python -m euclid_py proofs/Prop_I_1_H.json
 ## 📚 References
 
 - Avigad, J., Dean, E., & Mumma, J. (2009). "A Formal System for Euclid's Elements." *Review of Symbolic Logic*, 2(4), 700–768.
-- [GeoCoq](https://geocoq.github.io/GeoCoq/) — Coq formalization of geometry (Tarski, Hilbert, Euclid).
-- Hilbert, D. (1899). *Grundlagen der Geometrie*.
-- Tarski, A. (1959). "What is Elementary Geometry?"
-- Negri, S. (2003). "Contraction-free sequent calculi for geometric theories."
+- [GeoCoq](https://geocoq.github.io/GeoCoq/) — Coq formalization of geometry.
 
 ---
 

@@ -75,6 +75,16 @@ GENERALITY_AXIOMS: List[Clause] = [
 
     # G4. inside(a,α) → ¬on(a,α)
     _clause(_neg(Inside("a", "\u03b1")), _neg(On("a", "\u03b1"))),
+
+    # G5. on(a,L) ∧ ¬on(a,M) → L≠M
+    # (If L=M then on(a,L)→on(a,M), contradicting ¬on(a,M).)
+    _clause(_neg(On("a", "L")), _pos(On("a", "M")),
+            _neg(Equals("L", "M"))),
+
+    # G6. on(a,L) ∧ ¬on(b,L) → a≠b
+    # (If a=b then on(a,L)→on(b,L), contradicting ¬on(b,L).)
+    _clause(_neg(On("a", "L")), _pos(On("b", "L")),
+            _neg(Equals("a", "b"))),
 ]
 
 # ── Between axioms ────────────────────────────────────────────────────
@@ -380,6 +390,18 @@ DIAGRAM_SEGMENT_TRANSFER: List[Clause] = [
     _clause(_neg(Center("a", "\u03b1")), _neg(On("b", "\u03b1")),
             _neg(Inside("c", "\u03b1")),
             _pos(LessThan(SegmentTerm("a", "c"), SegmentTerm("a", "b")))),
+
+    # DS3/DS4 negative directions (contrapositives of biconditionals):
+    # When a point is strictly farther from the center than the radius,
+    # it is neither inside nor on the circle.
+    # DS4c: center(a,α) ∧ on(b,α) ∧ ab < ac → ¬inside(c,α)
+    _clause(_neg(Center("a", "\u03b1")), _neg(On("b", "\u03b1")),
+            _neg(LessThan(SegmentTerm("a", "b"), SegmentTerm("a", "c"))),
+            _neg(Inside("c", "\u03b1"))),
+    # DS4d: center(a,α) ∧ on(b,α) ∧ ab < ac → ¬on(c,α)
+    _clause(_neg(Center("a", "\u03b1")), _neg(On("b", "\u03b1")),
+            _neg(LessThan(SegmentTerm("a", "b"), SegmentTerm("a", "c"))),
+            _neg(On("c", "\u03b1"))),
 ]
 
 DIAGRAM_ANGLE_TRANSFER: List[Clause] = [
@@ -462,7 +484,7 @@ DIAGRAM_ANGLE_TRANSFER: List[Clause] = [
                         AngleTerm("d", "c", "b")))),
 
     # DA4. on(a,L), on(b,L), on(b',L), on(a,M), on(c,M), on(c',M),
-    #      b≠a, b'≠a, c≠a, c'≠a, ¬between(a,b,b'), ¬between(a,c,c')
+    #      b≠a, b'≠a, c≠a, c'≠a, ¬between(b,a,b'), ¬between(c,a,c')
     #      → ∠bac = ∠b'ac'
     _clause(_neg(On("a", "L")), _neg(On("b", "L")),
             _neg(On("bp", "L")),
@@ -470,8 +492,8 @@ DIAGRAM_ANGLE_TRANSFER: List[Clause] = [
             _neg(On("cp", "M")),
             _pos(Equals("b", "a")), _pos(Equals("bp", "a")),
             _pos(Equals("c", "a")), _pos(Equals("cp", "a")),
-            _pos(Between("a", "b", "bp")),
-            _pos(Between("a", "c", "cp")),
+            _pos(Between("b", "a", "bp")),
+            _pos(Between("c", "a", "cp")),
             _pos(Equals(AngleTerm("b", "a", "c"),
                         AngleTerm("bp", "a", "cp")))),
 
@@ -519,6 +541,11 @@ DIAGRAM_AREA_TRANSFER: List[Clause] = [
             _pos(Equals("a", "b")),
             _neg(On("c", "L")),
             _pos(Equals(AreaTerm("a", "b", "c"), ZeroMag(Sort.AREA)))),
+    # DAr1c (contrapositive of DAr1b): ... ∧ ¬on(c,L) → ¬(△abc = 0)
+    _clause(_neg(On("a", "L")), _neg(On("b", "L")),
+            _pos(Equals("a", "b")),
+            _pos(On("c", "L")),
+            _neg(Equals(AreaTerm("a", "b", "c"), ZeroMag(Sort.AREA)))),
 
     # DAr2. on(a,L) ∧ on(b,L) ∧ on(c,L) ∧ distinct(a,b,c) ∧ ¬on(d,L)
     #       → (between(a,c,b) ↔ △acd + △dcb = △adb)

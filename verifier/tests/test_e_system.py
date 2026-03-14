@@ -358,7 +358,7 @@ class TestDiagrammaticAxioms:
 
     def test_generality_axiom_count(self):
         from verifier.e_axioms import GENERALITY_AXIOMS
-        assert len(GENERALITY_AXIOMS) == 4
+        assert len(GENERALITY_AXIOMS) == 6
 
     def test_between_axiom_count(self):
         from verifier.e_axioms import BETWEEN_AXIOMS
@@ -641,7 +641,7 @@ class TestMetricEngine:
 
 class TestSuperposition:
     def test_sas_valid(self):
-        """SAS with all prerequisites present derives 3 new equalities."""
+        """SAS with all prerequisites derives 4 facts (3 equalities + area)."""
         from verifier.e_superposition import apply_sas_superposition
         known = {
             Literal(Equals(SegmentTerm("A", "B"), SegmentTerm("D", "E"))),
@@ -651,13 +651,16 @@ class TestSuperposition:
         }
         result = apply_sas_superposition(known, "A", "B", "C", "D", "E", "F")
         assert result.valid
-        assert len(result.derived) == 3
+        assert len(result.derived) == 4
         # Should derive BC = EF
         assert Literal(Equals(SegmentTerm("B", "C"),
                               SegmentTerm("E", "F"))) in result.derived
         # Should derive ∠ABC = ∠DEF
         assert Literal(Equals(AngleTerm("A", "B", "C"),
                               AngleTerm("D", "E", "F"))) in result.derived
+        # Should derive △ABC = △DEF
+        assert Literal(Equals(AreaTerm("A", "B", "C"),
+                              AreaTerm("D", "E", "F"))) in result.derived
 
     def test_sas_missing_prereq(self):
         """SAS with missing prerequisite fails."""
@@ -673,7 +676,7 @@ class TestSuperposition:
         assert "Missing" in result.error
 
     def test_sss_valid(self):
-        """SSS with all prerequisites derives 3 angle equalities."""
+        """SSS with all prerequisites derives 4 facts (3 angles + area)."""
         from verifier.e_superposition import apply_sss_superposition
         known = {
             Literal(Equals(SegmentTerm("A", "B"), SegmentTerm("D", "E"))),
@@ -682,7 +685,10 @@ class TestSuperposition:
         }
         result = apply_sss_superposition(known, "A", "B", "C", "D", "E", "F")
         assert result.valid
-        assert len(result.derived) == 3
+        assert len(result.derived) == 4
+        # Should derive △ABC = △DEF
+        assert Literal(Equals(AreaTerm("A", "B", "C"),
+                              AreaTerm("D", "E", "F"))) in result.derived
 
     def test_superposition_hypotheses(self):
         """SAS hypotheses contain expected literals."""
@@ -949,8 +955,8 @@ class TestNewAxiomCounts:
 
     def test_all_transfer_axioms_increased(self):
         from verifier.e_axioms import ALL_TRANSFER_AXIOMS
-        # DS: 6, DA: 11, DAr: 3 = 20
-        assert len(ALL_TRANSFER_AXIOMS) == 20
+        # DS: 6, DA: 11, DAr: 4 (incl. DAr1c contrapositive) = 23
+        assert len(ALL_TRANSFER_AXIOMS) == 23
 
     def test_da5_parallel_postulate_present(self):
         """DA5 clauses should contain Intersects and angle sum."""
@@ -1037,3 +1043,254 @@ class TestAllPropositionsValid:
         assert result.valid, (
             f"{name} failed: {result.errors[:3]}"
         )
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# ZeroMag sort inference tests
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestZeroMagSortInference:
+    """Verify that the parser infers the correct ZeroMag sort from context."""
+
+    def test_segment_zero_sort(self):
+        lits = parse_literal_list("ab = 0")
+        atom = lits[0].atom
+        assert isinstance(atom.right, ZeroMag)
+        assert atom.right.sort == Sort.SEGMENT
+
+    def test_angle_zero_sort(self):
+        lits = parse_literal_list("\u2220abc = 0")
+        atom = lits[0].atom
+        assert isinstance(atom.right, ZeroMag)
+        assert atom.right.sort == Sort.ANGLE
+
+    def test_area_zero_sort(self):
+        lits = parse_literal_list("\u25b3abc = 0")
+        atom = lits[0].atom
+        assert isinstance(atom.right, ZeroMag)
+        assert atom.right.sort == Sort.AREA
+
+    def test_zero_on_left_angle(self):
+        lits = parse_literal_list("0 < \u2220abc")
+        atom = lits[0].atom
+        assert isinstance(atom.left, ZeroMag)
+        assert atom.left.sort == Sort.ANGLE
+
+    def test_zero_on_left_segment(self):
+        lits = parse_literal_list("0 < ab")
+        atom = lits[0].atom
+        assert isinstance(atom.left, ZeroMag)
+        assert atom.left.sort == Sort.SEGMENT
+
+    def test_zero_on_left_area(self):
+        lits = parse_literal_list("0 < \u25b3abc")
+        atom = lits[0].atom
+        assert isinstance(atom.left, ZeroMag)
+        assert atom.left.sort == Sort.AREA
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# M1 forward direction tests
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestM1Forward:
+    """Verify M1: ab = 0 → a = b (forward direction)."""
+
+    def test_ab_zero_implies_a_eq_b(self):
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = {Literal(Equals(SegmentTerm("a", "b"),
+                                ZeroMag(Sort.SEGMENT)))}
+        query = Literal(Equals("a", "b"))
+        assert me.is_consequence(known, query) is True
+
+    def test_contrapositive_still_works(self):
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = {Literal(Equals("a", "b"), False)}
+        query = Literal(Equals(SegmentTerm("a", "b"),
+                                ZeroMag(Sort.SEGMENT)), False)
+        assert me.is_consequence(known, query) is True
+
+    def test_nonzero_segment_no_point_eq(self):
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = {Literal(Equals("a", "b"), False)}  # a ≠ b
+        query = Literal(Equals("a", "b"))  # a = b
+        assert me.is_consequence(known, query) is False
+
+    def test_cn5_whole_greater_than_part(self):
+        """CN5: a + b = c, b > 0 → a < c."""
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = {
+            Literal(Equals(MagAdd(SegmentTerm("a", "b"),
+                                  SegmentTerm("b", "c")),
+                           SegmentTerm("a", "c"))),
+            Literal(Equals("b", "c"), False),  # b ≠ c → bc > 0
+        }
+        assert me.is_consequence(
+            known, Literal(LessThan(SegmentTerm("a", "b"),
+                                    SegmentTerm("a", "c")))) is True
+
+    def test_cn5_symmetric(self):
+        """CN5 symmetric: a + b = c, a > 0 → b < c."""
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = {
+            Literal(Equals(MagAdd(SegmentTerm("a", "b"),
+                                  SegmentTerm("b", "c")),
+                           SegmentTerm("a", "c"))),
+            Literal(Equals("a", "b"), False),  # a ≠ b → ab > 0
+        }
+        assert me.is_consequence(
+            known, Literal(LessThan(SegmentTerm("b", "c"),
+                                    SegmentTerm("a", "c")))) is True
+
+    def test_cn2_addition_congruence(self):
+        """CN2: a = b, c = d → a + c = b + d."""
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = {
+            Literal(Equals(SegmentTerm("a", "b"),
+                           SegmentTerm("c", "d"))),
+            Literal(Equals(SegmentTerm("e", "f"),
+                           SegmentTerm("g", "h"))),
+        }
+        query = Literal(Equals(
+            MagAdd(SegmentTerm("a", "b"), SegmentTerm("e", "f")),
+            MagAdd(SegmentTerm("c", "d"), SegmentTerm("g", "h"))))
+        assert me.is_consequence(known, query) is True
+
+    def test_less_through_equality(self):
+        """Inequality propagates through equality: af=cd, cd<ab → af<ab."""
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = {
+            Literal(Equals(SegmentTerm("a", "f"),
+                           SegmentTerm("c", "d"))),
+            Literal(LessThan(SegmentTerm("c", "d"),
+                             SegmentTerm("a", "b"))),
+        }
+        assert me.is_consequence(
+            known, Literal(LessThan(SegmentTerm("a", "f"),
+                                    SegmentTerm("a", "b")))) is True
+
+    def test_plus_monotonicity(self):
+        """+ monotonicity: a < b → a + c < b + c."""
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = {
+            Literal(LessThan(SegmentTerm("a", "b"),
+                             SegmentTerm("c", "d"))),
+        }
+        query = Literal(LessThan(
+            MagAdd(SegmentTerm("a", "b"), SegmentTerm("e", "f")),
+            MagAdd(SegmentTerm("c", "d"), SegmentTerm("e", "f"))))
+        assert me.is_consequence(known, query) is True
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Reductio step type tests
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestReductioStepType:
+    """Verify the Reductio step type in the JSON proof checker."""
+
+    def test_reductio_with_contradiction(self):
+        from verifier.unified_checker import verify_e_proof_json
+        pj = {
+            "name": "reductio_test",
+            "declarations": {"points": ["a", "b"], "lines": ["L"]},
+            "premises": ["on(a, L)", "on(b, L)"],
+            "goal": "a = b",
+            "lines": [
+                {"id": 1, "depth": 0, "statement": "on(a, L)",
+                 "justification": "Given", "refs": []},
+                {"id": 2, "depth": 0, "statement": "on(b, L)",
+                 "justification": "Given", "refs": []},
+                # Assume ¬(a = b)
+                {"id": 3, "depth": 1, "statement": "\u00ac(a = b)",
+                 "justification": "Assume", "refs": []},
+                # Derive a contradiction: on(a, L) and ¬on(a, L)
+                {"id": 4, "depth": 1, "statement": "\u00ac(on(a, L))",
+                 "justification": "Assume", "refs": []},
+                # Reductio: conclude a = b
+                {"id": 5, "depth": 0, "statement": "a = b",
+                 "justification": "Reductio", "refs": [3]},
+            ],
+        }
+        result = verify_e_proof_json(pj)
+        # The assume ¬on(a,L) contradicts given on(a,L)
+        assert 5 in result.derived
+
+    def test_reductio_without_refs_fails(self):
+        from verifier.unified_checker import verify_e_proof_json
+        pj = {
+            "name": "reductio_no_refs",
+            "declarations": {"points": ["a", "b"], "lines": []},
+            "premises": [],
+            "goal": "",
+            "lines": [
+                {"id": 1, "depth": 0, "statement": "a = b",
+                 "justification": "Reductio", "refs": []},
+            ],
+        }
+        result = verify_e_proof_json(pj)
+        assert 1 not in result.derived
+
+    def test_classify_reductio(self):
+        from verifier.unified_checker import _classify_justification
+        from verifier.e_ast import StepKind
+        assert _classify_justification("Reductio") == StepKind.REDUCTIO
+
+    def test_classify_assume(self):
+        """Assume is handled as special case, not via _classify_justification."""
+        from verifier.unified_checker import _classify_justification
+        # Assume is not in the classification map
+        assert _classify_justification("Assume") is None
+
+    def test_structural_rules_in_catalogue(self):
+        from verifier.unified_checker import get_available_rules
+        rules = get_available_rules()
+        structural = [r for r in rules if r.category == "structural"]
+        names = [r.name for r in structural]
+        assert "Assume" in names
+        assert "Reductio" in names
+        assert "Reit" in names
+
+    def test_reductio_retracts_subproof_facts(self):
+        """After Reductio closes, subproof-scoped facts must not persist."""
+        from verifier.unified_checker import verify_e_proof_json
+        pj = {
+            "name": "scoping_test",
+            "declarations": {"points": ["a", "b", "c"], "lines": ["L"]},
+            "premises": ["on(a, L)"],
+            "goal": "",
+            "lines": [
+                {"id": 1, "depth": 0, "statement": "on(a, L)",
+                 "justification": "Given", "refs": []},
+                # Subproof: assume ¬(a = b) and also assume between(a,c,b)
+                {"id": 2, "depth": 1, "statement": "\u00ac(a = b)",
+                 "justification": "Assume", "refs": []},
+                {"id": 3, "depth": 1, "statement": "between(a, c, b)",
+                 "justification": "Assume", "refs": []},
+                # Create contradiction: assume ¬on(a, L)
+                {"id": 4, "depth": 1, "statement": "\u00ac(on(a, L))",
+                 "justification": "Assume", "refs": []},
+                # Reductio: conclude a = b
+                {"id": 5, "depth": 0, "statement": "a = b",
+                 "justification": "Reductio", "refs": [2]},
+                # Now try to use between(a,c,b) which was only in the
+                # subproof.  This should fail because it was retracted.
+                {"id": 6, "depth": 0,
+                 "statement": "between(a, c, b)",
+                 "justification": "Diagrammatic", "refs": []},
+            ],
+        }
+        result = verify_e_proof_json(pj)
+        # Line 5 (Reductio) should succeed
+        assert 5 in result.derived
+        # Line 6 should fail — between(a,c,b) was retracted with the
+        # subproof and cannot be re-derived at the outer depth.
+        assert 6 not in result.derived

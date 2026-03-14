@@ -4,9 +4,9 @@ Proposition data — all 48 Euclid Book I propositions + textbook theorems.
 Each proposition includes metadata for the UI: name, statement, given objects,
 required steps, conclusion, and applicability constraints.
 
-Formal content (sequents, theorems) is linked to the System E and System H
-libraries via ``get_e_theorem()`` and ``get_h_theorem()`` methods, keeping
-display metadata here and formal mathematics in the verifier.
+Formal content (sequents, theorems) is linked to the System E
+library via ``get_e_theorem()``, keeping display metadata here and
+formal mathematics in the verifier.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
@@ -59,21 +59,6 @@ class Proposition:
         try:
             from verifier.e_library import E_THEOREM_LIBRARY
             return E_THEOREM_LIBRARY.get(name)
-        except ImportError:
-            return None
-
-    def get_h_theorem(self):
-        """Retrieve the ``HTheorem`` from the System H library.
-
-        Returns ``None`` for non-Euclid entries or if the theorem is
-        not (yet) in the library.
-        """
-        name = self.e_library_name
-        if name is None:
-            return None
-        try:
-            from verifier.h_library import H_THEOREM_LIBRARY
-            return H_THEOREM_LIBRARY.get(name)
         except ImportError:
             return None
 
@@ -691,37 +676,16 @@ def get_e_sequent(prop_id: str) -> Optional[str]:
     return prop.formal_sequent
 
 
-def get_h_sequent(prop_id: str) -> Optional[str]:
-    """Return the formal System H sequent string for a proposition.
-
-    Args:
-        prop_id: e.g. ``"euclid-I.1"``
-
-    Returns:
-        The sequent string, or ``None`` if not available.
-    """
-    prop = get_proposition(prop_id)
-    if prop is None:
-        return None
-    thm = prop.get_h_theorem()
-    if thm is None:
-        return None
-    return str(thm.sequent)
-
-
 def get_all_formal_links() -> Dict[str, dict]:
     """Return a mapping from proposition id to its formal-system links.
 
-    Each value is a dict with keys ``e_name``, ``e_sequent``, ``h_sequent``
-    (any may be None if the theorem isn't in that library).
+    Each value is a dict with keys ``e_name`` and ``e_sequent``.
     """
     result: Dict[str, dict] = {}
     for prop in PROPOSITIONS:
         e_thm = prop.get_e_theorem()
-        h_thm = prop.get_h_theorem()
         result[prop.id] = {
             "e_name": prop.e_library_name,
             "e_sequent": str(e_thm.sequent) if e_thm else None,
-            "h_sequent": str(h_thm.sequent) if h_thm else None,
         }
     return result

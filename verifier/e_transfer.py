@@ -53,6 +53,25 @@ class TransferEngine:
         all_known = diagram_known | metric_known
         derived: Set[Literal] = set()
 
+        # Seed degenerate between negations: between(x,y,x) is always
+        # false because betweenness requires 3 distinct points (B1b/c
+        # give between(a,b,c) → a≠b, a≠c).  When x=z, between(x,y,x)
+        # would require x≠x — contradiction.  Explicitly adding these
+        # lets transfer axioms like DA4 fire when template variables
+        # map to the same concrete point.
+        points = [v for v, s in variables.items() if s == Sort.POINT]
+        for p in points:
+            for q in points:
+                neg_bet = Literal(Between(p, q, p), False)
+                if neg_bet not in all_known:
+                    all_known.add(neg_bet)
+                neg_bet2 = Literal(Between(q, p, p), False)
+                if neg_bet2 not in all_known:
+                    all_known.add(neg_bet2)
+                neg_bet3 = Literal(Between(p, p, q), False)
+                if neg_bet3 not in all_known:
+                    all_known.add(neg_bet3)
+
         # Ground the transfer axiom clauses
         ground_clauses = self._ground_clauses(self.axioms, variables)
 

@@ -23,7 +23,7 @@ class TestSmokeAllPropositions:
 
     def test_all_48_open_without_verifier_error(self):
         """Opening each of the 48 propositions must never show
-        'Verifier error' in the detail bar."""
+        'Verifier error' in the goal status tooltip."""
         from euclid_py.engine.proposition_data import PROPOSITIONS
         from euclid_py.ui.main_window import MainWindow
 
@@ -34,7 +34,7 @@ class TestSmokeAllPropositions:
         for p in PROPOSITIONS:
             w.open_proposition(p)
             pp._eval_all()
-            detail = pp._detail.text()
+            detail = pp._goal_status.toolTip()
             if "Verifier error" in detail:
                 errors.append(f"{p.name}: {detail[:80]}")
 
@@ -100,17 +100,6 @@ class TestSmokeAllPropositions:
                 missing.append(p.name)
 
         assert missing == [], f"Missing E library entries: {missing}"
-
-    def test_all_48_have_h_library_entry(self):
-        """Every Euclid proposition has an H library theorem."""
-        from euclid_py.engine.proposition_data import PROPOSITIONS
-
-        missing = []
-        for p in PROPOSITIONS:
-            if p.source == "euclid" and p.get_h_theorem() is None:
-                missing.append(p.name)
-
-        assert missing == [], f"Missing H library entries: {missing}"
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -269,7 +258,7 @@ class TestIntegrationProof:
         p.add_premise_text("¬(a = b)")
         p.set_conclusion("ab = ac")
         p._eval_all()
-        detail = p._detail.text()
+        detail = p._goal_status.toolTip()
         assert "Verifier error" not in detail
         assert "Add proof steps" in detail
 
@@ -375,7 +364,7 @@ class TestNegativeProofs:
         # Wrong rule for this derivation
         p.add_step("B != A", "Between(X,Y,Z)", [1])
         p._eval_all()
-        # Must not crash; detail bar should show something
-        detail = p._detail.text()
+        # Must not crash; goal status tooltip should show something
+        detail = p._goal_status.toolTip()
         assert detail is not None
         assert len(detail) > 0

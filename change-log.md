@@ -2,7 +2,623 @@
 
 All notable changes to the Euclid Elements Simulator project.
 
+## [8.0.0] - 2025-XX-XX
+
+### Fixed — Axiom naming uses paper labels instead of sequential list indices (verifier/unified_checker.py, euclid_py/ui/proof_panel.py)
+
+- **Paper-label axiom naming**: Axiom groups whose paper definitions use sub-labels (e.g. B1a-d, C2a-d, I2a-d, DS3a-b, DA1a-c, DAr1a-c) now display correct paper labels in the UI and dropdown. Previously, all axioms used sequential list-index naming (e.g. "Betweenness 3" mapped to B1c instead of B3), causing users to select the wrong axiom when following the paper's numbering.
+- **Affected groups** (6 of 10):
+  - **Betweenness**: B1a-d, B2-B7 → "Betweenness 1a" through "Betweenness 7"
+  - **Circle**: C1, C2a-d, C3a-d, C4 → "Circle 1" through "Circle 4"
+  - **Intersection**: I1, I2a-d, I3, I4a-b, I5 → "Intersection 1" through "Intersection 5"
+  - **Segment transfer**: DS1-DS2, DS3a-b, DS4a-d → "Segment transfer 1" through "Segment transfer 4d"
+  - **Angle transfer**: DA1a-c, DA2a-c, DA3a-b, DA4, DA5a-b → "Angle transfer 1a" through "Angle transfer 5b"
+  - **Area transfer**: DAr1a-c, DAr2 → "Area transfer 1a" through "Area transfer 2"
+- **Backward compatibility**: Old sequential names (e.g. "Betweenness 4" for B1d) are registered as aliases in `_get_axiom_by_name()` so existing saved proofs still resolve correctly.
+- **Proofs updated**: `scripts/real_proofs.py` uses new paper-label names. All 10 real proofs (I.1-I.10) verify successfully.
+- **Description fixes**: Added missing descriptions for Segment transfer 4c/4d and Area transfer 1c.
+
+### Added — Metric / SAS / SSS autofill for proof journal (euclid_py/ui/proof_panel.py)
+
+- **Metric autofill** (`_autofill_metric`): when a step has justification "Metric" and the sentence is left blank, the engine now infers the most useful metric consequence from the referenced lines using a sequential five-pattern strategy:
+  1. **Multi-ref transitivity (CN1)** — cross-ref original-term pairings derive equalities connecting different references (e.g. `ab = bc` from `ac = ab` and `bc = ba`). Filters trivial M3/M4 self-identities and picks alphabetically first.
+  2. **Angle M4-both-sides rewrite** — for single-ref steps with angle equalities, applies M4 to both sides (e.g. `∠acb = ∠dfe` → `∠bca = ∠efd`). Processes ref equalities in reverse order so the last angle (most useful from SAS/SSS conclusions) is tried first.
+  3. **Pure swap** — produces `Y = X` from `X = Y`. Skipped when the same canonical equality already appears in a non-ref, non-Given prior step (redundancy detection).
+  4. **M1 disequality** — derives `¬(p = q)` from nonzero segments, trying conventional `(p2, p1)` order first.
+  5. **Angle consequences (M9)** — derives angle equalities from segment equalities via permutation, scoring by vertex proximity to shared segment endpoints.
+- **SAS/SSS autofill** (`_autofill_superposition`): when justification is "SAS" or "SSS", derives triangle congruence results by finding the vertex correspondence from referenced segment/angle equalities and calling the superposition engine. Produces the full conclusion (segment eq, angle eqs, area eq).
+- **Robustness**: "Given" steps (which restate premises) are excluded from the non-ref equality canon set to prevent false redundancy detection.
+- **Tests**: 10 new pytest tests in `TestAutofillMetric` (8 cases from Prop I.1, I.4, I.5, I.8) and `TestAutofillSuperposition` (SAS for I.4, SSS for I.8). All 59 autofill tests pass with no regressions.
+
+### Changed — Eval button verifies only the selected step (euclid_py/ui/proof_panel.py)
+
+- The **Eval** button now evaluates only the currently selected proof line instead of the entire proof. It builds a truncated proof containing only the premises and steps up to the selected line, so the verifier processes the minimum context necessary. This makes single-step verification significantly faster on large proofs. The **All** button continues to evaluate the full proof.
+
+### Changed — Rule catalog updated for full coverage (verifier/unified_checker.py, euclid_py/ui/rule_reference.py)
+
+- Added all verifier-accepted structural justifications to `get_available_rules()` so the Rule Reference panel and justification dropdown are complete and match exactly. New entries: **Contradiction** (⊥-intro), **⊥-intro** (alias), **⊥-elim** (discharge assumption via ⊥ line), **Cases** (case-split elimination), and **Given** (cite a premise). Structural rules total increased from 3 to 8.
+- Added the "structural" category to `_SECTION_ORDER` and `_BADGE_COLORS` in `rule_reference.py` so the reference panel displays structural rules in their own collapsible section.
+
+### Removed — Reference tab bar from workspace sidebar (euclid_py/ui/main_window.py)
+
+- Replaced the QTabWidget wrapper (which showed a single "Reference" tab header) with the RuleReferencePanel directly. The tab bar was redundant since there is only one panel. The toggle button in the toolbar still shows/hides the reference sidebar.
+
+### Changed — Begin/End Subproof buttons moved inline with Undo/Redo (euclid_py/ui/proof_panel.py)
+
+- The "Begin Subproof" and "End Subproof" buttons are now on the same row as "Undo" and "Redo" in the Proof Journal header (left-aligned), with "Lemma" pushed to the right. The separate row3 is removed, making the header more compact: `[Undo] [Redo] [Begin Subproof] [End Subproof]  ···  [Lemma]`.
+
+### Changed — Glossary no longer has nested System E dropdown (euclid_py/ui/proof_panel.py)
+
+- Removed the collapsible "Glossary" header and the nested "System E" sub-dropdown. The predicate palette buttons (on, between, same-side, ∠, etc.) now display directly without any expand/collapse interaction since there is only one system.
+
+### Removed — `>` connective from predicate palette (euclid_py/ui/proof_panel.py)
+
+- Removed `>` from CONNECTIVES and CONNECTIVE_MAP. The System E parser only supports `<` (less-than) for magnitude comparisons; `>` was tokenized but had no parser handler, causing an `EParseError` if used.
+
+### Changed — Specific axiom justifications in all Book I proofs (scripts/real_proofs.py, verifier/unified_checker.py)
+
+- **Motivation**: The UI forces users to select specific axiom names (e.g. "CN1 — Transitivity", "Angle transfer 9") when writing proofs, but the scripted proofs in `real_proofs.py` used generic category names ("Metric", "Transfer", "Diagrammatic"). This made proofs inconsistent with the UI standard and obscured which axioms were actually being invoked.
+- **Verifier fix**: `_classify_justification` now routes named axiom prefixes (Generality, Betweenness, CN, Segment transfer, etc.) through `StepKind.AXIOM_ELIM` instead of separate `StepKind.DIAGRAMMATIC/METRIC/TRANSFER` step kinds that had no handler in the main dispatch. `_classify_axiom_category` already handles subcategorization correctly.
+- **Proof rewrites**: All 10 proofs (I.1–I.10) now cite specific axioms:
+  - `"Metric"` → `"CN1 — Transitivity"`, `"CN3 — Subtraction"`, `"CN4 — Reflexivity"`, `"CN5 — Whole > Part"`, `"M1 — Zero segment"`, `"M3 — Symmetry"`, `"M4 — Angle symmetry"`, `"M8 — Area symmetry"`, `"< trichotomy"`
+  - `"Transfer"` → `"Segment transfer 1"` (DS1), `"Segment transfer 4"` (DS3b), `"Segment transfer 5"` (DS4a), `"Segment transfer 6"` (DS4b), `"Segment transfer 7"` (DS4c), `"Angle transfer 9"` (DA4), `"Area transfer 1"` (DAr1a), `"Area transfer 4"` (DAr2)
+  - `"Diagrammatic"` → `"Betweenness 3"` (B3), `"Betweenness 4"` (B4), `"Betweenness 9"` (B6), `"Circle 1"` (C1), `"Generality 1"` (G1), `"Reit"` (reiteration)
+  - A few complex multi-axiom closure steps remain as `"Diagrammatic"` where no single axiom suffices (e.g. same-side derivations, ¬(e=c) in I.9)
+- **Answer key**: `answer-key-book-I.txt` updated to match, with expanded justification name catalog.
+- All 10 proofs pass. 658 tests pass, no regressions.
+
+### Fixed — ConsequenceEngine clause contradiction detection (verifier/e_consequence.py)
+
+- **Root cause**: When all disjuncts of a ground diagrammatic clause were negated in the known set (e.g., all 9 literals of B6 betweenness trichotomy), `_apply_clause` silently returned `None` — acknowledging the contradiction in a comment but never signaling it. This prevented proof-by-contradiction strategies that rely on diagrammatic axiom violations.
+- **Fix**: Added `_CLAUSE_CONTRADICTION` sentinel object. `_apply_clause` now returns the sentinel (instead of `None`) when every disjunct of a ground clause is negated. `direct_consequences` injects a `BOTTOM`/`¬BOTTOM` pair when the sentinel is detected, making the closure explicitly contradictory. `is_consequence` returns `True` for any query when the closure is contradictory.
+- **Result**: Enables proof strategies where case assumptions lead to all disjuncts of an axiom clause being violated (used in Prop I.7 Case 1b-ii where B6 betweenness trichotomy is fully negated).
+
+### Added — Prop I.7 full axiom-level proof (scripts/real_proofs.py)
+
+- **Prop I.7 (uniqueness of triangle construction)** now has a complete 27-line axiom-level proof:
+  - Reductio: assume `¬(d = a)`, construct line R through a,b
+  - Case 1 (`on(d,R)`): nested betweenness case splits on collinear points a,d,b
+    - Case 1a: `between(a,d,b)` → DS1 segment addition `ad+db=ab`, metric `bd=ba` → `ad=0` → `d=a`
+    - Case 1b-i: `between(b,a,d)` → DS1 segment addition `ba+ad=bd`, metric `bd=ba` → `ad=0` → `d=a`
+    - Case 1b-ii: `¬between(b,a,d)` → B6 trichotomy fully negated (P3 kills `between(d,b,a)` from same-side + on-line) → diagrammatic contradiction → `d=a`
+  - Case 2 (`¬on(d,R)`): contradictory diagrammatic closure → `d=a`
+  - Contradiction: `d=a ∧ ¬(d=a)` → reductio concludes `d=a`
+- All 8 proofs (I.1–I.8) now pass. 658 tests pass, no regressions.
+
+### Fixed — DA4 angle transfer axiom encoding (verifier/e_axioms.py)
+
+- **Root cause**: DA4's Between hypotheses had swapped argument order. The paper defines "a not between b and b'" as `¬between(b,a,b')` (vertex `a` is the middle element), but the code had `Between("a","b","bp")` and `Between("a","c","cp")` — putting the vertex in the wrong position.
+- **Fix**: Corrected to `Between("b","a","bp")` and `Between("c","a","cp")` at lines 495-496.
+- **Result**: DA4 now correctly derives angle equalities like `∠dae = ∠cae` when ray d is between rays e and c relative to vertex a.
+
+### Fixed — DA4 grounding limit (verifier/e_consequence.py)
+
+- **Root cause**: DA4 has 5 point + 2 line template variables, generating >50k groundings even for small closures. The `_MAX_GROUND_PER_AXIOM` limit of 50,000 silently skipped DA4 entirely.
+- **Fix**: Raised `_MAX_GROUND_PER_AXIOM` from 50,000 to 200,000.
+
+### Fixed — Degenerate between negation seeding (verifier/e_transfer.py)
+
+- **Root cause**: Transfer axioms (especially DA4) need `¬between(e,a,e)` when template variables map to the same point, but this degenerate negation was never in the closure. Forward-chaining can't derive it because betweenness axioms don't cover the x=z case in `between(x,y,z)`.
+- **Fix**: `TransferEngine.apply_transfers` now seeds `¬between(x,y,x)`, `¬between(y,x,x)`, `¬between(x,x,y)` for all point pairs before grounding transfer axioms. Placed in TransferEngine (not ConsequenceEngine) to avoid performance regression.
+- **Performance**: Suite time remains ~90s (was 186s when seeded in ConsequenceEngine).
+
+### Fixed — I.9 sequent contradictory hypotheses (verifier/e_library.py)
+
+- **Root cause**: PROP_I_9 hypotheses included `same-side(c,b,M)` and `same-side(b,c,N)` alongside `on(b,M)`. By SS2 (symmetry) + SS3 (same-side → ¬on), `same-side(c,b,M) → ¬on(b,M)`, contradicting `on(b,M)`. This made I.9 vacuously true (BOTTOM in closure).
+- **Fix**: Replaced `same-side(c,b,M), same-side(b,c,N)` with `¬on(c,M), ¬on(b,N)` — direct non-collinearity constraints without contradiction.
+
+### Added — Prop I.9 full axiom-level proof (scripts/real_proofs.py)
+
+- **Prop I.9 (angle bisection)** now has a complete 27-line axiom-level proof:
+  - Given angle bac with vertex a, arms on lines M(a,b) and N(a,c)
+  - `let-point-on-line-between` with circle α to get d on N between a and c, also on α
+  - Similarly get f on M between a and b, also on α
+  - SSS superposition: ad=af (radii), bd=bf (from I.1), df=df → ∠dae=∠fae
+  - DA4 angle identification: ∠dae=∠cae, ∠fae=∠bae → ∠bae=∠cae
+- Pattern matching note: `on(d, N)` must come before `on(d, α)` in step assertions to prevent greedy binding of L→α.
+
+### Added — Prop I.10 full axiom-level proof (scripts/real_proofs.py)
+
+- **Prop I.10 (segment bisection)** now has a complete 34-step axiom-level proof:
+  - Inline I.1 construction: circles α(a,b) and β(b,a), intersection → point c on both circles
+  - Reductio for ¬on(c,L): assume on(c,L) → C1 gives between(b,a,c) from α and between(a,b,c) from β → B4 contradiction → discharge via ⊥-intro/⊥-elim
+  - Lines M(c,a), N(c,b), I.9 bisects ∠acb → e
+  - Line K(c,e), d = K∩L intersection
+  - DA4 angle identification: ∠ace=∠acd, ∠bce=∠bcd → ∠acd=∠bcd
+  - SAS: ac=bc, ∠acd=∠bcd, cd=cd → ad=bd
+  - Pasch → between(a,d,b), metric → ad=db
+- Key insight: I.1 as a theorem doesn't provide ¬on(c,L) (non-collinearity). The paper notes this requires "a version of I.1 with the additional noncollinearity claim." Inlining the construction with reductio solves this cleanly.
+- All 10 proofs (I.1–I.10) now pass. 658 tests pass, no regressions.
+
+### Added — Proof Generator Intelligence Tools (Phase 3B–3F)
+
+Six proof-writing infrastructure improvements to make proof generation easier and more automated:
+
+- **Transfer Oracle / Discovery Tool** (`verifier/e_discovery.py`): New `discover_all()` function runs the full engine pipeline (diagrammatic closure → transfer → metric) and returns a `DiscoveryReport` with all derivable facts grouped by type: on-facts, same-side, between, circle facts, diagrammatic equalities/negations, angle sums (DA2), segment sums, area decompositions (DAr2), nonzero facts, angle/segment/area equalities, inequalities, and metric-derived facts. `PB.discover()` integration allows interactive inspection of derivable facts at any proof state.
+
+- **Metric Term Normalization** (`verifier/e_ast.py`): `SegmentTerm`, `AngleTerm`, and `AreaTerm` now have custom `__eq__`/`__hash__` via `_canonical()` methods:
+  - `SegmentTerm`: M3 symmetry — `ab` and `ba` are structurally equal (sorted endpoints)
+  - `AngleTerm`: M4 symmetry — `∠abc` and `∠cba` are structurally equal (vertex fixed, ray endpoints sorted)
+  - `AreaTerm`: M8 symmetry — all 6 vertex permutations are structurally equal (sorted vertices)
+  - Uses `frozen=True, eq=False` dataclass pattern with custom equality
+
+- **Auto-Chaining Transfer↔Metric** (`verifier/unified_checker.py`): Lazy fallback in both directions:
+  - Metric handler: when basic metric check fails, runs closure → transfer → metric pipeline on combined facts
+  - Transfer handler: when transfer check fails, tries metric engine on transfer-derived + known facts
+  - Fresh engine instances avoid state pollution; lazy evaluation prevents performance regression
+
+- **Proof Sketch Mode** (`scripts/real_proofs.py`):
+  - `PB.auto_given()`: Generates Given lines for all premises at once, returns `Dict[str, int]` mapping premise string → line id
+  - `PB.build(sketch=True)`: Auto-prepends missing Given lines and auto-fills derivable Diagrammatic intermediate steps between key proof lines. Renumbers all lines and remaps refs.
+
+- **Backward-Chaining Proof Search** (`verifier/e_backward.py`): New `backward_search()` function with depth-limited recursive search. Checks: diagrammatic closure, transfer axioms, metric rules, transfer→metric chains, SAS/SSS superposition (including brute-force segment equality search via known angle equalities), and theorem application with recursive sub-goal satisfaction. `PB.search()` integration auto-detects available theorems.
+
+- **Proof-by-Cases (CaseSplit)** (`verifier/e_ast.py`, `verifier/unified_checker.py`): `CASE_SPLIT_ELIM` StepKind and `PB.cases()` helper for proof by exhaustive case analysis.
+
+- **Absorption Rule** (`verifier/e_metric.py`): `x + y = x → y = 0` inference rule for metric engine.
+
+### Added — Prop I.6 full axiom-level proof (scripts/real_proofs.py)
+
+- **Prop I.6 (converse of isosceles triangle theorem)** now has a complete 37-line axiom-level proof using two Assume/Reductio subproofs:
+  - Case 1: Assume `ac < ab` → Prop.I.3 cut, SAS congruence, area decomposition (DAr2), CN5 whole > part → area contradiction → `¬(ac < ab)`
+  - Case 2: Assume `ab < ac` → symmetric argument → `¬(ab < ac)`
+  - Trichotomy: `¬(ac < ab) ∧ ¬(ab < ac) → ab = ac`
+- **Updated I.6 sequent** in `e_library.py` to include `on(a, L), on(b, L), ¬(on(c, L))` hypotheses (non-collinearity required for area-based proof)
+
+### Fixed — Verifier improvements enabling I.6 and future proofs
+
+- **Variable registration for theorem-introduced points** (`unified_checker.py`): Points introduced by theorem application (e.g. point `d` from Prop.I.3) are now registered in `checker.variables` with proper sort inference, enabling subsequent transfer/diagrammatic reasoning about those points.
+
+- **DAr1c area transfer axiom** (`e_axioms.py`): Added contrapositive of DAr1b: `on(a,L) ∧ on(b,L) ∧ a≠b ∧ ¬on(c,L) → ¬(△abc = 0)`. This enables deriving that triangles formed by non-collinear points have nonzero area, required for CN5 (whole > part) arguments.
+
+- **Nonzero magnitude tracking** (`e_metric.py`): `_load_literal` now tracks `¬(t = 0)` for all magnitude sorts (segment, angle, area), not just point disequalities. Enables CN5 to fire when area terms are known nonzero via transfer axioms.
+
+- **Trichotomy rule** (`e_metric.py`): Added `¬(a < b) ∧ ¬(b < a) → a = b` to `_apply_rules`. Enables deriving equality from two negated strict inequalities (used in I.6's final step after both reductio blocks).
+
+- **Metric-aware `_validate` in var_map backtracker** (`unified_checker.py`): The `_validate` function in `_match_theorem_var_map` no longer rejects metric hypotheses that fail literal equality but would pass the metric engine (e.g. `ab < ca` vs `ab < ac` differing by M3 symmetry). Metric hypotheses are deferred to the actual metric engine check.
+
+- **Updated test**: `test_all_transfer_axioms_increased` count 22→23, `test_prop_i6_sequent` hypothesis count 4→7.
+
+### Removed — Indirect justification mechanism
+
+The `Indirect[Prop.I.X,...]` justification has been completely removed from the verifier and all proof files. Proofs must now use only axiom-level justifications (Given, let-line, let-circle, Diagrammatic, Metric, Transfer, SAS, SSS, Prop.I.N, Assume, Reductio).
+
+- **Removed `StepKind.INDIRECT`** from `e_ast.py` enum
+- **Removed Indirect handler** from `unified_checker.py` — the `elif step_kind == StepKind.INDIRECT` block and the `_classify_justification` mapping for `"Indirect"` have been deleted. Any remaining `Indirect[...]` justification is now rejected as unknown.
+- **Removed 40 Indirect proof steps** from `scripts/real_proofs.py` across 38 propositions. 10 propositions (I.1–I.5, I.8, I.9, I.11, I.13, I.15) retain full axiom-level proofs; 38 propositions are now incomplete (Given-only) pending axiom-level proof development.
+- **Removed Indirect classification** from `scripts/generate_answer_key.py` — `classify_proof()` now always returns "Verified Proof"; removed Indirect tier description and System H notation section from generated answer key header.
+- **Deleted `scripts/find_indirect.py`** — utility script no longer needed.
+- **Updated `euclid_py/engine/rules.py`** — Assume rule description changed from "indirect proof" to "reductio subproof".
+- **Synced `answer_key_book_1.json`** and regenerated `answer-key-book-I.txt` — zero Indirect references remain.
+- **Updated test xfail set** — `test_answer_key_validation.py` now xfails 42 propositions (38 that lost Indirect steps + 4 pre-existing).
+- **Full test suite**: 801 passed, 0 failed, 144 skipped, 42 xfailed.
+
+### Removed — Systems T (Tarski) and H (Hilbert) — Phase 1
+
+System E is now the **sole formal system**. All Tarski and Hilbert code, UI elements, and tests have been removed.
+
+### Cleaned — Final T/H residual references (Phase 1 completion)
+
+- **Removed T-bridge fallback from `unified_checker.py`**: Cleaned module docstring (removed T-bridge fallback mention), `UnifiedResult` docstring (removed T-bridge metadata reference), and `engine` field comment (removed `"t_fallback"` option)
+- **Removed T/H entries from `_SYS_NAMES` dict** in `proof_panel.py` — now contains only `"E": "System E (Euclid)"`
+- **Updated `verifier/README.md`** — removed System T and System H module trees, T-bridge verification pipeline description, `h_library` reference, and outdated test commands (`test_t_system.py`, `test_completeness.py`). Now System E-only.
+- **Full test suite verified**: 838 passed, 144 skipped, 4 xfailed. Zero functional regressions.
+
+### Fixed — SSS superposition dispatch bug (verifier/e_ast.py, unified_checker.py)
+
+- **Root cause**: `StepKind.SUPERPOSITION_SAS` and `StepKind.SUPERPOSITION_SSS` were aliases for the same enum value (`SUPERPOSITION`). In the `elif` chain in both `verify_e_proof_json` (unified_checker.py) and `EChecker.check_proof` (e_checker.py), the SSS branch was dead code — all superposition steps routed to SAS, which requires an included angle equality that SSS does not need.
+- **Fix**: Gave `SUPERPOSITION_SAS` and `SUPERPOSITION_SSS` distinct `auto()` values in `StepKind`. `SUPERPOSITION` is now an alias for `SUPERPOSITION_SAS` (backward compatible). Updated `_classify_justification` to map `"SSS"`, `"SSS Superposition"`, and `"SSS-elim"` to `StepKind.SUPERPOSITION_SSS`.
+- **Result**: Prop I.8 (SSS) and Prop I.9 (uses SSS internally) now verify correctly. 3 tests fixed: `test_all_48_proofs::Prop.I.8`, `test_e_system::Prop.I.8`, `test_answer_key::I.9`.
+
+### Fixed — Answer key proofs I.3, I.6, I.7, I.8, I.9, I.10 (answer_key_book_1.json)
+
+- **Root cause**: `verified_proof` blocks in the answer key JSON were stale — written before verifier improvements that changed theorem hypothesis matching, metric engine capabilities, and premise requirements.
+- **Fix**: Synced all 6 proofs from `scripts/real_proofs.py` (the canonical source of working proofs) into `answer_key_book_1.json`. Key changes:
+  - **I.3**: Added missing premises (`¬(c=d)`, `¬(a=c)`, `¬(a=d)`), added `let-line` for c,d, fixed `Prop.I.2` application with correct refs
+  - **I.6**: Updated to match Assume/Reductio subproof structure with area-based contradictions
+  - **I.7**: Updated to match Assume/Reductio structure using `Prop.I.5`
+  - **I.8**: Updated to use `SSS` justification (was being routed to SAS)
+  - **I.9**: Updated with full circle construction, SSS application, and indirect conclusions
+  - **I.10**: Updated with equilateral triangle construction and indirect midpoint derivation
+- **Result**: 5 additional tests fixed: `test_answer_key::I.3`, `I.6`, `I.7`, `I.8`, `I.10`. All 8 previously failing tests now pass.
+
+#### UI changes
+- **Removed E/T/H system switcher buttons** from proof panel Row 2 (`proof_panel.py`)
+- **Removed System T and System H predicate palette sections** from proof panel glossary (`proof_panel.py`)
+- **Removed `switch_system` / `_switch_system_inner` methods** from `ProofPanel` — no more cross-system notation rewriting
+- **Removed Glossary tab** from both Verifier and Workspace screens (`main_window.py`)
+- **Removed "E / T / H" Translation tab** from both Verifier and Workspace screens (`main_window.py`)
+- **Deleted `translation_view.py`** — `TranslationView` and `GlossaryPanel` widgets removed entirely
+- **Removed `TestTranslationView` test class** from `test_smoke.py`
+
+#### Verifier changes
+- **Removed T/H cross-system engines** from `unified_checker.py` — no more `TConsequenceEngine`, `HConsequenceEngine`, `t_bridge`, `h_bridge` imports
+- **Removed T/H fallback branches** in diagrammatic step checking — verification is now pure System E
+- **Removed `_detect_system` function** and `_T_PREDICATES` / `_H_PREDICATES` constants
+- **Removed `use_t_fallback` parameter** from `verify_proof` and `verify_named_proof`
+- **Removed `_try_t_fallback` function** — no more Tarski completeness fallback
+- **Removed `t_bridge_accepted` field** from `PanelCheckResult`
+- **Removed System H linkage helpers** from `proposition_data.py` (`get_h_theorem`, `get_h_sequent`) and updated formal-link helpers to System E-only
+- **Simplified GeoCoq compatibility layer** to System E-only mappings and alignment checks
+
+#### Deleted modules
+- **System T**: `t_ast.py`, `t_axioms.py`, `t_bridge.py`, `t_checker.py`, `t_completeness.py`, `t_consequence.py`, `t_cut_elimination.py`, `t_pi_translation.py`, `t_rho_translation.py`
+- **System H**: `h_ast.py`, `h_axioms.py`, `h_bridge.py`, `h_checker.py`, `h_consequence.py`, `h_library.py`
+- **Tests**: `test_t_system.py`, `test_h_system.py`, `test_cross_system.py`
+  - Additional removals: `test_completeness.py` and H/T GeoCoq/Library alignment tests
+
+#### Documentation
+- **Updated `README.md`** — architecture diagram, feature table, project structure, and references now reflect System E-only design
+
+## [7.9.6] - 2025-XX-XX
+
+### Changed — Comprehensive justification names in answer key (Props I.1–I.10)
+
+- **Replaced all generic justification names** in `answer_key_book_1.json` and `answer-key-book-I.txt` for Propositions I.1–I.10 with specific axiom names matching the Rule Reference tab in the UI, consistent with System E (Avigad, Dean, Mumma 2009):
+  - `"Metric"` → specific metric axiom (e.g. `"M3 — Symmetry"`, `"CN1 — Transitivity"`, `"M1 — Zero segment"`, `"M4 — Angle symmetry"`, `"CN4 — Reflexivity"`, `"CN3 — Subtraction"`)
+  - `"Transfer"` → specific transfer axiom (e.g. `"Segment transfer 1"`, `"Segment transfer 4"`, `"Segment transfer 5"`, `"Segment transfer 6"`)
+  - `"Diagrammatic"` → specific diagrammatic axiom (e.g. `"Betweenness 3"`, `"Circle 3"`)
+  - `"SAS"` → `"SAS Superposition"`
+  - `"SSS"` → `"SSS Superposition"`
+- **Removed all `Indirect[...]` justification steps** from Props I.1–I.10:
+  - Prop.I.3: Replaced `Indirect[Prop.I.2]` steps with direct `Prop.I.2` application + specific metric/transfer axioms
+  - Prop.I.6: Expanded single `Indirect[Prop.I.3,Prop.I.4]` into full Assume/Reductio subproofs (two cases via `< trichotomy`) with area-based contradictions using `SAS Superposition`, `Area transfer 3`, `M8 — Area symmetry`, `CN5 — Whole > Part`
+  - Prop.I.7: Expanded `Indirect[Prop.I.5]` into Assume/Reductio using `Prop.I.5`, `Angle transfer 4`, `CN5 — Whole > Part`
+  - Prop.I.9: Replaced `Indirect[Prop.I.1]` → `Generality 1`, `Indirect[Prop.I.1,Prop.I.8]` → `Angle transfer 9` / `Same-side 4`
+  - Prop.I.10: Expanded `Indirect[Prop.I.1,Prop.I.9,Prop.I.4]` into constructive proof using `Prop.I.9`, `SAS Superposition`, `Pasch 1`, `Betweenness 9`
+- **Updated `step_kinds`** in `systems.E` to list every justification type (CN1–CN5, M1–M9, all transfer/diagrammatic axiom families, Assume, Reductio, Reit)
+- **Updated positive_tests** in `answer_key` section: generic `Transfer`/`Metric`/`Diagrammatic` → specific axiom names
+- **Updated Justification Names reference** in `answer-key-book-I.txt` header to list all rule types
+
+## [7.9.5] - 2025-XX-XX
+
+### Fixed — Transfer engine variable grounding and sort inference
+
+- **Root cause 1 — Sort misclassification**: `_extract_variables` in `e_consequence.py` processed set literals in arbitrary order. When `Equals("M","M")` was processed before `On(g, M)`, the line variable `M` was misclassified as `Sort.POINT`, causing the transfer axiom grounding to produce wrong instances and miss angle-equality derivations (DA4).
+- **Fix**: Two-pass `_extract_variables` — first processes non-`Equals` atoms (which definitively establish sorts via `On`, `Center`, `SameSide`, etc.), then processes `Equals` atoms (which inherit sorts from already-classified variables).
+
+- **Root cause 2 — Missing diagrammatic closure**: The unified checker's Transfer step fed raw known facts to the transfer engine without computing the diagrammatic closure first. Transfer axioms like DA4 require derived negative facts (e.g. `¬between(g,h,d)`) that only exist in the closure.
+- **Fix**: Compute diagrammatic closure before running the transfer engine in both `_check_transfer` (e_checker.py) and the unified checker's inline Transfer handler.
+
+- **Root cause 3 — Variable explosion from sort_ctx**: `verify_e_proof_json` registered both uppercase and lowercase variants of every declared name (e.g. `K`, `k`, `M`, `m`) into `checker.variables`. With 8 points and 4 lines, DA4's 5-point × 2-line schema produced 524,288 ground instances — exceeding the 50,000 limit and silently skipping the axiom.
+- **Fix**: Only register original declared names into `checker.variables` (not case variants). Case variants remain in `sort_ctx` for parser use only.
+
+- **Root cause 4 — Default Sort.POINT for all variables**: `_register_literal_vars` defaulted all variable names to `Sort.POINT`, even line/circle variables appearing in `On(p, L)` or `Center(p, α)`.
+- **Fix**: Use `_collect_atom_var_sorts` for context-aware sort inference (On → LINE, Center → CIRCLE, etc.) with POINT as fallback.
+
+### Fixed — Theorem var_map hypothesis matching (verifier/unified_checker.py)
+
+- **Root cause**: `_match_theorem_var_map` greedily matched hypothesis-only variables against known facts in arbitrary set iteration order. For theorems like Prop.I.7 and Prop.I.27, this could bind distinct theorem variables to the same proof variable (e.g. `b→c`), making `¬(b=c)` become `¬(c=c)` (always false).
+- **Fix**: Identity-first strategy — try the identity mapping (theorem variable names = proof variable names) first. If all hypotheses are satisfied, use it. Fall back to backtracking search with conflict detection (reject bindings that produce `¬(x=x)` or fail to match fully-instantiated hypotheses against known facts).
+- **Result**: All 48 Book I proposition theorem-application tests pass reliably regardless of set iteration order.
+
+### Fixed — ZeroMag sort inference in parser (verifier/e_parser.py)
+
+- **Root cause**: `_parse_mag_primary()` always created `ZeroMag(Sort.SEGMENT)` for a bare `0`, even when the context was an angle (`∠abc = 0`) or area (`△abc = 0`) expression. The comment "sort determined by context later" was never implemented.
+- **Fix**: Added `_fix_zero_sort()` static method to `EParser` that infers the correct `ZeroMag` sort from the other operand in `=`, `<`, `≤`, and `≠` relations using `mag_sort()`. Applied in `_parse_magnitude_relation_from` for all relation operators.
+- **Result**: `∠abc = 0` now produces `ZeroMag(Sort.ANGLE)`, `△abc = 0` → `ZeroMag(Sort.AREA)`, `0 < ∠abc` → `ZeroMag(Sort.ANGLE)` on the LHS. Segment context unchanged.
+
+### Fixed — M1 forward direction in MetricEngine (verifier/e_metric.py)
+
+- **Root cause**: The metric engine only implemented the M1 contrapositive (`a ≠ b → ab ≠ 0`) but not the forward direction (`ab = 0 → a = b`). Querying `a = b` given `ab = 0` returned `False`.
+- **Fix**: Added forward M1 logic in `_apply_rules()`: if `SegmentTerm(a, b)` is in the same union-find equivalence class as `ZeroMag(Sort.SEGMENT)`, derive `a = b` as a point equality. Added `_point_eq` tracking set to `MetricState` and point-equality check branch in `_check_literal()`.
+- **Result**: Both directions of M1 (`ab = 0 ↔ a = b`) now work correctly.
+
+### Added — Reductio step type in UI rule catalogue (verifier/unified_checker.py, euclid_py/ui/proof_panel.py)
+
+- **Structural rules group**: Added `Assume`, `Reductio`, and `Reit` under a new "Structural (§3.2)" category in `get_available_rules()`. Previously `Reit` was categorized under "construction" and `Assume`/`Reductio` were not in the rule catalogue at all.
+- **Proof panel dropdown**: Added "Structural (§3.2)" to `_build_rule_groups()` in the proof panel so `Assume`, `Reductio`, and `Reit` appear in the rule picker dropdown menu.
+- **Verification logic**: `StepKind.REDUCTIO` handler already existed in `verify_e_proof_json` — this change exposes it to the UI. Protocol: Assume ¬φ at depth+1, derive contradiction (ψ ∧ ¬ψ), then Reductio at depth 0 concludes φ, referencing the Assume line.
+
+### Added — Subproof scoping for Reductio (verifier/unified_checker.py, euclid_py/ui/proof_panel.py)
+
+- **Depth-based scoping in verifier**: When Reductio closes a subproof, all facts derived at the Assume's depth or deeper (between the Assume line and the Reductio line) are retracted from `checker.known`. Only the Reductio conclusion survives at the outer depth. This prevents subproof-scoped facts from leaking into the enclosing proof — a soundness requirement for Fitch-style natural deduction.
+- **Begin Subproof button**: Inserts an Assume line at `depth+1` after the selected line (or at the end). The user types the assumption (e.g. `¬(a = b)`) into the new line.
+- **End Subproof button**: Finds the nearest Assume line above the cursor, inserts a Reductio line at `depth−1` with `refs` auto-populated to reference the Assume line. The user types the conclusion (the negation of the assumed literal).
+- **15 total new tests**: 6 for ZeroMag sort inference, 3 for M1 forward direction, 6 for Reductio step type (including subproof scoping).
+
+### Added — CN5, CN2, + monotonicity, < transitivity in MetricEngine (verifier/e_metric.py)
+
+- **CN5 (Whole > Part)**: If `a + b = c` and `b > 0` (i.e. `b ∈ _nonzero` or `0 < b`), derive `a < c`. Also the symmetric case: `a > 0 → b < c`. This is the key axiom for betweenness-based segment inequality reasoning used by Propositions I.3, I.6, I.10.
+- **CN2 (Addition congruence)**: If `a = b` and `c = d`, derive `a + c = b + d`. Compares all known `MagAdd` terms and unifies those whose left/right components are in the same equivalence classes.
+- **+ Monotonicity**: If `a < b`, derive `a + c < b + c` for every known term `c` where matching `MagAdd` terms exist.
+- **< Transitivity**: If `a < b` and `b < c`, derive `a < c`. Closes the strict-ordering relation under transitivity.
+
+### Fixed — is_less stale representative bug in MetricState (verifier/e_metric.py)
+
+- **Root cause**: `add_less(a, b)` stored `(find(a), find(b))` at insertion time. After `union()` changed representatives (e.g. merging `af` and `cd`), `is_less(af, ab)` would fail because `find(af)` returned a different representative than the one stored in `_less`. This broke `<` propagation through `=` equivalences.
+- **Fix**: `add_less` now stores original terms. `is_less` and `has_contradiction` resolve all pairs through `find()` at query time. This makes `<` correctly respect the current union-find state.
+- **Result**: `af = cd, cd < ab → af < ab` now works. Prop I.3 now verifies (44/48 real proofs pass, up from 43/48).
+
+### Added — Proof builder depth support (scripts/real_proofs.py)
+
+- **`PB.assume(stmt)`**: Opens a subproof at `depth+1`, inserts an Assume line, returns its line id.
+- **`PB.reductio(stmt, assume_ref)`**: Closes a subproof at `depth−1`, inserts a Reductio line referencing the Assume.
+- **`PB.g()` / `PB.s()`**: Now honour the current depth (backward compatible — depth starts at 0).
+- **20 total new tests**: 6 ZeroMag, 3 M1, 6 Reductio, 5 metric (CN5, CN2, + mono, < through =).
+
+## [7.9.4] - 2025-XX-XX
+
+### Rewritten — Answer key with real proofs (answer-key-book-I.txt, answer_key_book_1.json)
+
+- **Complete rewrite**: All 48 propositions now include their actual proof steps from `scripts/real_proofs.py` instead of sequent verifications.
+- **Text answer key** (`answer-key-book-I.txt`): Generated by new `scripts/generate_answer_key.py` from proof data. Each proposition has: Statement, System E sequent, System H sequent, Dependencies, and the full proof with `[✓]`/`[✗]` verification status. Proof types classified as "Verified Proof" (real axiom-level steps) or "Indirect Proof" (reductio via `Indirect[...]`).
+- **JSON answer key** (`answer_key_book_1.json`): Each proposition's `verified_proof` field updated with actual `premises`, `goal`, and `lines` arrays from `real_proofs.py`.
+- **Proof types represented**: 13 propositions with full step-by-step proofs (I.1–I.5, I.8–I.11, I.13, I.15–I.16); 35 propositions with indirect proofs citing earlier propositions. 44 of 48 verified (✓), 4 unverified (✗): I.11, I.13, I.15, I.16.
+- **Generator script** (`scripts/generate_answer_key.py`): Reads proof data from `real_proofs.py`, metadata from embedded `PROP_META` dict, and generates the complete text answer key. Can be re-run anytime proofs change.
+
+### Fixed — Real proofs for Prop I.3, I.9, I.10 (scripts/real_proofs.py)
+
+- **Prop I.3** (cut equal segment): Replaced broken direct `Prop.I.2` theorem call with `Indirect[Prop.I.2]` for segment copy and non-degeneracy, plus full circle construction (`let-circle`, `Generality 3`, `let-intersection-line-circle-between`, `Segment transfer 4`). All 13 steps verify.
+- **Prop I.9** (bisect angle): Replaced placeholder Metric steps with circle α (center a, radius ab), `let-point-on-line` for d on N and f on M, `Segment transfer 4` for radii, `Prop.I.1` equilateral triangle, SSS congruence, and `Indirect[Prop.I.1,Prop.I.8]` for final angle/same-side conclusions. All 23 steps verify.
+- **Prop I.10** (bisect segment): Replaced single Metric step with `Prop.I.1` equilateral triangle construction and `Indirect[Prop.I.1,Prop.I.9,Prop.I.4]` for midpoint derivation. All 6 steps verify.
+- **Result**: 44 of 48 propositions now pass (up from 41). Remaining failures: I.11, I.13, I.15, I.16.
+
+### Added — Greek letter δ (delta) in proof panel palette (euclid_py/ui/proof_panel.py)
+
+- Added `δ` to `GREEK_LETTERS` list so the predicate palette displays an insert button for δ alongside α, β, γ. Useful for proofs requiring four or more circles (e.g., Prop I.2).
+
+## [7.9.3] - 2025-XX-XX
+
+### Added — Non-circular proofs for I.1, I.4, I.5, I.8 and sequent verifications for the rest
+
+- **Three proof tiers in `answer-key-book-I.txt`**:
+  - **Verified Proof** (I.1, I.4, I.5, I.8): Real proofs from axioms and earlier propositions — I.1 uses 13-step construction (let-circle, Generality 3, Intersection 9, Segment transfer 4, Metric); I.4 uses SAS superposition axiom + Metric; I.5 uses I.4 (SAS on triangles abc and acb, with M3/M4 symmetry); I.8 uses SSS superposition axiom + Metric. None cite themselves.
+  - **Sequent Verification** (I.2–I.48 excl. I.4, I.8): Confirms the E library sequent is well-formed (hypotheses → conclusions). Uses the established theorem as justification. Clearly labeled as verification, not proof from axioms.
+  - **Proof Sketch**: Original informal step-by-step outlines preserved for human reference.
+- **JSON sync**: `answer_key_book_1.json` includes `verified_proof` blocks for all 48.
+- **Consistency**: All 48 propositions verified consistent across txt, JSON, and E library.
+- **Permanent tests**: `verifier/tests/test_answer_key_validation.py` — 192 tests (48 × 4).
+
+### Added — SAS/SSS superposition handling in unified_checker.py
+
+- **Root cause**: `_classify_justification` mapped `SAS`/`SSS` to `StepKind.SUPERPOSITION_SAS`/`SSS` but the verification loop had no handler for these step kinds — they fell through to "Unknown justification".
+- **Fix**: Added `SUPERPOSITION_SAS` and `SUPERPOSITION_SSS` branches that extract 6 triangle point names from angle-equality step literals and delegate to `apply_sas_superposition`/`apply_sss_superposition`.
+- **Segment symmetry**: `apply_sas_superposition` and `apply_sss_superposition` now check all orderings of segment endpoints (ab=cd, ba=cd, ab=dc, ba=dc) via `_seg_eq_in_known` helper, fixing cases where Given premises use different endpoint order than the superposition function expects.
+- **Area equality (M9)**: SAS/SSS derived results now include `△abc = △def` (area equality from full congruence), since the metric engine doesn't yet implement M9 directly.
+
+### Added — Circularity prevention for theorem citations
+
+- When a proof is named `Prop.I.N` (matching an E library theorem), the verifier restricts available theorems to `get_theorems_up_to("Prop.I.N")` — earlier propositions only. Citing the theorem being proved produces a clear error: "Cannot cite 'Prop.I.N' when proving 'Prop.I.N'".
+- Non-proposition proofs (user-level, unnamed, or `test-` prefixed) have the full theorem library available.
+
+### Fixed — Theorem application step literals validated against conclusions
+
+- **Root cause**: After a theorem application succeeded, step literals were added to `known` unconditionally (lines 643-645 in unified_checker.py), allowing any statement to be asserted after a valid theorem application.
+- **Fix**: Each step literal must now be a consequence of the theorem's instantiated conclusions, derivable via Metric or Diagrammatic engines. Arbitrary statements after theorem application are rejected.
+
+### Fixed — Variable mapping for metric equalities in theorem application
+
+- **Root cause**: `_atom_fields` returned `None` for `Equals` on `Term` sub-expressions (segments, angles, areas), causing `_match_theorem_var_map` to always produce an empty mapping for metric equalities.
+- **Fix**: Extended `_atom_fields` to flatten `Term` sub-expressions into string tuples for pattern matching, and extended `_try_match_literal` to handle `Equals` symmetry (tries both orderings). Added `_term_fields` helper for `SegmentTerm`, `AngleTerm`, `AreaTerm`, `MagAdd`, `RightAngle`, `ZeroMag`, and `LessThan`.
+
+### Fixed — Metric engine M4 angle symmetry not firing on query terms
+
+- **Root cause**: `MetricEngine.is_consequence` only applied M4 (∠abc = ∠cba) to angle terms already in its state. Angle terms from the query literal were never loaded, so M4 couldn't derive the needed equality.
+- **Fix**: `is_consequence` now pre-loads query terms into the state before re-running rules, so M3/M4/M8 symmetry rules fire on them. This is sound because those rules hold for all well-formed terms.
+
+### Fixed — Sort inference missed Greek circle names beyond α, β, γ
+
+- **Root cause**: `ConsequenceEngine._infer_sort_from_name` only recognized `α`, `β`, `γ` as circles; `δ`, `ε`, etc. defaulted to POINT. This caused Generality 3 (`center(d,δ) → inside(d,δ)`) to fail when using circles named δ or later.
+- **Fix**: Extended sort inference to recognize ALL Greek lowercase characters (U+03B1–U+03C9) as circles. Also changed `_collect_atom_var_sorts` to use definitive assignment (not `setdefault`) for `Center` and `Inside` atoms, ensuring they override any prior heuristic sort guess.
+
+### Fixed — Named axiom autofill produced `intersects(β, α)` instead of `intersects(α, β)` for Intersection 9
+
+- **Root cause**: `Clause.literals` is a `frozenset`, so iterating prereqs in `_autofill_named_axiom` yielded a non-deterministic order. When `inside()` prereqs were visited before `on()` prereqs, the schema variables `α` and `β` were bound to the wrong concrete circles, swapping the conclusion's argument order.
+- **Fix**: Sort prereqs by atom-type priority (`On` before `Inside` before others, then `repr`) before matching (`euclid_py/ui/proof_panel.py`). This ensures construction-level `on()` facts establish the primary circle bindings before derived `inside()` facts.
+- **Tests**: Added regression tests in `euclid_py/tests/test_autofill.py` — one with refs `2,3,4,5` asserting `intersects(α, β)`, and one verifying incomplete refs `4,5` are rejected.
+
+### Fixed — Named axiom steps verified against all known facts instead of only referenced lines
+
+- **Root cause**: The DIAGRAMMATIC verification path in `unified_checker.py` ran the consequence engine against the full `checker.known` set, ignoring the user's explicit `refs`. A step like `Intersection 9 : 2,3` would pass even though lines 2,3 alone don't provide all four prerequisites — the engine found the missing facts from unreferenced prior steps.
+- **Fix**: When a named axiom step (e.g. `Intersection 9`, `Generality 3`) has explicit refs, the verifier now restricts the known-fact pool to only the literals from those referenced lines. Generic `Diagrammatic`/`Metric`/`Transfer` steps still use the full known set. Per-line literal tracking (`line_lits` dict) supports the ref-restricted lookup.
+- **Scope**: Only named diagrammatic axioms (justifications matching rule-catalogue prefixes like `Generality`, `Intersection`, `Betweenness`, etc.) are ref-restricted. `Metric`, `Transfer`, and `Prop.I.x` steps continue to use all known facts.
+
+### Fixed — Answer key Prop I.1 used wrong axiom name `Segment transfer 1` for radii equality
+
+- **Root cause**: Steps 8–9 of the Prop I.1 answer key used `Segment transfer 1` (DS1: `between(a,b,c) → ab+bc=ac`), but the actual rule for circle-radius equality is `Segment transfer 4` (DS3b: `center(a,α) ∧ on(b,α) ∧ on(c,α) → ac=ab`).
+- **Fix**: Changed to `Segment transfer 4` in `answer-key-book-I.txt` and `verifier/tests/test_all_48_proofs.py`.
+
+### Fixed — Answer key Prop I.1 used wrong axiom name `Intersection 3` instead of `Intersection 9`
+
+- **Root cause**: The Prop I.1 proof step for `intersects(α, β)` was labelled `Intersection 3` in both answer key files. `Intersection 3` is `inside(a,α) ∧ on(b,α) → intersects(L,α)` (line-circle), not circle-circle. The correct axiom is `Intersection 9`: `on(a,α) ∧ inside(b,α) ∧ inside(a,β) ∧ on(b,β) → intersects(α,β)`.
+- **Fix**: Changed to `Intersection 9` in `answer-key-book-I.txt` and `hilbert_book1_derived_rules_and_answer_key.json`. Verified the corrected proof passes the verifier.
+
+### Added — Comprehensive test suite verifying all 48 Book I proofs (verifier/tests/test_all_48_proofs.py)
+
+- **48 parametrised pytest tests** — one per proposition (I.1–I.48) — each builds a proof JSON from the E library sequent and runs it through `verify_e_proof_json`.
+- **Prop.I.1** uses the fully expanded 13-step proof (let-circle, Generality 3, Intersection 9, let-intersection-circle-circle-one, Segment transfer 1, Metric) to exercise construction, named-axiom, transfer, and metric machinery.
+- **Prop.I.2–I.48** each use the direct-application pattern: all sequent hypotheses stated as Given, then one `Prop.I.N` theorem-application step whose statement is the exact library conclusions — verifying that `_match_theorem_var_map` produces the identity binding, all hypotheses are satisfied, and the goal is met.
+- All 48 tests pass in ~0.2 s.
+
+### Fixed — Construction rules accepted with mismatched or missing conclusion text (unified_checker.py)
+
+- **Root cause**: `_match_construction_prereqs` returned `(None, None)` when step literals did not match the rule's conclusion pattern. The caller treated this as "no error", so **any text was silently accepted with any construction rule** without prerequisite checking. For example, `on(a, L)` with `let-circle` was accepted, and `center(a, α)` (partial conclusion, missing `on(b, α)`) was accepted — both without requiring `¬(a = b)`.
+- **Fix**: When conclusion pattern matching fails, the function now returns an error message (`"Statement does not match '<rule>' conclusion pattern."`) instead of `(None, None)`. The caller already checks for non-None errors and marks the step ✗.
+- **Result**: Construction steps are now rejected if the step text doesn't match the rule's expected conclusion literals, and prerequisite checking only runs after a successful conclusion match.
+
+### Fixed — Solved proof file used wrong construction rules (solved_proofs/Proposition I.1.euclid)
+
+- **Root cause**: Lines 7–8 of the solved Prop I.1 proof used `let-intersection-circle-circle-two` and `let-intersection-circle-line-two` with partial conclusion text (`on(c,α)` and `on(c,β)` separately). These were accepted before because of the bypass bug above.
+
+### Rewritten — Answer key JSON (hilbert_book1_derived_rules_and_answer_key.json)
+
+- **Before**: Used old Hilbert-system syntax (Point(A), Circle(A,B), Congruent, etc.) with informal justifications and no line refs. Tests were unverifiable against the actual unified checker. Only covered System H.
+- **After**: Unified three-system answer key covering System E, System H, and System T for all 48 Book I propositions. Now includes:
+  - **All 48 propositions** with sequents in both System E and System H native syntax (hypotheses, exists_vars, conclusions), plus System T placeholder notes. Each proposition also includes its dependency graph entry.
+  - **System E details**: 20 construction rules (§3.3), 65 axiom entries across 10 groups (Generality, Betweenness, Same-side, Pasch, Triple incidence, Circle, Intersection, Segment/Angle/Area transfer), notation guide, step kind reference
+  - **System H details**: Axiom group descriptions (Incidence I1–I3, Order O1–O4, Congruence C1–C4, Parallel P1, Continuity), notation guide for IncidL/BetH/CongH/CongaH/ColH/outH/SameSideH/Cut/Para/Disjoint predicates
+  - **System T details**: 10 Tarski axiom schemas (A1–A10) with formulas, notation guide for Cong/B predicates
+  - **Dependency graph** for all 48 propositions (GeoCoq-aligned)
+  - **7 positive tests** with complete System E proofs verified against the unified checker: Prop I.1 (13 steps), SAS via Prop.I.4, let-line, let-circle, Generality 3, between symmetry, segment transfer
+  - **5 negative tests**: missing prerequisites, mismatched conclusion patterns, missing intersects, canvas-as-justification, unjustified assertions
+
+### Rewritten — Answer key text file (answer-key-book-I.txt)
+
+- **Before**: System E proofs only, step kinds like `[CONSTRUCTION]`, `[METRIC]` without specific justification names or line refs. Many later propositions had compressed 1-step sketch proofs.
+- **After**: Fully rewritten to match the JSON answer key format. Now includes:
+  - **All 48 propositions** with both **System E** and **System H** sequents (hypotheses, exists_vars, conclusions) per proposition
+  - **Correct justification names** on every step (`Given`, `let-circle`, `Generality 3`, `Segment transfer 1`, `Intersection 3`, `Metric`, `Transfer`, `Diagrammatic`, `SAS`, `SSS`, `Prop.I.N`)
+  - **`[refs: ...]`** on every non-Given step showing which prior lines it depends on
+  - **Explanatory notes** in parentheses after each step (axiom name, construction description, reasoning)
+  - **System H notation guide** alongside the existing System E guide
+  - **Justification name reference table** listing all valid rule names for the verifier
+  - **Dependency graph** with neutral geometry / parallel postulate boundary markers
+  - Prop I.1 fully expanded to 13 verifier-compatible steps; I.2 to 14 steps; I.22 to 10 steps; all others expanded with correct refs
+
+### Added — Comprehensive autofill test suite (euclid_py/tests/test_autofill.py)
+
+- **38 new tests** covering all three autofill paths (construction, named axiom, theorem) plus edge cases and the Prop I.1 integration scenario.
+- **TestAutofillConstruction** (5 tests): `let-line` autofill, `let-circle` autofill, fresh circle name collision avoidance (α→β), missing prerequisite failure (✗), and known-facts-from-premises fallback (autofill without explicit refs).
+- **TestAutofillConstructionHeadless** (5 tests): Unit tests for `_match_hypotheses` (basic matching + binding conflict), `_pick_fresh_name` (point, circle, line, collision avoidance), and `_extract_symbols` (Greek letters, negation syntax).
+- **TestAutofillNamedAxiom** (7 tests): `Generality 3` autofill + verification, `Betweenness 1` autofill, multi-conclusion axiom skip (disjunctive clauses return None), wrong-refs failure (✗), known-facts-from-prior-steps fallback, and axiom index population check (≥50 named axioms).
+- **TestAutofillTheorem** (3 tests): Theorem library lookup (all 48 propositions), `Prop.I.1` autofill produces text, and unknown theorem failure (✗).
+- **TestAutofillPropI1Scenario** (5 tests): Integration tests matching the user's exact Prop I.1 screenshot — `let-circle` autofill from `¬(a = b)`, two circles get distinct names (α, β), `Generality 3` from prior `let-circle`, full 5-step chain (premise + 2 circles + 2 Generality 3 all ✓), and `Intersection 3` multi-conclusion rejection (✗).
+- **TestAutofillEdgeCases** (5 tests): Empty justification (no autofill), generic `Diagrammatic` justification (no autofill), unparseable ref text (no crash), nonexistent line ref (no crash), and already-filled text preservation.
+- **TestAutofillCollectKnownLiterals** (5 tests): Premises included in known pool, prior steps included, current/future steps excluded, `_parse_ref_literals` returns parsed, and nonexistent ref returns empty.
+- **Audit results**: All three autofill paths (construction, named axiom, theorem) correctly build candidate pools from ref'd literals + all known facts from premises and prior steps. No bugs found — the autofill engine already searches the full known-facts pool, matching the verifier's behavior.
+
+## [7.9.2] - 2025-XX-XX
+
+### Fixed — Verifier crash / hang on Proposition I.2 and complex proofs (e_consequence.py, h_consequence.py, t_consequence.py, unified_checker.py)
+
+- **Root cause**: `verify_e_proof_json` passed the inflated `checker.variables` (which includes both uppercase and lowercase variants of every declared symbol from `sort_ctx`) to the consequence engines' grounding routines. With 9+ points and 3 lines, transfer axioms with 7–8 schema variables produced millions of ground clause instantiations, causing indefinite hangs.
+- **Fix 1 — Use known-fact variables only**: All three callers in `verify_e_proof_json` that passed `checker.variables` to `is_consequence()` now pass `None`, letting each engine extract variables from known facts only. This eliminates the upper/lowercase symbol duplication.
+- **Fix 2 — Grounding cap in E consequence engine**: `_ground_clauses` in `e_consequence.py` now estimates the combination count per axiom before generating substitutions. Axioms exceeding `_MAX_GROUND_PER_AXIOM` (50,000) are skipped to prevent combinatorial explosion.
+- **Fix 3 — Grounding cap in H consequence engine**: Same `_MAX_GROUND_PER_AXIOM` cap added to `_ground_clauses` in `h_consequence.py`.
+- **Fix 4 — Enumeration caps in T consequence engine**: `_fill_unbound` and `_enumerate_subs` in `t_consequence.py` now skip expansion when the estimated combination count exceeds 50,000.
+- **Fix 5 — Transfer handler uses default variable extraction**: The Transfer step handler in `verify_e_proof_json` no longer passes `checker.variables` to `apply_transfers`, letting it extract variables from known facts only.
+- **Result**: All 48 propositions now evaluate without crashes or hangs (worst case ~4s for Prop I.43). Previously, Prop I.2 and other complex propositions with many declared variables would hang indefinitely.
+
+### Added — Autofill for named diagrammatic and transfer axioms (proof_panel.py)
+
+- **Named axiom autofill**: Steps with empty text and a named axiom justification (e.g., "Generality 3", "Segment transfer 4", "Betweenness 1") now auto-fill when Eval is clicked. The axiom clause is split into prerequisites (negated literals) and conclusions (positive literals), the referenced lines are matched against prerequisites to derive variable bindings, and the conclusion is substituted with those bindings.
+- **Lazy-loaded axiom index**: `_get_axiom_by_name()` builds a cached name→Clause dictionary covering all 65 named axioms across Generality, Betweenness, Same-side, Pasch, Triple incidence, Circle, Intersection, Segment transfer, Angle transfer, and Area transfer groups.
+- **Multi-conclusion handling**: Disjunctive clauses (multiple positive literals) skip autofill and let the user type the statement manually, since the intended conclusion is ambiguous.
+
+### Fixed — Construction autofill reused circle/line/point names (proof_panel.py)
+
+- **Root cause**: `_autofill_construction` only tracked names from the current step's ref'd literals when picking fresh variable names. Names already introduced by prior steps (e.g., circle `α` from an earlier `let-circle`) were not excluded, causing the same circle name to be assigned to multiple construction steps.
+- **Fix 1**: `_autofill_construction` now scans all premises and existing step texts to populate `used_names` before calling `_pick_fresh_name`, matching the approach already used by `_autofill_theorem`.
+- **Fix 2**: `_extract_symbols` regex now matches Greek letters (U+0370–U+03FF) so circle names like `α`, `β`, `γ` are detected as used names.
+
+### Fixed — "QThread: Destroyed while thread is still running" crash (proof_panel.py, main_window.py)
+
+- **Root cause**: Background verification threads were destroyed (`deleteLater`) without waiting for the thread to fully exit. This caused crashes when switching propositions, loading files, or clearing the proof panel while verification was in progress.
+- **Fix**: `_cancel_verification()` now waits up to 3 seconds for the thread to stop, and force-terminates it if it doesn't. `_on_verify_finished_inner()` now calls `quit()` + `wait(2000)` before `deleteLater()`. Both `proof_panel.py` and `main_window.py` are fixed.
+
 ## [7.9.1] - 2025-XX-XX
+
+### Added — Crash logging for debugging (proof_panel.py, __main__.py)
+
+- **`euclid_crash.log`**: All unhandled exceptions are now logged with full stack traces to `euclid_crash.log` in the workspace root directory. Users can attach this file when reporting bugs.
+- **Global exception hook**: `__main__.py` installs `sys.excepthook` that writes any unhandled exception (including those in Qt signal handlers) to the crash log before printing to stderr.
+- **`_get_crash_logger()`**: Centralized logger in `proof_panel.py` using Python's `logging` module. Writes timestamped entries at DEBUG level and above.
+- **`_eval_all` crash guard**: Top-level try/except in `_eval_all` catches exceptions from `_eval_all_inner` (autofill, proof JSON building, thread launch). Shows ⚠ in the goal status with a tooltip pointing to the crash log.
+- **`_on_verify_finished` crash guard**: Catches exceptions from the result-handling code path. Shows ⚠ status without crashing the UI.
+- **`switch_system` crash guard**: Catches exceptions from formula translation. Shows ⚠ status with details.
+- **Autofill exception logging**: When `_generate_autofill` throws (e.g., from the pattern matcher or parser), the exception is logged at WARNING level with the step number, justification, and refs for context. The step is marked ✗ with "Incorrect justification" tooltip.
+- **Verifier thread exception logging**: `_VerifyWorker.run()` logs exceptions at ERROR level before emitting them to the UI thread.
+
+### Fixed — UI freeze ("Not Responding") during proof verification (proof_panel.py, main_window.py, __main__.py)
+
+- **Background thread verification**: `_eval_all()` in the proof panel and `_run_verification()` in the verifier screen now run `verify_e_proof_json` on a background `QThread` instead of blocking the UI thread. The consequence engine's ground-clause generation uses Cartesian products of all declared variables × all axioms, which scales combinatorially and caused multi-second freezes (Windows "Not Responding") on proofs with many points, lines, or circles.
+- **`_VerifyWorker` (QObject)**: New worker class in `proof_panel.py` that wraps `verify_e_proof_json` and emits the result via a `finished(object)` signal. Shared by both the proof panel and verifier screen.
+- **Busy indicator**: Eval/All buttons are disabled during verification and the goal status shows ⏳. The verifier screen's Verify button and status label also show a "Verifying…" state.
+- **Synchronous fallback for tests**: When no Qt event loop is running (detected via `app.property("_euclid_event_loop_running")`), verification falls back to synchronous execution so existing tests continue to work without an event loop.
+- **RuntimeError protection**: `_on_verify_finished` wraps widget access (`refresh_from_step`, `setEnabled`) in `try/except RuntimeError` to handle the case where widgets are deleted by C++ between thread start and result delivery.
+
+### Fixed — Broken tests referencing removed `_detail` widget (test_system_e_integration.py)
+
+- **Three tests updated**: `test_all_48_open_without_verifier_error`, `test_no_steps_shows_neutral_prompt`, and `test_ui_invalid_proof_detail_no_crash` referenced `pp._detail.text()` which was removed in a prior release. Updated to use `pp._goal_status.toolTip()` which replaced the detail bar's role per the changelog.
+
+### Fixed — Autofill marks ✗ on incorrect justification instead of filling bad text (proof_panel.py)
+
+- **Autofill failure validation**: When a construction rule or theorem autofill cannot match prerequisites/hypotheses against the referenced lines (wrong refs, missing refs, etc.), the step is now marked ✗ immediately with an "Incorrect justification" tooltip instead of generating a formula with unbound template variables.
+- **`_AUTOFILL_FAIL` sentinel**: `_generate_autofill` returns a sentinel value when a known rule or theorem name is recognised but pattern matching fails. Unknown justifications (e.g. `Diagrammatic`) still return `None` and proceed normally to the verifier.
+- **`_match_hypotheses` returns match count**: Now returns `(bindings, matched_count)` so callers can verify all patterns were successfully matched before generating output.
+- **Autofill exception guard**: `_generate_autofill` calls are now wrapped in `try/except` so that any unexpected exception from the parser or pattern matcher marks the step ✗ instead of crashing the application.
+
+### Fixed — Crash when switching systems (E/T/H) during verification (proof_panel.py, main_window.py)
+
+- **`_cancel_verification` helper**: New method on both `ProofPanel` and `_VerifierScreen` that disconnects the background thread's `finished` signal, waits for the thread to quit, and re-enables eval buttons. This prevents stale verification results from being applied to rewritten formulas after a system switch.
+- **`switch_system` cancels in-flight verification**: Calls `_cancel_verification()` before rewriting formulas, preventing a race condition where the background thread finishes and `_on_verify_finished` applies results based on pre-translation line IDs to the post-translation step objects.
+- **`clear()` cancels in-flight verification**: Prevents stale results from applying to a freshly cleared proof panel when a new proposition is loaded.
+- **`load_proof_file` cancels in-flight verification**: Verifier screen cancels any running thread before loading new proof data.
+
+### Fixed — H bridge crash: on(p, α) wrongly translated to IncidL(p, α) (h_bridge.py, proof_panel.py, unified_checker.py)
+
+- **Root cause**: `e_literal_to_h` blindly converted all `On(point, obj)` atoms to `IncidL(point, obj)` without checking whether `obj` is a line or a circle. In System E, `On` is overloaded for both `on(p, L)` (point on line) and `on(p, α)` (point on circle). Hilbert's system has no circles, so `on(p, α)` has no H equivalent and must return `None`. The malformed `IncidL(p, α)` formulas could crash the parser or consequence engine when the proof was evaluated after switching to System H.
+- **`_is_circle_name` helper**: New function in `h_bridge.py` that checks whether a variable name is a circle — uses the passed `sort_ctx` dict when available, otherwise falls back to the System E naming convention (Greek letters α β γ … and spelled-out names like "alpha" = circle).
+- **`e_literal_to_h` accepts optional `sort_ctx`**: When the `On` atom's object is identified as a circle, returns `None` (no H equivalent) instead of `IncidL`.
+- **`switch_system` builds sort context**: Before translating, scans declarations and all premise/step text to build a `sort_ctx` dict. Passes it to `e_literal_to_h` so circle variables are correctly identified even when their names are non-standard.
+- **`unified_checker` passes `sort_ctx` to all `e_literal_to_h` calls**: The three call sites in `verify_e_proof_json` (known-set translation, H-syntax check, H fallback) now pass the sort context.
+
+### Added — Snap toggle on canvas toolbar (canvas_widget.py, main_window.py)
+
+- **Snap toggle button (⊹)**: A checkable button at the end of the drawing toolbar toggles snap-to-circle, snap-to-line, and snap-to-intersection on/off. When enabled (default, highlighted in primary colour), drawing tools snap new points to circle boundaries, segment edges, and circle-circle / segment-circle intersections. When disabled, only existing-point snapping remains active, allowing free placement of points without magnetic pull to nearby geometry. The toggle sets `_snap_enabled` on the canvas scene, which gates `_find_snap` to skip non-point snap passes.
+
+### Added — Fitch auto-fill on Eval (proof_panel.py)
+
+- **Auto-fill sentence from justification**: When a proof line has a justification (e.g. `let-circle`, `Prop.I.1`) and refs filled in but the sentence text is empty, pressing **Eval** auto-generates the sentence before verification. Supports all 20 construction rules and all 48 theorem propositions.
+- **Hypothesis-based variable mapping**: The auto-fill engine parses the referenced lines into AST literals, then pattern-matches them against the rule's prerequisites or theorem's hypotheses using the same `_try_match_literal` algorithm the verifier uses. This produces correct variable bindings (e.g. `¬(a = c)` matched against hypothesis `¬(a = b)` yields `a→a, b→c`). Existential/new variables get fresh names that avoid collisions with all names already in the proof.
+- **Sort-aware fresh names**: New variables follow System E conventions — lowercase for points, uppercase for lines, Greek for circles — and skip any name already used in the proof.
+
+### Changed — Two-click select-then-edit for proof lines (proof_panel.py)
+
+- **First click = red arrow selection**: Clicking a proof line now shows the red arrow indicator without entering edit mode. The text field does not receive focus.
+- **Second click = edit mode**: Clicking an already-selected line (with red arrow) focuses the text field for editing. This prevents accidental edits when selecting lines for reference.
+
+### Fixed — Rays not included in save files (canvas_widget.py, file_format.py, main_window.py)
+
+- **`get_state()`**: Canvas state serialization now includes `"rays"` array with `from`, `through`, and `color` fields for each `RayItem`.
+- **`serialize_to_json()`**: The `.euclid` file format now writes a `"rays"` key in the canvas section, preserving rays alongside segments, circles, and angle marks.
+- **`deserialize_from_json()`**: File parsing now reads the `"rays"` key from saved files. Older files without rays load without error (defaults to empty list).
+- **`_load_canvas_from_data()`**: File loading now restores rays with correct color and dotted-line pen style via `add_ray()`.
+
+### Fixed — Construction rules accepted without prerequisite validation (unified_checker.py)
+
+- **Construction prerequisite checking**: Construction steps (e.g. `let-intersection-circle-line-one`, `let-line`, `let-circle`) were blindly accepted — all user-asserted literals were added to `known` with no prerequisite validation. The handler now derives a variable mapping by pattern-matching the step's literals against the rule's `conclusion_pattern`, then instantiates the rule's `prereq_pattern` and verifies each prerequisite is in `known` (or derivable via the consequence engine). For example, `let-intersection-circle-line-one` now requires `intersects(γ, N)` to be established before accepting `on(g, N), on(g, γ)`.
+
+### Fixed — Theorem application skipped variable substitution (unified_checker.py)
+
+- **Theorem var_map derivation**: Theorem application (`Prop.I.x`) checked hypotheses using the raw template variables from the theorem definition instead of substituting the user's actual variable names. This worked by coincidence when variable names matched but would silently accept invalid proofs when names differed. The handler now derives a variable mapping by pattern-matching step literals against the theorem's conclusions, then applies `substitute_literal` to both hypotheses (for validation) and conclusions (for adding to `known`).
+
+### Fixed — Pattern matcher allowed duplicate step-literal consumption (unified_checker.py)
+
+- **Consumed-literal tracking**: `_match_construction_prereqs` and `_match_theorem_var_map` iterated over all step literals for each pattern literal without tracking which step literals had already been consumed. When two conclusion-pattern literals had the same atom type (e.g. `on(a, L)` and `on(b, L)` in `let-line`), the second pattern would re-match the first step literal, binding both pattern variables to the same concrete value (e.g. `"a"→"a"`, `"b"→"a"`). This produced incorrect prerequisite substitutions like `¬(a = a)` instead of `¬(a = b)`. Both functions now pop matched step literals from a remaining-list so each concrete literal is consumed at most once.
+
+### Added — Soundness test suite (verifier/tests/test_soundness.py)
+
+- **Layered soundness test suite** with 6 layers testing the unified checker at every level:
+  - **L1 — Internal helpers** (31 tests): `_atom_fields`, `_try_match_literal`, `_classify_justification`, `_detect_system`, `_match_theorem_var_map`, `_match_construction_prereqs` unit-tested in isolation with binding-conflict, polarity-mismatch, type-mismatch, and immutability checks.
+  - **L2 — Engine isolation** (25+ tests): Each `StepKind` handler verified for correct rejection/acceptance with error-message inspection. Covers construction prerequisites, theorem hypothesis substitution, diagrammatic consequence, Given premise matching, metric reflexivity/symmetry, transfer derivation, Assume, Reit, Lemma:name citation, unknown justifications.
+  - **L3 — Multi-step chains** (6 tests): Known-set propagation across step types (construction→diagrammatic, Given→construction→diagrammatic chains); failed-step blocking (failed construction doesn't pollute known); circular theorem dependency detection; two-circle intersection chain; derived-set consistency.
+  - **L4 — Answer-key regression** (144 tests): Parametrized `verify_named_proof` for all 48 propositions (×3 checks: no crash, sequent well-formed, no self-availability for circularity).
+  - **L5 — Adversarial** (13 tests): Polarity inversion (¬on vs on), malformed JSON (missing declarations/lines/goal, empty/garbage statements, unparseable goals), goal injection (unknown construction/justification/parse-error lines don't pollute known), duplicate line IDs, zero IDs, very long statements.
+  - **L6 — Solved-proof file integration** (12 tests): Loads `solved_proofs/Proposition I.1.euclid`, converts `.euclid` format to verifier JSON, and verifies every line individually — Given, construction (let-circle ×2), diagrammatic (Intersection, Generality), intersection (circle-circle), transfer (Segment transfer), metric (CN1 Transitivity), goal establishment, and no global errors.
+
+### Fixed — Ray tool objects can now be deleted (canvas_widget.py)
+
+- **Delete tool now removes rays**: `RayItem` was missing from the `isinstance` checks in the delete-tool click handler — both the parent-walk loop (line 1235) and the removal branch (line 1241). Clicking a ray with the delete tool did nothing. Now rays are deletable like segments, circles, and angle marks. Fixes interference when constructing overlapping line segments (e.g. Proposition I.2).
+
+### Fixed — Crash when labelling a point after equality assertion (canvas_widget.py)
+
+- **Deferred proxy widget destruction**: `_dismiss_label_popover()` was synchronously destroying the label popover's `QGraphicsProxyWidget` while still inside the `returnPressed` / `clicked` signal handler of its child widgets (`QLineEdit`, `QPushButton`). CPython's reference counting immediately invoked the C++ destructor, causing a use-after-free crash when Qt returned to the now-destroyed signal emitter. Fixed by calling `widget.deleteLater()` to defer destruction to the next event loop iteration.
+- **Ray undo restore preserves dotted style**: Restoring rays from undo snapshots now uses `DotLine` pen style instead of reverting to solid.
+
+### Fixed — Ray pen overridden to solid in add_ray() (canvas_widget.py)
+
+- **add_ray() preserved dotted style**: `add_ray()` was overriding the `RayItem` constructor's dotted pen with `QPen(color, 2)` (solid 2px) immediately after creation. Now uses `DotLine` at 1.5px matching the constructor.
+
+### Fixed — Equality tool blocked by overlapping rays (canvas_widget.py)
+
+- **Equality tool sees through rays**: The equality tool used `itemAt()` which returns only the topmost item. Since rays render at z=2 (above segments at z=1), clicking an overlapping segment hit the ray instead, and the parent-walk returned `None`, silently losing the click. Now uses `items()` to scan all items at the click position and finds the first `SegmentItem` regardless of overlapping rays.
+
+### Changed — Ray tool is now a dotted visual overlay (canvas_widget.py)
+
+- **Dotted line style**: Rays are now drawn with `Qt.PenStyle.DotLine` at 1.5px width (was solid 2px), making them visually distinct from line segments and clearly a visual aid rather than a replacement.
+- **Higher z-order**: Rays now render at `zValue=2` (above segments at `zValue=1`), so they overlay on top of line segments instead of competing for the same layer.
 
 ### Changed — Rewritten README.md for Git (README.md)
 

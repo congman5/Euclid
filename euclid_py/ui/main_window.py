@@ -19,7 +19,7 @@ import os
 from collections import Counter
 from typing import Dict, List, Optional
 
-from PyQt6.QtCore import Qt, QSize, QTimer
+from PyQt6.QtCore import Qt, QSize, QTimer, QThread, QObject
 from PyQt6.QtGui import QAction, QFont, QIcon, QColor, QPixmap
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -314,6 +314,8 @@ class _VerifierScreen(QWidget):
         self._mw = main_win
         self._proof_data: dict | None = None
         self._dirty = False
+        self._verify_thread: QThread | None = None
+        self._verify_worker: QObject | None = None
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -352,6 +354,7 @@ class _VerifierScreen(QWidget):
         btn_verify.setStyleSheet(f"background: {C.valid}; color: white; border: none; border-radius: 4px; padding: 6px 16px; font-weight: bold; font-size: 13px;")
         btn_verify.clicked.connect(self._run_verification)
         tl.addWidget(btn_verify)
+        self._verify_btn = btn_verify
 
         layout.addWidget(topbar)
 
@@ -367,8 +370,7 @@ class _VerifierScreen(QWidget):
         self._proof_panel.line_selected.connect(self._on_line_selected)
         body_splitter.addWidget(self._proof_panel)
 
-        # Right: Tabbed diagnostics + rule reference + translations + glossary
-        from .translation_view import TranslationView, GlossaryPanel
+        # Right: Tabbed diagnostics + rule reference
         right_tabs = QTabWidget()
         right_tabs.setStyleSheet(f"""
             QTabWidget::pane {{
@@ -400,12 +402,8 @@ class _VerifierScreen(QWidget):
         self._diagnostics = DiagnosticsPanel()
         self._diagnostics.navigate_to_line.connect(self._navigate_to_line)
         self._rule_ref = RuleReferencePanel()
-        self._verifier_translation_view = TranslationView()
-        self._glossary_panel = GlossaryPanel()
         right_tabs.addTab(self._diagnostics, "Diagnostics")
         right_tabs.addTab(self._rule_ref, "Rules")
-        right_tabs.addTab(self._glossary_panel, "Glossary")
-        right_tabs.addTab(self._verifier_translation_view, "E / T / H")
         body_splitter.addWidget(right_tabs)
 
         body_splitter.setStretchFactor(0, 1)   # summary — narrow
@@ -416,6 +414,22 @@ class _VerifierScreen(QWidget):
 
     # ── File loading ──────────────────────────────────────────────────
 
+    def _cancel_verification(self):
+        """Cancel any in-flight background verification."""
+        if self._verify_thread is not None:
+            try:
+                self._verify_worker.finished.disconnect(self._on_verify_finished)
+            except (TypeError, RuntimeError):
+                pass
+            self._verify_thread.quit()
+            if not self._verify_thread.wait(3000):
+                self._verify_thread.terminate()
+                self._verify_thread.wait(1000)
+            self._verify_thread.deleteLater()
+            self._verify_thread = None
+            self._verify_worker = None
+        self._verify_btn.setEnabled(True)
+
     def _open_file(self):
         path, _ = QFileDialog.getOpenFileName(
             self, "Open Proof JSON", "", "JSON Files (*.json);;All Files (*)"
@@ -424,6 +438,8 @@ class _VerifierScreen(QWidget):
             self.load_proof_file(path)
 
     def load_proof_file(self, path: str):
+        # Cancel any in-flight verification before loading new data
+        self._cancel_verification()
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -482,14 +498,63 @@ class _VerifierScreen(QWidget):
     def _run_verification(self):
         if self._proof_data is None:
             return
-
-        try:
-            from verifier.unified_checker import verify_e_proof_json
-
-            result = verify_e_proof_json(self._proof_data)
-        except Exception as e:
-            QMessageBox.warning(self, "Verification Error", f"Verifier raised an exception:\n{e}")
+        # Ignore if a verification is already running
+        if self._verify_thread is not None:
             return
+
+        # When no event loop is running (e.g. tests), fall back to
+        # synchronous verification to avoid hanging.
+        app = QApplication.instance()
+        if app is None or not app.property("_euclid_event_loop_running"):
+            try:
+                from verifier.unified_checker import verify_e_proof_json
+                result = verify_e_proof_json(self._proof_data)
+            except Exception as exc:
+                return
+            self._on_verify_finished(result)
+            return
+
+        # Disable Verify button and show busy status
+        self._verify_btn.setEnabled(False)
+        self._status_label.setText(" \u23f3 Verifying\u2026 ")
+        self._status_label.setStyleSheet(
+            f"color:{C.header_text}; padding: 4px 12px;"
+            f" border-radius: 4px; font-weight: bold;")
+        self._mw.statusBar().showMessage("Verifying\u2026")
+
+        # Import the worker from proof_panel (shared implementation)
+        from .proof_panel import _VerifyWorker
+
+        self._verify_thread = QThread()
+        self._verify_worker = _VerifyWorker(self._proof_data)
+        self._verify_worker.moveToThread(self._verify_thread)
+        self._verify_thread.started.connect(self._verify_worker.run)
+        self._verify_worker.finished.connect(self._on_verify_finished)
+        self._verify_worker.finished.connect(self._verify_thread.quit)
+        self._verify_thread.start()
+
+    def _on_verify_finished(self, result_or_exc):
+        """Handle verification result from the background thread."""
+        # Clean up thread references — wait for thread exit before
+        # destroying to avoid 'QThread: Destroyed while still running'.
+        if self._verify_thread is not None:
+            self._verify_thread.quit()
+            self._verify_thread.wait(2000)
+            self._verify_thread.deleteLater()
+        self._verify_thread = None
+        self._verify_worker = None
+
+        # Re-enable Verify button
+        self._verify_btn.setEnabled(True)
+
+        # Handle verifier exception
+        if isinstance(result_or_exc, Exception):
+            QMessageBox.warning(
+                self, "Verification Error",
+                f"Verifier raised an exception:\n{result_or_exc}")
+            return
+
+        result = result_or_exc
 
         # Determine which lines passed / failed
         error_line_ids = {lid for lid, lr in result.line_results.items()
@@ -543,7 +608,7 @@ class _VerifierScreen(QWidget):
         self._diagnostics.set_diagnostics(all_diags)
 
         num_errors = sum(1 for lr in result.line_results.values()
-                         if not lr.valid) + len(result.errors)
+                          if not lr.valid) + len(result.errors)
 
         # Update summary panel
         self._summary.set_result(
@@ -813,6 +878,30 @@ class _WorkspaceScreen(QWidget):
         btn_reset.clicked.connect(self._reset_canvas)
         draw_row.addWidget(btn_reset)
 
+        sep_snap = QFrame()
+        sep_snap.setFixedSize(1, 22)
+        sep_snap.setStyleSheet(f"background:{COLORS['border']};")
+        draw_row.addWidget(sep_snap)
+
+        self._snap_btn = QPushButton("⊹")
+        self._snap_btn.setToolTip(
+            "Toggle snap to circle / line / intersection")
+        self._snap_btn.setCheckable(True)
+        self._snap_btn.setChecked(True)
+        self._snap_btn.setFixedHeight(26)
+        self._snap_btn.setStyleSheet(
+            f"QPushButton {{ background:{COLORS['surface']};"
+            f" color:{COLORS['text']};"
+            f" border:1px solid {COLORS['border']};"
+            " border-radius:3px; padding:3px 8px;"
+            " font-size:14px; min-width:24px; }}"
+            f" QPushButton:hover {{ background:#f0f4ff;"
+            f" border-color:{COLORS['primary']}; }}"
+            f" QPushButton:checked {{ background:{COLORS['primary']};"
+            " color:white; }}")
+        self._snap_btn.toggled.connect(self._toggle_snap)
+        draw_row.addWidget(self._snap_btn)
+
         draw_inner.setFixedSize(draw_inner.sizeHint())
 
         draw_scroll = QScrollArea()
@@ -871,50 +960,12 @@ class _WorkspaceScreen(QWidget):
         body_splitter.addWidget(canvas_container)
         body_splitter.addWidget(self._proof_panel)
 
-        # Right sidebar: tabbed Reference + Translations + Glossary (hidden by default)
-        from .translation_view import TranslationView, GlossaryPanel
-        self._right_tabs = QTabWidget()
-        self._right_tabs.setStyleSheet(f"""
-            QTabWidget::pane {{
-                border: none;
-                border-left: 1px solid {COLORS['border']};
-                background: #ffffff;
-            }}
-            QTabBar {{
-                background: {C.header_bg};
-            }}
-            QTabBar::tab {{
-                padding: 8px 16px;
-                font-size: 12px;
-                color: rgba(255, 255, 255, 0.7);
-                border: none;
-                border-bottom: 2px solid transparent;
-                background: transparent;
-            }}
-            QTabBar::tab:hover {{
-                color: #ffffff;
-                background: rgba(255, 255, 255, 0.08);
-            }}
-            QTabBar::tab:selected {{
-                color: #ffffff;
-                border-bottom: 2px solid {COLORS['primary']};
-                background: rgba(255, 255, 255, 0.05);
-            }}
-        """)
+        # Right sidebar: Rule Reference panel (hidden by default)
         self._ref_panel = RuleReferencePanel()
-        self._translation_view = TranslationView()
-        self._glossary_view = GlossaryPanel()
-        self._right_tabs.addTab(self._ref_panel, "Reference")
-        self._right_tabs.addTab(self._glossary_view, "Glossary")
-        self._right_tabs.addTab(self._translation_view, "E / T / H")
-        self._right_tabs.setMinimumWidth(300)
-        self._right_tabs.setMaximumWidth(460)
-        self._right_tabs.setVisible(False)
-        body_splitter.addWidget(self._right_tabs)
-
-        # Clicking a system badge in the E/T/H tab rewrites the proof
-        self._translation_view.system_selected.connect(
-            self._proof_panel.switch_system)
+        self._ref_panel.setMinimumWidth(300)
+        self._ref_panel.setMaximumWidth(460)
+        self._ref_panel.setVisible(False)
+        body_splitter.addWidget(self._ref_panel)
 
         body_splitter.setStretchFactor(0, 3)
         body_splitter.setStretchFactor(1, 2)
@@ -1003,8 +1054,8 @@ class _WorkspaceScreen(QWidget):
         self._left_tab.setVisible(sizes[0] < 10)
         # Proof panel collapsed (pushed all the way right)
         self._right_tab.setVisible(sizes[1] < 10)
-        # Reference tabs collapsed (only when they were visible)
-        if self._right_tabs.isVisible():
+        # Reference panel collapsed (only when it was visible)
+        if self._ref_panel.isVisible():
             self._right_tab2.setVisible(sizes[2] < 10)
         else:
             self._right_tab2.setVisible(False)
@@ -1016,9 +1067,9 @@ class _WorkspaceScreen(QWidget):
         total = sum(sizes)
         if total <= 0:
             return
-        if panel_index == 2 and not self._right_tabs.isVisible():
+        if panel_index == 2 and not self._ref_panel.isVisible():
             # Reference panel was hidden via toggle button, re-show it
-            self._right_tabs.setVisible(True)
+            self._ref_panel.setVisible(True)
             self._btn_ref.setChecked(True)
         target_size = saved[panel_index] if saved[panel_index] > 50 else total // 3
         sizes[panel_index] = target_size
@@ -1035,7 +1086,7 @@ class _WorkspaceScreen(QWidget):
         self._body_splitter.setSizes(sizes)
         self._left_tab.setVisible(sizes[0] < 10)
         self._right_tab.setVisible(sizes[1] < 10)
-        if self._right_tabs.isVisible():
+        if self._ref_panel.isVisible():
             self._right_tab2.setVisible(sizes[2] < 10)
         else:
             self._right_tab2.setVisible(False)
@@ -1082,8 +1133,6 @@ class _WorkspaceScreen(QWidget):
             if goal_text:
                 self._proof_panel.set_conclusion(goal_text)
 
-        # Phase 9.3: Update the translation view with E/T/H sequents
-        self._translation_view.set_proposition(prop)
         self._dirty = False
 
     @staticmethod
@@ -1161,6 +1210,10 @@ class _WorkspaceScreen(QWidget):
             self._load_given_objects(self._current_prop)
             QTimer.singleShot(50, self._canvas.fit_to_contents)
 
+    def _toggle_snap(self, enabled: bool):
+        """Toggle snap-to-circle/line/intersection on the canvas."""
+        self._canvas.scene._snap_enabled = enabled
+
     def _set_tool(self, tid: str):
         for name, btn in self._tools.items():
             btn.setChecked(name == tid)
@@ -1228,8 +1281,8 @@ class _WorkspaceScreen(QWidget):
 
     def _toggle_reference(self):
         """Show or hide the reference / translation sidebar."""
-        visible = not self._right_tabs.isVisible()
-        self._right_tabs.setVisible(visible)
+        visible = not self._ref_panel.isVisible()
+        self._ref_panel.setVisible(visible)
         self._btn_ref.setChecked(visible)
         # Hide the reference restore tab when the panel is toggled off
         if not visible:
@@ -1278,6 +1331,16 @@ class _WorkspaceScreen(QWidget):
                     from PyQt6.QtGui import QColor, QPen
                     s.draw_color = QColor(seg["color"])
                     s.setPen(QPen(s.draw_color, 2))
+            for ray in data.get("rays", []):
+                r = self._canvas.scene.add_ray(
+                    ray["from"], ray["through"])
+                if r and ray.get("color"):
+                    from PyQt6.QtGui import QColor, QPen
+                    from PyQt6.QtCore import Qt
+                    r.draw_color = QColor(ray["color"])
+                    pen = QPen(r.draw_color, 1.5)
+                    pen.setStyle(Qt.PenStyle.DotLine)
+                    r.setPen(pen)
             for circ in data.get("circles", []):
                 rp = circ.get("radius_point")
                 if rp:

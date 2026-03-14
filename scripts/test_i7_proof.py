@@ -1,0 +1,52 @@
+﻿"""I.7 proof: nested case splits on(d,R)/between."""
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+os.environ['PYTHONIOENCODING'] = 'utf-8'
+from scripts.real_proofs import PB, check
+
+b = PB('Prop.I.7',
+       ['on(b, L)', 'on(c, L)', '\u00ac(b = c)',
+        'same-side(a, d, L)', 'bd = ba', 'cd = ca'],
+       'd = a')
+b.g('on(b, L)')
+b.g('on(c, L)')
+b.g('\u00ac(b = c)')
+b.g('same-side(a, d, L)')
+b.g('bd = ba')
+b.g('cd = ca')
+s7 = b.assume('\u00ac(d = a)')
+s8 = b.s('on(a, R), on(b, R)', 'let-line', [])
+s_c1 = b.assume('on(d, R)')
+s_c1a = b.assume('between(a, d, b)')
+s_seg1 = b.s('(ad + db) = ab', 'Transfer', [s_c1a])
+s_ad0a = b.s('ad = 0', 'Metric', [s_seg1, 5])
+s_da1 = b.s('d = a', 'Metric', [s_ad0a])
+s_c1b = b.assume('\u00ac(between(a, d, b))')
+s_c1bi = b.assume('between(b, a, d)')
+s_seg2 = b.s('(ba + ad) = bd', 'Transfer', [s_c1bi])
+s_ad0b = b.s('ad = 0', 'Metric', [s_seg2, 5])
+s_da2 = b.s('d = a', 'Metric', [s_ad0b])
+s_c1bii = b.assume('\u00ac(between(b, a, d))')
+s_btw = b.s('between(d, b, a)', 'Diagrammatic', [])
+s_nss = b.s('\u00ac(same-side(d, a, L))', 'Diagrammatic', [s_btw])
+s_ss = b.s('same-side(d, a, L)', 'Diagrammatic', [4])
+s_bot = b.s('\u22a5', 'Contradiction', [s_nss, s_ss])
+s_da3 = b.reductio('d = a', s_c1bii)
+s_da_1b = b.cases('d = a', s_c1bi, s_c1bii)
+s_da_c1 = b.cases('d = a', s_c1a, s_c1b)
+s_c2 = b.assume('\u00ac(on(d, R))')
+s_eq1 = b.s('ba = bd', 'Metric', [5])
+s_eq2 = b.s('ca = cd', 'Metric', [6])
+s_lineP = b.s('on(d, P), on(b, P)', 'let-line', [])
+s_ss1 = b.s('same-side(d, c, R)', 'Diagrammatic', [])
+s_ss2 = b.s('same-side(a, c, P)', 'Diagrammatic', [])
+s_sss = b.s('\u2220abc = \u2220dbc, \u2220bac = \u2220bdc, \u2220acb = \u2220dcb, \u25b3bac = \u25b3bdc',
+            'SSS', [s_eq1, s_eq2])
+s_abd0 = b.s('\u2220abd = 0', 'Metric', [s_sss])
+s_nabd0 = b.s('\u00ac(\u2220abd = 0)', 'Transfer', [])
+s_bot2 = b.s('\u22a5', 'Contradiction', [s_abd0, s_nabd0])
+s_da_c2 = b.reductio('d = a', s_c2)
+s_da = b.cases('d = a', s_c1, s_c2)
+pj = b.build()
+ok = check(pj)
+print('PASS' if ok else 'FAIL')

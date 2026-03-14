@@ -4,7 +4,6 @@ Tests for the unified checker.
 Covers:
   - E proof acceptance via verify_proof
   - Invalid proof rejection
-  - T-bridge fallback path
   - JSON proof verification via verify_e_proof_json
   - Single-step verification via verify_step
   - Rule catalogue via get_available_rules
@@ -51,11 +50,11 @@ class TestUnifiedResult:
         assert r.accepted is True
 
     def test_to_dict(self):
-        r = UnifiedResult(valid=True, engine="t_fallback")
+        r = UnifiedResult(valid=True, engine="e")
         d = r.to_dict()
         assert d["valid"] is True
         assert d["accepted"] is True
-        assert d["engine"] == "t_fallback"
+        assert d["engine"] == "e"
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -143,47 +142,6 @@ class TestVerifyProof:
         )
         result = verify_proof(proof)
         assert result.valid
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# T-bridge fallback tests
-# ═══════════════════════════════════════════════════════════════════════
-
-class TestTFallback:
-    """Test the T-bridge fallback path."""
-
-    def test_fallback_not_invoked_when_e_succeeds(self):
-        """If E succeeds, T fallback is not used even if enabled."""
-        from verifier.e_ast import Center, Inside
-        proof = EProof(
-            name="center-inside",
-            free_vars=[("a", Sort.POINT), ("α", Sort.CIRCLE)],
-            hypotheses=[_pos(Center("a", "α"))],
-            goal=[_pos(Inside("a", "α"))],
-            steps=[
-                ProofStep(
-                    id=1,
-                    kind=StepKind.DIAGRAMMATIC,
-                    assertions=[_pos(Inside("a", "α"))],
-                ),
-            ],
-        )
-        result = verify_proof(proof, use_t_fallback=True)
-        assert result.valid
-        assert result.engine == "e"
-
-    def test_fallback_disabled_by_default(self):
-        """T fallback is off by default."""
-        proof = EProof(
-            name="empty",
-            free_vars=[("a", Sort.POINT), ("L", Sort.LINE)],
-            hypotheses=[],
-            goal=[_pos(On("a", "L"))],
-            steps=[],
-        )
-        result = verify_proof(proof, use_t_fallback=False)
-        assert not result.valid
-        assert result.engine == "e"
 
 
 # ═══════════════════════════════════════════════════════════════════════

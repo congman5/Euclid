@@ -60,33 +60,80 @@ class Var(Term):
         return self.name
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class SegmentTerm(Term):
-    """Magnitude: length of segment from point a to point b.  Written ab."""
+    """Magnitude: length of segment from point a to point b.  Written ab.
+
+    Normalized so that ``SegmentTerm('a','b') == SegmentTerm('b','a')``
+    (M3 symmetry: ab = ba).
+    """
     p1: str  # point variable name
     p2: str  # point variable name
+
+    def _canonical(self) -> tuple:
+        return tuple(sorted((self.p1, self.p2)))
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SegmentTerm):
+            return NotImplemented
+        return self._canonical() == other._canonical()
+
+    def __hash__(self) -> int:
+        return hash(('SegmentTerm',) + self._canonical())
 
     def __repr__(self) -> str:
         return f"{self.p1}{self.p2}"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class AngleTerm(Term):
-    """Magnitude: measure of angle ∠abc.  Written ∠abc."""
+    """Magnitude: measure of angle ∠abc.  Written ∠abc.
+
+    Normalized so that ``AngleTerm('a','b','c') == AngleTerm('c','b','a')``
+    (M4 symmetry: ∠abc = ∠cba). The vertex (p2) is always fixed.
+    """
     p1: str  # point variable name
     p2: str  # vertex
     p3: str  # point variable name
+
+    def _canonical(self) -> tuple:
+        # Vertex stays fixed; sort the two ray endpoints
+        lo, hi = sorted((self.p1, self.p3))
+        return (lo, self.p2, hi)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, AngleTerm):
+            return NotImplemented
+        return self._canonical() == other._canonical()
+
+    def __hash__(self) -> int:
+        return hash(('AngleTerm',) + self._canonical())
 
     def __repr__(self) -> str:
         return f"\u2220{self.p1}{self.p2}{self.p3}"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class AreaTerm(Term):
-    """Magnitude: area of triangle △abc.  Written △abc."""
+    """Magnitude: area of triangle △abc.  Written △abc.
+
+    Normalized so that all 6 vertex permutations are equal
+    (M8 symmetry: △abc = △bca = △cab = △acb = △bac = △cba).
+    """
     p1: str
     p2: str
     p3: str
+
+    def _canonical(self) -> tuple:
+        return tuple(sorted((self.p1, self.p2, self.p3)))
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, AreaTerm):
+            return NotImplemented
+        return self._canonical() == other._canonical()
+
+    def __hash__(self) -> int:
+        return hash(('AreaTerm',) + self._canonical())
 
     def __repr__(self) -> str:
         return f"\u25b3{self.p1}{self.p2}{self.p3}"
@@ -386,15 +433,33 @@ class ConstructionRule:
 # ═══════════════════════════════════════════════════════════════════════
 
 class StepKind(Enum):
-    """The type of a proof step in System E."""
+    """The type of a proof step in System E.
+
+    Naming follows an intro/elim convention where possible:
+    - CONSTRUCTION = object introduction (let-line, let-circle, …)
+    - AXIOM_ELIM   = derive facts from diag/metric/transfer axiom schemas
+    - SUPERPOSITION= SAS/SSS superposition elimination
+    - THEOREM_APP  = apply a previously proved proposition
+    - BOT_INTRO    = ⊥-intro: derive ⊥ from ψ and ¬ψ
+    - BOT_ELIM     = ⊥-elim: discharge Assume subproof via ⊥
+    """
     CONSTRUCTION = auto()      # introduces new objects
-    DIAGRAMMATIC = auto()      # infers diagrammatic assertion
-    METRIC = auto()            # infers metric assertion
-    TRANSFER = auto()          # infers from mixed diagram+metric
+    AXIOM_ELIM = auto()        # derive from axiom schemas (diag/metric/transfer)
+    SUPERPOSITION_SAS = auto() # SAS superposition
+    SUPERPOSITION_SSS = auto() # SSS superposition
     THEOREM_APP = auto()       # applies a previously proved theorem
-    CASE_SPLIT = auto()        # proof by cases on atom φ / ¬φ
-    SUPERPOSITION_SAS = auto() # SAS superposition (Prop I.4)
-    SUPERPOSITION_SSS = auto() # SSS superposition (Prop I.8)
+    BOT_INTRO = auto()         # ⊥-intro: derive ⊥ from ψ and ¬ψ
+    BOT_ELIM = auto()          # ⊥-elim: discharge Assume via ⊥
+    CASE_SPLIT_ELIM = auto()   # case-split elim: derive B from (φ→B) ∧ (¬φ→B)
+
+    # ── Backward-compatibility aliases ──────────────────────────────
+    DIAGRAMMATIC = AXIOM_ELIM
+    METRIC = AXIOM_ELIM
+    TRANSFER = AXIOM_ELIM
+    SUPERPOSITION = SUPERPOSITION_SAS  # default: SAS
+    CASE_SPLIT = CASE_SPLIT_ELIM
+    REDUCTIO = BOT_ELIM
+    CONTRADICTION = BOT_INTRO
 
 
 @dataclass

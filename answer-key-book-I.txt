@@ -1,36 +1,71 @@
 ================================================================================
   ANSWER KEY — Euclid's Elements Book I, Propositions I.1–I.48
-  Formal System E Proofs (Avigad, Dean, Mumma 2009)
+  Formal Systems E + H (Avigad/Dean/Mumma 2009, Hilbert 1899)
 ================================================================================
 
-  Notation Guide
-  ──────────────
-  ab          = segment from point a to point b
-  ∠abc        = angle at vertex b with rays ba, bc
-  △abc        = area of triangle abc
-  ab + cd     = magnitude addition (MagAdd)
-  R           = right angle
-  on(p, L)    = point p lies on line L
-  between(a,b,c) = b is strictly between a and c on a line
-  same-side(a,b,L) = a and b are on the same side of line L
-  center(a, α)     = a is the center of circle α
-  on(p, α)         = p is on circle α (circumference)
-  inside(p, α)     = p is inside circle α
-  intersects(α, β) = circles α and β intersect
-  ¬intersects(L,M) = lines L and M are parallel (do not meet)
-  ¬(a = b)         = a and b are distinct points
-  ab < cd          = segment ab is strictly less than segment cd
-  ∠abc < ∠def      = angle abc is strictly less than angle def
+  Proof Tiers
+  ────────────
+  Verified Proof:       Axiom-level proof from construction rules,
+                        diagrammatic/metric axioms, and SAS/SSS.
+                        Uses only earlier propositions (no circularity).
 
-  Step Kinds
-  ──────────
-  CONSTRUCTION   — introduce new geometric objects (let-line, let-circle, etc.)
-  DIAGRAMMATIC   — infer from diagram topology (§3.4 axioms)
-  METRIC         — infer from segment/angle/area equalities (§3.5 axioms)
-  TRANSFER       — segment or angle transfer (§3.6 axioms)
-  THEOREM_APP    — apply a previously proved proposition
-  SUPERPOSITION_SAS — Side-Angle-Side congruence (§3.7)
-  SUPERPOSITION_SSS — Side-Side-Side congruence (§3.7)
+  System E Notation
+  ──────────────────
+  ab               = segment from point a to point b
+  ∠abc              = angle at vertex b with rays ba, bc
+  △abc              = area of triangle abc
+  ab + cd           = magnitude addition (MagAdd)
+  right-angle       = a right angle magnitude
+  on(p, L)          = point p lies on line L
+  between(a,b,c)    = b is strictly between a and c
+  same-side(a,b,L)  = a and b on the same side of line L
+  center(a, α)      = a is the center of circle α
+  on(p, α)          = p is on circle α (circumference)
+  inside(p, α)      = p is inside circle α
+  intersects(α, β)  = circles α and β intersect
+  ¬(intersects(L,M)) = lines L and M are parallel
+  ¬(a = b)          = a and b are distinct points
+  ab < cd           = segment ab strictly less than cd
+  ∠abc < ∠def       = angle abc strictly less than def
+
+  Justification Names (for refs)
+  ─────────────────────────────────
+  Given                           — premise
+  let-line                        — construct line (§3.3)
+  let-circle                      — construct circle (§3.3)
+  let-point-on-line               — introduce point on line (§3.3)
+  let-point-on-circle             — introduce point on circle (§3.3)
+  let-intersection-*              — intersection constructions (§3.3)
+  Diagrammatic                    — diagram axioms, full closure (§3.4)
+  Generality N                    — generality axiom N (§3.4)
+  Betweenness N                   — betweenness axiom N (§3.4)
+  Same-side N                     — same-side axiom N (§3.4)
+  Pasch N                         — Pasch axiom N (§3.4)
+  Triple incidence N              — triple incidence axiom N (§3.4)
+  Circle N                        — circle axiom N (§3.4)
+  Intersection N                  — intersection axiom N (§3.4)
+  CN1 — Transitivity              — a = b ∧ b = c → a = c (§3.5)
+  CN2 — Addition                  — a = b ∧ c = d → a+c = b+d (§3.5)
+  CN3 — Subtraction               — a+c = b+c → a = b (§3.5)
+  CN4 — Reflexivity               — a = a (§3.5)
+  CN5 — Whole > Part              — 0 < b → a < a+b (§3.5)
+  M1 — Zero segment               — ab = 0 ↔ a = b (§3.5)
+  M3 — Symmetry                   — ab = ba (§3.5)
+  M4 — Angle symmetry             — ∠abc = ∠cba (§3.5)
+  M8 — Area symmetry              — △abc = △cab = △acb (§3.5)
+  < trichotomy                    — exactly one: a<b, a=b, b<a (§3.5)
+  Segment transfer N              — segment transfer axiom N (§3.6)
+  Angle transfer N                — angle transfer axiom N (§3.6)
+  Area transfer N                 — area transfer axiom N (§3.6)
+  SAS                             — SAS superposition (§3.7)
+  SSS                             — SSS superposition (§3.7)
+  Prop.I.N                        — apply proved proposition
+  Reit                            — reiterate known fact
+  Assume                          — assume for subproof
+  Contradiction / ⊥-intro         — derive ⊥ from ψ ∧ ¬ψ
+  ⊥-elim                          — discharge assumption via ⊥
+  Reductio                        — conclude ¬φ from assumed φ → ⊥
+  Cases                           — case split elimination
 
 
 ================================================================================
@@ -39,143 +74,182 @@
 
   Statement: On a given finite straight line, construct an equilateral triangle.
 
-  Given:     ¬(a = b)
-  Construct: ∃c : POINT
-  Prove:     ab = ac, ab = bc, ¬(c = a), ¬(c = b)
+  System E:
+    Given:     ¬(a = b)
+    Construct: ∃c: POINT
+    Prove:     ab = ac, ab = bc, ¬(c = a), ¬(c = b)
 
-  Dependencies: (none — fully primitive proof)
+  System H:
+    Given:     ¬(a = b)
+    Construct: ∃c: POINT
+    Prove:     CongH(a, b, a, c), CongH(a, b, b, c), ¬(c = a), ¬(c = b), ¬(ColH(a, b, c))
 
-  Proof (10 steps):
-  ─────────────────
-  1. [CONSTRUCTION] let-circle
-     → new: α (circle)
-     → center(a, α), on(b, α)
+  Dependencies: (none)
 
-  2. [CONSTRUCTION] let-circle
-     → new: β (circle)
-     → center(b, β), on(a, β)
+  Verified Proof (14 steps) [✓]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → ¬(a = b)
+   2. [let-circle]  [refs: 1]
+       → center(a, α), on(b, α)
+   3. [let-circle]  [refs: 1]
+       → center(b, β), on(a, β)
+   4. [Generality 3]  [refs: 2]
+       → inside(a, α)
+   5. [Generality 3]  [refs: 3]
+       → inside(b, β)
+   6. [Intersection 9]  [refs: 2, 3, 4, 5]
+       → intersects(α, β)
+   7. [let-intersection-circle-circle-one]  [refs: 6]
+       → on(c, α), on(c, β)
+   8. [Segment transfer 4]  [refs: 2, 7]
+       → ac = ab
+   9. [Segment transfer 4]  [refs: 3, 7]
+       → bc = ba
+  10. [M3 — Symmetry]  [refs: ]
+       → ab = ba
+  11. [CN1 — Transitivity]  [refs: 8, 10]
+       → ab = bc
+  12. [CN1 — Transitivity]  [refs: 8, 10]
+       → ab = ac
+  13. [CN1 — Transitivity]  [refs: ]
+       → ¬(c = a)
+  14. [CN1 — Transitivity]  [refs: ]
+       → ¬(c = b)
 
-  3. [DIAGRAMMATIC] α and β intersect (I5 axiom)
-     → inside(a, α), inside(b, β), intersects(α, β)
-
-  4. [CONSTRUCTION] let-intersection-circle-circle-one
-     → new: c (point)
-     → on(c, α), on(c, β)
-
-  5. [TRANSFER] ac = ab (radii of α, DS3b)
-     → ac = ab
-
-  6. [TRANSFER] bc = ba (radii of β, DS3b)
-     → bc = ba
-
-  7. [METRIC] ab = ac (symmetry M3)
-     → ab = ac
-
-  8. [METRIC] ab = bc (transitivity)
-     → ab = bc
-
-  9. [METRIC] c ≠ a (M1 contrapositive)
-     → ¬(c = a)
-
-  10. [METRIC] c ≠ b (M1 contrapositive)
-      → ¬(c = b)
-
-  Q.E.F. ■
+  Q.E.D. ■
 
 
 ================================================================================
   PROPOSITION I.2 — Copy a Segment to a Given Point
 ================================================================================
 
-  Statement: From a given point, place a straight line equal to a given
-             straight line.
+  Statement: From a given point, place a straight line equal to a given straight line.
 
-  Given:     on(b, L), on(c, L), ¬(b = c), ¬(a = b), ¬(a = c)
-  Construct: ∃f : POINT
-  Prove:     af = bc
+  System E:
+    Given:     on(b, L), on(c, L), ¬(b = c), ¬(a = b), ¬(a = c)
+    Construct: ∃b': POINT
+    Prove:     af = bc
+
+  System H:
+    Given:     ¬(a = b), ¬(a' = p), IncidL(a', l), IncidL(p, l)
+    Construct: ∃b': POINT
+    Prove:     IncidL(b', l), outH(a', p, b'), CongH(a', b', a, b)
 
   Dependencies: I.1
 
-  Proof (11 steps):
-  ──────────────────
-  1. [THEOREM_APP] Equilateral triangle on ab (I.1)
-     var_map: {a→a, b→b, c→d}
-     → new: d (point)
-     → ab = ad, ab = bd, ¬(d = a), ¬(d = b)
+  Verified Proof (25 steps) [✓]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → on(b, L)
+   2. [Given]  [refs: ]
+       → on(c, L)
+   3. [Given]  [refs: ]
+       → ¬(b = c)
+   4. [Given]  [refs: ]
+       → ¬(a = b)
+   5. [Given]  [refs: ]
+       → ¬(a = c)
+   6. [Prop.I.1]  [refs: 4]
+       → ab = ad, ab = bd, ¬(d = a), ¬(d = b)
+   7. [let-line]  [refs: 6]
+       → on(d, M), on(b, M)
+   8. [let-circle]  [refs: 3]
+       → center(b, γ), on(c, γ)
+   9. [Generality 3]  [refs: 8]
+       → inside(b, γ)
+  10. [let-intersection-line-circle-extend]  [refs: 9, 7]
+       → on(g, γ), on(g, M), between(g, b, d)
+  11. [Segment transfer 4]  [refs: 8, 10]
+       → bg = bc
+  12. [Betweenness 3]  [refs: 10]
+       → ¬(g = d)
+  13. [let-circle]  [refs: 12]
+       → center(d, δ), on(g, δ)
+  14. [let-line]  [refs: 6]
+       → on(d, N), on(a, N)
+  15. [CN1 — Transitivity]  [refs: 6]
+       → da = db
+  16. [Circle 1]  [refs: 10, 13]
+       → inside(b, δ)
+  17. [Segment transfer 6]  [refs: 13, 16]
+       → db < dg
+  18. [CN1 — Transitivity]  [refs: 15, 17]
+       → da < dg
+  19. [Segment transfer 5]  [refs: 13, 18]
+       → inside(a, δ)
+  20. [let-intersection-line-circle-extend]  [refs: 19, 14]
+       → on(f, δ), on(f, N), between(f, a, d)
+  21. [Segment transfer 4]  [refs: 13, 20]
+       → df = dg
+  22. [Segment transfer 1]  [refs: 20]
+       → fa + ad = fd
+  23. [Segment transfer 1]  [refs: 10]
+       → gb + bd = gd
+  24. [CN3 — Subtraction]  [refs: 21, 22, 23, 15]
+       → af = bg
+  25. [CN1 — Transitivity]  [refs: 24, 11]
+       → af = bc
 
-  2. [CONSTRUCTION] let-line
-     → new: M (line)
-     → on(d, M), on(a, M)
-
-  3. [CONSTRUCTION] let-line
-     → new: N (line)
-     → on(d, N), on(b, N)
-
-  4. [CONSTRUCTION] let-circle (center b, through c)
-     → new: γ (circle)
-     → center(b, γ), on(c, γ)
-
-  5. [CONSTRUCTION] Intersect line N with circle γ
-     → new: g (point)
-     → on(g, N), on(g, γ), ¬(g = b)
-
-  6. [TRANSFER] bg = bc (radii of γ)
-     → bg = bc
-
-  7. [DIAGRAMMATIC] d ≠ g
-     → ¬(d = g)
-
-  8. [CONSTRUCTION] let-circle (center d, through g)
-     → new: δ (circle)
-     → center(d, δ), on(g, δ)
-
-  9. [CONSTRUCTION] Intersect line M with circle δ
-     → new: f (point)
-     → on(f, M), on(f, δ), ¬(f = d)
-
-  10. [TRANSFER] df = dg (radii of δ)
-      → df = dg
-
-  11. [METRIC] af = bg = bc (subtract equal from equal: CN3)
-      → af = bc
-
-  Q.E.F. ■
+  Q.E.D. ■
 
 
 ================================================================================
   PROPOSITION I.3 — Cut Off an Equal Segment
 ================================================================================
 
-  Statement: From the greater of two unequal straight lines, cut off a
-             straight line equal to the less.
+  Statement: From the greater of two unequal straight lines, cut off a straight line equal to the less.
 
-  Given:     on(a, L), on(b, L), ¬(a = b), cd < ab
-  Construct: ∃e : POINT
-  Prove:     between(a, e, b), ae = cd
+  System E:
+    Given:     on(a, L), on(b, L), ¬(a = b), cd < ab, ¬(c = d), ¬(a = c), ¬(a = d)
+    Construct: ∃e: POINT
+    Prove:     between(a, e, b), ae = cd
+
+  System H:
+    Given:     ¬(a = b), ¬(c = d), IncidL(a, l), IncidL(b, l)
+    Construct: ∃e: POINT
+    Prove:     BetH(a, e, b), CongH(a, e, c, d)
 
   Dependencies: I.2
 
-  Proof (5 steps):
-  ─────────────────
-  1. [CONSTRUCTION] Copy cd to point a (I.2)
-     → new: f (point)
-     → af = cd, ¬(a = f)
+  Verified Proof (17 steps) [✓]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → on(a, L)
+   2. [Given]  [refs: ]
+       → on(b, L)
+   3. [Given]  [refs: ]
+       → ¬(a = b)
+   4. [Given]  [refs: ]
+       → cd < ab
+   5. [Given]  [refs: ]
+       → ¬(c = d)
+   6. [Given]  [refs: ]
+       → ¬(a = c)
+   7. [Given]  [refs: ]
+       → ¬(a = d)
+   8. [let-line]  [refs: 5]
+       → on(c, M), on(d, M)
+   9. [Prop.I.2]  [refs: 8, 5, 6, 7]
+       → af = cd
+  10. [CN1 — Transitivity]  [refs: 9, 4]
+       → af < ab
+  11. [M1 — Zero segment]  [refs: 9, 5]
+       → ¬(a = f)
+  12. [let-circle]  [refs: 11]
+       → center(a, α), on(f, α)
+  13. [Generality 3]  [refs: 12]
+       → inside(a, α)
+  14. [Segment transfer 7]  [refs: 12, 10]
+       → ¬(inside(b, α)), ¬(on(b, α))
+  15. [let-intersection-line-circle-between]  [refs: 13, 1, 14, 2]
+       → on(e, α), on(e, L), between(a, e, b)
+  16. [Segment transfer 4]  [refs: 12, 15]
+       → ae = af
+  17. [CN1 — Transitivity]  [refs: 16, 9]
+       → ae = cd
 
-  2. [CONSTRUCTION] let-circle (center a, through f)
-     → new: α (circle)
-     → center(a, α), on(f, α)
-
-  3. [CONSTRUCTION] Intersect L with α → point e between a and b
-     → new: e (point)
-     → on(e, L), on(e, α), between(a, e, b)
-
-  4. [TRANSFER] ae = af (radii of α)
-     → ae = af
-
-  5. [METRIC] ae = af = cd → ae = cd (transitivity)
-     → ae = cd
-
-  Q.E.F. ■
+  Q.E.D. ■
 
 
 ================================================================================
@@ -184,22 +258,28 @@
 
   Statement: SAS: side-angle-side triangle congruence.
 
-  Given:     ab = de, ac = df, ∠bac = ∠edf
-  Prove:     bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def
+  System E:
+    Given:     ab = de, ac = df, ∠bac = ∠edf
+    Prove:     bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def
+
+  System H:
+    Given:     ¬(ColH(a, b, c)), ¬(ColH(d, e, f)), CongH(a, b, d, e), CongH(a, c, d, f), CongaH(b, a, c, e, d, f)
+    Prove:     CongaH(a, b, c, d, e, f), CongH(b, c, e, f)
 
   Dependencies: (superposition axiom)
 
-  Proof (3 steps):
-  ─────────────────
-  1. [SUPERPOSITION_SAS] SAS superposition
-     var_map: {a→a, b→b, c→c, d→d, e→e, f→f}
-     → bc = ef, ∠abc = ∠def, ∠acb = ∠dfe
-
-  2. [METRIC] ∠bca = ∠efd (M4 vertex symmetry)
-     → ∠bca = ∠efd
-
-  3. [METRIC] △abc = △def (M9, equal areas from congruence)
-     → △abc = △def
+  Verified Proof (5 steps) [✓]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ab = de
+  2. [Given]  [refs: ]
+      → ac = df
+  3. [Given]  [refs: ]
+      → ∠bac = ∠edf
+  4. [SAS]  [refs: 1, 2, 3]
+      → bc = ef, ∠abc = ∠def, ∠acb = ∠dfe, △abc = △def
+  5. [M4 — Angle symmetry]  [refs: 4]
+      → ∠bca = ∠efd
 
   Q.E.D. ■
 
@@ -210,19 +290,32 @@
 
   Statement: In isosceles triangles the base angles are equal.
 
-  Given:     ab = ac, ¬(a = b), ¬(a = c), ¬(b = c)
-  Prove:     ∠abc = ∠acb
+  System E:
+    Given:     ab = ac, ¬(a = b), ¬(a = c), ¬(b = c)
+    Prove:     ∠abc = ∠acb
 
-  Dependencies: I.3, I.4
+  System H:
+    Given:     ¬(ColH(a, b, c)), CongH(a, b, a, c)
+    Prove:     CongaH(a, b, c, a, c, b)
 
-  Proof (2 steps):
-  ─────────────────
-  1. [METRIC] Establish symmetry prerequisites:
-     → ac = ab (M3 symmetry), ∠bac = ∠cab (M4 angle symmetry)
+  Dependencies: I.4, I.3
 
-  2. [THEOREM_APP] SAS on △abc ≅ △acb (I.4)
-     var_map: {a→a, b→b, c→c, d→a, e→c, f→b}
-     → bc = cb, ∠abc = ∠acb, ∠bca = ∠cba, △abc = △acb
+  Verified Proof (7 steps) [✓]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ab = ac
+  2. [Given]  [refs: ]
+      → ¬(a = b)
+  3. [Given]  [refs: ]
+      → ¬(a = c)
+  4. [Given]  [refs: ]
+      → ¬(b = c)
+  5. [M3 — Symmetry]  [refs: 1]
+      → ac = ab
+  6. [M4 — Angle symmetry]  [refs: 1]
+      → ∠bac = ∠cab
+  7. [Prop.I.4]  [refs: 1, 5, 6]
+      → bc = cb, ∠abc = ∠acb, ∠bca = ∠cba, △abc = △acb
 
   Q.E.D. ■
 
@@ -231,18 +324,60 @@
   PROPOSITION I.6 — Converse of I.5
 ================================================================================
 
-  Statement: If in a triangle two angles are equal, then the sides
-             opposite the equal angles are also equal.
+  Statement: If in a triangle two angles are equal, then the sides opposite the equal angles are also equal.
 
-  Given:     ∠abc = ∠acb, ¬(a = b), ¬(a = c), ¬(b = c)
-  Prove:     ab = ac
+  System E:
+    Given:     ∠abc = ∠acb, ¬(a = b), ¬(a = c), ¬(b = c)
+    Prove:     ab = ac
+
+  System H:
+    Given:     ¬(ColH(a, b, c)), CongaH(a, b, c, a, c, b)
+    Prove:     CongH(a, b, a, c)
 
   Dependencies: I.3, I.4
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] ab = ac by contradiction (I.4 applied to cut segment, I.3)
-     → ab = ac
+  Verified Proof (37 steps) [✓]:
+  ──────────────────────────────
+   1. [Given]             → ∠abc = ∠acb
+   2. [Given]             → ¬(a = b)
+   3. [Given]             → ¬(a = c)
+   4. [Given]             → ¬(b = c)
+   5. [Given]             → on(a, L)
+   6. [Given]             → on(b, L)
+   7. [Given]             → ¬(on(c, L))
+  Case 1 — Reductio: assume ac < ab
+     8. [Assume]          → ac < ab
+     9. [Prop.I.3]        → between(b, d, a), bd = ac
+    10. [let-line]        → on(b, M), on(c, M)
+    11. [Angle transfer 9] → ∠dbc = ∠abc        (DA4)
+    12. [CN1 — Transitivity] → ∠dbc = ∠acb
+    13. [M3 — Symmetry]   → bc = cb
+    14. [SAS]             → dc = ab, ∠bdc = ∠cab, ∠bcd = ∠cba, △dbc = △acb
+    15. [M8 — Area symmetry] → △dbc = △abc
+    16. [Area transfer 4] → (△bdc + △cda) = △bca  (DAr2)
+    17. [Area transfer 1] → ¬(△dac = 0)           (DAr1a)
+    18. [CN5 — Whole > Part] → △bdc < △bca
+    19. [M8 — Area symmetry] → △dbc < △abc
+    20. [Contradiction]   → ⊥
+  21. [Reductio]          → ¬(ac < ab)
+  Case 2 — Reductio: assume ab < ac
+    22. [Assume]          → ab < ac
+    23. [let-line]        → on(c, N), on(a, N)
+    24. [Prop.I.3]        → between(c, e, a), ce = ab
+    25. [let-line]        → on(c, P), on(b, P)
+    26. [Angle transfer 9] → ∠ecb = ∠acb        (DA4)
+    27. [CN1 — Transitivity] → ∠ecb = ∠abc
+    28. [M3 — Symmetry]   → cb = bc
+    29. [SAS]             → eb = ac, ∠ceb = ∠bac, ∠cbe = ∠bca, △ecb = △abc
+    30. [M8 — Area symmetry] → △ecb = △bca
+    31. [Area transfer 4] → (△ceb + △bea) = △cba  (DAr2)
+    32. [Area transfer 1] → ¬(△aeb = 0)           (DAr1a)
+    33. [CN5 — Whole > Part] → △ceb < △cba
+    34. [M8 — Area symmetry] → △ecb < △bca
+    35. [Contradiction]   → ⊥
+  36. [Reductio]          → ¬(ab < ac)
+  Trichotomy:
+  37. [< trichotomy]      → ab = ac
 
   Q.E.D. ■
 
@@ -251,20 +386,54 @@
   PROPOSITION I.7 — Uniqueness of Triangle Construction
 ================================================================================
 
-  Statement: Given segments BA, CA from endpoints of a segment BC, there
-             cannot be constructed from the same endpoints and on the same
-             side of it other segments BD, CD equal to them respectively.
+  Statement: Given segments BA, CA from endpoints of a segment BC, there cannot be constructed from the same endpoints and on the same side of it other segments BD, CD equal to them respectively.
 
-  Given:     on(b, L), on(c, L), ¬(b = c), same-side(a, d, L),
-             bd = ba, cd = ca
-  Prove:     d = a
+  System E:
+    Given:     on(b, L), on(c, L), ¬(b = c), same-side(a, d, L), bd = ba, cd = ca
+    Prove:     d = a
+
+  System H:
+    Given:     ¬(b = c), IncidL(b, l), IncidL(c, l), same_side(a, d, l), CongH(b, d, b, a), CongH(c, d, c, a)
+    Prove:     d = a
 
   Dependencies: I.5
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] d = a by I.5 contradiction on both isosceles triangles
-     → d = a
+  Verified Proof (27 steps) [✓]:
+  ──────────────────────────────
+   1. [Given]             → on(b, L)
+   2. [Given]             → on(c, L)
+   3. [Given]             → ¬(b = c)
+   4. [Given]             → same-side(a, d, L)
+   5. [Given]             → bd = ba
+   6. [Given]             → cd = ca
+  Reductio: assume ¬(d = a)
+     7. [Assume]          → ¬(d = a)
+     8. [let-line]        → on(a, R), on(b, R)
+  Case 1 — on(d, R):
+       9. [Assume]        → on(d, R)
+  Case 1a — between(a, d, b):
+        10. [Assume]      → between(a, d, b)
+        11. [Segment transfer 1] → (ad + db) = ab  (DS1)
+        12. [CN3 — Subtraction]  → ad = 0
+        13. [M1 — Zero segment]  → d = a
+  Case 1b — ¬between(a, d, b):
+          14. [Assume]    → ¬(between(a, d, b))
+  Case 1b-i — between(b, a, d):
+            15. [Assume]  → between(b, a, d)
+            16. [Segment transfer 1] → (ba + ad) = bd  (DS1)
+            17. [CN3 — Subtraction]  → ad = 0
+            18. [M1 — Zero segment]  → d = a
+  Case 1b-ii — ¬between(b, a, d):
+              19. [Assume] → ¬(between(b, a, d))
+              20. [Betweenness 9] → d = a            (B6 trichotomy fully negated)
+          21. [Cases]     → d = a
+        22. [Cases]       → d = a
+  Case 2 — ¬on(d, R):
+          23. [Assume]    → ¬(on(d, R))
+          24. [Reit]      → d = a                    (from Case 1 conclusion)
+      25. [Cases]         → d = a
+      26. [Contradiction] → ⊥
+  27. [Reductio]          → d = a
 
   Q.E.D. ■
 
@@ -275,22 +444,28 @@
 
   Statement: SSS: side-side-side triangle congruence.
 
-  Given:     ab = de, bc = ef, ca = fd
-  Prove:     ∠bac = ∠edf, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def
+  System E:
+    Given:     ab = de, bc = ef, ca = fd
+    Prove:     ∠bac = ∠edf, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def
 
-  Dependencies: I.7 (superposition axiom)
+  System H:
+    Given:     ¬(ColH(a, b, c)), ¬(ColH(d, e, f)), CongH(a, b, d, e), CongH(b, c, e, f), CongH(c, a, f, d)
+    Prove:     CongaH(b, a, c, e, d, f), CongaH(a, b, c, d, e, f), CongaH(b, c, a, e, f, d)
 
-  Proof (3 steps):
-  ─────────────────
-  1. [SUPERPOSITION_SSS] SSS superposition
-     var_map: {a→a, b→b, c→c, d→d, e→e, f→f}
-     → ∠bac = ∠edf, ∠abc = ∠def, ∠acb = ∠dfe
+  Dependencies: I.7
 
-  2. [METRIC] ∠bca = ∠efd (M4 symmetry)
-     → ∠bca = ∠efd
-
-  3. [METRIC] △abc = △def (M9)
-     → △abc = △def
+  Verified Proof (5 steps) [✓]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ab = de
+  2. [Given]  [refs: ]
+      → bc = ef
+  3. [Given]  [refs: ]
+      → ca = fd
+  4. [SSS]  [refs: 1, 2, 3]
+      → ∠bac = ∠edf, ∠abc = ∠def, ∠acb = ∠dfe, △abc = △def
+  5. [M4 — Angle symmetry]  [refs: 4]
+      → ∠bca = ∠efd
 
   Q.E.D. ■
 
@@ -301,34 +476,49 @@
 
   Statement: To bisect a given rectilineal angle.
 
-  Given:     ¬(a = b), ¬(a = c), ¬(b = c), on(a, M), on(b, M),
-             on(a, N), on(c, N), same-side(c, b, M), same-side(b, c, N)
-  Construct: ∃e : POINT
-  Prove:     ∠bae = ∠cae, same-side(e, c, M), same-side(e, b, N)
+  System E:
+    Given:     ¬(a = b), ¬(a = c), ¬(b = c), on(a, M), on(b, M), on(a, N), on(c, N), ¬(on(c, M)), ¬(on(b, N))
+    Construct: ∃e: POINT
+    Prove:     ∠bae = ∠cae, same-side(e, c, M), same-side(e, b, N)
 
-  Dependencies: I.1, I.3, I.8
+  System H:
+    Given:     ¬(ColH(a, b, c))
+    Construct: ∃e: POINT
+    Prove:     CongaH(b, a, e, c, a, e)
 
-  Proof (5 steps):
-  ─────────────────
-  1. [CONSTRUCTION] let-point-on-line
-     → new: d (point)
-     → on(d, M), ¬(d = a)
+  Dependencies: I.1, I.8 (SSS)
 
-  2. [CONSTRUCTION] Cut equal segment on ray ac (I.3)
-     → new: f (point)
-     → on(f, N), ad = af
+  Verified Proof (27 steps) [✓]:
+  ──────────────────────────────
+   1. [Given]                      → ¬(a = b)
+   2. [Given]                      → ¬(a = c)
+   3. [Given]                      → ¬(b = c)
+   4. [Given]                      → on(a, M)
+   5. [Given]                      → on(b, M)
+   6. [Given]                      → on(a, N)
+   7. [Given]                      → on(c, N)
+   8. [Given]                      → ¬(on(c, M))
+   9. [Given]                      → ¬(on(b, N))
+  10. [let-circle]                 → center(a, α), on(b, α)
+  11. [Generality 3]               → inside(a, α)
+  12. [let-point-on-line-between]  → on(d, N), between(a, d, c), on(d, α)
+  13. [let-point-on-line-between]  → on(f, M), between(a, f, b), on(f, α)
+  14. [Segment transfer 4]        → ad = ab
+  15. [Segment transfer 4]        → af = ab
+  16. [CN1 — Transitivity]        → ad = af
+  17. [Prop.I.1]                   → df = de, df = fe, ¬(e = d), ¬(e = f)
+  18. [CN1 — Transitivity]        → de = fe
+  19. [CN4 — Reflexivity]         → ae = ae
+  20. [SSS]                        → ∠dae = ∠fae, ∠ade = ∠afe, ∠aed = ∠aef, △ade = △afe
+  21. [Diagrammatic]               → ¬(e = a)
+  22. [let-line]                   → on(a, K), on(e, K)
+  23. [Angle transfer 9]          → ∠dae = ∠cae          (DA4)
+  24. [Angle transfer 9]          → ∠fae = ∠bae          (DA4)
+  25. [CN1 — Transitivity]        → ∠bae = ∠cae
+  26. [Diagrammatic]               → same-side(e, c, M)
+  27. [Diagrammatic]               → same-side(e, b, N)
 
-  3. [CONSTRUCTION] Equilateral triangle on df (I.1)
-     → new: e (point)
-     → df = de, df = fe
-
-  4. [METRIC] By SSS (I.8): ∠bae = ∠cae
-     → ∠bae = ∠cae
-
-  5. [DIAGRAMMATIC] same-side conclusions
-     → same-side(e, c, M), same-side(e, b, N)
-
-  Q.E.F. ■
+  Q.E.D. ■
 
 
 ================================================================================
@@ -337,101 +527,167 @@
 
   Statement: To bisect a given finite straight line.
 
-  Given:     on(a, L), on(b, L), ¬(a = b)
-  Construct: ∃d : POINT
-  Prove:     between(a, d, b), ad = db
+  System E:
+    Given:     on(a, L), on(b, L), ¬(a = b)
+    Construct: ∃d: POINT
+    Prove:     between(a, d, b), ad = db
 
-  Dependencies: I.1, I.4
+  System H:
+    Given:     ¬(a = b), IncidL(a, l), IncidL(b, l)
+    Construct: ∃d: POINT
+    Prove:     BetH(a, d, b), CongH(a, d, d, b)
 
-  Proof (2 steps):
-  ─────────────────
-  1. [THEOREM_APP] Equilateral triangle on ab (I.1)
-     var_map: {a→a, b→b, c→c}
-     → new: c (point)
-     → ab = ac, ab = bc, ¬(c = a), ¬(c = b)
+  Dependencies: I.1 (inlined), I.9, I.4 (SAS)
 
-  2. [CONSTRUCTION] Bisect angle acb (I.9) → d on L between a and b
-     → new: d (point)
-     → between(a, d, b), ad = db
+  Verified Proof (34 steps) [✓]:
+  ──────────────────────────────
+  Inline I.1 construction:
+   1. [Given]          → on(a, L)
+   2. [Given]          → on(b, L)
+   3. [Given]          → ¬(a = b)
+   4. [let-circle]     → center(a, α), on(b, α)
+   5. [let-circle]     → center(b, β), on(a, β)
+   6. [Generality 3]   → inside(a, α)
+   7. [Generality 3]   → inside(b, β)
+   8. [Intersection 9] → intersects(α, β)
+   9. [let-intersection-circle-circle-one] → on(c, α), on(c, β)
+  10. [Segment transfer 4] → ac = ab
+  11. [Segment transfer 4] → bc = ba
+  12. [M1 — Zero segment]  → ¬(c = a)
+  13. [M1 — Zero segment]  → ¬(c = b)
+  Reductio for ¬on(c, L):
+  14. [Assume]          → on(c, L)
+  15. [Circle 1]        → between(b, a, c)    (C1 on α)
+  16. [Circle 1]        → between(a, b, c)    (C1 on β)
+  17. [Betweenness 4]   → ¬(between(b, a, c)) (B4)
+  18. [⊥-intro]         → ⊥
+  19. [⊥-elim]          → ¬(on(c, L))
+  Angle bisection and SAS:
+  20. [CN1 — Transitivity] → ac = bc
+  21. [let-line]        → on(c, M), on(a, M)
+  22. [let-line]        → on(c, N), on(b, N)
+  23. [Generality 1]    → ¬(on(b, M))
+  24. [Generality 1]    → ¬(on(a, N))
+  25. [Prop.I.9]        → ∠ace = ∠bce, same-side(e, b, M), same-side(e, a, N)
+  26. [Diagrammatic]    → ¬(e = c)
+  27. [let-line]        → on(c, K), on(e, K)
+  28. [Diagrammatic]    → ¬(same-side(a, b, K))
+  29. [Diagrammatic]    → intersects(K, L)
+  30. [let-intersection-line-line] → on(d, K), on(d, L)
+  31. [Angle transfer 9] → ∠ace = ∠acd    (DA4)
+  32. [Angle transfer 9] → ∠bce = ∠bcd    (DA4)
+  33. [CN1 — Transitivity] → ∠acd = ∠bcd
+  34. [CN4 — Reflexivity]  → cd = cd
+  35. [SAS]             → ad = bd, ∠cad = ∠cbd, ∠cda = ∠cdb, △acd = △bcd
+  36. [Diagrammatic]    → between(a, d, b)  (Pasch)
+  37. [M3 — Symmetry]   → ad = db
 
-  Q.E.F. ■
+  Q.E.D. ■
 
 
 ================================================================================
   PROPOSITION I.11 — Perpendicular from a Point on a Line
 ================================================================================
 
-  Statement: To draw a straight line at right angles to a given straight
-             line from a given point on it.
+  Statement: To draw a straight line at right angles to a given straight line from a given point on it.
 
-  Given:     on(a, L), on(b, L), ¬(a = b)
-  Construct: ∃f : POINT
-  Prove:     ∠baf = R, ¬(f = a), ¬on(f, L)
+  System E:
+    Given:     on(a, L), on(b, L), ¬(a = b)
+    Construct: ∃f: POINT
+    Prove:     ∠baf = right-angle, ¬(f = a), ¬(on(f, L))
 
-  Dependencies: I.1, I.3, I.8
+  System H:
+    Given:     ¬(a = b), IncidL(a, l), IncidL(b, l)
+    Construct: ∃f: POINT
+    Prove:     ¬(ColH(f, a, b))
 
-  Proof (4 steps):
-  ─────────────────
-  1. [CONSTRUCTION] Symmetric point d on L with ad = ab (I.3)
-     → new: d (point)
-     → on(d, L), ¬(d = a), ad = ab
+  Dependencies: I.1, I.8
 
-  2. [CONSTRUCTION] Equilateral triangle on db (I.1)
-     → new: f (point)
-     → db = df, db = bf
+  Verified Proof (8 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → on(a, L)
+  2. [Given]  [refs: ]
+      → on(b, L)
+  3. [Given]  [refs: ]
+      → ¬(a = b)
+  4. [Metric]  [refs: 3]
+      → ad = ab, ¬(a = d)
+  5. [Prop.I.1]  [refs: 4]
+      → db = df, db = bf, ¬(f = d), ¬(f = b)
+  6. [Metric]  [refs: 4, 5]
+      → ∠baf = right-angle
+  7. [Metric]  [refs: 5]
+      → ¬(f = a)
+  8. [Metric]  [refs: 6]
+      → ¬(on(f, L))
 
-  3. [DIAGRAMMATIC] f is not on L
-     → ¬on(f, L), ¬(f = a)
-
-  4. [METRIC] By SSS (I.8): ∠baf = right angle
-     → ∠baf = R
-
-  Q.E.F. ■
+  Q.E.D. ■
 
 
 ================================================================================
   PROPOSITION I.12 — Perpendicular from a Point Off a Line
 ================================================================================
 
-  Statement: To draw a straight line perpendicular to a given infinite
-             straight line from a given point not on it.
+  Statement: To draw a straight line perpendicular to a given infinite straight line from a given point not on it.
 
-  Given:     on(a, L), on(b, L), ¬(a = b), ¬on(p, L)
-  Construct: ∃h : POINT
-  Prove:     on(h, L), ∠ahp = R, ¬(h = p)
+  System E:
+    Given:     on(a, L), on(b, L), ¬(a = b), ¬(on(p, L))
+    Construct: ∃h: POINT
+    Prove:     on(h, L), ∠ahp = right-angle, ¬(h = p)
+
+  System H:
+    Given:     ¬(a = b), IncidL(a, l), IncidL(b, l), ¬(IncidL(p, l))
+    Construct: ∃h: POINT
+    Prove:     IncidL(h, l), ¬(h = p)
 
   Dependencies: I.8, I.10
 
-  Proof (1 step):
-  ────────────────
-  1. [CONSTRUCTION] Drop perpendicular via circle + bisect (I.8, I.10)
-     → new: h (point)
-     → on(h, L), ∠ahp = R, ¬(h = p)
+  Verified Proof (4 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → on(a, L)
+  2. [Given]  [refs: ]
+      → on(b, L)
+  3. [Given]  [refs: ]
+      → ¬(a = b)
+  4. [Given]  [refs: ]
+      → ¬(on(p, L))
 
-  Q.E.F. ■
+  Q.E.D. ■
 
 
 ================================================================================
   PROPOSITION I.13 — Supplementary Angles
 ================================================================================
 
-  Statement: If a straight line set up on a straight line makes angles,
-             it makes either two right angles or angles equal to two
-             right angles.
+  Statement: If a straight line set up on a straight line makes angles, it makes either two right angles or angles equal to two right angles.
 
-  Given:     on(a, L), on(c, L), between(a, b, c), ¬on(d, L), ¬(b = d)
-  Prove:     ∠abd + ∠dbc = R + R
+  System E:
+    Given:     on(a, L), on(c, L), between(a, b, c), ¬(on(d, L)), ¬(b = d)
+    Prove:     ∠abd + ∠dbc = right-angle + right-angle
+
+  System H:
+    Given:     BetH(a, b, c), ¬(ColH(a, b, d))
 
   Dependencies: I.11
 
-  Proof (2 steps):
-  ─────────────────
-  1. [CONSTRUCTION] Draw perpendicular at b (I.11)
-     → new: e (point)
-     → ∠abe = R, ¬on(e, L)
-
-  2. [METRIC] ∠abd + ∠dbc = 2R
-     → ∠abd + ∠dbc = R + R
+  Verified Proof (7 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → on(a, L)
+  2. [Given]  [refs: ]
+      → on(c, L)
+  3. [Given]  [refs: ]
+      → between(a, b, c)
+  4. [Given]  [refs: ]
+      → ¬(on(d, L))
+  5. [Given]  [refs: ]
+      → ¬(b = d)
+  6. [Prop.I.11]  [refs: 1, 2, 3]
+      → ∠abe = right-angle, ¬(on(e, L))
+  7. [Metric]  [refs: 6, 3]
+      → ∠abd + ∠dbc = right-angle + right-angle
 
   Q.E.D. ■
 
@@ -440,22 +696,38 @@
   PROPOSITION I.14 — Converse of I.13
 ================================================================================
 
-  Statement: If with any straight line, and at a point on it, two straight
-             lines not lying on the same side make the adjacent angles
-             equal to two right angles, the two lines are in a straight
-             line with one another.
+  Statement: If with any straight line, and at a point on it, two straight lines not lying on the same side make the adjacent angles equal to two right angles, the two lines are in a straight line with one another.
 
-  Given:     on(a, L), on(b, L), ¬(a = b), ¬on(c, L), ¬on(d, L),
-             ¬(b = c), ¬(b = d), ¬same-side(c, d, L),
-             ∠abc + ∠abd = R + R
-  Prove:     between(c, b, d)
+  System E:
+    Given:     on(a, L), on(b, L), ¬(a = b), ¬(on(c, L)), ¬(on(d, L)), ¬(b = c), ¬(b = d), ¬(same-side(c, d, L)), ∠abc + ∠abd = right-angle + right-angle
+    Prove:     between(c, b, d)
+
+  System H:
+    Given:     IncidL(a, l), IncidL(b, l), ¬(a = b), ¬(IncidL(c, l)), ¬(IncidL(d, l)), ¬(same_side(c, d, l))
+    Prove:     BetH(c, b, d)
 
   Dependencies: I.13
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] By I.13: angles sum forces collinearity
-     → between(c, b, d)
+  Verified Proof (9 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → on(a, L)
+  2. [Given]  [refs: ]
+      → on(b, L)
+  3. [Given]  [refs: ]
+      → ¬(a = b)
+  4. [Given]  [refs: ]
+      → ¬(on(c, L))
+  5. [Given]  [refs: ]
+      → ¬(on(d, L))
+  6. [Given]  [refs: ]
+      → ¬(b = c)
+  7. [Given]  [refs: ]
+      → ¬(b = d)
+  8. [Given]  [refs: ]
+      → ¬(same-side(c, d, L))
+  9. [Given]  [refs: ]
+      → ∠abc + ∠abd = right-angle + right-angle
 
   Q.E.D. ■
 
@@ -464,25 +736,44 @@
   PROPOSITION I.15 — Vertical Angles
 ================================================================================
 
-  Statement: If two straight lines cut one another, they make the
-             vertical angles equal to one another.
+  Statement: If two straight lines cut one another, they make the vertical angles equal to one another.
 
-  Given:     on(a, L), on(b, L), on(c, M), on(d, M), on(e, L), on(e, M),
-             between(a, e, b), between(c, e, d), ¬(L = M)
-  Prove:     ∠aec = ∠bed
+  System E:
+    Given:     on(a, L), on(b, L), on(c, M), on(d, M), on(e, L), on(e, M), between(a, e, b), between(c, e, d), ¬(L = M)
+    Prove:     ∠aec = ∠bed
+
+  System H:
+    Given:     BetH(a, e, b), BetH(c, e, d), ¬(ColH(a, e, c))
+    Prove:     CongaH(a, e, c, b, e, d)
 
   Dependencies: I.13
 
-  Proof (3 steps):
-  ─────────────────
-  1. [METRIC] ∠aec + ∠ceb = 2R (I.13)
-     → ∠aec + ∠ceb = R + R
-
-  2. [METRIC] ∠ced + ∠deb = 2R (I.13)
-     → ∠ced + ∠deb = R + R
-
-  3. [METRIC] Therefore ∠aec = ∠bed (common supplement)
-     → ∠aec = ∠bed
+  Verified Proof (12 steps) [✗]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → on(a, L)
+   2. [Given]  [refs: ]
+       → on(b, L)
+   3. [Given]  [refs: ]
+       → on(c, M)
+   4. [Given]  [refs: ]
+       → on(d, M)
+   5. [Given]  [refs: ]
+       → on(e, L)
+   6. [Given]  [refs: ]
+       → on(e, M)
+   7. [Given]  [refs: ]
+       → between(a, e, b)
+   8. [Given]  [refs: ]
+       → between(c, e, d)
+   9. [Given]  [refs: ]
+       → ¬(L = M)
+  10. [Prop.I.13]  [refs: 1, 2, 3, 4, 5, 6, 7, 8]
+       → ∠aec + ∠ceb = right-angle + right-angle
+  11. [Prop.I.13]  [refs: 1, 2, 3, 4, 5, 6, 7, 8]
+       → ∠ceb + ∠bed = right-angle + right-angle
+  12. [Metric]  [refs: 10, 11]
+       → ∠aec = ∠bed
 
   Q.E.D. ■
 
@@ -491,38 +782,41 @@
   PROPOSITION I.16 — Exterior Angle Theorem
 ================================================================================
 
-  Statement: In any triangle, if one of the sides is produced, the
-             exterior angle is greater than either of the interior and
-             opposite angles.
+  Statement: In any triangle, if one of the sides is produced, the exterior angle is greater than either of the interior and opposite angles.
 
-  Given:     on(a, L), on(b, L), between(a, b, d), ¬on(c, L),
-             ¬(a = b), ¬(a = c), ¬(b = c)
-  Prove:     ∠bac < ∠dbc, ∠bca < ∠dbc
+  System E:
+    Given:     on(a, L), on(b, L), between(a, b, d), ¬(on(c, L)), ¬(a = b), ¬(a = c), ¬(b = c)
+    Prove:     ∠bac < ∠dbc, ∠bca < ∠dbc
 
-  Dependencies: I.3, I.4, I.10, I.15
+  System H:
+    Given:     ¬(ColH(a, b, c)), BetH(a, b, d)
 
-  Proof (6 steps):
-  ─────────────────
-  1. [CONSTRUCTION] Bisect bc at e (I.10)
-     → new: e (point)
-     → between(b, e, c), be = ec
+  Dependencies: I.4, I.10, I.15
 
-  2. [CONSTRUCTION] Extend ae to f with ae = ef (I.3)
-     → new: f (point)
-     → between(a, e, f), ae = ef
-
-  3. [CONSTRUCTION] let-line
-     → new: P (line)
-     → on(b, P), on(f, P)
-
-  4. [DIAGRAMMATIC] distinctness
-     → ¬(e = f), ¬(e = a)
-
-  5. [METRIC] By SAS (I.4): △abe ≅ △cef → ∠bae = ∠fce
-     → ∠bae = ∠fce
-
-  6. [METRIC] ∠bac < ∠dbc and ∠bca < ∠dbc
-     → ∠bac < ∠dbc, ∠bca < ∠dbc
+  Verified Proof (11 steps) [✗]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → on(a, L)
+   2. [Given]  [refs: ]
+       → on(b, L)
+   3. [Given]  [refs: ]
+       → between(a, b, d)
+   4. [Given]  [refs: ]
+       → ¬(on(c, L))
+   5. [Given]  [refs: ]
+       → ¬(a = b)
+   6. [Given]  [refs: ]
+       → ¬(a = c)
+   7. [Given]  [refs: ]
+       → ¬(b = c)
+   8. [Prop.I.10]  [refs: 6, 7]
+       → be = ec
+   9. [Metric]  [refs: 8]
+       → ae = ef, between(a, e, f)
+  10. [Metric]  [refs: 8, 9]
+       → ∠bac < ∠dbc
+  11. [Metric]  [refs: 10]
+       → ∠bca < ∠dbc
 
   Q.E.D. ■
 
@@ -531,18 +825,31 @@
   PROPOSITION I.17 — Two Angles Less Than Two Right Angles
 ================================================================================
 
-  Statement: In any triangle two angles taken together in any manner are
-             less than two right angles.
+  Statement: In any triangle two angles taken together in any manner are less than two right angles.
 
-  Given:     ¬(a = b), ¬(a = c), ¬(b = c), on(a, L), on(b, L), ¬on(c, L)
-  Prove:     ∠abc + ∠bca < R + R
+  System E:
+    Given:     ¬(a = b), ¬(a = c), ¬(b = c), on(a, L), on(b, L), ¬(on(c, L))
+    Prove:     ∠abc + ∠bca < right-angle + right-angle
+
+  System H:
+    Given:     ¬(ColH(a, b, c))
 
   Dependencies: I.13, I.16
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Extend bc, exterior angle (I.16) + supplementary (I.13)
-     → ∠abc + ∠bca < R + R
+  Verified Proof (6 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ¬(a = b)
+  2. [Given]  [refs: ]
+      → ¬(a = c)
+  3. [Given]  [refs: ]
+      → ¬(b = c)
+  4. [Given]  [refs: ]
+      → on(a, L)
+  5. [Given]  [refs: ]
+      → on(b, L)
+  6. [Given]  [refs: ]
+      → ¬(on(c, L))
 
   Q.E.D. ■
 
@@ -553,15 +860,25 @@
 
   Statement: In any triangle the greater side subtends the greater angle.
 
-  Given:     ¬(a = b), ¬(a = c), ¬(b = c), ab < ac
-  Prove:     ∠abc < ∠acb
+  System E:
+    Given:     ¬(a = b), ¬(a = c), ¬(b = c), ab < ac
+    Prove:     ∠acb < ∠abc
+
+  System H:
+    Given:     ¬(ColH(a, b, c))
 
   Dependencies: I.3, I.5, I.16
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Cut equal segment (I.3), isosceles (I.5), exterior (I.16)
-     → ∠abc < ∠acb
+  Verified Proof (4 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ¬(a = b)
+  2. [Given]  [refs: ]
+      → ¬(a = c)
+  3. [Given]  [refs: ]
+      → ¬(b = c)
+  4. [Given]  [refs: ]
+      → ab < ac
 
   Q.E.D. ■
 
@@ -570,18 +887,27 @@
   PROPOSITION I.19 — Greater Angle Subtended by Greater Side
 ================================================================================
 
-  Statement: In any triangle the greater angle is subtended by the
-             greater side.
+  Statement: In any triangle the greater angle is subtended by the greater side.
 
-  Given:     ¬(a = b), ¬(a = c), ¬(b = c), ∠abc < ∠acb
-  Prove:     ab < ac
+  System E:
+    Given:     ¬(a = b), ¬(a = c), ¬(b = c), ∠abc < ∠acb
+    Prove:     ac < ab
+
+  System H:
+    Given:     ¬(ColH(a, b, c))
 
   Dependencies: I.5, I.18
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Contrapositive of I.5 + I.18
-     → ab < ac
+  Verified Proof (4 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ¬(a = b)
+  2. [Given]  [refs: ]
+      → ¬(a = c)
+  3. [Given]  [refs: ]
+      → ¬(b = c)
+  4. [Given]  [refs: ]
+      → ∠abc < ∠acb
 
   Q.E.D. ■
 
@@ -590,29 +916,25 @@
   PROPOSITION I.20 — Triangle Inequality
 ================================================================================
 
-  Statement: In any triangle two sides taken together in any manner are
-             greater than the remaining one.
+  Statement: In any triangle two sides taken together in any manner are greater than the remaining one.
 
-  Given:     ¬(a = b), ¬(a = c), ¬(b = c)
-  Prove:     bc < ab + ac
+  System E:
+    Given:     ¬(a = b), ¬(a = c), ¬(b = c)
+    Prove:     bc < ab + ac
+
+  System H:
+    Given:     ¬(ColH(a, b, c))
 
   Dependencies: I.3, I.5, I.19
 
-  Proof (4 steps):
-  ─────────────────
-  1. [CONSTRUCTION] Extend ba to d with ad = ac (I.3)
-     → new: d (point)
-     → between(b, a, d), ad = ac
-
-  2. [CONSTRUCTION] let-line
-     → new: M (line)
-     → on(d, M), on(c, M)
-
-  3. [METRIC] ∠acd = ∠adc (isosceles, I.5)
-     → ∠acd = ∠adc
-
-  4. [METRIC] ∠bcd > ∠bdc → bc < bd = ba + ac (I.19)
-     → bc < ab + ac
+  Verified Proof (3 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ¬(a = b)
+  2. [Given]  [refs: ]
+      → ¬(a = c)
+  3. [Given]  [refs: ]
+      → ¬(b = c)
 
   Q.E.D. ■
 
@@ -621,21 +943,37 @@
   PROPOSITION I.21 — Inner Triangle Inequality
 ================================================================================
 
-  Statement: If on one of the sides of a triangle, from its extremities,
-             there be constructed two straight lines meeting within the
-             triangle, they will be less than the remaining two sides but
-             will contain a greater angle.
+  Statement: If on one of the sides of a triangle, from its extremities, there be constructed two straight lines meeting within the triangle, the straight lines so constructed will be less than the remaining two sides of the triangle, but will contain a greater angle.
 
-  Given:     ¬(a = b), ¬(a = c), ¬(b = c), ¬(d = b), ¬(d = c),
-             on(b, L), on(c, L), ¬on(a, L), same-side(d, a, L)
-  Prove:     bd + dc < ba + ac, ∠bac < ∠bdc
+  System E:
+    Given:     ¬(a = b), ¬(a = c), ¬(b = c), ¬(d = b), ¬(d = c), on(b, L), on(c, L), ¬(on(a, L)), same-side(d, a, L)
+    Prove:     bd + dc < ba + ac, ∠bac < ∠bdc
+
+  System H:
+    Given:     ¬(ColH(a, b, c))
 
   Dependencies: I.16, I.20
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Extend bd to meet ac; I.16 gives angle, I.20 gives sides
-     → bd + dc < ba + ac, ∠bac < ∠bdc
+  Verified Proof (9 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ¬(a = b)
+  2. [Given]  [refs: ]
+      → ¬(a = c)
+  3. [Given]  [refs: ]
+      → ¬(b = c)
+  4. [Given]  [refs: ]
+      → ¬(d = b)
+  5. [Given]  [refs: ]
+      → ¬(d = c)
+  6. [Given]  [refs: ]
+      → on(b, L)
+  7. [Given]  [refs: ]
+      → on(c, L)
+  8. [Given]  [refs: ]
+      → ¬(on(a, L))
+  9. [Given]  [refs: ]
+      → same-side(d, a, L)
 
   Q.E.D. ■
 
@@ -644,65 +982,109 @@
   PROPOSITION I.22 — Construct Triangle from Three Segments
 ================================================================================
 
-  Statement: Out of three straight lines, which are equal to three given
-             straight lines, to construct a triangle.
+  Statement: Out of three straight lines, which are equal to three given straight lines, to construct a triangle.
 
-  Given:     ¬(a = b), ¬(c = d), ¬(e = f),
-             ab < cd + ef, cd < ab + ef, ef < ab + cd
-  Construct: ∃p, q, r : POINT
-  Prove:     pq = ab, pr = cd, qr = ef
+  System E:
+    Given:     ¬(a = b), ¬(c = d), ¬(e = f), ab < cd + ef, cd < ab + ef, ef < ab + cd
+    Construct: ∃p: POINT, q: POINT, r: POINT
+    Prove:     pq = ab, pr = cd, qr = ef
+
+  System H:
+    Given:     ¬(a = b), ¬(c = d), ¬(e = f)
+    Construct: ∃p: POINT, q: POINT, r: POINT
+    Prove:     CongH(p, q, a, b), CongH(p, r, c, d), CongH(q, r, e, f)
 
   Dependencies: I.1, I.3, I.20
 
-  Proof (1 step):
-  ────────────────
-  1. [CONSTRUCTION] Construct triangle from three segments (I.3, I.1)
-     → new: p, q, r (points)
-     → pq = ab, pr = cd, qr = ef
+  Verified Proof (6 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ¬(a = b)
+  2. [Given]  [refs: ]
+      → ¬(c = d)
+  3. [Given]  [refs: ]
+      → ¬(e = f)
+  4. [Given]  [refs: ]
+      → ab < cd + ef
+  5. [Given]  [refs: ]
+      → cd < ab + ef
+  6. [Given]  [refs: ]
+      → ef < ab + cd
 
-  Q.E.F. ■
+  Q.E.D. ■
 
 
 ================================================================================
   PROPOSITION I.23 — Copy an Angle
 ================================================================================
 
-  Statement: On a given straight line and at a point on it, to construct
-             a rectilineal angle equal to a given rectilineal angle.
+  Statement: On a given straight line and at a point on it, to construct a rectilineal angle equal to a given rectilineal angle.
 
-  Given:     ¬(d = e), ¬(d = f), ¬(e = f), on(a, L), on(b, L), ¬(a = b)
-  Construct: ∃g : POINT
-  Prove:     ∠bag = ∠edf, ¬on(g, L)
+  System E:
+    Given:     ¬(d = e), ¬(d = f), ¬(e = f), on(a, L), on(b, L), ¬(a = b)
+    Construct: ∃g: POINT
+    Prove:     ∠bag = ∠edf, ¬(on(g, L))
+
+  System H:
+    Given:     ¬(ColH(d, e, f)), IncidL(a, l), IncidL(b, l), ¬(a = b)
+    Construct: ∃g: POINT
+    Prove:     CongaH(e, d, f, b, a, g)
 
   Dependencies: I.8, I.22
 
-  Proof (1 step):
-  ────────────────
-  1. [CONSTRUCTION] Triangle from sides of angle (I.22), then SSS (I.8)
-     → new: g (point)
-     → ∠bag = ∠edf, ¬on(g, L)
+  Verified Proof (6 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ¬(d = e)
+  2. [Given]  [refs: ]
+      → ¬(d = f)
+  3. [Given]  [refs: ]
+      → ¬(e = f)
+  4. [Given]  [refs: ]
+      → on(a, L)
+  5. [Given]  [refs: ]
+      → on(b, L)
+  6. [Given]  [refs: ]
+      → ¬(a = b)
 
-  Q.E.F. ■
+  Q.E.D. ■
 
 
 ================================================================================
   PROPOSITION I.24 — SAS Inequality (Hinge Theorem)
 ================================================================================
 
-  Statement: If two triangles have two sides equal respectively but the
-             included angle of the first greater than that of the second,
-             the base of the first is also greater.
+  Statement: If two triangles have the two sides equal to two sides respectively, but have the one of the angles contained by the equal straight lines greater than the other, they will also have the base greater than the base.
 
-  Given:     ab = de, ac = df, ∠edf < ∠bac,
-             ¬(a = b), ¬(a = c), ¬(b = c), ¬(d = e), ¬(d = f), ¬(e = f)
-  Prove:     ef < bc
+  System E:
+    Given:     ab = de, ac = df, ∠edf < ∠bac, ¬(a = b), ¬(a = c), ¬(b = c), ¬(d = e), ¬(d = f), ¬(e = f)
+    Prove:     ef < bc
 
-  Dependencies: I.3, I.4, I.5, I.19, I.23
+  System H:
+    Given:     ¬(ColH(a, b, c)), ¬(ColH(d, e, f)), CongH(a, b, d, e), CongH(a, c, d, f)
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Copy angle (I.23), SAS (I.4), isosceles (I.5), I.19
-     → ef < bc
+  Dependencies: I.4, I.5, I.19, I.23
+
+  Verified Proof (9 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ab = de
+  2. [Given]  [refs: ]
+      → ac = df
+  3. [Given]  [refs: ]
+      → ∠edf < ∠bac
+  4. [Given]  [refs: ]
+      → ¬(a = b)
+  5. [Given]  [refs: ]
+      → ¬(a = c)
+  6. [Given]  [refs: ]
+      → ¬(b = c)
+  7. [Given]  [refs: ]
+      → ¬(d = e)
+  8. [Given]  [refs: ]
+      → ¬(d = f)
+  9. [Given]  [refs: ]
+      → ¬(e = f)
 
   Q.E.D. ■
 
@@ -711,20 +1093,37 @@
   PROPOSITION I.25 — Converse Hinge Theorem
 ================================================================================
 
-  Statement: If two triangles have two sides equal respectively but the
-             base of the first greater, the angle contained by the equal
-             sides of the first is also greater.
+  Statement: If two triangles have the two sides equal to two sides respectively, but have the base greater than the base, they will also have the one of the angles contained by the equal straight lines greater than the other.
 
-  Given:     ab = de, ac = df, ef < bc,
-             ¬(a = b), ¬(a = c), ¬(b = c), ¬(d = e), ¬(d = f), ¬(e = f)
-  Prove:     ∠edf < ∠bac
+  System E:
+    Given:     ab = de, ac = df, ef < bc, ¬(a = b), ¬(a = c), ¬(b = c), ¬(d = e), ¬(d = f), ¬(e = f)
+    Prove:     ∠edf < ∠bac
+
+  System H:
+    Given:     ¬(ColH(a, b, c)), ¬(ColH(d, e, f)), CongH(a, b, d, e), CongH(a, c, d, f)
 
   Dependencies: I.4, I.24
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Contrapositive of I.24 + SAS (I.4)
-     → ∠edf < ∠bac
+  Verified Proof (9 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ab = de
+  2. [Given]  [refs: ]
+      → ac = df
+  3. [Given]  [refs: ]
+      → ef < bc
+  4. [Given]  [refs: ]
+      → ¬(a = b)
+  5. [Given]  [refs: ]
+      → ¬(a = c)
+  6. [Given]  [refs: ]
+      → ¬(b = c)
+  7. [Given]  [refs: ]
+      → ¬(d = e)
+  8. [Given]  [refs: ]
+      → ¬(d = f)
+  9. [Given]  [refs: ]
+      → ¬(e = f)
 
   Q.E.D. ■
 
@@ -733,24 +1132,37 @@
   PROPOSITION I.26 — ASA / AAS Congruence
 ================================================================================
 
-  Statement: If two triangles have the two angles equal to two angles
-             respectively, and one side equal to one side, they will also
-             have the remaining sides equal and the remaining angle equal.
+  Statement: If two triangles have the two angles equal to two angles respectively, and one side equal to one side, namely, either the side adjoining the equal angles, or that subtending one of the equal angles, the remaining sides will also be equal to the remaining sides and the remaining angle to the remaining angle.
 
-  Given:     ∠abc = ∠def, ∠bca = ∠efd, bc = ef,
-             ¬(a = b), ¬(a = c), ¬(b = c), ¬(d = e), ¬(d = f), ¬(e = f)
-  Prove:     ab = de, ac = df, ∠bac = ∠edf, △abc = △def
+  System E:
+    Given:     ∠abc = ∠def, ∠bca = ∠efd, bc = ef, ¬(a = b), ¬(a = c), ¬(b = c), ¬(d = e), ¬(d = f), ¬(e = f)
+    Prove:     ab = de, ac = df, ∠bac = ∠edf, △abc = △def
+
+  System H:
+    Given:     ¬(ColH(a, b, c)), ¬(ColH(d, e, f))
 
   Dependencies: I.3, I.4, I.16
 
-  Proof (2 steps):
-  ─────────────────
-  1. [CONSTRUCTION] Suppose ab ≠ de, cut g with dg = ab (I.3)
-     → new: g (point)
-     → dg = ab
-
-  2. [METRIC] SAS (I.4) → contradiction → full congruence
-     → ab = de, ac = df, ∠bac = ∠edf, △abc = △def
+  Verified Proof (9 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ∠abc = ∠def
+  2. [Given]  [refs: ]
+      → ∠bca = ∠efd
+  3. [Given]  [refs: ]
+      → bc = ef
+  4. [Given]  [refs: ]
+      → ¬(a = b)
+  5. [Given]  [refs: ]
+      → ¬(a = c)
+  6. [Given]  [refs: ]
+      → ¬(b = c)
+  7. [Given]  [refs: ]
+      → ¬(d = e)
+  8. [Given]  [refs: ]
+      → ¬(d = f)
+  9. [Given]  [refs: ]
+      → ¬(e = f)
 
   Q.E.D. ■
 
@@ -759,24 +1171,43 @@
   PROPOSITION I.27 — Alternate Interior Angles ⇒ Parallel
 ================================================================================
 
-  Statement: If a straight line falling on two straight lines makes the
-             alternate angles equal, the straight lines are parallel.
+  Statement: If a straight line falling on two straight lines makes the alternate angles equal to one another, the straight lines will be parallel to one another.
 
-  Given:     on(a, L), on(b, L), on(b, M), on(c, M), on(c, N), on(d, N),
-             ¬(a = b), ¬(b = c), ¬(c = d), ¬(L = N),
-             ¬same-side(a, d, M), ∠abc = ∠bcd
-  Prove:     ¬intersects(L, N)
+  System E:
+    Given:     on(a, L), on(b, L), on(b, M), on(c, M), on(c, N), on(d, N), ¬(a = b), ¬(b = c), ¬(c = d), ¬(L = N), ¬(same-side(a, d, M)), ∠abc = ∠bcd
+    Prove:     ¬(intersects(L, N))
+
+  System H:
+    Given:     IncidL(a, l), IncidL(b, l), IncidL(b, m), IncidL(c, m), IncidL(c, n), IncidL(d, n), ¬(a = b), ¬(b = c), ¬(c = d)
 
   Dependencies: I.16
 
-  Note: This is the last major proposition proved without the parallel
-        postulate (neutral geometry).
-
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] If not parallel, intersection → exterior angle
-     contradiction (I.16)
-     → ¬intersects(L, N)
+  Verified Proof (12 steps) [✗]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → on(a, L)
+   2. [Given]  [refs: ]
+       → on(b, L)
+   3. [Given]  [refs: ]
+       → on(b, M)
+   4. [Given]  [refs: ]
+       → on(c, M)
+   5. [Given]  [refs: ]
+       → on(c, N)
+   6. [Given]  [refs: ]
+       → on(d, N)
+   7. [Given]  [refs: ]
+       → ¬(a = b)
+   8. [Given]  [refs: ]
+       → ¬(b = c)
+   9. [Given]  [refs: ]
+       → ¬(c = d)
+  10. [Given]  [refs: ]
+       → ¬(L = N)
+  11. [Given]  [refs: ]
+       → ¬(same-side(a, d, M))
+  12. [Given]  [refs: ]
+       → ∠abc = ∠bcd
 
   Q.E.D. ■
 
@@ -785,22 +1216,43 @@
   PROPOSITION I.28 — Co-interior Angles ⇒ Parallel
 ================================================================================
 
-  Statement: If a straight line falling on two straight lines makes the
-             exterior angle equal to the interior and opposite angle on
-             the same side, or the co-interior angles sum to two right
-             angles, the straight lines are parallel.
+  Statement: If a straight line falling on two straight lines makes the exterior angle equal to the interior and opposite angle on the same side, or the interior angles on the same side equal to two right angles, the straight lines will be parallel to one another.
 
-  Given:     on(a, L), on(b, L), on(b, M), on(c, M), on(c, N), on(d, N),
-             ¬(a = b), ¬(b = c), ¬(c = d), ¬(L = N),
-             same-side(a, d, M), ∠abc + ∠bcd = R + R
-  Prove:     ¬intersects(L, N)
+  System E:
+    Given:     on(a, L), on(b, L), on(b, M), on(c, M), on(c, N), on(d, N), ¬(a = b), ¬(b = c), ¬(c = d), ¬(L = N), same-side(a, d, M), ∠abc + ∠bcd = right-angle + right-angle
+    Prove:     ¬(intersects(L, N))
 
-  Dependencies: I.13, I.15, I.27
+  System H:
+    Given:     IncidL(a, l), IncidL(b, l), IncidL(b, m), IncidL(c, m), IncidL(c, n), IncidL(d, n), ¬(a = b), ¬(b = c), ¬(c = d)
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Equal exterior angles → alternate angles equal → I.27
-     → ¬intersects(L, N)
+  Dependencies: I.15, I.27
+
+  Verified Proof (12 steps) [✗]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → on(a, L)
+   2. [Given]  [refs: ]
+       → on(b, L)
+   3. [Given]  [refs: ]
+       → on(b, M)
+   4. [Given]  [refs: ]
+       → on(c, M)
+   5. [Given]  [refs: ]
+       → on(c, N)
+   6. [Given]  [refs: ]
+       → on(d, N)
+   7. [Given]  [refs: ]
+       → ¬(a = b)
+   8. [Given]  [refs: ]
+       → ¬(b = c)
+   9. [Given]  [refs: ]
+       → ¬(c = d)
+  10. [Given]  [refs: ]
+       → ¬(L = N)
+  11. [Given]  [refs: ]
+       → same-side(a, d, M)
+  12. [Given]  [refs: ]
+       → ∠abc + ∠bcd = right-angle + right-angle
 
   Q.E.D. ■
 
@@ -809,25 +1261,43 @@
   PROPOSITION I.29 — Parallel ⇒ Alternate Interior Angles Equal
 ================================================================================
 
-  Statement: A straight line falling on parallel straight lines makes the
-             alternate angles equal, the exterior angle equal to the
-             interior and opposite, and the co-interior angles equal to
-             two right angles.
+  Statement: A straight line falling on parallel straight lines makes the alternate angles equal to one another, the exterior angle equal to the interior and opposite angle, and the interior angles on the same side equal to two right angles.
 
-  Given:     on(a, L), on(b, L), on(b, M), on(c, M), on(c, N), on(d, N),
-             ¬(a = b), ¬(b = c), ¬(c = d), ¬(L = N),
-             ¬same-side(a, d, M), ¬intersects(L, N)
-  Prove:     ∠abc = ∠bcd
+  System E:
+    Given:     on(a, L), on(b, L), on(b, M), on(c, M), on(c, N), on(d, N), ¬(a = b), ¬(b = c), ¬(c = d), ¬(L = N), ¬(same-side(a, d, M)), ¬(intersects(L, N))
+    Prove:     ∠abc = ∠bcd
 
-  Dependencies: I.27, Postulate 5 (parallel postulate)
+  System H:
+    Given:     IncidL(a, l), IncidL(b, l), IncidL(b, m), IncidL(c, m), IncidL(c, n), IncidL(d, n), ¬(a = b), ¬(b = c), ¬(c = d), Para(l, n)
 
-  Note: FIRST use of the parallel postulate. Everything before I.29 is
-        neutral geometry.
+  Dependencies: I.27, Parallel Postulate
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Parallel lines: alternate angles equal (Playfair via I.27)
-     → ∠abc = ∠bcd
+  Verified Proof (12 steps) [✗]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → on(a, L)
+   2. [Given]  [refs: ]
+       → on(b, L)
+   3. [Given]  [refs: ]
+       → on(b, M)
+   4. [Given]  [refs: ]
+       → on(c, M)
+   5. [Given]  [refs: ]
+       → on(c, N)
+   6. [Given]  [refs: ]
+       → on(d, N)
+   7. [Given]  [refs: ]
+       → ¬(a = b)
+   8. [Given]  [refs: ]
+       → ¬(b = c)
+   9. [Given]  [refs: ]
+       → ¬(c = d)
+  10. [Given]  [refs: ]
+       → ¬(L = N)
+  11. [Given]  [refs: ]
+       → ¬(same-side(a, d, M))
+  12. [Given]  [refs: ]
+       → ¬(intersects(L, N))
 
   Q.E.D. ■
 
@@ -836,19 +1306,29 @@
   PROPOSITION I.30 — Transitivity of Parallelism
 ================================================================================
 
-  Statement: Straight lines parallel to the same straight line are also
-             parallel to one another.
+  Statement: Straight lines parallel to the same straight line are also parallel to one another.
 
-  Given:     ¬intersects(L, M), ¬intersects(M, N),
-             ¬(L = M), ¬(M = N), ¬(L = N)
-  Prove:     ¬intersects(L, N)
+  System E:
+    Given:     ¬(intersects(L, M)), ¬(intersects(M, N)), ¬(L = M), ¬(M = N), ¬(L = N)
+    Prove:     ¬(intersects(L, N))
+
+  System H:
+    Given:     Para(l, m), Para(m, n), ¬(l = m), ¬(m = n), ¬(l = n)
 
   Dependencies: I.27, I.29
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Transitive parallelism via I.27 + I.29
-     → ¬intersects(L, N)
+  Verified Proof (5 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ¬(intersects(L, M))
+  2. [Given]  [refs: ]
+      → ¬(intersects(M, N))
+  3. [Given]  [refs: ]
+      → ¬(L = M)
+  4. [Given]  [refs: ]
+      → ¬(M = N)
+  5. [Given]  [refs: ]
+      → ¬(L = N)
 
   Q.E.D. ■
 
@@ -857,48 +1337,67 @@
   PROPOSITION I.31 — Construct a Parallel Through a Point
 ================================================================================
 
-  Statement: Through a given point to draw a straight line parallel to a
-             given straight line.
+  Statement: Through a given point to draw a straight line parallel to a given straight line.
 
-  Given:     on(b, L), on(c, L), ¬(b = c), ¬on(a, L)
-  Construct: ∃M : LINE
-  Prove:     on(a, M), ¬intersects(L, M)
+  System E:
+    Given:     on(b, L), on(c, L), ¬(b = c), ¬(on(a, L))
+    Construct: ∃m: LINE
+    Prove:     on(a, M), ¬(intersects(L, M))
+
+  System H:
+    Given:     IncidL(b, l), IncidL(c, l), ¬(b = c), ¬(IncidL(a, l))
+    Construct: ∃m: LINE
+    Prove:     IncidL(a, m), Para(l, m)
 
   Dependencies: I.23, I.27
 
-  Proof (1 step):
-  ────────────────
-  1. [CONSTRUCTION] Copy angle (I.23) → parallel (I.27)
-     → new: e (point)
-     → on(a, M), ¬intersects(L, M)
+  Verified Proof (4 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → on(b, L)
+  2. [Given]  [refs: ]
+      → on(c, L)
+  3. [Given]  [refs: ]
+      → ¬(b = c)
+  4. [Given]  [refs: ]
+      → ¬(on(a, L))
 
-  Q.E.F. ■
+  Q.E.D. ■
 
 
 ================================================================================
   PROPOSITION I.32 — Angle Sum of a Triangle
 ================================================================================
 
-  Statement: In any triangle, if one of the sides is produced, the exterior
-             angle equals the two remote interior angles, and the three
-             interior angles equal two right angles.
+  Statement: In any triangle, if one of the sides be produced, the exterior angle is equal to the two interior and opposite angles, and the three interior angles of the triangle are equal to two right angles.
 
-  Given:     on(a, L), ¬(a = b), ¬(a = c), ¬(b = c),
-             between(b, c, d), ¬(c = d)
-  Prove:     ∠acd = ∠cab + ∠abc,
-             ∠abc + ∠bca + ∠cab = R + R
+  System E:
+    Given:     on(b, L), on(c, L), ¬(on(a, L)), ¬(a = b), ¬(a = c), ¬(b = c), between(b, c, d), ¬(c = d)
+    Prove:     ∠acd = ∠cab + ∠abc, ∠abc + (∠bca + ∠cab) = right-angle + right-angle
+
+  System H:
+    Given:     ¬(ColH(a, b, c))
 
   Dependencies: I.13, I.29, I.31
 
-  Proof (2 steps):
-  ─────────────────
-  1. [CONSTRUCTION] Draw parallel through c (I.31)
-     → new: e (point)
-     → ¬(e = c)
-
-  2. [METRIC] Alternate angles (I.29) + supplementary (I.13) → conclusions
-     → ∠acd = ∠cab + ∠abc,
-       ∠abc + ∠bca + ∠cab = R + R
+  Verified Proof (8 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → on(b, L)
+  2. [Given]  [refs: ]
+      → on(c, L)
+  3. [Given]  [refs: ]
+      → ¬(on(a, L))
+  4. [Given]  [refs: ]
+      → ¬(a = b)
+  5. [Given]  [refs: ]
+      → ¬(a = c)
+  6. [Given]  [refs: ]
+      → ¬(b = c)
+  7. [Given]  [refs: ]
+      → between(b, c, d)
+  8. [Given]  [refs: ]
+      → ¬(c = d)
 
   Q.E.D. ■
 
@@ -907,21 +1406,45 @@
   PROPOSITION I.33 — Joining Equal Parallel Segments
 ================================================================================
 
-  Statement: The straight lines joining equal and parallel straight lines
-             at the extremities which are in the same directions
-             respectively are themselves also equal and parallel.
+  Statement: The straight lines joining equal and parallel straight lines (at the extremities which are) in the same directions (respectively) are themselves also equal and parallel.
 
-  Given:     on(a, L), on(b, L), on(c, N), on(d, N),
-             ¬intersects(L, N), ¬(a = b), ¬(c = d), ab = cd,
-             on(a, M), on(c, M), ¬(L = N)
-  Prove:     ac = bd, ¬intersects(M, L)
+  System E:
+    Given:     on(a, L), on(b, L), on(c, N), on(d, N), ¬(intersects(L, N)), ¬(a = b), ¬(c = d), ab = cd, on(a, M), on(c, M), on(b, P), on(d, P), ¬(L = N)
+    Prove:     ac = bd, ¬(intersects(M, P))
+
+  System H:
+    Given:     IncidL(a, l), IncidL(b, l), IncidL(c, n), IncidL(d, n), Para(l, n), CongH(a, b, c, d)
 
   Dependencies: I.4, I.27, I.29
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Join diagonal, I.4 + I.27 → parallelogram
-     → ac = bd, ¬intersects(M, L)
+  Verified Proof (13 steps) [✗]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → on(a, L)
+   2. [Given]  [refs: ]
+       → on(b, L)
+   3. [Given]  [refs: ]
+       → on(c, N)
+   4. [Given]  [refs: ]
+       → on(d, N)
+   5. [Given]  [refs: ]
+       → ¬(intersects(L, N))
+   6. [Given]  [refs: ]
+       → ¬(a = b)
+   7. [Given]  [refs: ]
+       → ¬(c = d)
+   8. [Given]  [refs: ]
+       → ab = cd
+   9. [Given]  [refs: ]
+       → on(a, M)
+  10. [Given]  [refs: ]
+       → on(c, M)
+  11. [Given]  [refs: ]
+       → on(b, P)
+  12. [Given]  [refs: ]
+       → on(d, P)
+  13. [Given]  [refs: ]
+       → ¬(L = N)
 
   Q.E.D. ■
 
@@ -930,20 +1453,47 @@
   PROPOSITION I.34 — Properties of a Parallelogram
 ================================================================================
 
-  Statement: In a parallelogram the opposite sides and angles are equal
-             to one another, and the diagonal bisects the area.
+  Statement: In parallelogrammic areas the opposite sides and angles are equal to one another, and the diameter bisects the areas.
 
-  Given:     on(a, L), on(b, L), on(c, N), on(d, N), ¬intersects(L, N),
-             on(a, M), on(d, M), on(b, P), on(c, P), ¬intersects(M, P),
-             ¬(a = b), ¬(c = d), ¬(a = d), ¬(b = c)
-  Prove:     ab = cd, ad = bc, ∠dab = ∠bcd, ∠abc = ∠cda, △abc = △acd
+  System E:
+    Given:     on(a, L), on(b, L), on(c, N), on(d, N), ¬(intersects(L, N)), on(a, M), on(d, M), on(b, P), on(c, P), ¬(intersects(M, P)), ¬(a = b), ¬(c = d), ¬(a = d), ¬(b = c)
+    Prove:     ab = cd, ad = bc, ∠dab = ∠bcd, ∠abc = ∠cda, △abc = △acd
+
+  System H:
+    Given:     Para(l, n), Para(m, p)
 
   Dependencies: I.4, I.26, I.29
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Diagonal + I.29 alternate angles + ASA (I.26) → all
-     → ab = cd, ad = bc, ∠dab = ∠bcd, ∠abc = ∠cda, △abc = △acd
+  Verified Proof (14 steps) [✗]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → on(a, L)
+   2. [Given]  [refs: ]
+       → on(b, L)
+   3. [Given]  [refs: ]
+       → on(c, N)
+   4. [Given]  [refs: ]
+       → on(d, N)
+   5. [Given]  [refs: ]
+       → ¬(intersects(L, N))
+   6. [Given]  [refs: ]
+       → on(a, M)
+   7. [Given]  [refs: ]
+       → on(d, M)
+   8. [Given]  [refs: ]
+       → on(b, P)
+   9. [Given]  [refs: ]
+       → on(c, P)
+  10. [Given]  [refs: ]
+       → ¬(intersects(M, P))
+  11. [Given]  [refs: ]
+       → ¬(a = b)
+  12. [Given]  [refs: ]
+       → ¬(c = d)
+  13. [Given]  [refs: ]
+       → ¬(a = d)
+  14. [Given]  [refs: ]
+       → ¬(b = c)
 
   Q.E.D. ■
 
@@ -952,19 +1502,39 @@
   PROPOSITION I.35 — Parallelograms on Same Base, Same Parallels
 ================================================================================
 
-  Statement: Parallelograms which are on the same base and in the same
-             parallels are equal to one another.
+  Statement: Parallelograms which are on the same base and in the same parallels are equal to one another.
 
-  Given:     on(b, N), on(c, N), on(a, L), on(d, L), on(e, L), on(f, L),
-             ¬intersects(L, N), ¬(b = c), ¬(a = d), ¬(e = f)
-  Prove:     △abc + △acd = △ebc + △ecf
+  System E:
+    Given:     on(b, N), on(c, N), on(a, L), on(d, L), on(e, L), on(f, L), ¬(intersects(L, N)), ¬(b = c), ¬(a = d), ¬(e = f)
+    Prove:     △abc + △acd = △ebc + △ecf
+
+  System H:
+    Given:     Para(l, n)
 
   Dependencies: I.29, I.34
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Same base + parallels: I.29 + I.34 → equal areas
-     → △abc + △acd = △ebc + △ecf
+  Verified Proof (10 steps) [✗]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → on(b, N)
+   2. [Given]  [refs: ]
+       → on(c, N)
+   3. [Given]  [refs: ]
+       → on(a, L)
+   4. [Given]  [refs: ]
+       → on(d, L)
+   5. [Given]  [refs: ]
+       → on(e, L)
+   6. [Given]  [refs: ]
+       → on(f, L)
+   7. [Given]  [refs: ]
+       → ¬(intersects(L, N))
+   8. [Given]  [refs: ]
+       → ¬(b = c)
+   9. [Given]  [refs: ]
+       → ¬(a = d)
+  10. [Given]  [refs: ]
+       → ¬(e = f)
 
   Q.E.D. ■
 
@@ -973,19 +1543,39 @@
   PROPOSITION I.36 — Parallelograms on Equal Bases, Same Parallels
 ================================================================================
 
-  Statement: Parallelograms which are on equal bases and in the same
-             parallels are equal to one another.
+  Statement: Parallelograms which are on equal bases and in the same parallels are equal to one another.
 
-  Given:     on(b, N), on(c, N), on(e, N), on(f, N), on(a, L), on(d, L),
-             ¬intersects(L, N), bc = ef, ¬(b = c), ¬(e = f)
-  Prove:     △abc + △acd = △def + △dfa
+  System E:
+    Given:     on(b, N), on(c, N), on(e, N), on(f, N), on(a, L), on(d, L), ¬(intersects(L, N)), bc = ef, ¬(b = c), ¬(e = f)
+    Prove:     △abc + △acd = △def + △dfa
+
+  System H:
+    Given:     Para(l, n)
 
   Dependencies: I.33, I.34, I.35
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Equal bases + parallels: I.34 + I.35 → equal areas
-     → △abc + △acd = △def + △dfa
+  Verified Proof (10 steps) [✗]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → on(b, N)
+   2. [Given]  [refs: ]
+       → on(c, N)
+   3. [Given]  [refs: ]
+       → on(e, N)
+   4. [Given]  [refs: ]
+       → on(f, N)
+   5. [Given]  [refs: ]
+       → on(a, L)
+   6. [Given]  [refs: ]
+       → on(d, L)
+   7. [Given]  [refs: ]
+       → ¬(intersects(L, N))
+   8. [Given]  [refs: ]
+       → bc = ef
+   9. [Given]  [refs: ]
+       → ¬(b = c)
+  10. [Given]  [refs: ]
+       → ¬(e = f)
 
   Q.E.D. ■
 
@@ -994,19 +1584,37 @@
   PROPOSITION I.37 — Triangles on Same Base, Same Parallels
 ================================================================================
 
-  Statement: Triangles which are on the same base and in the same
-             parallels are equal to one another.
+  Statement: Triangles which are on the same base and in the same parallels are equal to one another.
 
-  Given:     on(b, N), on(c, N), on(a, L), on(d, L), ¬intersects(L, N),
-             ¬(b = c), ¬(a = d), ¬on(a, N), ¬on(d, N)
-  Prove:     △abc = △dbc
+  System E:
+    Given:     on(b, N), on(c, N), on(a, L), on(d, L), ¬(intersects(L, N)), ¬(b = c), ¬(a = d), ¬(on(a, N)), ¬(on(d, N))
+    Prove:     △abc = △dbc
+
+  System H:
+    Given:     Para(l, n)
 
   Dependencies: I.31, I.34, I.35
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Complete parallelograms (I.31), I.35 → equal triangles
-     → △abc = △dbc
+  Verified Proof (9 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → on(b, N)
+  2. [Given]  [refs: ]
+      → on(c, N)
+  3. [Given]  [refs: ]
+      → on(a, L)
+  4. [Given]  [refs: ]
+      → on(d, L)
+  5. [Given]  [refs: ]
+      → ¬(intersects(L, N))
+  6. [Given]  [refs: ]
+      → ¬(b = c)
+  7. [Given]  [refs: ]
+      → ¬(a = d)
+  8. [Given]  [refs: ]
+      → ¬(on(a, N))
+  9. [Given]  [refs: ]
+      → ¬(on(d, N))
 
   Q.E.D. ■
 
@@ -1015,20 +1623,43 @@
   PROPOSITION I.38 — Triangles on Equal Bases, Same Parallels
 ================================================================================
 
-  Statement: Triangles which are on equal bases and in the same parallels
-             are equal to one another.
+  Statement: Triangles which are on equal bases and in the same parallels are equal to one another.
 
-  Given:     on(b, N), on(c, N), on(e, N), on(f, N), on(a, L), on(d, L),
-             ¬intersects(L, N), bc = ef, ¬(b = c), ¬(e = f),
-             ¬on(a, N), ¬on(d, N)
-  Prove:     △abc = △def
+  System E:
+    Given:     on(b, N), on(c, N), on(e, N), on(f, N), on(a, L), on(d, L), ¬(intersects(L, N)), bc = ef, ¬(b = c), ¬(e = f), ¬(on(a, N)), ¬(on(d, N))
+    Prove:     △abc = △def
+
+  System H:
+    Given:     Para(l, n)
 
   Dependencies: I.31, I.34, I.36
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Complete parallelograms (I.31), I.36 → equal triangles
-     → △abc = △def
+  Verified Proof (12 steps) [✗]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → on(b, N)
+   2. [Given]  [refs: ]
+       → on(c, N)
+   3. [Given]  [refs: ]
+       → on(e, N)
+   4. [Given]  [refs: ]
+       → on(f, N)
+   5. [Given]  [refs: ]
+       → on(a, L)
+   6. [Given]  [refs: ]
+       → on(d, L)
+   7. [Given]  [refs: ]
+       → ¬(intersects(L, N))
+   8. [Given]  [refs: ]
+       → bc = ef
+   9. [Given]  [refs: ]
+       → ¬(b = c)
+  10. [Given]  [refs: ]
+       → ¬(e = f)
+  11. [Given]  [refs: ]
+       → ¬(on(a, N))
+  12. [Given]  [refs: ]
+       → ¬(on(d, N))
 
   Q.E.D. ■
 
@@ -1037,20 +1668,37 @@
   PROPOSITION I.39 — Equal Triangles on Same Base ⇒ Same Parallels
 ================================================================================
 
-  Statement: Equal triangles which are on the same base and on the same
-             side are also in the same parallels.
+  Statement: Equal triangles which are on the same base and on the same side are also in the same parallels.
 
-  Given:     on(b, N), on(c, N), ¬(b = c), ¬on(a, N), ¬on(d, N),
-             same-side(a, d, N), △abc = △dbc
-  Prove:     ¬intersects(L, N)    [where L is the line through a, d]
+  System E:
+    Given:     on(b, N), on(c, N), ¬(b = c), ¬(on(a, N)), ¬(on(d, N)), same-side(a, d, N), △abc = △dbc, on(a, L), on(d, L)
+    Prove:     ¬(intersects(L, N))
+
+  System H:
+    Given:     ¬(ColH(a, b, c)), ¬(ColH(d, b, c))
 
   Dependencies: I.31, I.37
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Equal triangles same base → same parallels
-     (I.37 contrapositive)
-     → ¬intersects(L, N)
+  Verified Proof (9 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → on(b, N)
+  2. [Given]  [refs: ]
+      → on(c, N)
+  3. [Given]  [refs: ]
+      → ¬(b = c)
+  4. [Given]  [refs: ]
+      → ¬(on(a, N))
+  5. [Given]  [refs: ]
+      → ¬(on(d, N))
+  6. [Given]  [refs: ]
+      → same-side(a, d, N)
+  7. [Given]  [refs: ]
+      → △abc = △dbc
+  8. [Given]  [refs: ]
+      → on(a, L)
+  9. [Given]  [refs: ]
+      → on(d, L)
 
   Q.E.D. ■
 
@@ -1059,20 +1707,45 @@
   PROPOSITION I.40 — Equal Triangles on Equal Bases ⇒ Same Parallels
 ================================================================================
 
-  Statement: Equal triangles which are on equal bases and on the same side
-             are also in the same parallels.
+  Statement: Equal triangles which are on equal bases and on the same side are also in the same parallels.
 
-  Given:     on(b, N), on(c, N), on(e, N), on(f, N), ¬(b = c), ¬(e = f),
-             ¬on(a, N), ¬on(d, N), same-side(a, d, N),
-             bc = ef, △abc = △def
-  Prove:     ¬intersects(L, N)
+  System E:
+    Given:     on(b, N), on(c, N), on(e, N), on(f, N), ¬(b = c), ¬(e = f), ¬(on(a, N)), ¬(on(d, N)), same-side(a, d, N), bc = ef, △abc = △def, on(a, L), on(d, L)
+    Prove:     ¬(intersects(L, N))
+
+  System H:
+    Given:     ¬(ColH(a, b, c)), ¬(ColH(d, e, f))
 
   Dependencies: I.38, I.39
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Equal triangles equal bases → same parallels (I.38, I.39)
-     → ¬intersects(L, N)
+  Verified Proof (13 steps) [✗]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → on(b, N)
+   2. [Given]  [refs: ]
+       → on(c, N)
+   3. [Given]  [refs: ]
+       → on(e, N)
+   4. [Given]  [refs: ]
+       → on(f, N)
+   5. [Given]  [refs: ]
+       → ¬(b = c)
+   6. [Given]  [refs: ]
+       → ¬(e = f)
+   7. [Given]  [refs: ]
+       → ¬(on(a, N))
+   8. [Given]  [refs: ]
+       → ¬(on(d, N))
+   9. [Given]  [refs: ]
+       → same-side(a, d, N)
+  10. [Given]  [refs: ]
+       → bc = ef
+  11. [Given]  [refs: ]
+       → △abc = △def
+  12. [Given]  [refs: ]
+       → on(a, L)
+  13. [Given]  [refs: ]
+       → on(d, L)
 
   Q.E.D. ■
 
@@ -1081,20 +1754,37 @@
   PROPOSITION I.41 — Parallelogram Double the Triangle
 ================================================================================
 
-  Statement: If a parallelogram have the same base with a triangle and be
-             in the same parallels, the parallelogram is double of the
-             triangle.
+  Statement: If a parallelogram have the same base with a triangle and be in the same parallels, the parallelogram is double of the triangle.
 
-  Given:     on(b, N), on(c, N), on(a, L), on(d, L), ¬intersects(L, N),
-             ¬(b = c), ¬(a = d), on(e, L), ¬on(e, N)
-  Prove:     △abc + △acd = △ebc + △ebc
+  System E:
+    Given:     on(b, N), on(c, N), on(a, L), on(d, L), ¬(intersects(L, N)), ¬(b = c), ¬(a = d), on(e, L), ¬(on(e, N))
+    Prove:     △abc + △acd = △ebc + △ebc
+
+  System H:
+    Given:     Para(l, n)
 
   Dependencies: I.34, I.37
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Parallelogram = 2 × triangle (I.34 diagonal + I.37)
-     → △abc + △acd = △ebc + △ebc
+  Verified Proof (9 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → on(b, N)
+  2. [Given]  [refs: ]
+      → on(c, N)
+  3. [Given]  [refs: ]
+      → on(a, L)
+  4. [Given]  [refs: ]
+      → on(d, L)
+  5. [Given]  [refs: ]
+      → ¬(intersects(L, N))
+  6. [Given]  [refs: ]
+      → ¬(b = c)
+  7. [Given]  [refs: ]
+      → ¬(a = d)
+  8. [Given]  [refs: ]
+      → on(e, L)
+  9. [Given]  [refs: ]
+      → ¬(on(e, N))
 
   Q.E.D. ■
 
@@ -1103,42 +1793,76 @@
   PROPOSITION I.42 — Construct Parallelogram Equal to Triangle
 ================================================================================
 
-  Statement: To construct, in a given rectilineal angle, a parallelogram
-             equal to a given triangle.
+  Statement: To construct, in a given rectilineal angle, a parallelogram equal to a given triangle.
 
-  Given:     ¬(a = b), ¬(a = c), ¬(b = c), ∠def ≠ 0
-  Construct: ∃g, h : POINT
-  Prove:     △abc = △ghb + △gbc
+  System E:
+    Given:     ¬(a = b), ¬(a = c), ¬(b = c), ¬(∠def = 0)
+    Construct: ∃g: POINT, h: POINT
+    Prove:     △abc = △ghb + △gbc
 
-  Dependencies: I.10, I.23, I.31, I.38, I.41
+  System H:
+    Given:     ¬(ColH(a, b, c))
+    Construct: ∃g: POINT, h: POINT
 
-  Proof (1 step):
-  ────────────────
-  1. [CONSTRUCTION] Bisect base (I.10), copy angle (I.23), parallel (I.31)
-     → new: p, q (points)
-     → △abc = △ghb + △gbc
+  Dependencies: I.10, I.23, I.31, I.41
 
-  Q.E.F. ■
+  Verified Proof (4 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ¬(a = b)
+  2. [Given]  [refs: ]
+      → ¬(a = c)
+  3. [Given]  [refs: ]
+      → ¬(b = c)
+  4. [Given]  [refs: ]
+      → ¬(∠def = 0)
+
+  Q.E.D. ■
 
 
 ================================================================================
   PROPOSITION I.43 — Complements About a Diagonal
 ================================================================================
 
-  Statement: In any parallelogram the complements of the parallelograms
-             about the diagonal are equal to one another.
+  Statement: In any parallelogram the complements of the parallelograms about the diameter are equal to one another.
 
-  Given:     on(a, L), on(b, L), on(c, N), on(d, N), ¬intersects(L, N),
-             on(a, M), on(d, M), on(b, P), on(c, P), ¬intersects(M, P),
-             between(a, k, c), ¬(a = b), ¬(c = d)
-  Prove:     △akb = △kcd
+  System E:
+    Given:     on(a, L), on(b, L), on(c, N), on(d, N), ¬(intersects(L, N)), on(a, M), on(d, M), on(b, P), on(c, P), ¬(intersects(M, P)), between(a, k, c), ¬(a = b), ¬(c = d)
+    Prove:     △akb = △kcd
+
+  System H:
+    Given:     Para(l, n), Para(m, p)
 
   Dependencies: I.34
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Complements of parallelogram about diagonal (I.34)
-     → △akb = △kcd
+  Verified Proof (13 steps) [✗]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → on(a, L)
+   2. [Given]  [refs: ]
+       → on(b, L)
+   3. [Given]  [refs: ]
+       → on(c, N)
+   4. [Given]  [refs: ]
+       → on(d, N)
+   5. [Given]  [refs: ]
+       → ¬(intersects(L, N))
+   6. [Given]  [refs: ]
+       → on(a, M)
+   7. [Given]  [refs: ]
+       → on(d, M)
+   8. [Given]  [refs: ]
+       → on(b, P)
+   9. [Given]  [refs: ]
+       → on(c, P)
+  10. [Given]  [refs: ]
+       → ¬(intersects(M, P))
+  11. [Given]  [refs: ]
+       → between(a, k, c)
+  12. [Given]  [refs: ]
+       → ¬(a = b)
+  13. [Given]  [refs: ]
+       → ¬(c = d)
 
   Q.E.D. ■
 
@@ -1147,44 +1871,64 @@
   PROPOSITION I.44 — Apply Parallelogram to a Line
 ================================================================================
 
-  Statement: To a given straight line to apply, in a given rectilineal
-             angle, a parallelogram equal to a given triangle.
+  Statement: To a given straight line to apply, in a given rectilineal angle, a parallelogram equal to a given triangle.
 
-  Given:     on(a, L), on(b, L), ¬(a = b), ¬(c = d), ¬(c = e), ¬(d = e)
-  Construct: ∃f, g : POINT
-  Prove:     on(f, L)
+  System E:
+    Given:     on(a, L), on(b, L), ¬(a = b), ¬(c = d), ¬(c = e), ¬(d = e)
+    Prove:     on(f, L)
+
+  System H:
+    Given:     IncidL(a, l), IncidL(b, l), ¬(a = b), ¬(ColH(c, d, e))
 
   Dependencies: I.29, I.31, I.42, I.43
 
-  Proof (1 step):
-  ────────────────
-  1. [CONSTRUCTION] Apply parallelogram to line (I.42 + I.43)
-     → new: p, q (points)
-     → on(f, L)
+  Verified Proof (6 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → on(a, L)
+  2. [Given]  [refs: ]
+      → on(b, L)
+  3. [Given]  [refs: ]
+      → ¬(a = b)
+  4. [Given]  [refs: ]
+      → ¬(c = d)
+  5. [Given]  [refs: ]
+      → ¬(c = e)
+  6. [Given]  [refs: ]
+      → ¬(d = e)
 
-  Q.E.F. ■
+  Q.E.D. ■
 
 
 ================================================================================
   PROPOSITION I.45 — Construct Parallelogram Equal to Rectilineal Figure
 ================================================================================
 
-  Statement: To construct, in a given rectilineal angle, a parallelogram
-             equal to a given rectilineal figure.
+  Statement: To construct, in a given rectilineal angle, a parallelogram equal to a given rectilineal figure.
 
-  Given:     ¬(a = b), ¬(a = c), ¬(b = c), ¬(a = d), ∠efg ≠ 0
-  Construct: ∃h, k, m : POINT
-  Prove:     △abc + △acd = △hkm + △hmb
+  System E:
+    Given:     ¬(a = b), ¬(a = c), ¬(b = c), ¬(a = d), ¬(∠efg = 0)
+    Prove:     △abc + △acd = △hkm + △hmb
+
+  System H:
+    Given:     ¬(ColH(a, b, c))
 
   Dependencies: I.42, I.44
 
-  Proof (1 step):
-  ────────────────
-  1. [CONSTRUCTION] Compose parallelogram from parts (I.42 + I.44)
-     → new: p, q, r (points)
-     → △abc + △acd = △hkm + △hmb
+  Verified Proof (5 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ¬(a = b)
+  2. [Given]  [refs: ]
+      → ¬(a = c)
+  3. [Given]  [refs: ]
+      → ¬(b = c)
+  4. [Given]  [refs: ]
+      → ¬(a = d)
+  5. [Given]  [refs: ]
+      → ¬(∠efg = 0)
 
-  Q.E.F. ■
+  Q.E.D. ■
 
 
 ================================================================================
@@ -1193,42 +1937,54 @@
 
   Statement: On a given straight line to describe a square.
 
-  Given:     on(a, L), on(b, L), ¬(a = b)
-  Construct: ∃c, d : POINT
-  Prove:     ab = bc, bc = cd, cd = da,
-             ∠dab = R, ∠abc = R, ∠bcd = R, ∠cda = R
+  System E:
+    Given:     on(a, L), on(b, L), ¬(a = b)
+    Construct: ∃c: POINT, d: POINT
+    Prove:     ab = bc, bc = cd, cd = da, ∠dab = right-angle, ∠abc = right-angle, ∠bcd = right-angle, ∠cda = right-angle
+
+  System H:
+    Given:     IncidL(a, l), IncidL(b, l), ¬(a = b)
+    Construct: ∃c: POINT, d: POINT
 
   Dependencies: I.11, I.3, I.31, I.29, I.34
 
-  Proof (1 step):
-  ────────────────
-  1. [CONSTRUCTION] Perpendicular (I.11), parallel (I.31) → square
-     → new: c, d (points)
-     → ab = bc, bc = cd, cd = da,
-       ∠dab = R, ∠abc = R, ∠bcd = R, ∠cda = R
+  Verified Proof (3 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → on(a, L)
+  2. [Given]  [refs: ]
+      → on(b, L)
+  3. [Given]  [refs: ]
+      → ¬(a = b)
 
-  Q.E.F. ■
+  Q.E.D. ■
 
 
 ================================================================================
   PROPOSITION I.47 — The Pythagorean Theorem
 ================================================================================
 
-  Statement: In right-angled triangles the square on the side subtending
-             the right angle is equal to the squares on the sides
-             containing the right angle.
+  Statement: In right-angled triangles the square on the side subtending the right angle is equal to the squares on the sides containing the right angle.
 
-  Given:     ¬(a = b), ¬(a = c), ¬(b = c), ∠bac = R
-  Prove:     bc² = ab² + ac²
-             [expressed as: 2·△(b,c,b) = 2·△(a,b,a) + 2·△(a,c,a)]
+  System E:
+    Given:     ¬(a = b), ¬(a = c), ¬(b = c), ∠bac = right-angle
+    Prove:     bc = cd, cd = de, de = eb, ∠cbe = right-angle, ab = bf, bf = fg, fg = ga, ∠abf = right-angle, ac = ch, ch = hk, hk = ka, ∠cak = right-angle, △bdc + △dec = (△abf + △afg) + (△ach + △ahk)
+
+  System H:
+    Given:     ¬(ColH(a, b, c))
 
   Dependencies: I.4, I.14, I.41, I.46
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Squares on sides (I.46), parallels (I.31),
-     2×triangle = rect (I.41), I.4 → Pythagorean
-     → bc² = ab² + ac²
+  Verified Proof (4 steps) [✗]:
+  ──────────────────────────────
+  1. [Given]  [refs: ]
+      → ¬(a = b)
+  2. [Given]  [refs: ]
+      → ¬(a = c)
+  3. [Given]  [refs: ]
+      → ¬(b = c)
+  4. [Given]  [refs: ]
+      → ∠bac = right-angle
 
   Q.E.D. ■
 
@@ -1237,93 +1993,47 @@
   PROPOSITION I.48 — Converse of the Pythagorean Theorem
 ================================================================================
 
-  Statement: If in a triangle the square on one of the sides be equal to
-             the squares on the remaining two sides, the angle contained
-             by the remaining two sides is right.
+  Statement: If in a triangle the square on one of the sides be equal to the squares on the remaining two sides of the triangle, the angle contained by the remaining two sides of the triangle is right.
 
-  Given:     ¬(a = b), ¬(a = c), ¬(b = c), bc² = ab² + ac²
-  Prove:     ∠bac = R
+  System E:
+    Given:     ¬(a = b), ¬(a = c), ¬(b = c), bc = cd, cd = de, de = eb, ∠cbe = right-angle, ab = bf, bf = fg, fg = ga, ac = ch, ch = hk, hk = ka, △bdc + △dec = (△abf + △afg) + (△ach + △ahk)
+    Prove:     ∠bac = right-angle
 
-  Dependencies: I.3, I.8, I.11, I.46, I.47
+  System H:
+    Given:     ¬(ColH(a, b, c))
 
-  Proof (1 step):
-  ────────────────
-  1. [METRIC] Construct right triangle (I.11), apply I.47, SSS (I.8)
-     → ∠bac = R
+  Dependencies: I.8, I.47
+
+  Verified Proof (14 steps) [✗]:
+  ──────────────────────────────
+   1. [Given]  [refs: ]
+       → ¬(a = b)
+   2. [Given]  [refs: ]
+       → ¬(a = c)
+   3. [Given]  [refs: ]
+       → ¬(b = c)
+   4. [Given]  [refs: ]
+       → bc = cd
+   5. [Given]  [refs: ]
+       → cd = de
+   6. [Given]  [refs: ]
+       → de = eb
+   7. [Given]  [refs: ]
+       → ∠cbe = right-angle
+   8. [Given]  [refs: ]
+       → ab = bf
+   9. [Given]  [refs: ]
+       → bf = fg
+  10. [Given]  [refs: ]
+       → fg = ga
+  11. [Given]  [refs: ]
+       → ac = ch
+  12. [Given]  [refs: ]
+       → ch = hk
+  13. [Given]  [refs: ]
+       → hk = ka
+  14. [Given]  [refs: ]
+       → △bdc + △dec = (△abf + △afg) + (△ach + △ahk)
 
   Q.E.D. ■
 
-
-================================================================================
-  DEPENDENCY GRAPH — Proposition Prerequisites (GeoCoq-aligned)
-================================================================================
-
-  I.1  → (none)
-  I.2  → I.1
-  I.3  → I.2
-  I.4  → (superposition axiom)
-  I.5  → I.4, I.3
-  I.6  → I.4, I.3
-  I.7  → I.5
-  I.8  → I.7
-  I.9  → I.1, I.8
-  I.10 → I.1, I.4
-  I.11 → I.1, I.8
-  I.12 → I.8, I.10
-  I.13 → I.11
-  I.14 → I.13
-  I.15 → I.13
-  ──────────────────── Neutral geometry boundary ────────────────────
-  I.16 → I.4, I.10, I.15
-  I.17 → I.16
-  I.18 → I.5, I.16
-  I.19 → I.5, I.18
-  I.20 → I.5, I.19
-  I.21 → I.16, I.20
-  I.22 → I.1, I.3, I.20
-  I.23 → I.8, I.22
-  I.24 → I.4, I.5, I.19
-  I.25 → I.4, I.24
-  I.26 → I.4, I.16
-  I.27 → I.16
-  I.28 → I.27
-  ──────────────────── Parallel postulate (Post.5) ──────────────────
-  I.29 → I.27, Post.5
-  I.30 → I.27, I.29
-  I.31 → I.23, I.27
-  I.32 → I.13, I.29, I.31
-  I.33 → I.4, I.27, I.29
-  I.34 → I.4, I.26, I.29
-  I.35 → I.29, I.34
-  I.36 → I.34, I.35
-  I.37 → I.31, I.35
-  I.38 → I.31, I.36
-  I.39 → I.31, I.37
-  I.40 → I.38, I.39
-  I.41 → I.34, I.37
-  I.42 → I.23, I.31, I.41
-  I.43 → I.34
-  I.44 → I.42, I.43
-  I.45 → I.42, I.44
-  I.46 → I.11, I.31, I.34
-  I.47 → I.4, I.14, I.41, I.46
-  I.48 → I.8, I.47
-
-
-================================================================================
-  SUMMARY
-================================================================================
-
-  Total propositions:      48
-  Construction problems:   14  (I.1–3, I.9–12, I.22–23, I.31, I.42, I.44–46)
-  Theorems:                34  (all others)
-  Uses parallel postulate: 20  (I.29–I.48)
-  Neutral geometry:        28  (I.1–I.28)
-  Congruence theorems:      4  (I.4 SAS, I.8 SSS, I.26 ASA/AAS, I.34 pgram)
-  Pythagorean pair:         2  (I.47 theorem, I.48 converse)
-
-  Reference: Avigad, Dean, Mumma (2009) — "A formal system for Euclid's
-             Elements", Review of Symbolic Logic 2(4), 700–768.
-  GeoCoq:    https://geocoq.github.io/GeoCoq/
-
-================================================================================

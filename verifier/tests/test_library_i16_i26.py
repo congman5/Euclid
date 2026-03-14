@@ -1,5 +1,5 @@
 """
-Tests for Props I.16–I.26 in both System E and System H libraries,
+Tests for Props I.16–I.26 in System E library,
 and proof encodings in e_proofs.
 
 Covers Phase 6.2 of the implementation plan.
@@ -11,7 +11,6 @@ from verifier.e_ast import (
     SegmentTerm, AngleTerm, AreaTerm, MagAdd, RightAngle, ZeroMag,
     StepKind,
 )
-from verifier.h_ast import HSort, HLiteral, HSequent
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -159,72 +158,7 @@ class TestELibraryI16I26:
         before = get_theorems_up_to("Prop.I.20")
         assert "Prop.I.19" in before
         assert "Prop.I.20" not in before
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# System H library tests — Props I.16–I.26
-# ═══════════════════════════════════════════════════════════════════════
-
-class TestHLibraryI16I26:
-    """Tests for Props I.16–I.26 in h_library."""
-
-    def test_h_library_has_at_least_26_theorems(self):
-        from verifier.h_library import H_THEOREM_LIBRARY
-        assert len(H_THEOREM_LIBRARY) >= 26
-
-    def test_h_theorem_order_complete(self):
-        from verifier.h_library import H_THEOREM_ORDER
-        assert len(H_THEOREM_ORDER) >= 26
-        assert H_THEOREM_ORDER[0] == "Prop.I.1"
-        assert "Prop.I.26" in H_THEOREM_ORDER
-
-    def test_h_prop_i16_sequent(self):
-        from verifier.h_library import PROP_I_16
-        seq = PROP_I_16.sequent
-        # Non-collinear + betweenness
-        assert len(seq.hypotheses) == 2
-
-    def test_h_prop_i20_sequent(self):
-        from verifier.h_library import PROP_I_20
-        seq = PROP_I_20.sequent
-        # Triangle inequality — non-collinear hypothesis
-        assert len(seq.hypotheses) >= 1
-
-    def test_h_prop_i22_sequent(self):
-        from verifier.h_library import PROP_I_22
-        seq = PROP_I_22.sequent
-        # Constructs 3 points
-        assert len(seq.exists_vars) == 3
-        # Conclusions include CongH and ¬ColH
-        assert len(seq.conclusions) == 4
-
-    def test_h_prop_i23_sequent(self):
-        from verifier.h_library import PROP_I_23
-        seq = PROP_I_23.sequent
-        assert len(seq.exists_vars) == 1
-        assert seq.exists_vars[0] == ("g", HSort.POINT)
-        # CongaH conclusion
-        assert len(seq.conclusions) == 2
-
-    def test_h_prop_i26_sequent(self):
-        from verifier.h_library import PROP_I_26
-        seq = PROP_I_26.sequent
-        # ¬ColH×2, CongaH×2, CongH (bc=ef)
-        assert len(seq.hypotheses) == 5
-        # CongH×2, CongaH
-        assert len(seq.conclusions) == 3
-
-    def test_get_h_theorems_up_to_i26(self):
-        from verifier.h_library import get_h_theorems_up_to
-        before = get_h_theorems_up_to("Prop.I.26")
-        assert "Prop.I.25" in before
-        assert "Prop.I.26" not in before
-        assert len(before) == 25
-
-    def test_get_h_theorems_up_to_i16(self):
-        from verifier.h_library import get_h_theorems_up_to
-        before = get_h_theorems_up_to("Prop.I.16")
-        assert len(before) == 15
+        assert len(before) == 19
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -297,36 +231,3 @@ class TestEProofsI16I26:
         assert goal_types.count("Equals") == 4
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# Cross-library consistency — updated for 26 propositions
-# ═══════════════════════════════════════════════════════════════════════
-
-class TestCrossLibraryI16I26:
-    """Verify E and H libraries agree on proposition names."""
-
-    def test_same_proposition_names(self):
-        from verifier.e_library import E_THEOREM_LIBRARY
-        from verifier.h_library import H_THEOREM_LIBRARY
-        e_names = set(E_THEOREM_LIBRARY.keys())
-        h_names = set(H_THEOREM_LIBRARY.keys())
-        assert e_names == h_names
-
-    def test_all_props_i1_through_i26(self):
-        from verifier.e_library import E_THEOREM_LIBRARY
-        for i in range(1, 27):
-            name = f"Prop.I.{i}"
-            assert name in E_THEOREM_LIBRARY, f"Missing {name} from E library"
-
-    def test_all_h_props_i1_through_i26(self):
-        from verifier.h_library import H_THEOREM_LIBRARY
-        for i in range(1, 27):
-            name = f"Prop.I.{i}"
-            assert name in H_THEOREM_LIBRARY, f"Missing {name} from H library"
-
-    def test_all_theorems_have_statements(self):
-        from verifier.e_library import E_THEOREM_LIBRARY
-        from verifier.h_library import H_THEOREM_LIBRARY
-        for name, thm in E_THEOREM_LIBRARY.items():
-            assert thm.statement, f"{name} E has no statement"
-        for name, thm in H_THEOREM_LIBRARY.items():
-            assert thm.statement, f"{name} H has no statement"

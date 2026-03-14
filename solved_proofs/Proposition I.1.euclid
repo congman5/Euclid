@@ -1,0 +1,225 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 200.0,
+        "y": 300.0
+      },
+      {
+        "label": "B",
+        "x": 450.0,
+        "y": 300.0
+      },
+      {
+        "label": "_p0",
+        "x": 325.0,
+        "y": 83.49364905389035
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "_p0",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "_p0",
+        "to": "B",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [
+      {
+        "center": "A",
+        "radius": 250.0,
+        "radius_point": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "center": "B",
+        "radius": 250.0,
+        "radius_point": "A",
+        "color": "#2d70b3"
+      }
+    ],
+    "angleMarks": [],
+    "equalityGroups": [
+      [
+        1,
+        [
+          [
+            "_p0",
+            "B"
+          ],
+          [
+            "A",
+            "B"
+          ],
+          [
+            "A",
+            "_p0"
+          ]
+        ]
+      ]
+    ]
+  },
+  "exportedAt": "2026-03-11T07:00:05Z",
+  "proof": {
+    "name": "Prop.I.1",
+    "premises": [
+      "¬(a = b)"
+    ],
+    "goal": "ab = ac, ab = bc, ¬(c = a), ¬(c = b)",
+    "declarations": {
+      "points": [
+        "A",
+        "B"
+      ],
+      "lines": []
+    },
+    "steps": [
+      {
+        "lineNumber": 2,
+        "text": "center(a, α), on(b, α)",
+        "justification": "let-circle",
+        "dependencies": [
+          1
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 3,
+        "text": "center(b, β), on(a, β)",
+        "justification": "let-circle",
+        "dependencies": [
+          1
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 4,
+        "text": "inside(a, α)",
+        "justification": "Generality 3",
+        "dependencies": [
+          2
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 5,
+        "text": "inside(b, β)",
+        "justification": "Generality 3",
+        "dependencies": [
+          3
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 6,
+        "text": "intersects(α, β)",
+        "justification": "Intersection 9",
+        "dependencies": [
+          4,
+          5,
+          2,
+          3
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 7,
+        "text": "on(c, α), on(c, β)",
+        "justification": "let-intersection-circle-circle-one",
+        "dependencies": [
+          6
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 8,
+        "text": "ab = ac",
+        "justification": "Segment transfer 4",
+        "dependencies": [
+          7,
+          2
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 9,
+        "text": "bc = ba",
+        "justification": "Segment transfer 4",
+        "dependencies": [
+          3,
+          7
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 10,
+        "text": "ab = ba",
+        "justification": "M3 — Symmetry",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "ab = bc",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          8,
+          10
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "ab = ac",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          8,
+          10
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "¬(c = a)",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "¬(c = b)",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

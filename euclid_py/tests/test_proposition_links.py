@@ -1,15 +1,15 @@
 """
-Tests for Phase 6.5.3: Proposition Data ↔ E/H Library linkage.
+Tests for Phase 6.5.3: Proposition Data ↔ E Library linkage.
 
 Validates that every Euclid Book I proposition in proposition_data.py
-has a valid link to both the System E and System H theorem libraries,
+has a valid link to the System E theorem library,
 and that all helper functions work correctly.
 """
 import pytest
 
 from euclid_py.engine.proposition_data import (
     PROPOSITIONS, ALL_PROPOSITIONS, Proposition,
-    get_proposition, get_e_sequent, get_h_sequent, get_all_formal_links,
+    get_proposition, get_e_sequent, get_all_formal_links,
 )
 
 
@@ -41,7 +41,7 @@ class TestELibraryName:
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# get_e_theorem / get_h_theorem
+# get_e_theorem
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestGetETheorem:
@@ -63,27 +63,6 @@ class TestGetETheorem:
     def test_textbook_returns_none(self):
         p = get_proposition("tb-thm-2.1")
         assert p.get_e_theorem() is None
-
-
-class TestGetHTheorem:
-    """Every Euclid proposition has a linked H theorem."""
-
-    def test_all_48_have_h_theorem(self):
-        for p in PROPOSITIONS:
-            thm = p.get_h_theorem()
-            assert thm is not None, f"{p.id} has no H theorem"
-            assert thm.name == p.e_library_name, (
-                f"{p.id}: H theorem name {thm.name} != {p.e_library_name}"
-            )
-
-    def test_h_theorem_has_sequent(self):
-        for p in PROPOSITIONS:
-            thm = p.get_h_theorem()
-            assert thm.sequent is not None, f"{p.id} H theorem has no sequent"
-
-    def test_textbook_returns_none(self):
-        p = get_proposition("tb-thm-4.1")
-        assert p.get_h_theorem() is None
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -115,7 +94,7 @@ class TestFormalSequent:
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestModuleHelpers:
-    """Test get_e_sequent, get_h_sequent, get_all_formal_links."""
+    """Test get_e_sequent and get_all_formal_links."""
 
     def test_get_e_sequent(self):
         seq = get_e_sequent("euclid-I.1")
@@ -124,14 +103,6 @@ class TestModuleHelpers:
 
     def test_get_e_sequent_missing(self):
         assert get_e_sequent("nonexistent") is None
-
-    def test_get_h_sequent(self):
-        seq = get_h_sequent("euclid-I.1")
-        assert seq is not None
-        assert "⇒" in seq
-
-    def test_get_h_sequent_missing(self):
-        assert get_h_sequent("nonexistent") is None
 
     def test_get_all_formal_links_count(self):
         links = get_all_formal_links()
@@ -142,11 +113,6 @@ class TestModuleHelpers:
         for prop_id, data in links.items():
             assert data["e_name"] is not None, f"{prop_id} missing e_name"
             assert data["e_sequent"] is not None, f"{prop_id} missing e_sequent"
-
-    def test_get_all_formal_links_all_have_h(self):
-        links = get_all_formal_links()
-        for prop_id, data in links.items():
-            assert data["h_sequent"] is not None, f"{prop_id} missing h_sequent"
 
 
 # ═══════════════════════════════════════════════════════════════════════
