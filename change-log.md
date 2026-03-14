@@ -4,6 +4,35 @@ All notable changes to the Euclid project.
 
 ## [8.0.0] - 2025-XX-XX
 
+### Added — Proposition Construction tool on canvas (euclid_py/ui/canvas_widget.py, euclid_py/ui/main_window.py)
+
+- **Select-then-construct workflow**: The construction tool (🔨) now uses a click-to-select paradigm. Click points, segments, and circles on the canvas to select them (click again to deselect). The panel dynamically shows only the constructions that match the current selection.
+- **Draggable construction panel**: A floating panel overlays the canvas when the construct tool is active. It shows the current selection summary, matching construction buttons, a Clear Selection button, and an ✕ close button. The entire panel is draggable by its title bar.
+- **Available constructions** (based on selection):
+  - **2 points**: Segment, Circle (1st→2nd), Midpoint (Prop I.10), Equilateral △ (Prop I.1), ⊥ Bisector (Prop I.10), Reflect (1st across 2nd).
+  - **3 points**: Triangle, Angle Bisector (Prop I.9), Circumcircle, Centroid, Incircle.
+  - **1 point + 1 segment**: Parallel (Prop I.31), ⊥ to Segment (Prop I.12), Transfer Length (Prop I.2), Circle (radius = segment).
+  - **1 point + 1 circle**: Tangent (Prop III.17).
+  - **2 segments**: Intersect —— (segment–segment intersection).
+  - **1 segment**: Extend, Isosceles △, Square (Prop I.46).
+  - **1 circle**: Point on ○ (place a point on boundary).
+  - **2 circles**: Intersect ○○ — find intersection point(s) of two circles.
+  - **1 segment + 1 circle**: Intersect —○ — find intersection point(s) of a segment and a circle.
+- **Single-click cancel**: The close button (✕) switches back to the select tool with a single click.
+- **Escape handling**: Press Escape while in construct mode to clear the current selection.
+
+### Fixed — Zoom clamped to 0–500% (euclid_py/ui/canvas_widget.py)
+
+- **Zoom limits**: Scroll-wheel zoom and toolbar zoom-in/zoom-out buttons are now clamped to the 0–500% range. Previously the zoom had no upper or lower bound.
+
+### Fixed — Equality assertion tolerance tightened (euclid_py/ui/canvas_widget.py)
+
+- **Stricter segment equality**: The assert-segments-equal tool now requires segments to match within 0.5% of their average length (min 1 px), down from the previous 2% of the longer segment (min 3 px). This prevents marking clearly unequal sides as equal.
+
+### Changed — Angle display shows one decimal place (euclid_py/ui/canvas_widget.py)
+
+- **Angle precision**: Angle marks now display one decimal place (e.g. `55.3°` instead of `55°`). This makes it immediately visible when triangle angles do not sum to 180°.
+
 ### Added — Standalone .exe build and improved installation (build_exe.py, euclid.spec, pyproject.toml)
 
 - **Automated release workflow** (`.github/workflows/release.yml`): Push a `v*` tag and GitHub Actions automatically builds `Euclid.exe` (via PyInstaller `--onefile`), runs the full test suite, and publishes the `.exe` as a GitHub Release — no manual upload needed.

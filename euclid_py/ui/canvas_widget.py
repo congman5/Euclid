@@ -32,14 +32,553 @@ from PyQt6.QtWidgets import (
     QGraphicsLineItem, QGraphicsTextItem, QGraphicsItem,
     QGraphicsPathItem, QGraphicsProxyWidget,
     QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel,
+    QFrame, QSizePolicy, QScrollArea,
 )
 
 from ..engine.constraints import (
     circle_intersections as _circle_ix,
     line_circle_intersections as _line_circle_ix,
+    segment_intersection as _seg_ix,
     distance as _dist,
     angle_at_vertex as _angle_at_vertex,
 )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CONSTRUCTION RULES — select objects, then pick a matching proposition
+# ═══════════════════════════════════════════════════════════════════════════
+
+class ConstructionDef:
+    """A canvas construction matched against the current selection.
+
+    *requires* maps object types to counts:
+        ``{"points": 2}`` — needs exactly 2 selected points
+        ``{"circles": 2}`` — needs exactly 2 selected circles
+        ``{"segments": 1, "circles": 1}`` — 1 segment + 1 circle
+
+    *build(scene, points, segments, circles)* executes the construction.
+    """
+    __slots__ = ("name", "label", "description", "requires", "build")
+
+    def __init__(self, name: str, label: str, description: str,
+                 requires: Dict[str, int],
+                 build):
+        self.name = name
+        self.label = label
+        self.description = description
+        self.requires = requires
+        self.build = build
+
+    def matches(self, n_points: int, n_segments: int, n_circles: int) -> bool:
+        return (n_points == self.requires.get("points", 0)
+                and n_segments == self.requires.get("segments", 0)
+                and n_circles == self.requires.get("circles", 0))
+
+
+# ── Build helpers ─────────────────────────────────────────────────────
+
+def _build_let_line(scene, points, segments, circles):
+    """Segment through two selected points."""
+    scene.push_undo()
+    scene.add_segment(points[0].label, points[1].label)
+
+
+def _build_let_circle(scene, points, segments, circles):
+    """Circle: first selected point = center, second = edge."""
+    scene.push_undo()
+    scene.add_circle_by_radius_pt(points[0].label, points[1].label)
+
+
+def _build_midpoint(scene, points, segments, circles):
+    """Place a midpoint between two selected points."""
+    p1, p2 = points
+    mx = (p1.pos().x() + p2.pos().x()) / 2
+    my = (p1.pos().y() + p2.pos().y()) / 2
+    scene.push_undo()
+    label = scene._next_point_label()
+    pt = scene.add_point(label, mx, my)
+    for seg in scene._segments:
+        if (seg.p1 is p1 and seg.p2 is p2) or (seg.p1 is p2 and seg.p2 is p1):
+            pt.segment_constraint = seg
+            pt.segment_t = 0.5
+            break
+
+
+def _build_extend(scene, points, segments, circles):
+    """Extend a segment beyond one of its endpoints.
+    Select: 1 segment.  Places a new point extending the segment
+    beyond p2 by half the segment's length."""
+    seg = segments[0]
+    ax, ay = seg.p1.pos().x(), seg.p1.pos().y()
+    bx, by = seg.p2.pos().x(), seg.p2.pos().y()
+    dx, dy = bx - ax, by - ay
+    length = math.hypot(dx, dy) or 1
+    ext = length * 0.5
+    scene.push_undo()
+    label = scene._next_point_label()
+    scene.add_point(label, bx + dx / length * ext,
+                    by + dy / length * ext)
+
+
+def _build_equilateral(scene, points, segments, circles):
+    """Prop I.1 — equilateral triangle on two selected points."""
+    A, B = points
+    ax, ay = A.pos().x(), A.pos().y()
+    bx, by = B.pos().x(), B.pos().y()
+    # Apex of equilateral triangle (above the segment)
+    mx, my = (ax + bx) / 2, (ay + by) / 2
+    dx, dy = bx - ax, by - ay
+    h = math.hypot(dx, dy) * math.sqrt(3) / 2
+    length = math.hypot(dx, dy) or 1
+    nx, ny = -dy / length, dx / length
+    cx, cy = mx + nx * h, my + ny * h
+    scene.push_undo()
+    label = scene._next_point_label()
+    scene.add_point(label, cx, cy)
+    scene.add_segment(A.label, label)
+    scene.add_segment(B.label, label)
+    scene.add_segment(A.label, B.label)
+
+
+def _build_perpendicular_bisector(scene, points, segments, circles):
+    """Prop I.10/11 — perpendicular bisector segment through midpoint."""
+    A, B = points
+    mx = (A.pos().x() + B.pos().x()) / 2
+    my = (A.pos().y() + B.pos().y()) / 2
+    dx = B.pos().x() - A.pos().x()
+    dy = B.pos().y() - A.pos().y()
+    length = math.hypot(dx, dy) or 1
+    nx, ny = -dy / length, dx / length
+    ext = length * 0.4
+    scene.push_undo()
+    lbl_m = scene._next_point_label()
+    scene.add_point(lbl_m, mx, my)
+    lbl_top = scene._next_point_label()
+    scene.add_point(lbl_top, mx + nx * ext, my + ny * ext)
+    lbl_bot = scene._next_point_label()
+    scene.add_point(lbl_bot, mx - nx * ext, my - ny * ext)
+    scene.add_segment(lbl_top, lbl_bot)
+
+
+def _build_intersect_circles(scene, points, segments, circles):
+    """Intersection point(s) of two selected circles."""
+    c1, c2 = circles
+    c1d = {"x": c1.center_pt.pos().x(), "y": c1.center_pt.pos().y()}
+    c2d = {"x": c2.center_pt.pos().x(), "y": c2.center_pt.pos().y()}
+    pts = _circle_ix(c1d, c1.radius, c2d, c2.radius)
+    if not pts:
+        return
+    scene.push_undo()
+    for ip in pts:
+        label = scene._next_point_label()
+        pt = scene.add_point(label, ip["x"], ip["y"])
+        pt.intersection_circles = [c1, c2]
+
+
+def _build_intersect_seg_circle(scene, points, segments, circles):
+    """Intersection point(s) of a selected segment and circle."""
+    seg = segments[0]
+    circ = circles[0]
+    p1 = {"x": seg.p1.pos().x(), "y": seg.p1.pos().y()}
+    p2 = {"x": seg.p2.pos().x(), "y": seg.p2.pos().y()}
+    center = {"x": circ.center_pt.pos().x(), "y": circ.center_pt.pos().y()}
+    pts = _line_circle_ix(p1, p2, center, circ.radius)
+    if not pts:
+        return
+    scene.push_undo()
+    for ip in pts:
+        label = scene._next_point_label()
+        pt = scene.add_point(label, ip["x"], ip["y"])
+        pt.intersection_circles = [circ]
+
+
+def _build_angle_bisector(scene, points, segments, circles):
+    """Prop I.9 — bisect angle formed by three selected points (vertex = 2nd)."""
+    A, V, B = points
+    ax, ay = A.pos().x(), A.pos().y()
+    vx, vy = V.pos().x(), V.pos().y()
+    bx, by = B.pos().x(), B.pos().y()
+    da = math.hypot(ax - vx, ay - vy) or 1
+    db = math.hypot(bx - vx, by - vy) or 1
+    # Unit vectors from vertex
+    uax, uay = (ax - vx) / da, (ay - vy) / da
+    ubx, uby = (bx - vx) / db, (by - vy) / db
+    # Bisector direction
+    bsx, bsy = uax + ubx, uay + uby
+    bl = math.hypot(bsx, bsy) or 1
+    bsx, bsy = bsx / bl, bsy / bl
+    ext = min(da, db) * 0.6
+    scene.push_undo()
+    label = scene._next_point_label()
+    scene.add_point(label, vx + bsx * ext, vy + bsy * ext)
+    scene.add_segment(V.label, label)
+
+
+def _build_triangle(scene, points, segments, circles):
+    """Connect three selected points into a triangle (3 segments)."""
+    A, B, C = points
+    scene.push_undo()
+    scene.add_segment(A.label, B.label)
+    scene.add_segment(B.label, C.label)
+    scene.add_segment(C.label, A.label)
+
+
+# ── Additional proposition build helpers ─────────────────────────────
+
+def _build_parallel_line(scene, points, segments, circles):
+    """Prop I.31 — draw a line through a point parallel to a segment.
+    Select: 1 point + 1 segment."""
+    pt = points[0]
+    seg = segments[0]
+    dx = seg.p2.pos().x() - seg.p1.pos().x()
+    dy = seg.p2.pos().y() - seg.p1.pos().y()
+    px, py = pt.pos().x(), pt.pos().y()
+    scene.push_undo()
+    lbl = scene._next_point_label()
+    scene.add_point(lbl, px + dx, py + dy)
+    scene.add_segment(pt.label, lbl)
+
+
+def _build_perpendicular_to_segment(scene, points, segments, circles):
+    """Prop I.12 — drop a perpendicular from a point to a segment.
+    Select: 1 point + 1 segment."""
+    pt = points[0]
+    seg = segments[0]
+    px, py = pt.pos().x(), pt.pos().y()
+    ax, ay = seg.p1.pos().x(), seg.p1.pos().y()
+    bx, by = seg.p2.pos().x(), seg.p2.pos().y()
+    dx, dy = bx - ax, by - ay
+    length_sq = dx * dx + dy * dy
+    if length_sq < 1e-12:
+        return
+    t = ((px - ax) * dx + (py - ay) * dy) / length_sq
+    t = max(0.0, min(1.0, t))
+    fx, fy = ax + t * dx, ay + t * dy
+    scene.push_undo()
+    lbl = scene._next_point_label()
+    foot = scene.add_point(lbl, fx, fy)
+    foot.segment_constraint = seg
+    foot.segment_t = t
+    scene.add_segment(pt.label, lbl)
+
+
+def _build_copy_segment(scene, points, segments, circles):
+    """Prop I.2 — place at a given point a segment equal to a given segment.
+    Select: 1 point + 1 segment.
+    Constructs a circle centred at the point with radius equal to the
+    segment's length, places a new point on that circle (in the direction
+    from the segment's midpoint toward the selected point, or rightward
+    if the point coincides with the midpoint), and draws the new segment."""
+    pt = points[0]
+    seg = segments[0]
+    length = math.hypot(
+        seg.p2.pos().x() - seg.p1.pos().x(),
+        seg.p2.pos().y() - seg.p1.pos().y())
+    if length < 1e-6:
+        return
+    px, py = pt.pos().x(), pt.pos().y()
+    # Direction: from segment midpoint toward the selected point
+    smx = (seg.p1.pos().x() + seg.p2.pos().x()) / 2
+    smy = (seg.p1.pos().y() + seg.p2.pos().y()) / 2
+    dirx, diry = px - smx, py - smy
+    dlen = math.hypot(dirx, diry)
+    if dlen < 1e-6:
+        dirx, diry = 1.0, 0.0  # default rightward
+    else:
+        dirx, diry = dirx / dlen, diry / dlen
+    scene.push_undo()
+    # Construction circle (visible, as in Euclid's proof)
+    scene.add_circle(pt.label, length)
+    # New endpoint
+    lbl = scene._next_point_label()
+    new_pt = scene.add_point(lbl, px + dirx * length, py + diry * length)
+    scene.add_segment(pt.label, lbl)
+
+
+def _build_intersect_segments(scene, points, segments, circles):
+    """Intersection point of two selected segments."""
+    s1, s2 = segments
+    p1 = {"x": s1.p1.pos().x(), "y": s1.p1.pos().y()}
+    p2 = {"x": s1.p2.pos().x(), "y": s1.p2.pos().y()}
+    p3 = {"x": s2.p1.pos().x(), "y": s2.p1.pos().y()}
+    p4 = {"x": s2.p2.pos().x(), "y": s2.p2.pos().y()}
+    ix = _seg_ix(p1, p2, p3, p4)
+    if ix is None:
+        return
+    scene.push_undo()
+    lbl = scene._next_point_label()
+    scene.add_point(lbl, ix["x"], ix["y"])
+
+
+def _build_circle_from_segment(scene, points, segments, circles):
+    """Circle centred at a point with radius equal to a segment's length.
+    Select: 1 point + 1 segment."""
+    pt = points[0]
+    seg = segments[0]
+    r = math.hypot(
+        seg.p2.pos().x() - seg.p1.pos().x(),
+        seg.p2.pos().y() - seg.p1.pos().y())
+    if r < 1e-6:
+        return
+    scene.push_undo()
+    scene.add_circle(pt.label, r)
+
+
+def _build_point_on_circle(scene, points, segments, circles):
+    """Place a new point on the top of a selected circle's boundary.
+    Select: 1 circle."""
+    circ = circles[0]
+    cx, cy = circ.center_pt.pos().x(), circ.center_pt.pos().y()
+    scene.push_undo()
+    lbl = scene._next_point_label()
+    pt = scene.add_point(lbl, cx, cy - circ.radius)
+    pt.intersection_circles = [circ]
+
+
+def _build_tangent_point(scene, points, segments, circles):
+    """Prop III.17 — construct a tangent from an external point to a circle.
+    Select: 1 point + 1 circle.  Draws the segment from the point to
+    the nearest tangent point on the circle."""
+    pt = points[0]
+    circ = circles[0]
+    px, py = pt.pos().x(), pt.pos().y()
+    cx, cy = circ.center_pt.pos().x(), circ.center_pt.pos().y()
+    d = math.hypot(px - cx, py - cy)
+    r = circ.radius
+    if d <= r + 1e-6:
+        return  # point is inside or on the circle
+    # Tangent length
+    tlen = math.sqrt(d * d - r * r)
+    # Angle from center to point, then offset by acos(tlen/d)
+    base_angle = math.atan2(py - cy, px - cx)
+    offset = math.acos(r / d)
+    # Two tangent points
+    scene.push_undo()
+    for sign in (1, -1):
+        a = base_angle + sign * (math.pi - offset)
+        tx = cx + r * math.cos(a)
+        ty = cy + r * math.sin(a)
+        lbl = scene._next_point_label()
+        tp = scene.add_point(lbl, tx, ty)
+        tp.intersection_circles = [circ]
+        scene.add_segment(pt.label, lbl)
+
+
+def _build_isosceles(scene, points, segments, circles):
+    """Isosceles triangle — erect an isosceles triangle on a segment with
+    apex at equal distance from both endpoints.
+    Select: 1 segment.  Apex is placed on the perpendicular bisector."""
+    seg = segments[0]
+    ax, ay = seg.p1.pos().x(), seg.p1.pos().y()
+    bx, by = seg.p2.pos().x(), seg.p2.pos().y()
+    mx, my = (ax + bx) / 2, (ay + by) / 2
+    dx, dy = bx - ax, by - ay
+    length = math.hypot(dx, dy)
+    if length < 1e-6:
+        return
+    nx, ny = -dy / length, dx / length
+    scene.push_undo()
+    lbl = scene._next_point_label()
+    scene.add_point(lbl, mx + nx * length, my + ny * length)
+    scene.add_segment(seg.p1.label, lbl)
+    scene.add_segment(seg.p2.label, lbl)
+
+
+def _build_square(scene, points, segments, circles):
+    """Prop I.46 — construct a square on a segment.
+    Select: 1 segment.  Erects a square above the segment."""
+    seg = segments[0]
+    ax, ay = seg.p1.pos().x(), seg.p1.pos().y()
+    bx, by = seg.p2.pos().x(), seg.p2.pos().y()
+    dx, dy = bx - ax, by - ay
+    length = math.hypot(dx, dy)
+    if length < 1e-6:
+        return
+    nx, ny = -dy / length, dx / length
+    scene.push_undo()
+    lbl_c = scene._next_point_label()
+    scene.add_point(lbl_c, bx + nx * length, by + ny * length)
+    lbl_d = scene._next_point_label()
+    scene.add_point(lbl_d, ax + nx * length, ay + ny * length)
+    scene.add_segment(seg.p2.label, lbl_c)
+    scene.add_segment(lbl_c, lbl_d)
+    scene.add_segment(lbl_d, seg.p1.label)
+
+
+def _build_circle_through_3(scene, points, segments, circles):
+    """Circumscribed circle (circumcircle) through three selected points.
+    Finds the circumcenter and draws the circle through all three points."""
+    A, B, C = points
+    ax, ay = A.pos().x(), A.pos().y()
+    bx, by = B.pos().x(), B.pos().y()
+    cx, cy = C.pos().x(), C.pos().y()
+    D = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
+    if abs(D) < 1e-10:
+        return  # collinear
+    ux = ((ax * ax + ay * ay) * (by - cy) +
+          (bx * bx + by * by) * (cy - ay) +
+          (cx * cx + cy * cy) * (ay - by)) / D
+    uy = ((ax * ax + ay * ay) * (cx - bx) +
+          (bx * bx + by * by) * (ax - cx) +
+          (cx * cx + cy * cy) * (bx - ax)) / D
+    r = math.hypot(ax - ux, ay - uy)
+    scene.push_undo()
+    lbl = scene._next_point_label()
+    scene.add_point(lbl, ux, uy)
+    scene.add_circle(lbl, r)
+
+
+def _build_centroid(scene, points, segments, circles):
+    """Centroid of a triangle — intersection of the medians.
+    Select: 3 points."""
+    A, B, C = points
+    gx = (A.pos().x() + B.pos().x() + C.pos().x()) / 3
+    gy = (A.pos().y() + B.pos().y() + C.pos().y()) / 3
+    scene.push_undo()
+    lbl = scene._next_point_label()
+    scene.add_point(lbl, gx, gy)
+
+
+def _build_incircle(scene, points, segments, circles):
+    """Inscribed circle (incircle) of a triangle.
+    Select: 3 points.  Places the incenter and draws the incircle."""
+    A, B, C = points
+    ax, ay = A.pos().x(), A.pos().y()
+    bx, by = B.pos().x(), B.pos().y()
+    cx, cy = C.pos().x(), C.pos().y()
+    a = math.hypot(bx - cx, by - cy)
+    b = math.hypot(ax - cx, ay - cy)
+    c = math.hypot(ax - bx, ay - by)
+    perimeter = a + b + c
+    if perimeter < 1e-10:
+        return
+    ix = (a * ax + b * bx + c * cx) / perimeter
+    iy = (a * ay + b * by + c * cy) / perimeter
+    # Inradius = area / semi-perimeter
+    area = abs((bx - ax) * (cy - ay) - (cx - ax) * (by - ay)) / 2
+    r = area / (perimeter / 2)
+    if r < 1e-6:
+        return
+    scene.push_undo()
+    lbl = scene._next_point_label()
+    scene.add_point(lbl, ix, iy)
+    scene.add_circle(lbl, r)
+
+
+def _build_reflect_point(scene, points, segments, circles):
+    """Reflect the first point across the second.
+    Select: 2 points.  Places the mirror image of A through B."""
+    A, B = points
+    rx = 2 * B.pos().x() - A.pos().x()
+    ry = 2 * B.pos().y() - A.pos().y()
+    scene.push_undo()
+    lbl = scene._next_point_label()
+    scene.add_point(lbl, rx, ry)
+
+
+CONSTRUCTION_RULES: List[ConstructionDef] = [
+    # ── Two points selected ───────────────────────────────────────
+    ConstructionDef(
+        "let-line", "Segment",
+        "Draw a segment between the two points",
+        {"points": 2}, _build_let_line),
+    ConstructionDef(
+        "let-circle", "Circle (1st\u21922nd)",
+        "Circle centred at first point through second",
+        {"points": 2}, _build_let_circle),
+    ConstructionDef(
+        "midpoint", "Midpoint",
+        "Place the midpoint between the two points (Prop I.10)",
+        {"points": 2}, _build_midpoint),
+    ConstructionDef(
+        "equilateral", "Equilateral \u25b3  (Prop I.1)",
+        "Construct an equilateral triangle on the two points",
+        {"points": 2}, _build_equilateral),
+    ConstructionDef(
+        "perp-bisector", "\u22a5 Bisector (Prop I.10)",
+        "Perpendicular bisector through the midpoint",
+        {"points": 2}, _build_perpendicular_bisector),
+    ConstructionDef(
+        "reflect", "Reflect (1st across 2nd)",
+        "Place the mirror image of the first point reflected through the second",
+        {"points": 2}, _build_reflect_point),
+    # ── Three points selected ─────────────────────────────────────
+    ConstructionDef(
+        "triangle", "\u25b3 Triangle",
+        "Connect three points into a triangle",
+        {"points": 3}, _build_triangle),
+    ConstructionDef(
+        "angle-bisector", "Angle Bisector (Prop I.9)",
+        "Bisect the angle at the second (vertex) point",
+        {"points": 3}, _build_angle_bisector),
+    ConstructionDef(
+        "circumcircle", "Circumcircle",
+        "Circle passing through all three points (circumscribed circle)",
+        {"points": 3}, _build_circle_through_3),
+    ConstructionDef(
+        "centroid", "Centroid",
+        "Centroid (intersection of medians) of the three points",
+        {"points": 3}, _build_centroid),
+    ConstructionDef(
+        "incircle", "Incircle",
+        "Inscribed circle tangent to the three sides of the triangle",
+        {"points": 3}, _build_incircle),
+    # ── One point + one segment ───────────────────────────────────
+    ConstructionDef(
+        "parallel", "Parallel (Prop I.31)",
+        "Line through the point parallel to the segment",
+        {"points": 1, "segments": 1}, _build_parallel_line),
+    ConstructionDef(
+        "perpendicular", "\u22a5 to Segment (Prop I.12)",
+        "Drop a perpendicular from the point to the segment",
+        {"points": 1, "segments": 1}, _build_perpendicular_to_segment),
+    ConstructionDef(
+        "copy-segment", "Transfer Length (Prop I.2)",
+        "Construct a segment at the point equal in length to the given segment",
+        {"points": 1, "segments": 1}, _build_copy_segment),
+    ConstructionDef(
+        "circle-from-seg", "Circle (radius = segment)",
+        "Circle at the point with radius equal to the segment\u2019s length",
+        {"points": 1, "segments": 1}, _build_circle_from_segment),
+    # ── One point + one circle ────────────────────────────────────
+    ConstructionDef(
+        "tangent", "Tangent (Prop III.17)",
+        "Tangent line(s) from an external point to the circle",
+        {"points": 1, "circles": 1}, _build_tangent_point),
+    # ── Two segments selected ─────────────────────────────────────
+    ConstructionDef(
+        "intersect-segs", "Intersect \u2014\u2014",
+        "Intersection point of two segments",
+        {"segments": 2}, _build_intersect_segments),
+    # ── One segment (no other objects) ────────────────────────────
+    ConstructionDef(
+        "extend", "Extend",
+        "Extend the segment beyond its second endpoint",
+        {"segments": 1}, _build_extend),
+    ConstructionDef(
+        "isosceles", "Isosceles \u25b3",
+        "Erect an isosceles triangle on the segment",
+        {"segments": 1}, _build_isosceles),
+    ConstructionDef(
+        "square", "Square (Prop I.46)",
+        "Construct a square on the segment",
+        {"segments": 1}, _build_square),
+    # ── One circle (no other objects) ─────────────────────────────
+    ConstructionDef(
+        "point-on-circle", "Point on \u25cb",
+        "Place a new point on the circle\u2019s boundary",
+        {"circles": 1}, _build_point_on_circle),
+    # ── Two circles selected ──────────────────────────────────────
+    ConstructionDef(
+        "intersect-circles", "Intersect \u25cb\u25cb",
+        "Find intersection point(s) of two circles",
+        {"circles": 2}, _build_intersect_circles),
+    # ── One segment + one circle ──────────────────────────────────
+    ConstructionDef(
+        "intersect-seg-circle", "Intersect \u2014\u25cb",
+        "Find intersection point(s) of segment and circle",
+        {"segments": 1, "circles": 1}, _build_intersect_seg_circle),
+]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -359,7 +898,7 @@ class AngleMarkItem(QGraphicsPathItem):
             self._deg_text.setDefaultTextColor(COLORS["angle"])
             self._deg_text.setFont(QFont("Segoe UI", 8))
             self._deg_text.setZValue(3)
-        self._deg_text.setPlainText(f"{deg:.0f}°")
+        self._deg_text.setPlainText(f"{deg:.1f}°")
         self._deg_text.setPos(tx - 10, ty - 8)
 
 
@@ -423,6 +962,10 @@ class GeometryScene(QGraphicsScene):
         self._tool_preview_line: Optional[QGraphicsLineItem] = None
         # Snap toggle (snaps to circle/line/intersection when True)
         self._snap_enabled: bool = True
+        # ── Construction mode state ───────────────────────────────────
+        self._construct_selected: List = []  # PointItem | SegmentItem | CircleItem
+        self.construct_selection_changed = pyqtSignal  # overwritten below
+        self._construct_selection_callbacks: List = []
 
     def _draw_grid(self):
         grid_color = QColor("#e8eaed")
@@ -620,7 +1163,8 @@ class GeometryScene(QGraphicsScene):
         Only succeeds if the segments are approximately the same length."""
         len_a = self._segment_length(seg_a)
         len_b = self._segment_length(seg_b)
-        tol = max(3.0, 0.02 * max(len_a, len_b))
+        avg = (len_a + len_b) / 2 if (len_a + len_b) > 0 else 1
+        tol = max(1.0, 0.005 * avg)
         if abs(len_a - len_b) > tol:
             return  # segments are not equal — reject silently
         self.push_undo()
@@ -679,6 +1223,7 @@ class GeometryScene(QGraphicsScene):
         self._clear_snap_indicator()
         self._clear_circle_preview()
         self._clear_tool_preview()
+        self._clear_construct_selection()
         for s in self._eq_selection:
             s.setPen(QPen(s.draw_color, 2))
         self._eq_selection.clear()
@@ -713,6 +1258,106 @@ class GeometryScene(QGraphicsScene):
         self._clear_snap_indicator()
         self._snap_indicator = SnapIndicator(text, pos)
         self.addItem(self._snap_indicator)
+
+    # ── Construction tool — selection-based ─────────────────────────
+
+    def on_construct_selection_changed(self, cb):
+        """Register a callback for selection changes (called with self)."""
+        self._construct_selection_callbacks.append(cb)
+
+    def _notify_construct_selection(self):
+        for cb in self._construct_selection_callbacks:
+            try:
+                cb(self)
+            except Exception:
+                pass
+
+    def _clear_construct_selection(self):
+        """Unhighlight and clear all construction-selected objects."""
+        for item in self._construct_selected:
+            if isinstance(item, PointItem):
+                item.set_highlight(False)
+            elif isinstance(item, SegmentItem):
+                item.setPen(QPen(item.draw_color, 2))
+            elif isinstance(item, CircleItem):
+                item.setPen(QPen(item.draw_color, 2))
+        self._construct_selected.clear()
+        self._notify_construct_selection()
+
+    def _toggle_construct_item(self, item):
+        """Toggle an item in/out of the construction selection."""
+        if item in self._construct_selected:
+            self._construct_selected.remove(item)
+            if isinstance(item, PointItem):
+                item.set_highlight(False)
+            elif isinstance(item, SegmentItem):
+                item.setPen(QPen(item.draw_color, 2))
+            elif isinstance(item, CircleItem):
+                item.setPen(QPen(item.draw_color, 2))
+        else:
+            self._construct_selected.append(item)
+            if isinstance(item, PointItem):
+                item.set_highlight(True)
+            elif isinstance(item, SegmentItem):
+                item.setPen(QPen(COLORS["pending"], 3))
+            elif isinstance(item, CircleItem):
+                item.setPen(QPen(COLORS["pending"], 3))
+        self._notify_construct_selection()
+
+    def construct_counts(self) -> Tuple[int, int, int]:
+        """Return (n_points, n_segments, n_circles) from current selection."""
+        pts = [i for i in self._construct_selected if isinstance(i, PointItem)]
+        segs = [i for i in self._construct_selected if isinstance(i, SegmentItem)]
+        circs = [i for i in self._construct_selected if isinstance(i, CircleItem)]
+        return len(pts), len(segs), len(circs)
+
+    def construct_selected_items(self):
+        """Return (points, segments, circles) lists."""
+        pts = [i for i in self._construct_selected if isinstance(i, PointItem)]
+        segs = [i for i in self._construct_selected if isinstance(i, SegmentItem)]
+        circs = [i for i in self._construct_selected if isinstance(i, CircleItem)]
+        return pts, segs, circs
+
+    def construct_matching_rules(self) -> List[ConstructionDef]:
+        np, ns, nc = self.construct_counts()
+        return [r for r in CONSTRUCTION_RULES if r.matches(np, ns, nc)]
+
+    def execute_construction(self, cdef: ConstructionDef):
+        pts, segs, circs = self.construct_selected_items()
+        self._clear_construct_selection()
+        cdef.build(self, pts, segs, circs)
+
+    def _handle_construct_click(self, pos: QPointF):
+        """Toggle-select the clicked object for construction."""
+        xf = self.views()[0].transform() if self.views() else QTransform()
+
+        # Priority 1: existing point
+        pt = self._snap_to_point(pos)
+        if pt:
+            self._toggle_construct_item(pt)
+            return
+
+        # Priority 2: segment
+        for candidate in self.items(pos, Qt.ItemSelectionMode.IntersectsItemShape,
+                                    Qt.SortOrder.DescendingOrder, xf):
+            if isinstance(candidate, SegmentItem):
+                self._toggle_construct_item(candidate)
+                return
+
+        # Priority 3: circle (near boundary)
+        snap = self._effective_snap()
+        best_circ, best_d = None, snap * 3
+        for circ in self._circles:
+            cx, cy = circ.center_pt.pos().x(), circ.center_pt.pos().y()
+            dist = abs(math.hypot(pos.x() - cx, pos.y() - cy) - circ.radius)
+            if dist < best_d:
+                best_circ, best_d = circ, dist
+        if best_circ:
+            self._toggle_construct_item(best_circ)
+            return
+
+        # Click on empty space — deselect all
+        self._clear_construct_selection()
 
     # ── Label tool popover ────────────────────────────────────────────
 
@@ -1223,6 +1868,10 @@ class GeometryScene(QGraphicsScene):
         if self._tool == "pan":
             return
 
+        if self._tool == "construct":
+            self._handle_construct_click(pos)
+            return
+
         if self._tool == "label":
             xf = self.views()[0].transform() if self.views() else QTransform()
             item = self.itemAt(pos, xf)
@@ -1356,7 +2005,7 @@ class GeometryScene(QGraphicsScene):
                         cy + dy / dist * new_radius,
                     )
             return
-        if self._tool in ("point", "segment", "ray", "circle", "angle", "perpendicular"):
+        if self._tool in ("point", "segment", "ray", "circle", "angle", "perpendicular", "construct"):
             # For angle/perpendicular: highlight nearest existing point
             if self._tool in ("angle", "perpendicular"):
                 nearest = self._snap_to_point(pos)
@@ -1364,6 +2013,27 @@ class GeometryScene(QGraphicsScene):
                     self._show_snap_indicator("●", nearest.pos())
                 else:
                     self._clear_snap_indicator()
+            elif self._tool == "construct":
+                # Highlight nearest selectable object under cursor
+                nearest = self._snap_to_point(pos)
+                if nearest:
+                    self._show_snap_indicator("●", nearest.pos())
+                else:
+                    snap = self._effective_snap()
+                    found = False
+                    for circ in self._circles:
+                        cx, cy = circ.center_pt.pos().x(), circ.center_pt.pos().y()
+                        dist = abs(math.hypot(pos.x() - cx, pos.y() - cy) - circ.radius)
+                        if dist < snap * 3:
+                            self._show_snap_indicator("○", pos)
+                            found = True
+                            break
+                    if not found:
+                        sp = self._snap_to_segment(pos)
+                        if sp:
+                            self._show_snap_indicator("—", pos)
+                        else:
+                            self._clear_snap_indicator()
             else:
                 _, snap_type, _ = self._find_snap(pos)
                 if snap_type == "on-circle":
@@ -1434,6 +2104,8 @@ class GeometryScene(QGraphicsScene):
             self._dismiss_label_popover()
             self._clear_circle_preview()
             self._clear_tool_preview()
+            if self._tool == "construct":
+                self._clear_construct_selection()
         super().keyPressEvent(event)
 
     def _remove_point(self, pt: PointItem):
@@ -1476,6 +2148,182 @@ class GeometryScene(QGraphicsScene):
 # CANVAS VIEW (zoom / pan wrapper with zoom controls)
 # ═══════════════════════════════════════════════════════════════════════════
 
+# ═══════════════════════════════════════════════════════════════════════════
+# CONSTRUCTION PANEL — draggable floating overlay
+# ═══════════════════════════════════════════════════════════════════════════
+
+class ConstructionPanel(QFrame):
+    """Draggable floating panel showing selection summary and matching
+    construction propositions.  Parented to the CanvasWidget so it
+    lives above the QGraphicsView without interfering with the scene."""
+
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+        self.setObjectName("constructPanel")
+        self.setFrameShape(QFrame.Shape.Box)
+        self.setStyleSheet(
+            "QFrame#constructPanel { background: white; border: 1px solid #2d70b3;"
+            " border-radius: 6px; }")
+        self.setFixedWidth(260)
+
+        self._drag_pos = None  # for dragging
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(8, 6, 8, 8)
+        root.setSpacing(4)
+
+        # ── Title bar (draggable handle) ──────────────────────────────
+        title_bar = QWidget()
+        title_bar.setCursor(Qt.CursorShape.SizeAllCursor)
+        hbox = QHBoxLayout(title_bar)
+        hbox.setContentsMargins(0, 0, 0, 0)
+        hbox.setSpacing(4)
+        title_lbl = QLabel("Constructions")
+        title_lbl.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
+        title_lbl.setStyleSheet("color: #1a1a2e; border: none;")
+        hbox.addWidget(title_lbl)
+        hbox.addStretch()
+        close_btn = QPushButton("✕")
+        close_btn.setFixedSize(22, 22)
+        close_btn.setStyleSheet(
+            "QPushButton { padding:0px; border: 1px solid #d32f2f;"
+            " border-radius: 4px; background: #fff0f0; color: #d32f2f;"
+            " font-size: 13px; font-weight: bold; }"
+            " QPushButton:hover { background: #d32f2f; color: white; }")
+        close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        close_btn.clicked.connect(self._on_close)
+        hbox.addWidget(close_btn)
+        root.addWidget(title_bar)
+        self._title_bar = title_bar
+
+        # ── Selection summary ─────────────────────────────────────────
+        self._summary = QLabel("Click points, segments, or circles…")
+        self._summary.setWordWrap(True)
+        self._summary.setStyleSheet(
+            "color: #555; font-size: 11px; border: none; padding: 2px 0px;")
+        root.addWidget(self._summary)
+
+        # ── Action buttons are inserted dynamically before this index ──
+        self._action_btns: List[QWidget] = []
+        # Index in root layout where action buttons start
+        # (after title_bar at 0 and summary at 1)
+        self._btn_insert_idx = root.count()
+
+        # ── Clear selection button ────────────────────────────────────
+        clear_btn = QPushButton("Clear Selection")
+        clear_btn.setStyleSheet(
+            "QPushButton { padding: 4px 10px; border: 1px solid #888;"
+            " border-radius: 4px; background: #f7f8fa; color: #333;"
+            " font-size: 11px; }"
+            " QPushButton:hover { background: #e0e0e0; }")
+        clear_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        clear_btn.clicked.connect(self._on_clear)
+        root.addWidget(clear_btn)
+
+        self._close_callback = None
+        self._clear_callback = None
+        self._action_callback = None
+
+    # ── Callbacks ──────────────────────────────────────────────────────
+
+    def set_callbacks(self, on_close, on_clear, on_action):
+        self._close_callback = on_close
+        self._clear_callback = on_clear
+        self._action_callback = on_action
+
+    def _on_close(self):
+        if self._close_callback:
+            self._close_callback()
+
+    def _on_clear(self):
+        if self._clear_callback:
+            self._clear_callback()
+
+    # ── Dragging ──────────────────────────────────────────────────────
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._drag_pos = event.globalPosition().toPoint() - self.pos()
+            event.accept()
+        else:
+            super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self._drag_pos is not None and event.buttons() & Qt.MouseButton.LeftButton:
+            new_pos = event.globalPosition().toPoint() - self._drag_pos
+            # Clamp within parent
+            pw = self.parentWidget()
+            if pw:
+                max_x = pw.width() - self.width()
+                max_y = pw.height() - self.height()
+                new_pos.setX(max(0, min(new_pos.x(), max_x)))
+                new_pos.setY(max(0, min(new_pos.y(), max_y)))
+            self.move(new_pos)
+            event.accept()
+        else:
+            super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        self._drag_pos = None
+        super().mouseReleaseEvent(event)
+
+    # ── Refresh contents ──────────────────────────────────────────────
+
+    def refresh(self, n_pts: int, n_segs: int, n_circs: int,
+                rules: List[ConstructionDef]):
+        """Update summary text and rebuild the action button list."""
+        parts = []
+        if n_pts:
+            parts.append(f"{n_pts} point{'s' if n_pts != 1 else ''}")
+        if n_segs:
+            parts.append(f"{n_segs} segment{'s' if n_segs != 1 else ''}")
+        if n_circs:
+            parts.append(f"{n_circs} circle{'s' if n_circs != 1 else ''}")
+        if parts:
+            self._summary.setText("Selected: " + ", ".join(parts))
+        else:
+            self._summary.setText("Click points, segments, or circles…")
+
+        # Remove old action buttons
+        root = self.layout()
+        for w in self._action_btns:
+            root.removeWidget(w)
+            w.deleteLater()
+        self._action_btns.clear()
+
+        idx = self._btn_insert_idx
+        if not rules:
+            hint = QLabel("No matching constructions" if parts else "")
+            hint.setStyleSheet("color: #999; font-size: 11px; border:none;")
+            root.insertWidget(idx, hint)
+            self._action_btns.append(hint)
+        else:
+            for cdef in rules:
+                btn = QPushButton(cdef.label)
+                btn.setToolTip(cdef.description)
+                btn.setStyleSheet(
+                    "QPushButton { text-align: left; padding: 5px 10px;"
+                    " border: 1px solid #e5e7eb; border-radius: 4px;"
+                    " background: #f7f8fa; color: #1a1a2e; font-size: 12px; }"
+                    " QPushButton:hover { background: #dce8f7;"
+                    " border-color: #2d70b3; }")
+                btn.setCursor(Qt.CursorShape.PointingHandCursor)
+                btn.clicked.connect(
+                    lambda checked, cd=cdef: self._fire_action(cd))
+                root.insertWidget(idx, btn)
+                self._action_btns.append(btn)
+                idx += 1
+
+        QTimer.singleShot(0, self._update_height)
+
+    def _update_height(self):
+        self.setFixedHeight(self.layout().sizeHint().height())
+
+    def _fire_action(self, cdef: ConstructionDef):
+        if self._action_callback:
+            self._action_callback(cdef)
+
+
 class CanvasWidget(QWidget):
     """Wrapper: GeometryScene + zoomable/pannable QGraphicsView + zoom toolbar."""
 
@@ -1510,6 +2358,16 @@ class CanvasWidget(QWidget):
         # Signal emitted after any zoom change
         self.zoom_changed = None  # callback slot, set externally
 
+        # ── Construction panel (draggable overlay) ────────────────────
+        self._construct_panel = ConstructionPanel(self)
+        self._construct_panel.set_callbacks(
+            on_close=self._close_construct_panel,
+            on_clear=lambda: self._scene._clear_construct_selection(),
+            on_action=self._execute_construct_action,
+        )
+        self._construct_panel.hide()
+        self._scene.on_construct_selection_changed(self._on_construct_selection)
+
     @property
     def scene(self) -> GeometryScene:
         return self._scene
@@ -1520,12 +2378,23 @@ class CanvasWidget(QWidget):
         self._scene._eq_selection.clear()
         self._scene._dismiss_label_popover()
 
+    def _clamp_zoom(self):
+        """Clamp the current zoom level to 0–500%."""
+        current = self._view.transform().m11()
+        if current < 0.01:
+            s = 0.01 / current
+            self._view.scale(s, s)
+        elif current > 5.0:
+            s = 5.0 / current
+            self._view.scale(s, s)
+
     def eventFilter(self, obj, event):
         if obj is self._view.viewport():
             # Scroll wheel zoom
             if event.type() == event.Type.Wheel:
                 factor = 1.15 if event.angleDelta().y() > 0 else 1 / 1.15
                 self._view.scale(factor, factor)
+                self._clamp_zoom()
                 if self.zoom_changed:
                     self.zoom_changed()
                 return True
@@ -1568,9 +2437,11 @@ class CanvasWidget(QWidget):
 
     def zoom_in(self):
         self._view.scale(1.25, 1.25)
+        self._clamp_zoom()
 
     def zoom_out(self):
         self._view.scale(1 / 1.25, 1 / 1.25)
+        self._clamp_zoom()
 
     def zoom_reset(self):
         self._view.resetTransform()
@@ -1580,14 +2451,45 @@ class CanvasWidget(QWidget):
 
     # ── Public API ────────────────────────────────────────────────────
 
+    # ── Construction panel helpers ─────────────────────────────────
+
+    def _on_construct_selection(self, scene):
+        """Called when the scene's construct selection changes."""
+        np, ns, nc = scene.construct_counts()
+        rules = scene.construct_matching_rules()
+        self._construct_panel.refresh(np, ns, nc, rules)
+
+    def _close_construct_panel(self):
+        """Close button → switch back to select tool."""
+        self.set_tool("select")
+
+    def _execute_construct_action(self, cdef: ConstructionDef):
+        """Run a matched construction and refresh."""
+        self._scene.execute_construction(cdef)
+        # Refresh panel (selection was cleared by execute_construction)
+        np, ns, nc = self._scene.construct_counts()
+        rules = self._scene.construct_matching_rules()
+        self._construct_panel.refresh(np, ns, nc, rules)
+
     def set_tool(self, tool: str):
         self._scene.set_tool(tool)
+        if tool == "construct":
+            self._construct_panel.move(12, 12)
+            self._construct_panel.show()
+            self._construct_panel.raise_()
+            # Initial refresh
+            np, ns, nc = self._scene.construct_counts()
+            rules = self._scene.construct_matching_rules()
+            self._construct_panel.refresh(np, ns, nc, rules)
+        else:
+            self._construct_panel.hide()
         cursors = {
             "select": Qt.CursorShape.ArrowCursor,
             "pan": Qt.CursorShape.OpenHandCursor,
             "delete": Qt.CursorShape.ForbiddenCursor,
             "label": Qt.CursorShape.IBeamCursor,
             "equal": Qt.CursorShape.PointingHandCursor,
+            "construct": Qt.CursorShape.PointingHandCursor,
         }
         self._view.setCursor(cursors.get(tool, Qt.CursorShape.CrossCursor))
 

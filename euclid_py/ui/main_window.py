@@ -806,6 +806,7 @@ class _WorkspaceScreen(QWidget):
             ("angle", "∠", "Measure angle (click 3 existing points)"),
             ("perpendicular", "∟", "Mark right angle (click 3 existing points, must be 90°)"),
             None,
+            ("construct", "🔨", "Proposition construction (guided construction rules)"),
             ("equal", "\u2245", "Assert segments equal (click two segments)"),
             ("delete", "✕", "Delete object"),
             None,
