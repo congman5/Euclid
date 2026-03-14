@@ -15,6 +15,7 @@ import traceback
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication
 
+from .resources import resource_path
 from .ui.main_window import MainWindow
 
 
@@ -72,9 +73,7 @@ def main():
     app.setStyle("Fusion")
 
     # Set application icon
-    icon_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "Euclid Logo.png")
+    icon_path = resource_path("Euclid Logo.png")
     if os.path.exists(icon_path):
         app.setWindowIcon(QIcon(icon_path))
 

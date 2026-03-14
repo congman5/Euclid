@@ -1,8 +1,20 @@
 # Changelog
 
-All notable changes to the Euclid Elements Simulator project.
+All notable changes to the Euclid project.
 
 ## [8.0.0] - 2025-XX-XX
+
+### Added — Standalone .exe build and improved installation (build_exe.py, euclid.spec, pyproject.toml)
+
+- **Automated release workflow** (`.github/workflows/release.yml`): Push a `v*` tag and GitHub Actions automatically builds `Euclid.exe` (via PyInstaller `--onefile`), runs the full test suite, and publishes the `.exe` as a GitHub Release — no manual upload needed.
+- **Standalone Windows .exe**: Added PyInstaller packaging so the app can be built and distributed as a standalone executable (`dist/Euclid/Euclid.exe`) with no Python installation required on the target machine.
+- **Build script** (`build_exe.py`): One-command build — `python build_exe.py` (one-directory) or `python build_exe.py --onefile` (single portable `.exe`). Includes `--clean` flag.
+- **PyInstaller spec** (`euclid.spec`): Pre-configured spec bundling the logo, icon, all verifier and UI modules, with test/unused dependencies excluded.
+- **`pyproject.toml`**: Modern Python packaging with `pip install -e .` support, console entry point (`euclid`), GUI entry point (`euclid-gui`), and `[dev]` extras for pytest + PyInstaller.
+- **Top-level `requirements.txt`**: Single file for `pip install -r requirements.txt`.
+- **Resource helper** (`euclid_py/resources.py`): Centralised `resource_path()` function that resolves data files (logo, icon) whether running from source or from a PyInstaller-frozen bundle (`sys._MEIPASS`).
+- **`.gitignore` expanded**: Now covers `__pycache__/`, `.pyc`, `dist/`, `build/`, `node_modules/`, `venv/`, pytest cache, crash logs, and underscore-prefixed temp scripts.
+- **Temp files cleaned up**: Removed stale debug/test scripts from repo root.
 
 ### Fixed — Axiom naming uses paper labels instead of sequential list indices (verifier/unified_checker.py, euclid_py/ui/proof_panel.py)
 

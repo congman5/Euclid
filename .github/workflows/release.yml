@@ -1,0 +1,64 @@
+# Build a standalone Windows .exe and publish it as a GitHub Release
+# whenever a version tag (v*) is pushed.
+#
+# Usage:
+#   git tag v8.0.0
+#   git push origin v8.0.0
+#
+# The workflow will:
+#   1. Check out the code
+#   2. Run the full test suite
+#   3. Build Euclid.exe via PyInstaller (--onefile)
+#   4. Create a GitHub Release with the .exe attached
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write          # needed to create releases
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -e .[dev]
+
+      - name: Run tests
+        run: python -m pytest --tb=short -q
+
+      - name: Build .exe
+        run: python build_exe.py --onefile
+
+      - name: Upload .exe as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Euclid-exe
+          path: dist/Euclid.exe
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Euclid ${{ github.ref_name }}
+          body: |
+            ## Euclid ${{ github.ref_name }}
+
+            **Windows installer** — download `Euclid.exe` below, double-click, done. No Python needed.
+
+            See the [changelog](https://github.com/${{ github.repository }}/blob/main/change-log.md) for details.
+          files: dist/Euclid.exe
+          draft: false
+          prerelease: false

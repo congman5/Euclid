@@ -170,10 +170,8 @@ class _HomeScreen(QWidget):
         hl = QHBoxLayout(header)
 
         # Logo
-        logo_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(
-                os.path.abspath(__file__)))),
-            "Euclid Logo.png")
+        from ..resources import resource_path
+        logo_path = resource_path("Euclid Logo.png")
         if os.path.exists(logo_path):
             logo_label = QLabel()
             pixmap = QPixmap(logo_path).scaled(

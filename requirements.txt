@@ -1,0 +1,8 @@
+# Core dependencies
+PyQt6>=6.6.0
+
+# Development / testing (install with: pip install -r requirements.txt)
+pytest>=7.0.0
+
+# Packaging as standalone .exe (optional)
+# pyinstaller>=6.0

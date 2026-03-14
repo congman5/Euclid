@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "euclid"
+version = "8.0.0"
+description = "A formal proof verifier & interactive geometry workbench for Euclid's Elements Book I"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.12"
+dependencies = [
+    "PyQt6>=6.6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pyinstaller>=6.0",
+]
+
+[project.scripts]
+euclid = "euclid_py.__main__:main"
+
+[project.gui-scripts]
+euclid-gui = "euclid_py.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["euclid_py*", "verifier*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["verifier/tests", "euclid_py/tests"]
