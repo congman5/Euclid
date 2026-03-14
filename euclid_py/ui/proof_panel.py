@@ -2195,6 +2195,18 @@ class ProofPanel(QWidget):
             # None from a recognised theorem name means matching failed
             return result if result is not None else self._AUTOFILL_FAIL
 
+        # ── Metric inference ──────────────────────────────────────
+        if just in ("Metric", "metric"):
+            result = self._autofill_metric(step, ref_lits, all_known)
+            return result if result is not None else self._AUTOFILL_FAIL
+
+        # ── Superposition (SAS / SSS) ────────────────────────────
+        if just in ("SAS", "SSS", "SAS Superposition",
+                     "SSS Superposition", "SAS-elim", "SSS-elim"):
+            result = self._autofill_superposition(
+                step, just, ref_lits, all_known)
+            return result if result is not None else self._AUTOFILL_FAIL
+
         # ── Diagrammatic / Transfer / Metric named axioms ─────────
         # Justifications like "Generality 3", "Intersection 3",
         # "Segment transfer 1", etc.
@@ -2368,7 +2380,12 @@ class ProofPanel(QWidget):
         diagrammatic, transfer and metric axioms.
 
         Keys are the rule names shown in the UI dropdown, e.g.
-        ``"Generality 3"``, ``"Segment transfer 1"``.
+        ``"Generality 3"``, ``"Segment transfer 3b"``.
+
+        Paper-label suffixes are used for groups whose axioms have
+        sub-labels (e.g. B1a-d, C2a-d).  Legacy sequential names
+        (e.g. ``"Betweenness 4"`` for B1d) are kept as aliases so that
+        older saved proofs still resolve.
         """
         if cls._AXIOM_BY_NAME is not None:
             return cls._AXIOM_BY_NAME
@@ -2384,22 +2401,39 @@ class ProofPanel(QWidget):
             cls._AXIOM_BY_NAME = {}
             return cls._AXIOM_BY_NAME
 
+        # Paper-label suffixes for non-sequential axiom groups.
+        # Groups that ARE sequential use None (label == str(i+1)).
+        _BETWEEN_LABELS = ["1a", "1b", "1c", "1d", "2", "3", "4", "5", "6", "7"]
+        _CIRCLE_LABELS  = ["1", "2a", "2b", "2c", "2d", "3a", "3b", "3c", "3d", "4"]
+        _INTER_LABELS   = ["1", "2a", "2b", "2c", "2d", "3", "4a", "4b", "5"]
+        _SEG_LABELS     = ["1", "2", "3a", "3b", "4a", "4b", "4c", "4d"]
+        _ANG_LABELS     = ["1a", "1b", "1c", "2a", "2b", "2c", "3a", "3b", "4", "5a", "5b"]
+        _AREA_LABELS    = ["1a", "1b", "1c", "2"]
+
         groups = [
-            ("Generality", GENERALITY_AXIOMS),
-            ("Betweenness", BETWEEN_AXIOMS),
-            ("Same-side", SAME_SIDE_AXIOMS),
-            ("Pasch", PASCH_AXIOMS),
-            ("Triple incidence", TRIPLE_INCIDENCE_AXIOMS),
-            ("Circle", CIRCLE_AXIOMS),
-            ("Intersection", INTERSECTION_AXIOMS),
-            ("Segment transfer", DIAGRAM_SEGMENT_TRANSFER),
-            ("Angle transfer", DIAGRAM_ANGLE_TRANSFER),
-            ("Area transfer", DIAGRAM_AREA_TRANSFER),
+            ("Generality", GENERALITY_AXIOMS, None),
+            ("Betweenness", BETWEEN_AXIOMS, _BETWEEN_LABELS),
+            ("Same-side", SAME_SIDE_AXIOMS, None),
+            ("Pasch", PASCH_AXIOMS, None),
+            ("Triple incidence", TRIPLE_INCIDENCE_AXIOMS, None),
+            ("Circle", CIRCLE_AXIOMS, _CIRCLE_LABELS),
+            ("Intersection", INTERSECTION_AXIOMS, _INTER_LABELS),
+            ("Segment transfer", DIAGRAM_SEGMENT_TRANSFER, _SEG_LABELS),
+            ("Angle transfer", DIAGRAM_ANGLE_TRANSFER, _ANG_LABELS),
+            ("Area transfer", DIAGRAM_AREA_TRANSFER, _AREA_LABELS),
         ]
         idx: dict = {}
-        for group_name, axioms in groups:
+        for group_name, axioms, labels in groups:
             for i, ax in enumerate(axioms):
-                idx[f"{group_name} {i + 1}"] = ax
+                label = labels[i] if labels else str(i + 1)
+                canonical = f"{group_name} {label}"
+                idx[canonical] = ax
+                # Legacy alias: if the paper label differs from the
+                # sequential index, also register "Group N" so that
+                # older proofs still resolve.
+                seq_name = f"{group_name} {i + 1}"
+                if seq_name != canonical and seq_name not in idx:
+                    idx[seq_name] = ax
         cls._AXIOM_BY_NAME = idx
         return idx
 
@@ -2486,6 +2520,412 @@ class ProofPanel(QWidget):
             inst = substitute_literal(conc, bindings)
             parts.append(repr(inst))
         return ", ".join(parts)
+
+    def _autofill_metric(self, step, ref_lits, all_known):
+        """Auto-fill a step justified by ``Metric``.
+
+        Uses a sequential pattern-matching strategy, trying the most
+        specific patterns first:
+
+        1. **Multi-ref transitivity** – when ≥ 2 ref lines are cited,
+           derive the cross-ref equality connecting terms from
+           different references (CN1).
+        2. **Angle M4-both-sides rewrite** – for single-ref steps
+           containing angle equalities, apply M4 to both sides
+           simultaneously to produce a novel textual variant.
+        3. **Pure swap** – for single-ref equalities, produce
+           ``Y = X`` from ``X = Y``.  Skipped when the same canonical
+           equality already appears in a non-ref prior step.
+        4. **M1 disequality** – derive ``¬(p = q)`` from segment
+           nonzero.
+        5. **Angle consequences (M9)** – derive angle equalities from
+           segment equalities, preferring angles whose vertex is
+           the shared endpoint of the referenced segment terms.
+
+        Returns the generated text, ``_AUTOFILL_FAIL`` if no new metric
+        facts can be derived, or ``None`` if the engine is unavailable.
+        """
+        try:
+            from verifier.e_metric import MetricEngine
+            from verifier.e_ast import (
+                Literal, Equals, LessThan, SegmentTerm, AngleTerm,
+                AreaTerm, literal_vars, Term,
+            )
+            from verifier.e_parser import parse_literal_list, EParseError
+        except ImportError:
+            return None
+
+        from itertools import permutations
+
+        known_set = set(all_known)
+
+        # Exact-text set of every already-stated literal.
+        known_texts = set()
+        for lit in all_known:
+            known_texts.add(repr(lit))
+        for prem in self._premises:
+            known_texts.add(prem.strip())
+        for s in self._steps:
+            if s.line_number < step.line_number and s.text.strip():
+                known_texts.add(s.text.strip())
+
+        # Canonical-form helpers for semantic redundancy detection.
+        def _term_canon(t):
+            if isinstance(t, SegmentTerm):
+                return ("seg", frozenset([t.p1, t.p2]))
+            if isinstance(t, AngleTerm):
+                return ("ang", t.p2, frozenset([t.p1, t.p3]))
+            if isinstance(t, AreaTerm):
+                return ("area", frozenset([t.p1, t.p2, t.p3]))
+            return ("pt", t) if isinstance(t, str) else ("o", repr(t))
+
+        def _eq_canon(atom):
+            return frozenset(
+                [_term_canon(atom.left), _term_canon(atom.right)])
+
+        known_eq_canons = set()
+        known_diseq_canons = set()
+        for lit in all_known:
+            if isinstance(lit.atom, Equals):
+                c = _eq_canon(lit.atom)
+                if lit.polarity:
+                    known_eq_canons.add(c)
+                else:
+                    known_diseq_canons.add(c)
+
+        # Canonical eq forms from non-ref prior steps (not premises
+        # or Given steps).  Detects when a swap would be redundant
+        # because the equality was already independently stated in
+        # the proof.  "Given" steps restate premises and must be
+        # excluded just like premises themselves.
+        non_ref_eq_canons = set()
+        ref_set = set(step.refs)
+        for s in self._steps:
+            if (s.line_number < step.line_number
+                    and s.line_number not in ref_set
+                    and s.text.strip()
+                    and s.justification.strip() != "Given"):
+                try:
+                    for lit in parse_literal_list(s.text):
+                        if (isinstance(lit.atom, Equals) and lit.polarity
+                                and isinstance(lit.atom.left,
+                                               (SegmentTerm, AngleTerm,
+                                                AreaTerm))):
+                            non_ref_eq_canons.add(_eq_canon(lit.atom))
+                except (EParseError, Exception):
+                    pass
+
+        # ── Build the metric engine from ALL known facts ──────────
+        engine = MetricEngine()
+        engine.process_literals(known_set)
+
+        # Helper: M3/M4/M8 textual variants of a magnitude term
+        def _variants(t):
+            out = [t]
+            if isinstance(t, SegmentTerm):
+                out.append(SegmentTerm(t.p2, t.p1))
+            elif isinstance(t, AngleTerm):
+                out.append(AngleTerm(t.p3, t.p2, t.p1))
+            elif isinstance(t, AreaTerm):
+                out.append(AreaTerm(t.p3, t.p1, t.p2))
+                out.append(AreaTerm(t.p1, t.p3, t.p2))
+            return out
+
+        # Collect ref equalities as (left_term, right_term) pairs
+        ref_eqs = []
+        for lit in ref_lits:
+            if not lit.polarity or not isinstance(lit.atom, Equals):
+                continue
+            a = lit.atom
+            if isinstance(a.left, (SegmentTerm, AngleTerm, AreaTerm)):
+                ref_eqs.append((a.left, a.right))
+
+        if not ref_eqs:
+            return self._AUTOFILL_FAIL
+
+        # Preload ref-term variants into engine
+        for left, right in ref_eqs:
+            for t in _variants(left) + _variants(right):
+                engine.state.add_term(t)
+        engine._apply_rules()
+
+        # Multi-ref means the user cited ≥ 2 distinct reference lines
+        # with ≥ 2 magnitude equalities → transitivity.
+        multi_ref = len(step.refs) >= 2 and len(ref_eqs) >= 2
+
+        def _is_novel(text):
+            return text not in known_texts
+
+        # ══════════════════════════════════════════════════════════
+        # PATTERN 1: Multi-ref transitivity (CN1)
+        # Cross-ref original-term pairings.  Skip trivial M3/M4
+        # self-identities.  Prefer alphabetically first.
+        # ══════════════════════════════════════════════════════════
+        if multi_ref:
+            trans_candidates = []
+            for i in range(len(ref_eqs)):
+                for j in range(i + 1, len(ref_eqs)):
+                    li, ri = ref_eqs[i]
+                    lj, rj = ref_eqs[j]
+                    cross_pairs = [
+                        (li, lj), (lj, li),
+                        (li, rj), (rj, li),
+                        (ri, lj), (lj, ri),
+                        (ri, rj), (rj, ri),
+                    ]
+                    for a, b in cross_pairs:
+                        if not engine.state.are_equal(a, b):
+                            continue
+                        if _term_canon(a) == _term_canon(b):
+                            continue
+                        lit = Literal(Equals(a, b))
+                        text = repr(lit)
+                        if _is_novel(text):
+                            trans_candidates.append(text)
+            if trans_candidates:
+                trans_candidates.sort()
+                return trans_candidates[0]
+
+        # ══════════════════════════════════════════════════════════
+        # PATTERN 2: Angle M4-both-sides rewrite (reversed order)
+        # Only for AngleTerm.  Process in reverse so the last angle
+        # equality (most useful from SAS/SSS conclusions) is first.
+        # ══════════════════════════════════════════════════════════
+        if not multi_ref:
+            for left, right in reversed(ref_eqs):
+                if not isinstance(left, AngleTerm):
+                    continue
+                lv = _variants(left)
+                rv = _variants(right)
+                angle_results = []
+                for vi in range(1, min(len(lv), len(rv))):
+                    for a, b in [(lv[vi], rv[vi]),
+                                 (rv[vi], lv[vi])]:
+                        lit = Literal(Equals(a, b))
+                        text = repr(lit)
+                        if _is_novel(text):
+                            angle_results.append(text)
+                if angle_results:
+                    return angle_results[0]
+
+        # ══════════════════════════════════════════════════════════
+        # PATTERN 3: Pure swap  (Y = X  from  X = Y)
+        # Skip if the same canonical equality already appears in a
+        # non-ref prior step (the fact is already known elsewhere).
+        # ══════════════════════════════════════════════════════════
+        if not multi_ref:
+            swap_results = []
+            for left, right in ref_eqs:
+                lit = Literal(Equals(right, left))
+                text = repr(lit)
+                if not _is_novel(text):
+                    continue
+                canon = _eq_canon(lit.atom)
+                if canon in non_ref_eq_canons:
+                    continue
+                swap_results.append(text)
+            if swap_results:
+                return swap_results[0]
+
+        # ══════════════════════════════════════════════════════════
+        # PATTERN 4: M1 disequality (one per canonical point pair)
+        # Try (p2, p1) order first for conventional form.
+        # ══════════════════════════════════════════════════════════
+        diseq_results = []
+        seen_diseq_canons = set()
+        for left, right in ref_eqs:
+            for t in [left, right]:
+                if isinstance(t, SegmentTerm) and t.p1 != t.p2:
+                    for p, q in [(t.p2, t.p1), (t.p1, t.p2)]:
+                        lit = Literal(Equals(p, q), polarity=False)
+                        text = repr(lit)
+                        canon = _eq_canon(lit.atom)
+                        if canon in known_diseq_canons:
+                            continue
+                        if canon in seen_diseq_canons:
+                            continue
+                        if _is_novel(text) and engine._check_literal(lit):
+                            seen_diseq_canons.add(canon)
+                            diseq_results.append(text)
+        if diseq_results:
+            return diseq_results[0]
+
+        # ══════════════════════════════════════════════════════════
+        # PATTERN 5: Angle consequences from segment equalities (M9)
+        # Prefer angles whose vertex is the shared point of ref
+        # segment terms.
+        # ══════════════════════════════════════════════════════════
+        ref_points = set()
+        for left, right in ref_eqs:
+            for t in [left, right]:
+                if isinstance(t, SegmentTerm):
+                    ref_points.add(t.p1)
+                    ref_points.add(t.p2)
+                elif isinstance(t, AngleTerm):
+                    ref_points.update([t.p1, t.p2, t.p3])
+
+        # Find shared point(s) among ref segment terms
+        shared_points = set()
+        seg_terms = [t for l, r in ref_eqs
+                     for t in [l, r] if isinstance(t, SegmentTerm)]
+        if len(seg_terms) >= 2:
+            point_sets = [frozenset([t.p1, t.p2]) for t in seg_terms]
+            shared_points = point_sets[0]
+            for ps in point_sets[1:]:
+                shared_points = shared_points & ps
+        elif len(seg_terms) == 1:
+            shared_points = {seg_terms[0].p1, seg_terms[0].p2}
+
+        if len(ref_points) >= 3:
+            angle_terms = []
+            angle_reprs = set()
+            for perm in permutations(sorted(ref_points), 3):
+                at = AngleTerm(perm[0], perm[1], perm[2])
+                r = repr(at)
+                if r not in angle_reprs:
+                    angle_reprs.add(r)
+                    angle_terms.append(at)
+                    engine.state.add_term(at)
+
+            engine._apply_rules()
+
+            angle_candidates = []
+            seen_angle_canons = set()
+            for i, a1 in enumerate(angle_terms):
+                for a2 in angle_terms[i + 1:]:
+                    if not engine.state.are_equal(a1, a2):
+                        continue
+                    canon = _eq_canon(Equals(a1, a2))
+                    if canon in known_eq_canons:
+                        continue
+                    if canon in seen_angle_canons:
+                        continue
+                    seen_angle_canons.add(canon)
+                    for a_left, a_right in [(a1, a2), (a2, a1)]:
+                        lit = Literal(Equals(a_left, a_right))
+                        text = repr(lit)
+                        if _is_novel(text):
+                            score = 0
+                            if a_left.p2 in shared_points:
+                                score += 1
+                            if a_right.p2 in shared_points:
+                                score += 1
+                            angle_candidates.append((score, text))
+                            break
+            if angle_candidates:
+                angle_candidates.sort(key=lambda x: (-x[0], x[1]))
+                return angle_candidates[0][1]
+
+        return self._AUTOFILL_FAIL
+
+    def _autofill_superposition(self, step, just, ref_lits, all_known):
+        """Auto-fill a SAS or SSS superposition step.
+
+        Identifies the two triangles from segment and angle equalities
+        in the known facts, then delegates to the verifier's
+        ``apply_sas_superposition`` or ``apply_sss_superposition``
+        to derive the congruence conclusions.
+
+        Returns the generated text, ``_AUTOFILL_FAIL`` if the required
+        hypotheses are not met, or ``None`` if the engine is unavailable.
+        """
+        try:
+            from verifier.e_superposition import (
+                apply_sas_superposition, apply_sss_superposition,
+            )
+            from verifier.e_ast import (
+                Literal, Equals, SegmentTerm, AngleTerm, AreaTerm,
+                literal_vars,
+            )
+        except ImportError:
+            return None
+
+        is_sas = just in ("SAS", "SAS Superposition", "SAS-elim")
+
+        known_set = set(all_known)
+
+        # Collect segment equalities and angle equalities from known facts
+        seg_eqs = []   # (p1, p2, q1, q2) meaning p1p2 = q1q2
+        angle_eqs = []  # (p1,p2,p3, q1,q2,q3) meaning ∠p1p2p3 = ∠q1q2q3
+
+        for lit in (list(ref_lits) + list(all_known)):
+            if not lit.polarity:
+                continue
+            if not isinstance(lit.atom, Equals):
+                continue
+            a = lit.atom
+            if isinstance(a.left, SegmentTerm) and isinstance(a.right, SegmentTerm):
+                seg_eqs.append((a.left.p1, a.left.p2,
+                                a.right.p1, a.right.p2))
+            elif isinstance(a.left, AngleTerm) and isinstance(a.right, AngleTerm):
+                angle_eqs.append((a.left.p1, a.left.p2, a.left.p3,
+                                  a.right.p1, a.right.p2, a.right.p3))
+
+        if is_sas:
+            # SAS: need an angle equality ∠bac = ∠edf and two segment
+            # equalities ab = de, ac = df where a,d are the angle vertices.
+            for (ap1, ap2, ap3, aq1, aq2, aq3) in angle_eqs:
+                # ap2 is vertex of triangle 1, aq2 is vertex of triangle 2
+                # The sides from vertex are: ap2→ap1 and ap2→ap3
+                # Need: seg(ap2,ap1) = seg(aq2,aq1) and
+                #        seg(ap2,ap3) = seg(aq2,aq3)
+                a, b, c = ap2, ap1, ap3
+                d, e, f = aq2, aq1, aq3
+                # Skip self-congruence where both triangles are the same
+                if {a, b, c} == {d, e, f}:
+                    continue
+                result = apply_sas_superposition(known_set, a, b, c, d, e, f)
+                if result.valid:
+                    parts = [repr(lit) for lit in result.derived]
+                    return ", ".join(parts)
+            return self._AUTOFILL_FAIL
+        else:
+            # SSS: need three segment equalities covering all three sides.
+            # Try to identify the triangles from the segment equalities.
+            # Strategy: find two segment equalities sharing a "side mapping"
+            # pattern, then search for the third.
+            from itertools import combinations
+            # Try all triples of segment equalities
+            seen = set()
+            for combo in combinations(range(len(seg_eqs)), 3):
+                eqs = [seg_eqs[i] for i in combo]
+                # Extract all points on each "side" of the equalities
+                left_pts = set()
+                right_pts = set()
+                for (p1, p2, q1, q2) in eqs:
+                    left_pts.update([p1, p2])
+                    right_pts.update([q1, q2])
+                # For SSS we need exactly 3 points on each side
+                if len(left_pts) != 3 or len(right_pts) != 3:
+                    continue
+                # Skip self-congruence
+                if left_pts == right_pts:
+                    continue
+                # Try to establish vertex correspondence from the equalities
+                # Build a correspondence map from the segment equalities
+                tri1 = sorted(left_pts)
+                tri2 = sorted(right_pts)
+                key = (tuple(tri1), tuple(tri2))
+                if key in seen:
+                    continue
+                seen.add(key)
+                # Try all possible orderings: the first segment eq gives
+                # vertex correspondence a↔d, b↔e, then verify the third
+                for (p1, p2, q1, q2) in eqs:
+                    for a, b in [(p1, p2), (p2, p1)]:
+                        for d, e in [(q1, q2), (q2, q1)]:
+                            c_set = left_pts - {a, b}
+                            f_set = right_pts - {d, e}
+                            if len(c_set) != 1 or len(f_set) != 1:
+                                continue
+                            c = c_set.pop()
+                            f = f_set.pop()
+                            result = apply_sss_superposition(
+                                known_set, a, b, c, d, e, f)
+                            if result.valid:
+                                parts = [repr(lit) for lit in result.derived]
+                                return ", ".join(parts)
+            return self._AUTOFILL_FAIL
 
     @staticmethod
     def _match_hypotheses(patterns, concrete_lits):

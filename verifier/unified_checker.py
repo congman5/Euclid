@@ -1562,13 +1562,20 @@ def get_available_rules() -> List[RuleInfo]:
         PASCH_AXIOMS, TRIPLE_INCIDENCE_AXIOMS, CIRCLE_AXIOMS,
         INTERSECTION_AXIOMS,
     )
+    # Paper-label suffixes for groups whose axioms have sub-labels
+    # (e.g. B1a-d occupy 4 list slots but are all "B1").
+    # Groups that ARE sequential (label == list index) use None.
+    _BETWEEN_LABELS = ["1a", "1b", "1c", "1d", "2", "3", "4", "5", "6", "7"]
+    _CIRCLE_LABELS  = ["1", "2a", "2b", "2c", "2d", "3a", "3b", "3c", "3d", "4"]
+    _INTER_LABELS   = ["1", "2a", "2b", "2c", "2d", "3", "4a", "4b", "5"]
+
     _DIAG_GROUPS = [
-        ("Generality", GENERALITY_AXIOMS,
+        ("Generality", GENERALITY_AXIOMS, None,
          ["Two points on two lines → points equal or lines equal",
           "Center uniqueness: center(a,α) ∧ center(b,α) → a = b",
           "Center is inside: center(a,α) → inside(a,α)",
           "Inside excludes on: inside(a,α) → ¬on(a,α)"]),
-        ("Betweenness", BETWEEN_AXIOMS,
+        ("Betweenness", BETWEEN_AXIOMS, _BETWEEN_LABELS,
          ["between(a,b,c) → between(c,b,a)  (symmetry)",
           "between(a,b,c) → a ≠ b",
           "between(a,b,c) → a ≠ c",
@@ -1579,22 +1586,22 @@ def get_available_rules() -> List[RuleInfo]:
           "between(a,b,c) ∧ between(b,c,d) → between(a,b,d)",
           "Three collinear points: one is between the other two",
           "between(a,b,c) ∧ between(a,b,d) → ¬between(b,c,d)"]),
-        ("Same-side", SAME_SIDE_AXIOMS,
+        ("Same-side", SAME_SIDE_AXIOMS, None,
          ["same-side(a,a,L) ∨ on(a,L)  (reflexivity)",
           "same-side(a,b,L) → same-side(b,a,L)  (symmetry)",
           "same-side(a,b,L) → ¬on(a,L)",
           "same-side(a,b,L) ∧ same-side(a,c,L) → same-side(b,c,L)  (transitivity)",
           "Any two points off a line: same-side or one is on the line"]),
-        ("Pasch", PASCH_AXIOMS,
+        ("Pasch", PASCH_AXIOMS, None,
          ["same-side(a,c,L) ∧ between(a,b,c) → same-side(a,b,L)",
           "between(a,b,c) ∧ on(a,L) → same-side(b,c,L) ∨ on(b,L)",
           "between(a,b,c) ∧ on(b,L) → ¬same-side(a,c,L)",
           "Pasch: line crossing one side of a triangle hits another side"]),
-        ("Triple incidence", TRIPLE_INCIDENCE_AXIOMS,
+        ("Triple incidence", TRIPLE_INCIDENCE_AXIOMS, None,
          ["Three concurrent lines determine collinear or same-side",
           "Concurrent lines: transitivity of same-side across lines",
           "Five-line same-side transitivity"]),
-        ("Circle", CIRCLE_AXIOMS,
+        ("Circle", CIRCLE_AXIOMS, _CIRCLE_LABELS,
          ["Chord intersects interior: on(b,α) ∧ on(c,α) ∧ inside(a,α) → between",
           "inside ∧ between → inside (segment inside circle, variant 1)",
           "inside ∧ between → inside (boundary to interior, variant 1)",
@@ -1605,7 +1612,7 @@ def get_available_rules() -> List[RuleInfo]:
           "inside ∧ between → inside (variant 4)",
           "on ∧ between → inside (variant 4)",
           "Two intersecting circles: intersection points on opposite sides"]),
-        ("Intersection", INTERSECTION_AXIOMS,
+        ("Intersection", INTERSECTION_AXIOMS, _INTER_LABELS,
          ["Opposite sides → lines intersect",
           "on(a,α) ∧ on(b,α): opposite sides of L → L intersects α",
           "on(a,α) ∧ inside(b,α): opposite sides of L → L intersects α",
@@ -1616,11 +1623,12 @@ def get_available_rules() -> List[RuleInfo]:
           "Circles: inside/inside → intersects(α,β) (variant 2)",
           "Circles: on/inside mixed → intersects(α,β) (variant 3)"]),
     ]
-    for group_name, axioms, descs in _DIAG_GROUPS:
+    for group_name, axioms, labels, descs in _DIAG_GROUPS:
         for i, ax in enumerate(axioms):
-            desc = descs[i] if i < len(descs) else f"{group_name} axiom {i+1}"
+            label = labels[i] if labels else str(i + 1)
+            desc = descs[i] if i < len(descs) else f"{group_name} axiom {label}"
             rules.append(RuleInfo(
-                name=f"{group_name} {i+1}",
+                name=f"{group_name} {label}",
                 category="diagrammatic",
                 description=desc,
                 section="§3.4",
@@ -1659,15 +1667,21 @@ def get_available_rules() -> List[RuleInfo]:
         DIAGRAM_SEGMENT_TRANSFER, DIAGRAM_ANGLE_TRANSFER,
         DIAGRAM_AREA_TRANSFER,
     )
+    _SEG_LABELS  = ["1", "2", "3a", "3b", "4a", "4b", "4c", "4d"]
+    _ANG_LABELS  = ["1a", "1b", "1c", "2a", "2b", "2c", "3a", "3b", "4", "5a", "5b"]
+    _AREA_LABELS = ["1a", "1b", "1c", "2"]
+
     _TRANSFER_GROUPS = [
-        ("Segment transfer", DIAGRAM_SEGMENT_TRANSFER,
+        ("Segment transfer", DIAGRAM_SEGMENT_TRANSFER, _SEG_LABELS,
          ["between(a,b,c) → ab + bc = ac  (segment addition)",
           "Equal radii → same circle: ab = ac ∧ center(a,α) ∧ center(a,β) ∧ on(b,α) ∧ on(c,β) → α = β",
           "Segment → circle: center(a,α) ∧ on(b,α) ∧ ac = ab → on(c,α)",
           "Radii equal: center(a,α) ∧ on(b,α) ∧ on(c,α) → ac = ab",
           "Segment < radius → inside: center(a,α) ∧ on(b,α) ∧ ac < ab → inside(c,α)",
-          "Inside → segment < radius: center(a,α) ∧ on(b,α) ∧ inside(c,α) → ac < ab"]),
-        ("Angle transfer", DIAGRAM_ANGLE_TRANSFER,
+          "Inside → segment < radius: center(a,α) ∧ on(b,α) ∧ inside(c,α) → ac < ab",
+          "Farther than radius → ¬inside: center(a,α) ∧ on(b,α) ∧ ab < ac → ¬inside(c,α)",
+          "Farther than radius → ¬on: center(a,α) ∧ on(b,α) ∧ ab < ac → ¬on(c,α)"]),
+        ("Angle transfer", DIAGRAM_ANGLE_TRANSFER, _ANG_LABELS,
          ["Collinear zero angle: on(a,L) ∧ on(b,L) ∧ on(c,L) → ∠bac = 0 ∨ between(b,a,c)",
           "Zero angle → collinear: ∠bac = 0 → on(c,L)",
           "Zero angle → not between: ∠bac = 0 → ¬between(b,a,c)",
@@ -1679,16 +1693,18 @@ def get_available_rules() -> List[RuleInfo]:
           "Angle extension: supplementary ray → ∠bac = ∠b'ac'",
           "Parallel postulate: ∠abc + ∠bcd < 2·right → lines intersect",
           "Parallel postulate: intersection point same-side"]),
-        ("Area transfer", DIAGRAM_AREA_TRANSFER,
+        ("Area transfer", DIAGRAM_AREA_TRANSFER, _AREA_LABELS,
          ["Zero area → collinear: △abc = 0 → on(c,L)",
           "Collinear → zero area: on(a,L) ∧ on(b,L) ∧ on(c,L) → △abc = 0",
+          "Non-collinear → non-zero area: ¬on(c,L) → △abc ≠ 0",
           "Triangle area addition: between(a,c,b) → △acd + △dcb = △adb"]),
     ]
-    for group_name, axioms, descs in _TRANSFER_GROUPS:
+    for group_name, axioms, labels, descs in _TRANSFER_GROUPS:
         for i, ax in enumerate(axioms):
-            desc = descs[i] if i < len(descs) else f"{group_name} axiom {i+1}"
+            label = labels[i] if labels else str(i + 1)
+            desc = descs[i] if i < len(descs) else f"{group_name} axiom {label}"
             rules.append(RuleInfo(
-                name=f"{group_name} {i+1}",
+                name=f"{group_name} {label}",
                 category="transfer",
                 description=desc,
                 section="§3.6",

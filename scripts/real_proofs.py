@@ -4,8 +4,8 @@ real_proofs.py - Non-circular proofs for all 48 Book I propositions.
 Each proof is named "Prop.I.N" and can only cite earlier propositions
 (I.1 through I.(N-1)).  Proofs use correct justification steps:
   Given, let-line, let-circle, let-point-on-line,
-  let-intersection-circle-circle-one, Generality 3, Intersection 9,
-  Segment transfer 4, Metric, Transfer, SAS, SSS, Prop.I.N.
+  let-intersection-circle-circle-one, Generality 3, Intersection 5,
+  Segment transfer 3b, Metric, Transfer, SAS, SSS, Prop.I.N.
 
 Run: python -X utf8 scripts/real_proofs.py
 """
@@ -360,12 +360,12 @@ def p1():
     s3 = b.s("center(b, \u03b2), on(a, \u03b2)", "let-circle", [g1])
     s4 = b.s("inside(a, \u03b1)", "Generality 3", [s2])
     s5 = b.s("inside(b, \u03b2)", "Generality 3", [s3])
-    s6 = b.s("intersects(\u03b1, \u03b2)", "Intersection 9",
+    s6 = b.s("intersects(\u03b1, \u03b2)", "Intersection 5",
              [s2, s3, s4, s5])
     s7 = b.s("on(c, \u03b1), on(c, \u03b2)",
              "let-intersection-circle-circle-one", [s6])
-    s8 = b.s("ac = ab", "Segment transfer 4", [s2, s7])
-    s9 = b.s("bc = ba", "Segment transfer 4", [s3, s7])
+    s8 = b.s("ac = ab", "Segment transfer 3b", [s2, s7])
+    s9 = b.s("bc = ba", "Segment transfer 3b", [s3, s7])
     s10 = b.s("ab = ba", "M3 \u2014 Symmetry", [])
     s11 = b.s("ab = bc", "CN1 \u2014 Transitivity", [s8, s10])
     b.s("ab = ac", "CN1 \u2014 Transitivity", [s8, s10])
@@ -402,9 +402,9 @@ def p2():
     s10 = b.s("on(g, \u03b3), on(g, M), between(g, b, d)",
               "let-intersection-line-circle-extend", [s9, s7])
     # bg = bc (radii of γ)
-    s11 = b.s("bg = bc", "Segment transfer 4", [s8, s10])
-    # g ≠ d (from betweenness: B3)
-    s12 = b.s("\u00ac(g = d)", "Betweenness 3", [s10])
+    s11 = b.s("bg = bc", "Segment transfer 3b", [s8, s10])
+    # g ≠ d (from betweenness: B1c)
+    s12 = b.s("\u00ac(g = d)", "Betweenness 1c", [s10])
     # Circle δ center d radius dg
     s13 = b.s("center(d, \u03b4), on(g, \u03b4)", "let-circle", [s12])
     # Line through d,a
@@ -414,16 +414,16 @@ def p2():
     # b is inside δ (between(g,b,d) with g on δ, center d): Circle 1
     s16 = b.s("inside(b, \u03b4)", "Circle 1", [s10, s13])
     # db < dg (b inside δ, g on δ, center d): DS4b
-    s17 = b.s("db < dg", "Segment transfer 6", [s13, s16])
+    s17 = b.s("db < dg", "Segment transfer 4b", [s13, s16])
     # da < dg (from da = db and db < dg): CN1
     s18 = b.s("da < dg", "CN1 \u2014 Transitivity", [s15, s17])
     # a is inside δ: DS4a
-    s19 = b.s("inside(a, \u03b4)", "Segment transfer 5", [s13, s18])
+    s19 = b.s("inside(a, \u03b4)", "Segment transfer 4a", [s13, s18])
     # Extend line da past a to hit δ at f
     s20 = b.s("on(f, \u03b4), on(f, N), between(f, a, d)",
               "let-intersection-line-circle-extend", [s19, s14])
     # df = dg (radii of δ)
-    s21 = b.s("df = dg", "Segment transfer 4", [s13, s20])
+    s21 = b.s("df = dg", "Segment transfer 3b", [s13, s20])
     # fa + ad = fd (betweenness → segment addition): DS1
     s22 = b.s("fa + ad = fd", "Segment transfer 1", [s20])
     # gb + bd = gd (betweenness → segment addition): DS1
@@ -467,12 +467,12 @@ def p3():
     s13 = b.s("inside(a, \u03b1)", "Generality 3", [s12])
     # b is outside \u03b1 (af < ab \u2192 ab > radius): DS4c/DS4d
     s14 = b.s("\u00ac(inside(b, \u03b1)), \u00ac(on(b, \u03b1))",
-              "Segment transfer 7", [s12, s10])
+              "Segment transfer 4c", [s12, s10])
     # e: intersection of L and \u03b1 between a and b
     s15 = b.s("on(e, \u03b1), on(e, L), between(a, e, b)",
               "let-intersection-line-circle-between", [s13, g1, s14, g2])
     # ae = af (radii of \u03b1)
-    s16 = b.s("ae = af", "Segment transfer 4", [s12, s15])
+    s16 = b.s("ae = af", "Segment transfer 3b", [s12, s15])
     # ae = cd (ae = af, af = cd)
     b.s("ae = cd", "CN1 \u2014 Transitivity", [s16, s9])
     return b.build()
@@ -542,7 +542,7 @@ def p6():
     # Line M through b, c
     s10 = b.s("on(b, M), on(c, M)", "let-line", [4])
     # DA4: ∠dbc = ∠abc (d on same ray from b as a)
-    s11 = b.s("\u2220dbc = \u2220abc", "Angle transfer 9", [])
+    s11 = b.s("\u2220dbc = \u2220abc", "Angle transfer 4", [])
     # Transitivity: ∠dbc = ∠acb
     s12 = b.s("\u2220dbc = \u2220acb", "CN1 \u2014 Transitivity", [s11, 1])
     # M3: bc = cb
@@ -554,9 +554,9 @@ def p6():
     # △dbc = △abc  (via △acb = △abc M8 + CN1)
     s15 = b.s("\u25b3dbc = \u25b3abc", "M8 \u2014 Area symmetry", [s14])
     # DAr2: between(b,d,a), ¬on(c,L) → △bdc + △cda = △bca
-    s16 = b.s("(\u25b3bdc + \u25b3cda) = \u25b3bca", "Area transfer 4", [])
+    s16 = b.s("(\u25b3bdc + \u25b3cda) = \u25b3bca", "Area transfer 2", [])
     # DAr1c: on(b,L), on(a,L), ¬on(c,L) → ¬(△dac = 0)
-    s17 = b.s("\u00ac(\u25b3dac = 0)", "Area transfer 1", [])
+    s17 = b.s("\u00ac(\u25b3dac = 0)", "Area transfer 1a", [])
     # CN5: (△bdc + △cda) = △bca, △cda > 0 → △bdc < △bca
     s18 = b.s("\u25b3bdc < \u25b3bca", "CN5 \u2014 Whole > Part", [s16, s17])
     # M8: △bdc = △dbc, △bca = △abc → △dbc < △abc
@@ -572,7 +572,7 @@ def p6():
     s24 = b.s("between(c, e, a), ce = ab", "Prop.I.3", [s23, s22])
     s25 = b.s("on(c, P), on(b, P)", "let-line", [4])
     # DA4: ∠ecb = ∠acb
-    s26 = b.s("\u2220ecb = \u2220acb", "Angle transfer 9", [])
+    s26 = b.s("\u2220ecb = \u2220acb", "Angle transfer 4", [])
     # ∠ecb = ∠abc (transitivity with given ∠acb = ∠abc)
     s27 = b.s("\u2220ecb = \u2220abc", "CN1 \u2014 Transitivity", [s26, 1])
     # bc = bc trivially, M3: cb = bc
@@ -583,8 +583,8 @@ def p6():
               "SAS", [s24, s27, s28])
     s30 = b.s("\u25b3ecb = \u25b3bca", "M8 \u2014 Area symmetry", [s29])
     # Area decomposition: between(c,e,a), ¬on(b,N) → (△ceb + △bea) = △cba
-    s31 = b.s("(\u25b3ceb + \u25b3bea) = \u25b3cba", "Area transfer 4", [])
-    s32 = b.s("\u00ac(\u25b3aeb = 0)", "Area transfer 1", [])
+    s31 = b.s("(\u25b3ceb + \u25b3bea) = \u25b3cba", "Area transfer 2", [])
+    s32 = b.s("\u00ac(\u25b3aeb = 0)", "Area transfer 1a", [])
     s33 = b.s("\u25b3ceb < \u25b3cba", "CN5 \u2014 Whole > Part", [s31, s32])
     # M8: △ceb = △ecb, △cba = △bca
     s34 = b.s("\u25b3ecb < \u25b3bca", "M8 \u2014 Area symmetry", [s33])
@@ -637,7 +637,7 @@ def p7():
     # B6 trichotomy fully negated (a≠d, a≠b, d≠b, ¬between(a,d,b),
     # ¬between(b,a,d), and P3 kills between(d,b,a)) → contradiction
     s_c1bii = b.assume("\u00ac(between(b, a, d))")
-    s_d3 = b.s("d = a", "Betweenness 9", [])
+    s_d3 = b.s("d = a", "Betweenness 6", [])
     # Close Case 1b-i / 1b-ii
     s_da_1b = b.cases("d = a", s_c1bi, s_c1bii)
     # Close Case 1a / 1b
@@ -699,8 +699,8 @@ def p9():
               "let-point-on-line-between",
               [gids["on(a, M)"], gids["on(b, M)"], gids["\u00ac(a = b)"]])
     # ad = ab, af = ab (radii): DS3b
-    s14 = b.s("ad = ab", "Segment transfer 4", [s10, s12])
-    s15 = b.s("af = ab", "Segment transfer 4", [s10, s13])
+    s14 = b.s("ad = ab", "Segment transfer 3b", [s10, s12])
+    s15 = b.s("af = ab", "Segment transfer 3b", [s10, s13])
     # ad = af: CN1
     s16 = b.s("ad = af", "CN1 \u2014 Transitivity", [s14, s15])
     # Equilateral triangle on df (I.1) → e
@@ -719,9 +719,9 @@ def p9():
     # Line K through a and e
     s22 = b.s("on(a, K), on(e, K)", "let-line", [s21])
     # DA4: ∠dae = ∠cae (d,c on ray from a on N; e on K)
-    s23 = b.s("\u2220dae = \u2220cae", "Angle transfer 9", [])
+    s23 = b.s("\u2220dae = \u2220cae", "Angle transfer 4", [])
     # DA4: ∠fae = ∠bae (f,b on ray from a on M; e on K)
-    s24 = b.s("\u2220fae = \u2220bae", "Angle transfer 9", [])
+    s24 = b.s("\u2220fae = \u2220bae", "Angle transfer 4", [])
     # ∠bae = ∠cae: CN1
     s25 = b.s("\u2220bae = \u2220cae", "CN1 \u2014 Transitivity", [s20, s23, s24])
     # same-side conclusions
@@ -750,12 +750,12 @@ def p10():
              [gids["\u00ac(a = b)"]])
     s3 = b.s("inside(a, \u03b1)", "Generality 3", [s1])
     s4 = b.s("inside(b, \u03b2)", "Generality 3", [s2])
-    s5 = b.s("intersects(\u03b1, \u03b2)", "Intersection 9",
+    s5 = b.s("intersects(\u03b1, \u03b2)", "Intersection 5",
              [s1, s2, s3, s4])
     s6 = b.s("on(c, \u03b1), on(c, \u03b2)",
              "let-intersection-circle-circle-one", [s5])
-    s7 = b.s("ac = ab", "Segment transfer 4", [s1, s6])
-    s8 = b.s("bc = ba", "Segment transfer 4", [s2, s6])
+    s7 = b.s("ac = ab", "Segment transfer 3b", [s1, s6])
+    s8 = b.s("bc = ba", "Segment transfer 3b", [s2, s6])
     s9 = b.s("\u00ac(c = a)", "M1 \u2014 Zero segment", [s7])
     s10 = b.s("\u00ac(c = b)", "M1 \u2014 Zero segment", [s8])
     # ── Reductio: on(c,L) → C1 on α gives between(b,a,c),
@@ -763,7 +763,7 @@ def p10():
     s11 = b.assume("on(c, L)")
     s12 = b.s("between(b, a, c)", "Circle 1", [])
     s13 = b.s("between(a, b, c)", "Circle 1", [])
-    s14 = b.s("\u00ac(between(b, a, c))", "Betweenness 4", [s13])
+    s14 = b.s("\u00ac(between(b, a, c))", "Betweenness 1d", [s13])
     s15 = b.s("\u22a5", "\u22a5-intro", [s12, s14])
     s16 = b.s("\u00ac(on(c, L))", "\u22a5-elim", [s11])
     # ── ac = bc: CN1 ──
@@ -783,8 +783,8 @@ def p10():
     s26 = b.s("intersects(K, L)", "Diagrammatic", [])
     s27 = b.s("on(d, K), on(d, L)", "let-intersection-line-line", [s26])
     # ── DA4 angle identification ──
-    s28 = b.s("\u2220ace = \u2220acd", "Angle transfer 9", [])
-    s29 = b.s("\u2220bce = \u2220bcd", "Angle transfer 9", [])
+    s28 = b.s("\u2220ace = \u2220acd", "Angle transfer 4", [])
+    s29 = b.s("\u2220bce = \u2220bcd", "Angle transfer 4", [])
     s30 = b.s("\u2220acd = \u2220bcd", "CN1 \u2014 Transitivity", [s22, s28, s29])
     # ── SAS: ac=bc, ∠acd=∠bcd, cd=cd → ad=bd ──
     s31 = b.s("cd = cd", "CN4 \u2014 Reflexivity", [])

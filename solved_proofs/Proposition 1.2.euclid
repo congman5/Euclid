@@ -1,0 +1,377 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 200.0,
+        "y": 250.0
+      },
+      {
+        "label": "B",
+        "x": 350.0,
+        "y": 350.0
+      },
+      {
+        "label": "C",
+        "x": 480.0,
+        "y": 350.0
+      },
+      {
+        "label": "D",
+        "x": 361.60254037844385,
+        "y": 170.0961894323342
+      },
+      {
+        "label": "G",
+        "x": 342.6862451044484,
+        "y": 479.79410229023426
+      },
+      {
+        "label": "F",
+        "x": 83.34361606401359,
+        "y": 307.36451970122255
+      }
+    ],
+    "segments": [
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#f57c00"
+      },
+      {
+        "from": "A",
+        "to": "D",
+        "color": "#f57c00"
+      },
+      {
+        "from": "D",
+        "to": "B",
+        "color": "#f57c00"
+      },
+      {
+        "from": "B",
+        "to": "G",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "F",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [
+      {
+        "from": "D",
+        "through": "A",
+        "color": "#cc3333"
+      },
+      {
+        "from": "D",
+        "through": "B",
+        "color": "#cc3333"
+      }
+    ],
+    "circles": [
+      {
+        "center": "B",
+        "radius": 180.27756377319946,
+        "radius_point": "A",
+        "color": "#f57c00"
+      },
+      {
+        "center": "A",
+        "radius": 180.27756377319946,
+        "radius_point": "B",
+        "color": "#f57c00"
+      },
+      {
+        "center": "B",
+        "radius": 130.0,
+        "radius_point": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "center": "D",
+        "radius": 310.275077077474,
+        "radius_point": "G",
+        "color": "#2d70b3"
+      }
+    ],
+    "angleMarks": [],
+    "equalityGroups": [
+      [
+        1,
+        [
+          [
+            "B",
+            "_p3"
+          ],
+          [
+            "B",
+            "C"
+          ],
+          [
+            "A",
+            "_p4"
+          ]
+        ]
+      ],
+      [
+        1,
+        [
+          [
+            "A",
+            "F"
+          ],
+          [
+            "B",
+            "G"
+          ]
+        ]
+      ]
+    ]
+  },
+  "exportedAt": "2026-03-14T05:08:01Z",
+  "proof": {
+    "name": "Proposition 1.2",
+    "premises": [
+      "on(b, L)",
+      "on(c, L)",
+      "¬(b = c)",
+      "¬(a = b)",
+      "¬(a = c)"
+    ],
+    "goal": "af = bc",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C"
+      ],
+      "lines": []
+    },
+    "steps": [
+      {
+        "lineNumber": 6,
+        "text": "ab = ad, ab = bd, ¬(d = a), ¬(d = b)",
+        "justification": "Prop.I.1",
+        "dependencies": [
+          4
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 7,
+        "text": "on(d, M), on(b, M)",
+        "justification": "let-line",
+        "dependencies": [
+          6
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 8,
+        "text": "center(b, α), on(c, α)",
+        "justification": "let-circle",
+        "dependencies": [
+          3
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 9,
+        "text": "inside(b, α)",
+        "justification": "Generality 3",
+        "dependencies": [
+          8
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 10,
+        "text": "on(e, α), on(e, M), between(e, b, d)",
+        "justification": "let-intersection-line-circle-extend",
+        "dependencies": [
+          9,
+          7
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 11,
+        "text": "bc = be",
+        "justification": "Segment transfer 4",
+        "dependencies": [
+          10,
+          8
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 12,
+        "text": "¬(e = d)",
+        "justification": "Betweenness 3",
+        "dependencies": [
+          10
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 13,
+        "text": "center(d, β), on(e, β)",
+        "justification": "let-circle",
+        "dependencies": [
+          12
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 14,
+        "text": "on(d, N), on(a, N)",
+        "justification": "let-line",
+        "dependencies": [
+          6
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 15,
+        "text": "da = db",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          6
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 16,
+        "text": "inside(b, β)",
+        "justification": "Circle 1",
+        "dependencies": [
+          10,
+          13
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 17,
+        "text": "db < de",
+        "justification": "Segment transfer 6",
+        "dependencies": [
+          13,
+          16
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 18,
+        "text": "da < de",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          15,
+          17
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 19,
+        "text": "inside(a, β)",
+        "justification": "Segment transfer 5",
+        "dependencies": [
+          13,
+          18
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 20,
+        "text": "on(f, β), on(f, N), between(f, a, d)",
+        "justification": "let-intersection-line-circle-extend",
+        "dependencies": [
+          19,
+          14
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 21,
+        "text": "df = de",
+        "justification": "Segment transfer 4",
+        "dependencies": [
+          13,
+          20
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 22,
+        "text": "fa + ad = fd",
+        "justification": "Segment transfer 1",
+        "dependencies": [
+          20
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 23,
+        "text": "eb + bd = ed",
+        "justification": "Segment transfer 1",
+        "dependencies": [
+          10
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 24,
+        "text": "af = be",
+        "justification": "CN3 — Subtraction",
+        "dependencies": [
+          21,
+          22,
+          23,
+          15
+        ],
+        "depth": 0,
+        "status": "✓"
+      },
+      {
+        "lineNumber": 25,
+        "text": "af = bc",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          24,
+          11
+        ],
+        "depth": 0,
+        "status": "✓"
+      }
+    ]
+  }
+}

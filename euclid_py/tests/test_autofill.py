@@ -248,19 +248,19 @@ class TestAutofillNamedAxiom:
         assert step.status == "\u2713", \
             f"Generality 3 should be accepted, got status: {step.status}"
 
-    def test_betweenness_1_autofill(self):
-        """Betweenness 1: between(a,b,c) → between(c,b,a).
+    def test_betweenness_1a_autofill(self):
+        """Betweenness 1a (B1a): between(a,b,c) → between(c,b,a).
 
         Single-conclusion axiom, should autofill.
         """
         p = self._make_panel()
         p.set_declarations(["a", "b", "c"], [])
         p.add_premise_text("between(a, b, c)")
-        p.add_step("", "Betweenness 1", [1])
+        p.add_step("", "Betweenness 1a", [1])
         p._eval_all()
         step = p._steps[0]
         assert step.text.strip() != "", \
-            f"Betweenness 1 autofill should produce text"
+            f"Betweenness 1a autofill should produce text"
         assert "between(" in step.text, \
             f"Expected between(), got: {step.text}"
 
@@ -270,12 +270,12 @@ class TestAutofillNamedAxiom:
         leaving the step empty for the user to fill in manually."""
         from euclid_py.ui.proof_panel import ProofPanel
         ax_index = ProofPanel._get_axiom_by_name()
-        # "Intersection 3" has multiple positive literals
-        clause = ax_index.get("Intersection 3")
+        # "Intersection 2b" has multiple positive literals
+        clause = ax_index.get("Intersection 2b")
         assert clause is not None
         conclusions = [l for l in clause.literals if l.polarity]
         assert len(conclusions) > 1, \
-            f"Intersection 3 should have multiple conclusions, got {len(conclusions)}"
+            f"Intersection 2b should have multiple conclusions, got {len(conclusions)}"
 
     def test_named_axiom_wrong_refs_fails(self):
         """Named axiom with wrong refs should fail autofill (✗)."""
@@ -314,9 +314,10 @@ class TestAutofillNamedAxiom:
         # Should have entries for all groups
         assert "Generality 1" in ax_index
         assert "Generality 3" in ax_index
-        assert "Betweenness 1" in ax_index
+        assert "Betweenness 1a" in ax_index
         assert "Intersection 1" in ax_index
         assert "Segment transfer 1" in ax_index
+        # With backward-compat aliases, we have more entries than before
         assert len(ax_index) >= 50  # at least 50 named axioms
 
 
@@ -481,12 +482,12 @@ class TestAutofillPropI1Scenario:
         assert p._steps[3].status == "\u2713", \
             f"Step 5 (Generality 3) should be ✓, got: {p._steps[3].status}"
 
-    def test_prop_i1_intersection3_multi_conclusion(self):
-        """Intersection 3 is a multi-conclusion axiom.
+    def test_prop_i1_intersection2b_multi_conclusion(self):
+        """Intersection 2b (I2b) is a multi-conclusion axiom.
 
-        In the Prop I.1 screenshot, step 6 used 'Intersection 3' with
+        In the Prop I.1 screenshot, step 6 used 'Intersection 2b' with
         refs 2,3 and had empty text → ✗. This is expected because
-        Intersection 3 has multiple positive conclusions, so autofill
+        Intersection 2b has multiple positive conclusions, so autofill
         cannot determine the intended one. The step stays empty and
         the verifier rejects it.
         """
@@ -497,17 +498,17 @@ class TestAutofillPropI1Scenario:
             "center(a, \u03b1), on(b, \u03b1)", "let-circle", [1])
         p.add_step(
             "center(b, \u03b2), on(a, \u03b2)", "let-circle", [1])
-        # Intersection 3 with refs to steps 2 and 3 — multi-conclusion
-        p.add_step("", "Intersection 3", [2, 3])
+        # Intersection 2b with refs to steps 2 and 3 — multi-conclusion
+        p.add_step("", "Intersection 2b", [2, 3])
         p._eval_all()
         step = p._steps[2]
         # Multi-conclusion axiom: autofill returns None, text stays empty
         # Verifier rejects empty statement
         assert step.status == "\u2717", \
-            f"Intersection 3 (multi-conclusion) should be ✗, got: {step.status}"
+            f"Intersection 2b (multi-conclusion) should be ✗, got: {step.status}"
 
-    def test_prop_i1_intersection9_produces_correct_order(self):
-        """Intersection 9 autofill must produce intersects(α, β),
+    def test_prop_i1_intersection5_produces_correct_order(self):
+        """Intersection 5 (I5) autofill must produce intersects(α, β),
         not the swapped intersects(β, α).
 
         Regression test: Clause.literals is a frozenset so prereq
@@ -527,19 +528,19 @@ class TestAutofillPropI1Scenario:
             "center(b, \u03b2), on(a, \u03b2)", "let-circle", [1])
         p.add_step("", "Generality 3", [2])
         p.add_step("", "Generality 3", [3])
-        # Intersection 9 with all four prerequisite refs
-        p.add_step("", "Intersection 9", [2, 3, 4, 5])
+        # Intersection 5 with all four prerequisite refs
+        p.add_step("", "Intersection 5", [2, 3, 4, 5])
         p._eval_all()
-        step = p._steps[4]  # the Intersection 9 step
+        step = p._steps[4]  # the Intersection 5 step
         assert step.text.strip() != "", \
-            "Intersection 9 should autofill"
+            "Intersection 5 should autofill"
         assert "intersects(\u03b1, \u03b2)" in step.text, \
             f"Expected intersects(\u03b1, \u03b2), got: {step.text}"
         assert step.status == "\u2713", \
-            f"Intersection 9 should be \u2713, got: {step.status}"
+            f"Intersection 5 should be \u2713, got: {step.status}"
 
-    def test_prop_i1_intersection9_incomplete_refs_fails(self):
-        """Intersection 9 with only refs 4,5 (missing on() facts)
+    def test_prop_i1_intersection5_incomplete_refs_fails(self):
+        """Intersection 5 (I5) with only refs 4,5 (missing on() facts)
         should fail verification because the referenced lines do not
         contain all four prerequisites."""
         p = self._make_panel()
@@ -552,7 +553,7 @@ class TestAutofillPropI1Scenario:
         p.add_step("", "Generality 3", [2])
         p.add_step("", "Generality 3", [3])
         # Only citing the inside() facts — missing the on() facts
-        p.add_step("", "Intersection 9", [4, 5])
+        p.add_step("", "Intersection 5", [4, 5])
         p._eval_all()
         step = p._steps[4]
         # Autofill still populates the text...
@@ -562,8 +563,8 @@ class TestAutofillPropI1Scenario:
         assert step.status == "\u2717", \
             f"Incomplete refs should be \u2717, got: {step.status}"
 
-    def test_prop_i1_intersection9_with_all_refs(self):
-        """Intersection 9 with refs 2,3,4,5 (answer key format)."""
+    def test_prop_i1_intersection5_with_all_refs(self):
+        """Intersection 5 (I5) with refs 2,3,4,5 (answer key format)."""
         p = self._make_panel()
         p.set_declarations(["a", "b"], [])
         p.add_premise_text("\u00ac(a = b)")
@@ -573,14 +574,14 @@ class TestAutofillPropI1Scenario:
             "center(b, \u03b2), on(a, \u03b2)", "let-circle", [1])
         p.add_step("", "Generality 3", [2])
         p.add_step("", "Generality 3", [3])
-        # Intersection 9 with all four refs (answer key style)
-        p.add_step("", "Intersection 9", [2, 3, 4, 5])
+        # Intersection 5 with all four refs (answer key style)
+        p.add_step("", "Intersection 5", [2, 3, 4, 5])
         p._eval_all()
         step = p._steps[4]
         assert "intersects(\u03b1, \u03b2)" in step.text, \
             f"Expected intersects(\u03b1, \u03b2), got: {step.text}"
         assert step.status == "\u2713", \
-            f"Intersection 9 should be \u2713, got: {step.status}"
+            f"Intersection 5 should be \u2713, got: {step.status}"
 
 
 @pytest.mark.skipif(not _has_display(), reason="No display available")
@@ -898,4 +899,251 @@ class TestConstructionPrereqEnforcement:
             "Circle-circle intersection without intersects() should be rejected"
         assert any("prerequisite" in e.lower()
                     for e in r.line_results[1].errors)
+
+
+# ===================================================================
+# Metric autofill tests — verify Metric justification autofill
+# against verified_proofs_book_1.json answer key.
+# ===================================================================
+
+
+@pytest.mark.skipif(not _has_display(), reason="No display available")
+class TestAutofillMetric:
+    """Metric justification autofill for Prop I.1 / I.4 / I.5 / I.8."""
+
+    @pytest.fixture(autouse=True)
+    def qt_app(self):
+        from PyQt6.QtWidgets import QApplication
+        self.app = QApplication.instance() or QApplication(sys.argv)
+        yield
+
+    def _make_panel(self):
+        from euclid_py.ui.proof_panel import ProofPanel
+        return ProofPanel()
+
+    # -- Prop I.1 -------------------------------------------------
+
+    def _setup_prop_i1_context(self):
+        """Build Prop I.1 proof context up to step 9 (before Metric steps)."""
+        p = self._make_panel()
+        p.set_declarations(["a", "b"], [])
+        p.add_premise_text("\u00ac(a = b)")
+        # Steps 1-9 (step 1 = "Given" is a premise; add steps 2-9)
+        p.add_step(
+            "center(a, \u03b1), on(b, \u03b1)", "let-circle", [1])
+        p.add_step(
+            "center(b, \u03b2), on(a, \u03b2)", "let-circle", [1])
+        p.add_step("inside(a, \u03b1)", "Generality 3", [2])
+        p.add_step("inside(b, \u03b2)", "Generality 3", [3])
+        p.add_step(
+            "intersects(\u03b1, \u03b2)", "Intersection 5", [2, 3, 4, 5])
+        p.add_step(
+            "on(c, \u03b1), on(c, \u03b2)",
+            "let-intersection-circle-circle-one", [6])
+        p.add_step("ac = ab", "Segment transfer 3b", [2, 7])
+        p.add_step("bc = ba", "Segment transfer 3b", [3, 7])
+        return p
+
+    def test_prop_i1_step10_swap(self):
+        """Prop I.1 step 10: Metric ref=[8] \u2192 ab = ac (swap of ac = ab)."""
+        p = self._setup_prop_i1_context()
+        p.add_step("", "Metric", [8])
+        p._eval_all()
+        step = p._steps[8]  # 0-indexed: steps 2-9 are [0..7], step 10 is [8]
+        assert step.text == "ab = ac", \
+            f"Expected 'ab = ac', got: {step.text!r}"
+        assert step.status == "\u2713", \
+            f"Expected \u2713, got: {step.status}"
+
+    def test_prop_i1_step11_transitivity(self):
+        """Prop I.1 step 11: Metric refs=[9,8] \u2192 ab = bc (transitivity)."""
+        p = self._setup_prop_i1_context()
+        p.add_step("ab = ac", "Metric", [8])  # step 10
+        p.add_step("", "Metric", [9, 8])      # step 11
+        p._eval_all()
+        step = p._steps[9]
+        assert step.text == "ab = bc", \
+            f"Expected 'ab = bc', got: {step.text!r}"
+        assert step.status == "\u2713", \
+            f"Expected \u2713, got: {step.status}"
+
+    def test_prop_i1_step12_disequality(self):
+        """Prop I.1 step 12: Metric ref=[8] \u2192 \u00ac(c = a) (M1 disequality)."""
+        p = self._setup_prop_i1_context()
+        p.add_step("ab = ac", "Metric", [8])   # step 10
+        p.add_step("ab = bc", "Metric", [9, 8])  # step 11
+        p.add_step("", "Metric", [8])           # step 12
+        p._eval_all()
+        step = p._steps[10]
+        assert step.text == "\u00ac(c = a)", \
+            f"Expected '\u00ac(c = a)', got: {step.text!r}"
+        assert step.status == "\u2713", \
+            f"Expected \u2713, got: {step.status}"
+
+    def test_prop_i1_step13_disequality(self):
+        """Prop I.1 step 13: Metric ref=[9] \u2192 \u00ac(c = b) (M1 disequality)."""
+        p = self._setup_prop_i1_context()
+        p.add_step("ab = ac", "Metric", [8])     # step 10
+        p.add_step("ab = bc", "Metric", [9, 8])  # step 11
+        p.add_step("\u00ac(c = a)", "Metric", [8])  # step 12
+        p.add_step("", "Metric", [9])             # step 13
+        p._eval_all()
+        step = p._steps[11]
+        assert step.text == "\u00ac(c = b)", \
+            f"Expected '\u00ac(c = b)', got: {step.text!r}"
+        assert step.status == "\u2713", \
+            f"Expected \u2713, got: {step.status}"
+
+    # -- Prop I.4 -------------------------------------------------
+
+    def test_prop_i4_step5_angle_m4_both(self):
+        """Prop I.4 step 5: Metric ref=[4] \u2192 \u2220bca = \u2220efd
+        (M4-both-sides rewrite of SAS conclusion angle)."""
+        p = self._make_panel()
+        p.set_declarations([], [])
+        # Premises are lines 1-3
+        p.add_premise_text("ab = de")
+        p.add_premise_text("ac = df")
+        p.add_premise_text("\u2220bac = \u2220edf")
+        # SAS step = line 4, Metric step = line 5
+        p.add_step(
+            "bc = ef, \u2220abc = \u2220def, "
+            "\u2220acb = \u2220dfe, \u25b3abc = \u25b3def",
+            "SAS", [1, 2, 3])
+        p.add_step("", "Metric", [4])
+        p._eval_all()
+        step = p._steps[1]
+        assert step.text == "\u2220bca = \u2220efd", \
+            f"Expected '\u2220bca = \u2220efd', got: {step.text!r}"
+        assert step.status == "\u2713", \
+            f"Expected \u2713, got: {step.status}"
+
+    # -- Prop I.5 -------------------------------------------------
+
+    def test_prop_i5_step5_swap(self):
+        """Prop I.5 step 5: Metric ref=[1] \u2192 ac = ab (swap of ab = ac)."""
+        p = self._make_panel()
+        p.set_declarations([], [])
+        # Premises are lines 1-4
+        p.add_premise_text("ab = ac")
+        p.add_premise_text("\u00ac(a = b)")
+        p.add_premise_text("\u00ac(a = c)")
+        p.add_premise_text("\u00ac(b = c)")
+        # Metric step = line 5, ref=[1] points to premise "ab = ac"
+        p.add_step("", "Metric", [1])
+        p._eval_all()
+        step = p._steps[0]
+        assert step.text == "ac = ab", \
+            f"Expected 'ac = ab', got: {step.text!r}"
+        assert step.status == "\u2713", \
+            f"Expected \u2713, got: {step.status}"
+
+    def test_prop_i5_step6_angle_consequence(self):
+        """Prop I.5 step 6: Metric ref=[1] \u2192 \u2220bac = \u2220cab
+        (M9 angle consequence, vertex is shared point 'a')."""
+        p = self._make_panel()
+        p.set_declarations([], [])
+        # Premises are lines 1-4
+        p.add_premise_text("ab = ac")
+        p.add_premise_text("\u00ac(a = b)")
+        p.add_premise_text("\u00ac(a = c)")
+        p.add_premise_text("\u00ac(b = c)")
+        # Step 5 (swap), step 6 (angle consequence)
+        p.add_step("ac = ab", "Metric", [1])
+        p.add_step("", "Metric", [1])
+        p._eval_all()
+        step = p._steps[1]
+        assert step.text == "\u2220bac = \u2220cab", \
+            f"Expected '\u2220bac = \u2220cab', got: {step.text!r}"
+        assert step.status == "\u2713", \
+            f"Expected \u2713, got: {step.status}"
+
+    # -- Prop I.8 -------------------------------------------------
+
+    def test_prop_i8_step5_angle_m4_both(self):
+        """Prop I.8 step 5: Metric ref=[4] \u2192 \u2220bca = \u2220efd
+        (M4-both-sides rewrite of SSS conclusion angle)."""
+        p = self._make_panel()
+        p.set_declarations([], [])
+        # Premises are lines 1-3
+        p.add_premise_text("ab = de")
+        p.add_premise_text("bc = ef")
+        p.add_premise_text("ca = fd")
+        # SSS step = line 4, Metric step = line 5
+        p.add_step(
+            "\u2220bac = \u2220edf, \u2220abc = \u2220def, "
+            "\u2220acb = \u2220dfe, \u25b3abc = \u25b3def",
+            "SSS", [1, 2, 3])
+        p.add_step("", "Metric", [4])
+        p._eval_all()
+        step = p._steps[1]
+        assert step.text == "\u2220bca = \u2220efd", \
+            f"Expected '\u2220bca = \u2220efd', got: {step.text!r}"
+        assert step.status == "\u2713", \
+            f"Expected \u2713, got: {step.status}"
+
+
+# ===================================================================
+# Superposition (SAS / SSS) autofill tests
+# ===================================================================
+
+
+@pytest.mark.skipif(not _has_display(), reason="No display available")
+class TestAutofillSuperposition:
+    """SAS and SSS superposition autofill against answer key."""
+
+    @pytest.fixture(autouse=True)
+    def qt_app(self):
+        from PyQt6.QtWidgets import QApplication
+        self.app = QApplication.instance() or QApplication(sys.argv)
+        yield
+
+    def _make_panel(self):
+        from euclid_py.ui.proof_panel import ProofPanel
+        return ProofPanel()
+
+    def test_prop_i4_sas(self):
+        """Prop I.4 step 4: SAS refs=[1,2,3] \u2192
+        bc = ef, \u2220abc = \u2220def, \u2220acb = \u2220dfe, \u25b3abc = \u25b3def."""
+        p = self._make_panel()
+        p.set_declarations([], [])
+        # Premises are lines 1-3
+        p.add_premise_text("ab = de")
+        p.add_premise_text("ac = df")
+        p.add_premise_text("\u2220bac = \u2220edf")
+        # SAS step = line 4
+        p.add_step("", "SAS", [1, 2, 3])
+        p._eval_all()
+        step = p._steps[0]
+        expected = (
+            "bc = ef, \u2220abc = \u2220def, "
+            "\u2220acb = \u2220dfe, \u25b3abc = \u25b3def"
+        )
+        assert step.text == expected, \
+            f"Expected {expected!r}, got: {step.text!r}"
+        assert step.status == "\u2713", \
+            f"Expected \u2713, got: {step.status}"
+
+    def test_prop_i8_sss(self):
+        """Prop I.8 step 4: SSS refs=[1,2,3] \u2192
+        \u2220bac = \u2220edf, \u2220abc = \u2220def, \u2220acb = \u2220dfe,
+        \u25b3abc = \u25b3def."""
+        p = self._make_panel()
+        p.set_declarations([], [])
+        # Premises are lines 1-3
+        p.add_premise_text("ab = de")
+        p.add_premise_text("bc = ef")
+        p.add_premise_text("ca = fd")
+        # SSS step = line 4
+        p.add_step("", "SSS", [1, 2, 3])
+        p._eval_all()
+        step = p._steps[0]
+        expected = (
+            "\u2220bac = \u2220edf, \u2220abc = \u2220def, "
+            "\u2220acb = \u2220dfe, \u25b3abc = \u25b3def"
+        )
+        assert step.text == expected, \
+            f"Expected {expected!r}, got: {step.text!r}"
+        assert step.status == "\u2713", \
+            f"Expected \u2713, got: {step.status}"
 

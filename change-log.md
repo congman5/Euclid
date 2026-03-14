@@ -4,6 +4,32 @@ All notable changes to the Euclid Elements Simulator project.
 
 ## [8.0.0] - 2025-XX-XX
 
+### Fixed — Axiom naming uses paper labels instead of sequential list indices (verifier/unified_checker.py, euclid_py/ui/proof_panel.py)
+
+- **Paper-label axiom naming**: Axiom groups whose paper definitions use sub-labels (e.g. B1a-d, C2a-d, I2a-d, DS3a-b, DA1a-c, DAr1a-c) now display correct paper labels in the UI and dropdown. Previously, all axioms used sequential list-index naming (e.g. "Betweenness 3" mapped to B1c instead of B3), causing users to select the wrong axiom when following the paper's numbering.
+- **Affected groups** (6 of 10):
+  - **Betweenness**: B1a-d, B2-B7 → "Betweenness 1a" through "Betweenness 7"
+  - **Circle**: C1, C2a-d, C3a-d, C4 → "Circle 1" through "Circle 4"
+  - **Intersection**: I1, I2a-d, I3, I4a-b, I5 → "Intersection 1" through "Intersection 5"
+  - **Segment transfer**: DS1-DS2, DS3a-b, DS4a-d → "Segment transfer 1" through "Segment transfer 4d"
+  - **Angle transfer**: DA1a-c, DA2a-c, DA3a-b, DA4, DA5a-b → "Angle transfer 1a" through "Angle transfer 5b"
+  - **Area transfer**: DAr1a-c, DAr2 → "Area transfer 1a" through "Area transfer 2"
+- **Backward compatibility**: Old sequential names (e.g. "Betweenness 4" for B1d) are registered as aliases in `_get_axiom_by_name()` so existing saved proofs still resolve correctly.
+- **Proofs updated**: `scripts/real_proofs.py` uses new paper-label names. All 10 real proofs (I.1-I.10) verify successfully.
+- **Description fixes**: Added missing descriptions for Segment transfer 4c/4d and Area transfer 1c.
+
+### Added — Metric / SAS / SSS autofill for proof journal (euclid_py/ui/proof_panel.py)
+
+- **Metric autofill** (`_autofill_metric`): when a step has justification "Metric" and the sentence is left blank, the engine now infers the most useful metric consequence from the referenced lines using a sequential five-pattern strategy:
+  1. **Multi-ref transitivity (CN1)** — cross-ref original-term pairings derive equalities connecting different references (e.g. `ab = bc` from `ac = ab` and `bc = ba`). Filters trivial M3/M4 self-identities and picks alphabetically first.
+  2. **Angle M4-both-sides rewrite** — for single-ref steps with angle equalities, applies M4 to both sides (e.g. `∠acb = ∠dfe` → `∠bca = ∠efd`). Processes ref equalities in reverse order so the last angle (most useful from SAS/SSS conclusions) is tried first.
+  3. **Pure swap** — produces `Y = X` from `X = Y`. Skipped when the same canonical equality already appears in a non-ref, non-Given prior step (redundancy detection).
+  4. **M1 disequality** — derives `¬(p = q)` from nonzero segments, trying conventional `(p2, p1)` order first.
+  5. **Angle consequences (M9)** — derives angle equalities from segment equalities via permutation, scoring by vertex proximity to shared segment endpoints.
+- **SAS/SSS autofill** (`_autofill_superposition`): when justification is "SAS" or "SSS", derives triangle congruence results by finding the vertex correspondence from referenced segment/angle equalities and calling the superposition engine. Produces the full conclusion (segment eq, angle eqs, area eq).
+- **Robustness**: "Given" steps (which restate premises) are excluded from the non-ref equality canon set to prevent false redundancy detection.
+- **Tests**: 10 new pytest tests in `TestAutofillMetric` (8 cases from Prop I.1, I.4, I.5, I.8) and `TestAutofillSuperposition` (SAS for I.4, SSS for I.8). All 59 autofill tests pass with no regressions.
+
 ### Changed — Eval button verifies only the selected step (euclid_py/ui/proof_panel.py)
 
 - The **Eval** button now evaluates only the currently selected proof line instead of the entire proof. It builds a truncated proof containing only the premises and steps up to the selected line, so the verifier processes the minimum context necessary. This makes single-step verification significantly faster on large proofs. The **All** button continues to evaluate the full proof.
