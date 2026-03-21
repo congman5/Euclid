@@ -1,0 +1,297 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 175.0,
+        "y": 380.0
+      },
+      {
+        "label": "B",
+        "x": 475.0,
+        "y": 380.0
+      },
+      {
+        "label": "C",
+        "x": 300.0,
+        "y": 180.0
+      },
+      {
+        "label": "D",
+        "x": 350.0,
+        "y": 220.0
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-03-21T23:05:15Z",
+  "proof": {
+    "name": "Prop.I.7",
+    "premises": [
+      "on(b, L)",
+      "on(c, L)",
+      "¬(b = c)",
+      "same-side(a, d, L)",
+      "bd = ba",
+      "cd = ca"
+    ],
+    "goal": "d = a",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "lines": []
+    },
+    "steps": [
+      {
+        "lineNumber": 7,
+        "text": "¬(d = a)",
+        "justification": "Assume",
+        "dependencies": [],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 8,
+        "text": "on(a, R), on(b, R)",
+        "justification": "let-line",
+        "dependencies": [
+          7
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 9,
+        "text": "on(d, R)",
+        "justification": "Assume",
+        "dependencies": [],
+        "depth": 2,
+        "status": "?"
+      },
+      {
+        "lineNumber": 10,
+        "text": "between(a, d, b)",
+        "justification": "Assume",
+        "dependencies": [],
+        "depth": 3,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "(ad + db) = ab",
+        "justification": "Segment transfer 1",
+        "dependencies": [
+          10
+        ],
+        "depth": 3,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "ad = 0",
+        "justification": "CN3 — Subtraction",
+        "dependencies": [
+          11,
+          5
+        ],
+        "depth": 3,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "d = a",
+        "justification": "M1 — Zero segment",
+        "dependencies": [
+          12
+        ],
+        "depth": 3,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "¬(between(a, d, b))",
+        "justification": "Assume",
+        "dependencies": [],
+        "depth": 3,
+        "status": "?"
+      },
+      {
+        "lineNumber": 15,
+        "text": "between(b, a, d)",
+        "justification": "Assume",
+        "dependencies": [],
+        "depth": 4,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "(ba + ad) = bd",
+        "justification": "Segment transfer 1",
+        "dependencies": [
+          15
+        ],
+        "depth": 4,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
+        "text": "ad = 0",
+        "justification": "CN3 — Subtraction",
+        "dependencies": [
+          16,
+          5
+        ],
+        "depth": 4,
+        "status": "?"
+      },
+      {
+        "lineNumber": 18,
+        "text": "d = a",
+        "justification": "M1 — Zero segment",
+        "dependencies": [
+          17
+        ],
+        "depth": 4,
+        "status": "?"
+      },
+      {
+        "lineNumber": 19,
+        "text": "¬(between(b, a, d))",
+        "justification": "Assume",
+        "dependencies": [],
+        "depth": 4,
+        "status": "?"
+      },
+      {
+        "lineNumber": 20,
+        "text": "d = a",
+        "justification": "Betweenness 9",
+        "dependencies": [
+          19,
+          14,
+          9,
+          7
+        ],
+        "depth": 4,
+        "status": "?"
+      },
+      {
+        "lineNumber": 21,
+        "text": "d = a",
+        "justification": "Cases",
+        "dependencies": [
+          15,
+          18,
+          19,
+          20
+        ],
+        "depth": 3,
+        "status": "?"
+      },
+      {
+        "lineNumber": 22,
+        "text": "d = a",
+        "justification": "Cases",
+        "dependencies": [
+          10,
+          13,
+          14,
+          21
+        ],
+        "depth": 2,
+        "status": "?"
+      },
+      {
+        "lineNumber": 23,
+        "text": "¬(on(d, R))",
+        "justification": "Assume",
+        "dependencies": [],
+        "depth": 2,
+        "status": "?"
+      },
+      {
+        "lineNumber": 24,
+        "text": "d = a",
+        "justification": "Reit",
+        "dependencies": [
+          22
+        ],
+        "depth": 2,
+        "status": "?"
+      },
+      {
+        "lineNumber": 25,
+        "text": "d = a",
+        "justification": "Cases",
+        "dependencies": [
+          9,
+          22,
+          23,
+          24
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 26,
+        "text": "⊥",
+        "justification": "Contradiction",
+        "dependencies": [
+          25,
+          7
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 27,
+        "text": "d = a",
+        "justification": "Reductio",
+        "dependencies": [
+          7,
+          26
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

@@ -1,0 +1,260 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150.0,
+        "y": 350.0
+      },
+      {
+        "label": "B",
+        "x": 450.0,
+        "y": 350.0
+      },
+      {
+        "label": "C",
+        "x": 350.0,
+        "y": 150.0
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [
+      {
+        "from": "B",
+        "vertex": "A",
+        "to": "C"
+      }
+    ],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-03-21T23:05:15Z",
+  "proof": {
+    "name": "Prop.I.9",
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "on(a, M)",
+      "on(b, M)",
+      "on(a, N)",
+      "on(c, N)",
+      "¬(on(c, M))",
+      "¬(on(b, N))"
+    ],
+    "goal": "∠bae = ∠cae, same-side(e, c, M), same-side(e, b, N)",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C"
+      ],
+      "lines": []
+    },
+    "steps": [
+      {
+        "lineNumber": 10,
+        "text": "center(a, α), on(b, α)",
+        "justification": "let-circle",
+        "dependencies": [
+          1
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "inside(a, α)",
+        "justification": "Generality 3",
+        "dependencies": [
+          10
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "on(d, N), between(a, d, c), on(d, α)",
+        "justification": "let-point-on-line-between",
+        "dependencies": [
+          11,
+          6,
+          7
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "on(f, M), between(a, f, b), on(f, α)",
+        "justification": "let-point-on-line-between",
+        "dependencies": [
+          11,
+          4,
+          5
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "ad = ab",
+        "justification": "Segment transfer 4",
+        "dependencies": [
+          10,
+          12
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 15,
+        "text": "af = ab",
+        "justification": "Segment transfer 4",
+        "dependencies": [
+          10,
+          13
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "ad = af",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          14,
+          15
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
+        "text": "df = de, df = fe, ¬(e = d), ¬(e = f)",
+        "justification": "Prop.I.1",
+        "dependencies": [
+          16
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 18,
+        "text": "de = fe",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          17
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 19,
+        "text": "ae = ae",
+        "justification": "CN4 — Reflexivity",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 20,
+        "text": "∠dae = ∠fae, ∠ade = ∠afe, ∠aed = ∠aef, △ade = △afe",
+        "justification": "SSS",
+        "dependencies": [
+          16,
+          18,
+          19
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 21,
+        "text": "¬(e = a)",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          17
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 22,
+        "text": "on(a, K), on(e, K)",
+        "justification": "let-line",
+        "dependencies": [
+          21
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 23,
+        "text": "∠dae = ∠cae",
+        "justification": "Angle transfer 9",
+        "dependencies": [
+          12,
+          22
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 24,
+        "text": "∠fae = ∠bae",
+        "justification": "Angle transfer 9",
+        "dependencies": [
+          13,
+          22
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 25,
+        "text": "∠bae = ∠cae",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          20,
+          23,
+          24
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 26,
+        "text": "same-side(e, c, M)",
+        "justification": "Diagrammatic",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 27,
+        "text": "same-side(e, b, N)",
+        "justification": "Diagrammatic",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

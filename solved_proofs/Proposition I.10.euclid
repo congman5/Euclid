@@ -1,0 +1,417 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 175.0,
+        "y": 300.0
+      },
+      {
+        "label": "B",
+        "x": 475.0,
+        "y": 300.0
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-03-21T23:05:15Z",
+  "proof": {
+    "name": "Prop.I.10",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)"
+    ],
+    "goal": "between(a, d, b), ad = db",
+    "declarations": {
+      "points": [
+        "A",
+        "B"
+      ],
+      "lines": []
+    },
+    "steps": [
+      {
+        "lineNumber": 4,
+        "text": "center(a, α), on(b, α)",
+        "justification": "let-circle",
+        "dependencies": [
+          3
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 5,
+        "text": "center(b, β), on(a, β)",
+        "justification": "let-circle",
+        "dependencies": [
+          3
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 6,
+        "text": "inside(a, α)",
+        "justification": "Generality 3",
+        "dependencies": [
+          4
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 7,
+        "text": "inside(b, β)",
+        "justification": "Generality 3",
+        "dependencies": [
+          5
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 8,
+        "text": "intersects(α, β)",
+        "justification": "Intersection 9",
+        "dependencies": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 9,
+        "text": "on(c, α), on(c, β)",
+        "justification": "let-intersection-circle-circle-one",
+        "dependencies": [
+          8
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 10,
+        "text": "ac = ab",
+        "justification": "Segment transfer 4",
+        "dependencies": [
+          4,
+          9
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "bc = ba",
+        "justification": "Segment transfer 4",
+        "dependencies": [
+          5,
+          9
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "¬(c = a)",
+        "justification": "M1 — Zero segment",
+        "dependencies": [
+          10
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "¬(c = b)",
+        "justification": "M1 — Zero segment",
+        "dependencies": [
+          11
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "on(c, L)",
+        "justification": "Assume",
+        "dependencies": [],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 15,
+        "text": "between(b, a, c)",
+        "justification": "Circle 1",
+        "dependencies": [
+          14,
+          4
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "between(a, b, c)",
+        "justification": "Circle 1",
+        "dependencies": [
+          14,
+          5
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
+        "text": "¬(between(b, a, c))",
+        "justification": "Betweenness 4",
+        "dependencies": [
+          16
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 18,
+        "text": "⊥",
+        "justification": "⊥-intro",
+        "dependencies": [
+          15,
+          17
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 19,
+        "text": "¬(on(c, L))",
+        "justification": "⊥-elim",
+        "dependencies": [
+          14,
+          18
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 20,
+        "text": "ac = bc",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          10,
+          11
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 21,
+        "text": "on(c, M), on(a, M)",
+        "justification": "let-line",
+        "dependencies": [
+          12
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 22,
+        "text": "on(c, N), on(b, N)",
+        "justification": "let-line",
+        "dependencies": [
+          13
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 23,
+        "text": "¬(on(b, M))",
+        "justification": "Generality 1",
+        "dependencies": [
+          19,
+          21
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 24,
+        "text": "¬(on(a, N))",
+        "justification": "Generality 1",
+        "dependencies": [
+          19,
+          22
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 25,
+        "text": "∠ace = ∠bce, same-side(e, b, M), same-side(e, a, N)",
+        "justification": "Prop.I.9",
+        "dependencies": [
+          20,
+          21,
+          22,
+          23,
+          24,
+          12,
+          13
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 26,
+        "text": "¬(e = c)",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          25
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 27,
+        "text": "on(c, K), on(e, K)",
+        "justification": "let-line",
+        "dependencies": [
+          26
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 28,
+        "text": "¬(same-side(a, b, K))",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          25,
+          27
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 29,
+        "text": "intersects(K, L)",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          28,
+          1,
+          2
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 30,
+        "text": "on(d, K), on(d, L)",
+        "justification": "let-intersection-line-line",
+        "dependencies": [
+          29
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 31,
+        "text": "∠ace = ∠acd",
+        "justification": "Angle transfer 9",
+        "dependencies": [
+          21,
+          27,
+          30
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 32,
+        "text": "∠bce = ∠bcd",
+        "justification": "Angle transfer 9",
+        "dependencies": [
+          22,
+          27,
+          30
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 33,
+        "text": "∠acd = ∠bcd",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          25,
+          31,
+          32
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 34,
+        "text": "cd = cd",
+        "justification": "CN4 — Reflexivity",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 35,
+        "text": "ad = bd, ∠cad = ∠cbd, ∠cda = ∠cdb, △acd = △bcd",
+        "justification": "SAS",
+        "dependencies": [
+          20,
+          34,
+          33
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 36,
+        "text": "between(a, d, b)",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          30,
+          1,
+          2
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 37,
+        "text": "ad = db",
+        "justification": "M3 — Symmetry",
+        "dependencies": [
+          35
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

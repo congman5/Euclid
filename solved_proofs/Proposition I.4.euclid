@@ -1,0 +1,121 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150.0,
+        "y": 200.0
+      },
+      {
+        "label": "B",
+        "x": 100.0,
+        "y": 380.0
+      },
+      {
+        "label": "C",
+        "x": 300.0,
+        "y": 380.0
+      },
+      {
+        "label": "D",
+        "x": 400.0,
+        "y": 200.0
+      },
+      {
+        "label": "E",
+        "x": 350.0,
+        "y": 380.0
+      },
+      {
+        "label": "F",
+        "x": 550.0,
+        "y": 380.0
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "E",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "F",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "E",
+        "to": "F",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-03-21T23:05:15Z",
+  "proof": {
+    "name": "Prop.I.4",
+    "premises": [
+      "ab = de",
+      "ac = df",
+      "∠bac = ∠edf"
+    ],
+    "goal": "bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "lines": []
+    },
+    "steps": [
+      {
+        "lineNumber": 4,
+        "text": "bc = ef, ∠abc = ∠def, ∠acb = ∠dfe, △abc = △def",
+        "justification": "SAS",
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 5,
+        "text": "∠bca = ∠efd",
+        "justification": "M4 — Angle symmetry",
+        "dependencies": [
+          4
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

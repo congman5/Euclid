@@ -1,0 +1,99 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 325.0,
+        "y": 150.0
+      },
+      {
+        "label": "B",
+        "x": 175.0,
+        "y": 400.0
+      },
+      {
+        "label": "C",
+        "x": 475.0,
+        "y": 400.0
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-03-21T23:05:15Z",
+  "proof": {
+    "name": "Prop.I.5",
+    "premises": [
+      "ab = ac",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)"
+    ],
+    "goal": "∠abc = ∠acb",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C"
+      ],
+      "lines": []
+    },
+    "steps": [
+      {
+        "lineNumber": 5,
+        "text": "ac = ab",
+        "justification": "M3 — Symmetry",
+        "dependencies": [
+          1
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 6,
+        "text": "∠bac = ∠cab",
+        "justification": "M4 — Angle symmetry",
+        "dependencies": [
+          1
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 7,
+        "text": "bc = cb, ∠abc = ∠acb, ∠bca = ∠cba, △abc = △acb",
+        "justification": "Prop.I.4",
+        "dependencies": [
+          1,
+          5,
+          6
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

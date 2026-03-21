@@ -1,0 +1,377 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 325.0,
+        "y": 150.0
+      },
+      {
+        "label": "B",
+        "x": 175.0,
+        "y": 400.0
+      },
+      {
+        "label": "C",
+        "x": 475.0,
+        "y": 400.0
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-03-21T23:05:15Z",
+  "proof": {
+    "name": "Prop.I.6",
+    "premises": [
+      "∠abc = ∠acb",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "on(a, L)",
+      "on(b, L)",
+      "¬(on(c, L))"
+    ],
+    "goal": "ab = ac",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C"
+      ],
+      "lines": []
+    },
+    "steps": [
+      {
+        "lineNumber": 8,
+        "text": "ac < ab",
+        "justification": "Assume",
+        "dependencies": [],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 9,
+        "text": "between(b, d, a), bd = ac",
+        "justification": "Prop.I.3",
+        "dependencies": [
+          8
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 10,
+        "text": "on(b, M), on(c, M)",
+        "justification": "let-line",
+        "dependencies": [
+          4
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "∠dbc = ∠abc",
+        "justification": "Angle transfer 9",
+        "dependencies": [
+          9,
+          10
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "∠dbc = ∠acb",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          11,
+          1
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "bc = cb",
+        "justification": "M3 — Symmetry",
+        "dependencies": [],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "dc = ab, ∠bdc = ∠cab, ∠bcd = ∠cba, △dbc = △acb",
+        "justification": "SAS",
+        "dependencies": [
+          9,
+          13,
+          12
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 15,
+        "text": "△dbc = △abc",
+        "justification": "M8 — Area symmetry",
+        "dependencies": [
+          14
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "(△bdc + △cda) = △bca",
+        "justification": "Area transfer 4",
+        "dependencies": [
+          9
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
+        "text": "¬(△dac = 0)",
+        "justification": "Area transfer 1",
+        "dependencies": [
+          9
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 18,
+        "text": "△bdc < △bca",
+        "justification": "CN5 — Whole > Part",
+        "dependencies": [
+          16,
+          17
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 19,
+        "text": "△dbc < △abc",
+        "justification": "M8 — Area symmetry",
+        "dependencies": [
+          18
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 20,
+        "text": "⊥",
+        "justification": "Contradiction",
+        "dependencies": [
+          15,
+          19
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 21,
+        "text": "¬(ac < ab)",
+        "justification": "Reductio",
+        "dependencies": [
+          8,
+          20
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 22,
+        "text": "ab < ac",
+        "justification": "Assume",
+        "dependencies": [],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 23,
+        "text": "on(c, N), on(a, N)",
+        "justification": "let-line",
+        "dependencies": [
+          3
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 24,
+        "text": "between(c, e, a), ce = ab",
+        "justification": "Prop.I.3",
+        "dependencies": [
+          22
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 25,
+        "text": "on(c, P), on(b, P)",
+        "justification": "let-line",
+        "dependencies": [
+          4
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 26,
+        "text": "∠ecb = ∠acb",
+        "justification": "Angle transfer 9",
+        "dependencies": [
+          24,
+          25
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 27,
+        "text": "∠ecb = ∠abc",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          26,
+          1
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 28,
+        "text": "cb = bc",
+        "justification": "M3 — Symmetry",
+        "dependencies": [],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 29,
+        "text": "eb = ac, ∠ceb = ∠bac, ∠cbe = ∠bca, △ecb = △abc",
+        "justification": "SAS",
+        "dependencies": [
+          24,
+          28,
+          27
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 30,
+        "text": "△ecb = △bca",
+        "justification": "M8 — Area symmetry",
+        "dependencies": [
+          29
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 31,
+        "text": "(△ceb + △bea) = △cba",
+        "justification": "Area transfer 4",
+        "dependencies": [
+          24
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 32,
+        "text": "¬(△aeb = 0)",
+        "justification": "Area transfer 1",
+        "dependencies": [
+          24
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 33,
+        "text": "△ceb < △cba",
+        "justification": "CN5 — Whole > Part",
+        "dependencies": [
+          31,
+          32
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 34,
+        "text": "△ecb < △bca",
+        "justification": "M8 — Area symmetry",
+        "dependencies": [
+          33
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 35,
+        "text": "⊥",
+        "justification": "Contradiction",
+        "dependencies": [
+          30,
+          34
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 36,
+        "text": "¬(ab < ac)",
+        "justification": "Reductio",
+        "dependencies": [
+          22,
+          35
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 37,
+        "text": "ab = ac",
+        "justification": "< trichotomy",
+        "dependencies": [
+          21,
+          36
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

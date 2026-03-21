@@ -1,0 +1,182 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150.0,
+        "y": 300.0
+      },
+      {
+        "label": "B",
+        "x": 500.0,
+        "y": 300.0
+      },
+      {
+        "label": "C",
+        "x": 200.0,
+        "y": 400.0
+      },
+      {
+        "label": "D",
+        "x": 350.0,
+        "y": 400.0
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-03-21T23:05:15Z",
+  "proof": {
+    "name": "Prop.I.3",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)",
+      "cd < ab",
+      "¬(c = d)",
+      "¬(a = c)",
+      "¬(a = d)"
+    ],
+    "goal": "between(a, e, b), ae = cd",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "lines": []
+    },
+    "steps": [
+      {
+        "lineNumber": 8,
+        "text": "on(c, M), on(d, M)",
+        "justification": "let-line",
+        "dependencies": [
+          5
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 9,
+        "text": "af = cd",
+        "justification": "Prop.I.2",
+        "dependencies": [
+          8,
+          5,
+          6,
+          7
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 10,
+        "text": "af < ab",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          9,
+          4
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "¬(a = f)",
+        "justification": "M1 — Zero segment",
+        "dependencies": [
+          9,
+          5
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "center(a, α), on(f, α)",
+        "justification": "let-circle",
+        "dependencies": [
+          11
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "inside(a, α)",
+        "justification": "Generality 3",
+        "dependencies": [
+          12
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "¬(inside(b, α)), ¬(on(b, α))",
+        "justification": "Segment transfer 7",
+        "dependencies": [
+          12,
+          10
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 15,
+        "text": "on(e, α), on(e, L), between(a, e, b)",
+        "justification": "let-intersection-line-circle-between",
+        "dependencies": [
+          13,
+          1,
+          14,
+          2
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "ae = af",
+        "justification": "Segment transfer 4",
+        "dependencies": [
+          12,
+          15
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
+        "text": "ae = cd",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          16,
+          9
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}
