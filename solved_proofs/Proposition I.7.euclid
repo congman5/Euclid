@@ -7,23 +7,23 @@
     "points": [
       {
         "label": "A",
-        "x": 175.0,
-        "y": 380.0
+        "x": 175,
+        "y": 380
       },
       {
         "label": "B",
-        "x": 475.0,
-        "y": 380.0
+        "x": 475,
+        "y": 380
       },
       {
         "label": "C",
-        "x": 300.0,
-        "y": 180.0
+        "x": 300,
+        "y": 160
       },
       {
         "label": "D",
-        "x": 350.0,
-        "y": 220.0
+        "x": 360,
+        "y": 210
       }
     ],
     "segments": [
@@ -45,20 +45,47 @@
       {
         "from": "A",
         "to": "D",
-        "color": "#2d70b3"
+        "color": "#f57c00"
       },
       {
         "from": "B",
         "to": "D",
-        "color": "#2d70b3"
+        "color": "#f57c00"
       }
     ],
     "rays": [],
     "circles": [],
     "angleMarks": [],
-    "equalityGroups": []
+    "equalityGroups": [
+      [
+        1,
+        [
+          [
+            "B",
+            "D"
+          ],
+          [
+            "B",
+            "A"
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          [
+            "C",
+            "D"
+          ],
+          [
+            "C",
+            "A"
+          ]
+        ]
+      ]
+    ]
   },
-  "exportedAt": "2026-03-21T23:05:15Z",
+  "exportedAt": "2026-03-21T23:17:21Z",
   "proof": {
     "name": "Prop.I.7",
     "premises": [

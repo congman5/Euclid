@@ -7,13 +7,28 @@
     "points": [
       {
         "label": "A",
-        "x": 175.0,
-        "y": 300.0
+        "x": 150,
+        "y": 350
       },
       {
         "label": "B",
-        "x": 475.0,
-        "y": 300.0
+        "x": 500,
+        "y": 350
+      },
+      {
+        "label": "C",
+        "x": 325.0,
+        "y": 46.9
+      },
+      {
+        "label": "D",
+        "x": 325.0,
+        "y": 350.0
+      },
+      {
+        "label": "E",
+        "x": 325.0,
+        "y": 228.8
       }
     ],
     "segments": [
@@ -21,14 +36,73 @@
         "from": "A",
         "to": "B",
         "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#f57c00"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#f57c00"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#388e3c"
       }
     ],
     "rays": [],
-    "circles": [],
+    "circles": [
+      {
+        "center": "A",
+        "radius": 350.0,
+        "radius_point": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "center": "B",
+        "radius": 350.0,
+        "radius_point": "A",
+        "color": "#2d70b3"
+      }
+    ],
     "angleMarks": [],
-    "equalityGroups": []
+    "equalityGroups": [
+      [
+        1,
+        [
+          [
+            "A",
+            "C"
+          ],
+          [
+            "B",
+            "C"
+          ],
+          [
+            "A",
+            "B"
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          [
+            "A",
+            "D"
+          ],
+          [
+            "D",
+            "B"
+          ]
+        ]
+      ]
+    ]
   },
-  "exportedAt": "2026-03-21T23:05:15Z",
+  "exportedAt": "2026-03-21T23:17:21Z",
   "proof": {
     "name": "Prop.I.10",
     "premises": [

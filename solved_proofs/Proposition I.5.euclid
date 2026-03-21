@@ -7,18 +7,18 @@
     "points": [
       {
         "label": "A",
-        "x": 325.0,
-        "y": 150.0
+        "x": 325,
+        "y": 130
       },
       {
         "label": "B",
-        "x": 175.0,
-        "y": 400.0
+        "x": 150,
+        "y": 400
       },
       {
         "label": "C",
-        "x": 475.0,
-        "y": 400.0
+        "x": 500,
+        "y": 400
       }
     ],
     "segments": [
@@ -40,10 +40,37 @@
     ],
     "rays": [],
     "circles": [],
-    "angleMarks": [],
-    "equalityGroups": []
+    "angleMarks": [
+      {
+        "from": "A",
+        "vertex": "B",
+        "to": "C",
+        "is_right": false
+      },
+      {
+        "from": "B",
+        "vertex": "A",
+        "to": "C",
+        "is_right": false
+      }
+    ],
+    "equalityGroups": [
+      [
+        1,
+        [
+          [
+            "A",
+            "B"
+          ],
+          [
+            "A",
+            "C"
+          ]
+        ]
+      ]
+    ]
   },
-  "exportedAt": "2026-03-21T23:05:15Z",
+  "exportedAt": "2026-03-21T23:17:21Z",
   "proof": {
     "name": "Prop.I.5",
     "premises": [

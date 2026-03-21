@@ -7,18 +7,33 @@
     "points": [
       {
         "label": "A",
-        "x": 150.0,
-        "y": 350.0
+        "x": 150,
+        "y": 400
       },
       {
         "label": "B",
-        "x": 450.0,
-        "y": 350.0
+        "x": 500,
+        "y": 400
       },
       {
         "label": "C",
-        "x": 350.0,
-        "y": 150.0
+        "x": 400,
+        "y": 100
+      },
+      {
+        "label": "D",
+        "x": 246.0,
+        "y": 284.8
+      },
+      {
+        "label": "F",
+        "x": 300.0,
+        "y": 400.0
+      },
+      {
+        "label": "E",
+        "x": 372.8,
+        "y": 295.6
       }
     ],
     "segments": [
@@ -31,20 +46,101 @@
         "from": "A",
         "to": "C",
         "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "D",
+        "color": "#f57c00"
+      },
+      {
+        "from": "A",
+        "to": "F",
+        "color": "#f57c00"
+      },
+      {
+        "from": "D",
+        "to": "F",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "E",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "F",
+        "to": "E",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "E",
+        "color": "#388e3c"
       }
     ],
-    "rays": [],
-    "circles": [],
+    "rays": [
+      {
+        "from": "A",
+        "through": "E",
+        "color": "#388e3c"
+      }
+    ],
+    "circles": [
+      {
+        "center": "A",
+        "radius": 150,
+        "radius_point": "D",
+        "color": "#f57c00"
+      }
+    ],
     "angleMarks": [
       {
         "from": "B",
         "vertex": "A",
-        "to": "C"
+        "to": "E",
+        "is_right": false
+      },
+      {
+        "from": "E",
+        "vertex": "A",
+        "to": "C",
+        "is_right": false
       }
     ],
-    "equalityGroups": []
+    "equalityGroups": [
+      [
+        1,
+        [
+          [
+            "A",
+            "D"
+          ],
+          [
+            "A",
+            "F"
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          [
+            "D",
+            "E"
+          ],
+          [
+            "D",
+            "F"
+          ],
+          [
+            "F",
+            "E"
+          ]
+        ]
+      ]
+    ]
   },
-  "exportedAt": "2026-03-21T23:05:15Z",
+  "exportedAt": "2026-03-21T23:17:21Z",
   "proof": {
     "name": "Prop.I.9",
     "premises": [

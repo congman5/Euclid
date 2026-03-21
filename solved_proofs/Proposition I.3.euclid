@@ -7,23 +7,33 @@
     "points": [
       {
         "label": "A",
-        "x": 150.0,
-        "y": 300.0
+        "x": 150,
+        "y": 300
       },
       {
         "label": "B",
-        "x": 500.0,
-        "y": 300.0
+        "x": 500,
+        "y": 300
       },
       {
         "label": "C",
-        "x": 200.0,
-        "y": 400.0
+        "x": 200,
+        "y": 400
       },
       {
         "label": "D",
-        "x": 350.0,
-        "y": 400.0
+        "x": 350,
+        "y": 400
+      },
+      {
+        "label": "F",
+        "x": 225.0,
+        "y": 170.1
+      },
+      {
+        "label": "E",
+        "x": 300.0,
+        "y": 300.0
       }
     ],
     "segments": [
@@ -36,14 +46,49 @@
         "from": "C",
         "to": "D",
         "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "F",
+        "color": "#f57c00"
+      },
+      {
+        "from": "A",
+        "to": "E",
+        "color": "#388e3c"
       }
     ],
     "rays": [],
-    "circles": [],
+    "circles": [
+      {
+        "center": "A",
+        "radius": 150.0,
+        "radius_point": "F",
+        "color": "#f57c00"
+      }
+    ],
     "angleMarks": [],
-    "equalityGroups": []
+    "equalityGroups": [
+      [
+        1,
+        [
+          [
+            "A",
+            "E"
+          ],
+          [
+            "C",
+            "D"
+          ],
+          [
+            "A",
+            "F"
+          ]
+        ]
+      ]
+    ]
   },
-  "exportedAt": "2026-03-21T23:05:15Z",
+  "exportedAt": "2026-03-21T23:17:21Z",
   "proof": {
     "name": "Prop.I.3",
     "premises": [
