@@ -1,0 +1,140 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 100,
+        "y": 380
+      },
+      {
+        "label": "B",
+        "x": 500,
+        "y": 180
+      },
+      {
+        "label": "C",
+        "x": 130,
+        "y": 130
+      },
+      {
+        "label": "D",
+        "x": 470,
+        "y": 430
+      },
+      {
+        "label": "E",
+        "x": 300,
+        "y": 280
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#cc3333"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [
+      {
+        "from": "A",
+        "vertex": "E",
+        "to": "C",
+        "is_right": false
+      },
+      {
+        "from": "B",
+        "vertex": "E",
+        "to": "D",
+        "is_right": false
+      }
+    ],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-03-22T22:52:56Z",
+  "proof": {
+    "name": "Prop.I.15",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(c, M)",
+      "on(d, M)",
+      "on(e, L)",
+      "on(e, M)",
+      "between(a, e, b)",
+      "between(c, e, d)",
+      "¬(L = M)"
+    ],
+    "goal": "∠aec = ∠bed",
+    "declarations": {
+      "points": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ],
+      "lines": [
+        "L",
+        "M"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 10,
+        "text": "∠aec + ∠ceb = right-angle + right-angle",
+        "justification": "Prop.I.13",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "∠ceb + ∠bed = right-angle + right-angle",
+        "justification": "Prop.I.13",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "∠aec = ∠bed",
+        "justification": "Metric",
+        "dependencies": [
+          10,
+          11
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

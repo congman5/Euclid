@@ -70,7 +70,7 @@
       ]
     ]
   },
-  "exportedAt": "2026-03-21T23:59:08Z",
+  "exportedAt": "2026-03-22T22:52:56Z",
   "proof": {
     "name": "Prop.I.5",
     "premises": [
@@ -92,7 +92,7 @@
       {
         "lineNumber": 5,
         "text": "ac = ab",
-        "justification": "Metric",
+        "justification": "M3 — Symmetry",
         "dependencies": [
           1
         ],
@@ -102,7 +102,7 @@
       {
         "lineNumber": 6,
         "text": "∠bac = ∠cab",
-        "justification": "Metric",
+        "justification": "M4 — Angle symmetry",
         "dependencies": [
           1
         ],

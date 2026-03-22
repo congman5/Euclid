@@ -1,0 +1,123 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 100,
+        "y": 350
+      },
+      {
+        "label": "B",
+        "x": 300,
+        "y": 350
+      },
+      {
+        "label": "C",
+        "x": 500,
+        "y": 350
+      },
+      {
+        "label": "D",
+        "x": 380,
+        "y": 150
+      },
+      {
+        "label": "E",
+        "x": 300,
+        "y": 150
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "D",
+        "color": "#cc3333"
+      },
+      {
+        "from": "B",
+        "to": "E",
+        "color": "#2e8b57"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [
+      {
+        "from": "A",
+        "vertex": "B",
+        "to": "D",
+        "is_right": false
+      },
+      {
+        "from": "D",
+        "vertex": "B",
+        "to": "C",
+        "is_right": false
+      },
+      {
+        "from": "A",
+        "vertex": "B",
+        "to": "E",
+        "is_right": true
+      }
+    ],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-03-22T22:52:56Z",
+  "proof": {
+    "name": "Prop.I.13",
+    "premises": [
+      "on(a, L)",
+      "on(c, L)",
+      "between(a, b, c)",
+      "¬(on(d, L))",
+      "¬(b = d)"
+    ],
+    "goal": "∠abd + ∠dbc = right-angle + right-angle",
+    "declarations": {
+      "points": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "lines": [
+        "L"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 6,
+        "text": "∠abe = right-angle, ¬(on(e, L))",
+        "justification": "Prop.I.11",
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 7,
+        "text": "∠abd + ∠dbc = right-angle + right-angle",
+        "justification": "Metric",
+        "dependencies": [
+          6,
+          3
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

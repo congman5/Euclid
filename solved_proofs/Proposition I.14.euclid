@@ -1,0 +1,115 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 100,
+        "y": 300
+      },
+      {
+        "label": "B",
+        "x": 350,
+        "y": 300
+      },
+      {
+        "label": "C",
+        "x": 500,
+        "y": 120
+      },
+      {
+        "label": "D",
+        "x": 200,
+        "y": 480
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#cc3333"
+      },
+      {
+        "from": "B",
+        "to": "D",
+        "color": "#cc3333"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2e8b57"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [
+      {
+        "from": "A",
+        "vertex": "B",
+        "to": "C",
+        "is_right": false
+      },
+      {
+        "from": "A",
+        "vertex": "B",
+        "to": "D",
+        "is_right": false
+      }
+    ],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-03-22T22:52:56Z",
+  "proof": {
+    "name": "Prop.I.14",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)",
+      "¬(on(c, L))",
+      "¬(on(d, L))",
+      "¬(b = c)",
+      "¬(b = d)",
+      "¬(same-side(c, d, L))",
+      "∠abc + ∠abd = right-angle + right-angle"
+    ],
+    "goal": "between(c, b, d)",
+    "declarations": {
+      "points": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "lines": [
+        "L"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 10,
+        "text": "between(c, b, d)",
+        "justification": "Angle transfer 7",
+        "dependencies": [
+          1,
+          2,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

@@ -1,0 +1,367 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 100,
+        "y": 350
+      },
+      {
+        "label": "B",
+        "x": 550,
+        "y": 350
+      },
+      {
+        "label": "P",
+        "x": 300,
+        "y": 150
+      },
+      {
+        "label": "D",
+        "x": 300,
+        "y": 500
+      },
+      {
+        "label": "E",
+        "x": 12.77,
+        "y": 350.0
+      },
+      {
+        "label": "F",
+        "x": 587.23,
+        "y": 350.0
+      },
+      {
+        "label": "H",
+        "x": 300.0,
+        "y": 350.0
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "P",
+        "to": "H",
+        "color": "#2e8b57"
+      },
+      {
+        "from": "P",
+        "to": "E",
+        "color": "#333333"
+      },
+      {
+        "from": "P",
+        "to": "F",
+        "color": "#333333"
+      },
+      {
+        "from": "E",
+        "to": "F",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [
+      {
+        "center": "P",
+        "radius": 350.0,
+        "radius_point": "D",
+        "color": "#cc3333"
+      }
+    ],
+    "angleMarks": [
+      {
+        "from": "E",
+        "vertex": "H",
+        "to": "P",
+        "is_right": true
+      }
+    ],
+    "equalityGroups": [
+      [
+        1,
+        [
+          [
+            "P",
+            "E"
+          ],
+          [
+            "P",
+            "F"
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          [
+            "E",
+            "H"
+          ],
+          [
+            "H",
+            "F"
+          ]
+        ]
+      ]
+    ]
+  },
+  "exportedAt": "2026-03-22T22:52:56Z",
+  "proof": {
+    "name": "Prop.I.12",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)",
+      "¬(on(p, L))"
+    ],
+    "goal": "on(h, L), on(e, L), ¬(e = h), ∠ehp = right-angle, ¬(h = p)",
+    "declarations": {
+      "points": [
+        "a",
+        "b",
+        "p"
+      ],
+      "lines": [
+        "L"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 5,
+        "text": "¬(p = a)",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          1,
+          4
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 6,
+        "text": "on(p, M), on(a, M)",
+        "justification": "let-line",
+        "dependencies": [
+          5
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 7,
+        "text": "on(d, M), between(p, a, d)",
+        "justification": "let-point-on-line-extend",
+        "dependencies": [
+          6,
+          5
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 8,
+        "text": "¬(p = d)",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          7
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 9,
+        "text": "¬(same-side(p, d, L))",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          7,
+          1
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 10,
+        "text": "¬(on(d, L))",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          6,
+          7,
+          1,
+          4
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "center(p, α), on(d, α)",
+        "justification": "let-circle",
+        "dependencies": [
+          8
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "inside(p, α)",
+        "justification": "Generality 3",
+        "dependencies": [
+          11
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "intersects(L, α)",
+        "justification": "Intersection 2c",
+        "dependencies": [
+          12,
+          11,
+          4,
+          10,
+          9
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "on(e, α), on(e, L), on(f, α), on(f, L), ¬(e = f)",
+        "justification": "let-intersection-circle-line-two",
+        "dependencies": [
+          13
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 15,
+        "text": "pe = pd",
+        "justification": "Segment transfer 3b",
+        "dependencies": [
+          11,
+          14
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "pf = pd",
+        "justification": "Segment transfer 3b",
+        "dependencies": [
+          11,
+          14
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
+        "text": "pe = pf",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          15,
+          16
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 18,
+        "text": "between(e, h, f), eh = hf",
+        "justification": "Prop.I.10",
+        "dependencies": [
+          14
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 19,
+        "text": "on(h, L)",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          18,
+          14
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 20,
+        "text": "ph = ph",
+        "justification": "Metric",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 21,
+        "text": "∠eph = ∠fph, ∠peh = ∠pfh, ∠ehp = ∠fhp, △eph = △fph",
+        "justification": "SSS",
+        "dependencies": [
+          17,
+          18,
+          20
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 22,
+        "text": "∠fhp = ∠phe",
+        "justification": "M4 — Angle symmetry",
+        "dependencies": [
+          21
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 23,
+        "text": "∠ehp = right-angle",
+        "justification": "Angle transfer 3a",
+        "dependencies": [
+          21,
+          22,
+          19
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 24,
+        "text": "¬(h = p)",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          4,
+          19
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 25,
+        "text": "¬(e = h)",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          18
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

@@ -1,0 +1,461 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 200,
+        "y": 350
+      },
+      {
+        "label": "B",
+        "x": 500,
+        "y": 350
+      },
+      {
+        "label": "D",
+        "x": 300.0,
+        "y": 350.0
+      },
+      {
+        "label": "E",
+        "x": 100.0,
+        "y": 350.0
+      },
+      {
+        "label": "F",
+        "x": 200.0,
+        "y": 176.79
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "E",
+        "color": "#333333"
+      },
+      {
+        "from": "D",
+        "to": "F",
+        "color": "#cc3333"
+      },
+      {
+        "from": "E",
+        "to": "F",
+        "color": "#cc3333"
+      },
+      {
+        "from": "A",
+        "to": "F",
+        "color": "#2e8b57"
+      }
+    ],
+    "rays": [],
+    "circles": [
+      {
+        "center": "A",
+        "radius": 100,
+        "radius_point": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "center": "D",
+        "radius": 200.0,
+        "radius_point": "E",
+        "color": "#cc3333"
+      },
+      {
+        "center": "E",
+        "radius": 200.0,
+        "radius_point": "D",
+        "color": "#cc3333"
+      }
+    ],
+    "angleMarks": [
+      {
+        "from": "B",
+        "vertex": "A",
+        "to": "F",
+        "is_right": true
+      }
+    ],
+    "equalityGroups": [
+      [
+        1,
+        [
+          [
+            "A",
+            "D"
+          ],
+          [
+            "A",
+            "E"
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          [
+            "D",
+            "F"
+          ],
+          [
+            "E",
+            "F"
+          ]
+        ]
+      ]
+    ]
+  },
+  "exportedAt": "2026-03-22T22:52:56Z",
+  "proof": {
+    "name": "Prop.I.11",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)"
+    ],
+    "goal": "∠baf = right-angle, ¬(f = a), ¬(on(f, L))",
+    "declarations": {
+      "points": [
+        "a",
+        "b"
+      ],
+      "lines": [
+        "L"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 4,
+        "text": "on(d, L), between(a, d, b)",
+        "justification": "let-point-on-line-between",
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 5,
+        "text": "¬(d = a)",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          4
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 6,
+        "text": "center(a, α), on(d, α)",
+        "justification": "let-circle",
+        "dependencies": [
+          5
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 7,
+        "text": "inside(a, α)",
+        "justification": "Generality 3",
+        "dependencies": [
+          6
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 8,
+        "text": "on(e, L), between(d, a, e)",
+        "justification": "let-point-on-line-extend",
+        "dependencies": [
+          4,
+          1
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 9,
+        "text": "(ad + db) = ab",
+        "justification": "Segment transfer 1",
+        "dependencies": [
+          4
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 10,
+        "text": "¬(db = 0)",
+        "justification": "M1 — Zero segment",
+        "dependencies": [
+          4
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "ad < ab",
+        "justification": "CN5 — Whole > Part",
+        "dependencies": [
+          9,
+          10
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "¬(inside(b, α)), ¬(on(b, α))",
+        "justification": "Segment transfer 4c",
+        "dependencies": [
+          6,
+          11
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "on(e, α), on(e, L), between(e, a, d)",
+        "justification": "let-intersection-line-circle-extend",
+        "dependencies": [
+          7,
+          1,
+          5,
+          4
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "ae = ad",
+        "justification": "Segment transfer 3b",
+        "dependencies": [
+          6,
+          13
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 15,
+        "text": "¬(e = d)",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          13
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "center(d, β), on(e, β)",
+        "justification": "let-circle",
+        "dependencies": [
+          15
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
+        "text": "center(e, γ), on(d, γ)",
+        "justification": "let-circle",
+        "dependencies": [
+          15
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 18,
+        "text": "inside(d, β)",
+        "justification": "Generality 3",
+        "dependencies": [
+          16
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 19,
+        "text": "inside(e, γ)",
+        "justification": "Generality 3",
+        "dependencies": [
+          17
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 20,
+        "text": "intersects(β, γ)",
+        "justification": "Intersection 9",
+        "dependencies": [
+          18,
+          19
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 21,
+        "text": "¬(on(g, L)), ¬(same-side(g, b, L))",
+        "justification": "let-point-opposite-side",
+        "dependencies": [
+          2
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 22,
+        "text": "on(f, β), on(f, γ), same-side(f, g, L)",
+        "justification": "let-intersection-circle-circle-same-side",
+        "dependencies": [
+          20,
+          16,
+          17,
+          4,
+          8,
+          21
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 23,
+        "text": "¬(on(f, L))",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          22,
+          21
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 24,
+        "text": "df = de",
+        "justification": "Segment transfer 3b",
+        "dependencies": [
+          16,
+          22
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 25,
+        "text": "ef = ed",
+        "justification": "Segment transfer 3b",
+        "dependencies": [
+          17,
+          22
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 26,
+        "text": "de = ed",
+        "justification": "M3 — Symmetry",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 27,
+        "text": "df = ef",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          24,
+          25,
+          26
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 28,
+        "text": "ad = ae",
+        "justification": "M3 — Symmetry",
+        "dependencies": [
+          14
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 29,
+        "text": "af = af",
+        "justification": "Metric",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 30,
+        "text": "∠daf = ∠eaf, ∠adf = ∠aef, ∠dfa = ∠efa, △daf = △eaf",
+        "justification": "SSS",
+        "dependencies": [
+          28,
+          27,
+          29
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 31,
+        "text": "∠eaf = ∠fad",
+        "justification": "M4 — Angle symmetry",
+        "dependencies": [
+          30
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 32,
+        "text": "∠baf = right-angle",
+        "justification": "Angle transfer 3a",
+        "dependencies": [
+          30,
+          31,
+          23
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 33,
+        "text": "¬(f = a)",
+        "justification": "Diagrammatic",
+        "dependencies": [
+          23,
+          1
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}
