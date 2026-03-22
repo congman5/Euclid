@@ -35,6 +35,12 @@ class TransferEngine:
     def __init__(self, transfer_axioms: Optional[list] = None):
         self.axioms = (transfer_axioms if transfer_axioms is not None
                        else ALL_TRANSFER_AXIOMS)
+        self._ground_cache_key = None
+        self._ground_cache = None
+        self._compiled_cache_key = None
+        self._compiled_cache = None
+        self._sat_index = None
+        self._res_index = None
 
     def apply_transfers(
         self,
@@ -44,8 +50,7 @@ class TransferEngine:
     ) -> Set[Literal]:
         """Apply transfer axioms to derive new facts.
 
-        Takes known diagrammatic and metric literals, returns newly derived
-        literals from both domains.
+        Uses indexed unit propagation for efficiency.
         """
         if variables is None:
             variables = self._extract_variables(diagram_known | metric_known)
@@ -72,47 +77,79 @@ class TransferEngine:
                 if neg_bet3 not in all_known:
                     all_known.add(neg_bet3)
 
-        # Ground the transfer axiom clauses
-        ground_clauses = self._ground_clauses(self.axioms, variables)
+        # Ground the transfer axiom clauses — use pre-compiled format
+        # with cached separate indices for fast lookup.
+        compiled = self._compiled_clauses(self.axioms, variables)
+        sat_index = self._sat_index
+        res_index = self._res_index
 
-        changed = True
-        while changed:
-            changed = False
-            for clause in ground_clauses:
-                result = self._apply_clause(clause, all_known)
-                if result is not None and result not in all_known:
+        satisfied = bytearray(len(compiled))
+
+        # Seed worklist and mark initially satisfied clauses
+        worklist = list(all_known)
+        for fact in all_known:
+            for ci in sat_index.get(fact, ()):
+                satisfied[ci] = 1
+
+        while worklist:
+            fact = worklist.pop()
+
+            for ci in res_index.get(fact, ()):
+                if satisfied[ci]:
+                    continue
+                result = ConsequenceEngine._apply_compiled(
+                    compiled[ci], all_known)
+                if (result is not None
+                        and result is not ConsequenceEngine._CLAUSE_CONTRADICTION
+                        and result not in all_known):
                     all_known.add(result)
                     derived.add(result)
-                    changed = True
+                    worklist.append(result)
+                    for sci in sat_index.get(result, ()):
+                        satisfied[sci] = 1
 
         return derived
 
-    def _apply_clause(
-        self, clause: Clause, known: Set[Literal]
-    ) -> Optional[Literal]:
-        """Same unit-propagation logic as ConsequenceEngine."""
-        literals = list(clause.literals)
-        unknown_idx = None
-
-        for i, lit in enumerate(literals):
-            neg = lit.negated()
-            if neg in known:
-                continue
-            elif lit in known:
-                return None
-            else:
-                if unknown_idx is not None:
-                    return None
-                unknown_idx = i
-
-        if unknown_idx is not None:
-            return literals[unknown_idx]
-        return None
+    def _compiled_clauses(self, axioms, variables):
+        """Return pre-compiled clause data with negated literals and index."""
+        from typing import FrozenSet
+        cache_key: FrozenSet = frozenset(variables.items())
+        if (cache_key == self._compiled_cache_key
+                and self._compiled_cache is not None):
+            return self._compiled_cache
+        ground = self._ground_clauses(axioms, variables)
+        compiled = []
+        sat_index = {}
+        res_index = {}
+        for i, clause in enumerate(ground):
+            pairs = tuple(
+                (lit, lit.negated()) for lit in clause.literals
+            )
+            compiled.append(pairs)
+            for lit, neg in pairs:
+                if lit not in sat_index:
+                    sat_index[lit] = []
+                sat_index[lit].append(i)
+                if neg not in res_index:
+                    res_index[neg] = []
+                res_index[neg].append(i)
+        self._compiled_cache_key = cache_key
+        self._compiled_cache = compiled
+        self._sat_index = sat_index
+        self._res_index = res_index
+        return compiled
 
     def _ground_clauses(self, axioms, variables):
-        """Delegate to ConsequenceEngine's grounding logic."""
+        """Delegate to ConsequenceEngine's grounding logic, with caching."""
+        from typing import FrozenSet
+        cache_key: FrozenSet = frozenset(variables.items())
+        if cache_key == self._ground_cache_key and self._ground_cache is not None:
+            return self._ground_cache
         engine = ConsequenceEngine(axioms=[])
-        return engine._ground_clauses(axioms, variables)
+        result = engine._ground_clauses(axioms, variables)
+        self._ground_cache_key = cache_key
+        self._ground_cache = result
+        return result
 
     def _extract_variables(self, known: Set[Literal]) -> Dict[str, Sort]:
         engine = ConsequenceEngine(axioms=[])

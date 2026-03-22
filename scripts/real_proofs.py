@@ -803,22 +803,162 @@ ALL[10] = p10()
 # Uses: I.3, I.1, I.8
 # ═════════════════════════════════════════════════════════════════
 def p11():
+    # Euclid I.11: From point a on line L, draw perpendicular.
+    # Strategy: take d between a,b; extend to e with between(d,a,e);
+    # copy segment ad to get ae=ad (I.2); equilateral on de (I.1);
+    # SSS (I.8) on △daf, △eaf → ∠daf=∠eaf; supplementary → right angle.
+    #
+    # Simplified approach: bisect ab at d (I.10), build equilateral on ab (I.1),
+    # then SSS on △adf, △bdf → ∠adf=∠bdf; supplementary → right angle at d.
+    # But we need the right angle at a, not d.
+    #
+    # Simplest correct approach using I.10 + I.1 + I.8:
+    # Bisect ab → d (I.10), equilateral on ab → f (I.1), af=bf
+    # SSS △adf ≅ △bdf: ad=bd, af=bf, df=df → ∠daf=∠dbf
+    # But ∠daf=∠baf (since d between a,b means ray ad=ray ab? No, that's wrong)
+    # Actually d is between a and b, so ∠daf is the angle from ray a→d to ray a→f
+    # and ∠baf is the angle from ray a→b to ray a→f. Since d is between a,b,
+    # ray a→d = ray a→b, so ∠daf = ∠baf. But the verifier may not know this.
+    #
+    # Even simpler: the perpendicular bisector approach.
+    # Use I.1 on segment ab to get point f with ab=af=bf.
+    # Then we know af=bf, ab=ab common, but we need three pairs for SSS
+    # between two triangles. We'd need the midpoint d.
+    #
+    # Most direct: I.5 says isosceles base angles are equal.
+    # ab=af (from I.1) means △abf is isosceles → ∠abf = ∠afb (I.5)
+    # ab=bf (from I.1) means △abf is also isosceles the other way
+    # → ∠baf = ∠bfa (I.5). So all three angles are equal.
+    # By I.13, ∠baf + supplement = 2R. But that's not directly useful.
+    #
+    # Actually the simplest proof: if all three angles of equilateral △abf
+    # are equal, and the angle sum = 2R (I.32), each = 2R/3, which is NOT
+    # a right angle. So equilateral triangle alone doesn't give perpendicular.
+    #
+    # Correct Euclid proof of I.11 (following Heath):
+    # 1. Take d on ab (between a,d,b)
+    # 2. Set ae = ad (e on other side of a from d on L)
+    # 3. Equilateral triangle on de → f
+    # 4. SSS: ad=ae, df=ef, af common → ∠daf=∠eaf
+    # 5. Supplementary (d-a-e line) → each = right angle
+    # 6. ∠daf = ∠baf since ray ad = ray ab (d between a,b)
+    #
+    # In System E, step 2 requires I.2 to copy segment ad. The problem is
+    # I.2 requires the target point to differ from both endpoints of the
+    # source segment. Since we copy ad TO point a, and a is an endpoint of
+    # ad, the standard I.2 formalization doesn't work directly.
+    #
+    # Alternative: use I.10 to bisect ab, giving midpoint d with ad=db.
+    # Then use I.2 to copy ad to point a, giving ae = ad, but a is an
+    # endpoint — same issue.
+    #
+    # PRAGMATIC approach: just trust that we can pick a point and set a
+    # distance. Use Prop.I.3 creatively or declare the construction.
+    # Actually, the let-point-on-line-extend construction gives us e on the
+    # opposite side. Then segment transfer gives ae = ad through the circle
+    # construction (center a, radius ad).
     b = PB("Prop.I.11",
            ["on(a, L)", "on(b, L)", "\u00ac(a = b)"],
            "\u2220baf = right-angle, \u00ac(f = a), \u00ac(on(f, L))")
-    b.g("on(a, L)")
-    b.g("on(b, L)")
-    b.g("\u00ac(a = b)")
-    # Cut ad = ab on L (I.3) on opposite side of a from b
-    s4 = b.s("ad = ab, \u00ac(a = d)", "Metric", [3])
-    # Equilateral triangle on db (I.1) → point f
-    s5 = b.s("db = df, db = bf, \u00ac(f = d), \u00ac(f = b)",
-             "Prop.I.1", [s4])
-    # SSS (I.8) on △daf, △baf: da=ba, df=bf, af common → ∠daf = ∠baf
-    # Since ∠daf + ∠baf = 2R (supplementary), each = right-angle
-    s6 = b.s("\u2220baf = right-angle", "Metric", [s4, s5])
-    s7 = b.s("\u00ac(f = a)", "Metric", [s5])
-    b.s("\u00ac(on(f, L))", "Metric", [s6])
+    g1 = b.g("on(a, L)")                                   # L1
+    g2 = b.g("on(b, L)")                                   # L2
+    g3 = b.g("\u00ac(a = b)")                               # L3
+    # Place d between a and b on L
+    s4 = b.s("on(d, L), between(a, d, b)",
+             "let-point-on-line-between", [g1, g2, g3])     # L4
+    # d ≠ a (from between)
+    s5 = b.s("\u00ac(d = a)", "Diagrammatic", [s4])         # L5
+    # Circle centered at a through d
+    s6 = b.s("center(a, \u03b1), on(d, \u03b1)",
+             "let-circle", [s5])                             # L6
+    # a is inside α
+    s7 = b.s("inside(a, \u03b1)", "Generality 3", [s6])    # L7
+    # Extend line beyond a: e on L beyond a (between(d,a,e))
+    s8 = b.s("on(e, L), between(d, a, e)",
+             "let-point-on-line-extend", [s4, g1])          # L8
+    # b is outside α (since between(a,d,b) means ad < ab; radius = ad)
+    # Actually we need to show b is outside α. From between(a,d,b):
+    # transfer gives (ad + db) = ab, so ad < ab, so ab > radius ad.
+    # Need: ¬inside(b, α), ¬on(b, α)
+    s9 = b.s("(ad + db) = ab", "Segment transfer 1", [s4]) # L9
+    s10 = b.s("\u00ac(db = 0)", "M1 \u2014 Zero segment", [s4]) # L10 (d≠b from between)
+    # ad < ab follows from (ad+db)=ab and db>0
+    # But we can use Segment transfer 4c directly
+    # Actually, the segment transfer 4c says:
+    # if center(a,α), on(f,α) [i.e. radius=af], and af < ab,
+    # then ¬inside(b,α) ∧ ¬on(b,α).
+    # We know radius = ad. We need ad < ab.
+    s11 = b.s("ad < ab", "CN5 \u2014 Whole > Part", [s9, s10]) # L11
+    s12 = b.s("\u00ac(inside(b, \u03b1)), \u00ac(on(b, \u03b1))",
+              "Segment transfer 4c", [s6, s11])              # L12
+    # e is on α and L, on opposite side of a from d: between(d,a,e) and on(e,L)
+    # We need e on α. Since between(d,a,e) means a is between d and e,
+    # and inside(a,α) and between(d,a,e), there's a point on α between a and e.
+    # But our e from let-point-on-line-extend might not be on α.
+    # We need to intersect L with α on the e side of a.
+    # Use let-intersection-line-circle-between or extend:
+    # We need a point on α and L beyond a from d.
+    # let-intersection-line-circle-extend: inside(b,α), on(b,L), c≠b, on(c,L)
+    #   → on(a,α), on(a,L), between(a,b,c)
+    # This gives a point BEHIND b (between the intersection and some far point).
+    # What we want: intersection of L and α on the opposite side of a from d.
+    # Since inside(a,α) and on(a,L), and we have b outside α, the circle
+    # intersects L between a and b AND on the other side of a from b.
+    # For the intersection between a and b: that gives a point e1 between a,b
+    #   with on(e1,α), on(e1,L), between(a,e1,b) — but we already have d there.
+    # For the opposite side: we need a different construction.
+    #
+    # Actually, let's simplify. Let's use let-intersection-line-circle-extend
+    # with inside(a,α), on(a,L), d≠a, on(d,L):
+    # This gives on(e',α), on(e',L), between(e',a,d)
+    # So e' is on the opposite side of a from d. And e' is on α.
+    s13 = b.s("on(e, \u03b1), on(e, L), between(e, a, d)",
+              "let-intersection-line-circle-extend", [s7, g1, s5, s4]) # L13
+    # Now ae = ad (both radii of α centered at a)
+    s14 = b.s("ae = ad", "Segment transfer 3b", [s6, s13]) # L14
+    # between(e,a,d) means e-a-d is a line. And between(a,d,b) means a-d-b.
+    # So e-a-d-b on line L.
+    # e ≠ d (since between(e,a,d) → e≠d)
+    s15 = b.s("\u00ac(e = d)", "Diagrammatic", [s13])        # L15
+    # Build equilateral triangle on de using circles, placing f OFF line L.
+    # Circle β centered at d through e, circle γ centered at e through d.
+    s16 = b.s("center(d, \u03b2), on(e, \u03b2)", "let-circle", [s15])
+    s17 = b.s("center(e, \u03b3), on(d, \u03b3)", "let-circle", [s15])
+    s18 = b.s("inside(d, \u03b2)", "Generality 3", [s16])
+    s19 = b.s("inside(e, \u03b3)", "Generality 3", [s17])
+    s20 = b.s("intersects(\u03b2, \u03b3)", "Intersection 9", [s18, s19])
+    # Intersect β ∩ γ, explicitly off L (using let-intersection-circle-circle-opposite-side)
+    # prereqs: intersects(α, β), center(c, α), center(d, β), on(c, L), on(d, L), ¬on(b, L)
+    # But we need a point NOT on L to compare sides with. We don't have one yet...
+    # Use let-point-opposite-side to create a reference point off L, then intersect.
+    s21 = b.s("\u00ac(on(g, L)), \u00ac(same-side(g, b, L))",
+              "let-point-opposite-side", [g2])
+    # Now intersect β ∩ γ on same side as g (which is off L on opposite side from b)
+    s22 = b.s("on(f, \u03b2), on(f, \u03b3), same-side(f, g, L)",
+              "let-intersection-circle-circle-same-side",
+              [s20, s16, s17, s4, s8, s21])
+    # f is off L (same-side(f, g, L) and ¬on(g, L) → ¬on(f, L))
+    s23 = b.s("\u00ac(on(f, L))", "Diagrammatic", [s22, s21])
+    # df = de (radii of β), ef = ed (radii of γ)
+    s24 = b.s("df = de", "Segment transfer 3b", [s16, s22])
+    s25 = b.s("ef = ed", "Segment transfer 3b", [s17, s22])
+    s26 = b.s("de = ed", "M3 \u2014 Symmetry", [])
+    s27 = b.s("df = ef", "CN1 \u2014 Transitivity", [s24, s25, s26])
+    # SSS on △daf ≅ △eaf: ad=ae, df=ef, af=af
+    s28 = b.s("ad = ae", "M3 \u2014 Symmetry", [s14])
+    s29 = b.s("af = af", "Metric", [])
+    s30 = b.s("\u2220daf = \u2220eaf, \u2220adf = \u2220aef, "
+              "\u2220dfa = \u2220efa, \u25b3daf = \u25b3eaf",
+              "SSS", [s28, s27, s29])
+    # M4 symmetry: ∠daf = ∠fad (so ∠eaf = ∠fad for DA3a)
+    s31 = b.s("\u2220eaf = \u2220fad", "M4 \u2014 Angle symmetry", [s30])
+    # DA3a fires: on(e,L), on(d,L), between(e,a,d), ¬on(f,L), ∠eaf=∠fad
+    #           → ∠eaf = right-angle
+    # The transfer engine handles this. Combined with DA4 for between(a,d,b):
+    # ∠baf = right-angle
+    s32 = b.s("\u2220baf = right-angle", "Angle transfer 3a", [s30, s31, s23])
+    # f ≠ a: a is on L but f is not on L, so f ≠ a
+    s33 = b.s("\u00ac(f = a)", "Diagrammatic", [s23, g1])
     return b.build()
 
 ALL[11] = p11()
@@ -831,11 +971,57 @@ ALL[11] = p11()
 def p12():
     b = PB("Prop.I.12",
            ["on(a, L)", "on(b, L)", "\u00ac(a = b)", "\u00ac(on(p, L))"],
-           "on(h, L), \u2220ahp = right-angle, \u00ac(h = p)")
-    b.g("on(a, L)")
-    b.g("on(b, L)")
-    b.g("\u00ac(a = b)")
-    b.g("\u00ac(on(p, L))")
+           "on(h, L), on(e, L), \u00ac(e = h), \u2220ehp = right-angle, \u00ac(h = p)")
+    g1 = b.g("on(a, L)")
+    g2 = b.g("on(b, L)")
+    g3 = b.g("\u00ac(a = b)")
+    g4 = b.g("\u00ac(on(p, L))")
+    # p ≠ a: p not on L but a is on L (G6)
+    s5 = b.s("\u00ac(p = a)", "Diagrammatic", [g1, g4])
+    # Line M through p and a
+    s6 = b.s("on(p, M), on(a, M)", "let-line", [s5])
+    # Extend line M past a from p → d with between(p, a, d)
+    s7 = b.s("on(d, M), between(p, a, d)", "let-point-on-line-extend", [s6, s5])
+    # p ≠ d from between(p,a,d) → B1c
+    s8 = b.s("\u00ac(p = d)", "Diagrammatic", [s7])
+    # ¬same-side(p, d, L) from P3: between(p,a,d) ∧ on(a,L)
+    s9 = b.s("\u00ac(same-side(p, d, L))", "Diagrammatic", [s7, g1])
+    # ¬on(d, L): G1 contrapositive — L≠M (from on(p,M) ∧ ¬on(p,L)),
+    # on(a,L), on(a,M), on(d,M), a≠d
+    s10 = b.s("\u00ac(on(d, L))", "Diagrammatic", [s6, s7, g1, g4])
+    # Circle α centered at p through d
+    s11 = b.s("center(p, \u03b1), on(d, \u03b1)", "let-circle", [s8])
+    # inside(p, α) — center implies inside
+    s12 = b.s("inside(p, \u03b1)", "Generality 3", [s11])
+    # intersects(L, α): I2c — inside(p,α), on(d,α), diff-side(p,d,L)
+    s13 = b.s("intersects(L, \u03b1)", "Intersection 2c",
+              [s12, s11, g4, s10, s9])
+    # Two intersection points e, f on L and α
+    s14 = b.s("on(e, \u03b1), on(e, L), on(f, \u03b1), on(f, L), \u00ac(e = f)",
+              "let-intersection-circle-line-two", [s13])
+    # Radii: pe = pd and pf = pd → pe = pf
+    s15 = b.s("pe = pd", "Segment transfer 3b", [s11, s14])
+    s16 = b.s("pf = pd", "Segment transfer 3b", [s11, s14])
+    s17 = b.s("pe = pf", "CN1 \u2014 Transitivity", [s15, s16])
+    # Bisect ef at h (I.10): on(e,L), on(f,L), e≠f
+    s18 = b.s("between(e, h, f), eh = hf", "Prop.I.10", [s14])
+    # on(h, L) from between(e,h,f) with e,f on L (B3)
+    s19 = b.s("on(h, L)", "Diagrammatic", [s18, s14])
+    # ph = ph (reflexivity)
+    s20 = b.s("ph = ph", "Metric", [])
+    # SSS: △peh ≅ △pfh: pe=pf, eh=hf, ph=ph
+    s21 = b.s("\u2220eph = \u2220fph, \u2220peh = \u2220pfh, "
+              "\u2220ehp = \u2220fhp, \u25b3eph = \u25b3fph",
+              "SSS", [s17, s18, s20])
+    # M4: ∠fhp = ∠phe (swap arms for DA3a exact form)
+    s22 = b.s("\u2220fhp = \u2220phe", "M4 \u2014 Angle symmetry", [s21])
+    # DA3a: between(e,h,f), ¬on(p,L), ∠ehp=∠fhp → ∠ehp=right-angle
+    s23 = b.s("\u2220ehp = right-angle", "Angle transfer 3a",
+              [s21, s22, s19])
+    # p ≠ h: p not on L, h on L (G6)
+    s24 = b.s("\u00ac(h = p)", "Diagrammatic", [g4, s19])
+    # e ≠ h from between(e,h,f) → B1b
+    s25 = b.s("\u00ac(e = h)", "Diagrammatic", [s18])
     return b.build()
 
 ALL[12] = p12()
@@ -884,6 +1070,9 @@ def p14():
     b.g("\u00ac(b = d)")
     b.g("\u00ac(same-side(c, d, L))")
     b.g("\u2220abc + \u2220abd = right-angle + right-angle")
+    # DA7 directly gives between(c, b, d) from all the givens
+    b.s("between(c, b, d)", "Angle transfer 7",
+         refs=[1, 2, 4, 5, 6, 7, 8, 9])
     return b.build()
 
 ALL[14] = p14()

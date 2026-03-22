@@ -50,6 +50,17 @@ class ConsequenceEngine:
         If not provided, uses all diagrammatic axioms from Section 3.4.
         """
         self.axioms = axioms if axioms is not None else ALL_DIAGRAMMATIC_AXIOMS
+        # Cache ground clauses keyed on frozenset(variables.items()) to
+        # avoid regenerating them when the variable set hasn't changed.
+        self._ground_cache_key: Optional[FrozenSet] = None
+        self._ground_cache: Optional[List[Clause]] = None
+        self._compiled_cache_key: Optional[FrozenSet] = None
+        self._compiled_cache: Optional[List[Tuple]] = None
+        # sat_index[L] = clause indices containing literal L (for marking satisfied)
+        self._sat_index: Optional[Dict] = None
+        # res_index[f] = clause indices where f resolves a literal
+        #   (i.e., clause contains literal L with L.negated() == f)
+        self._res_index: Optional[Dict] = None
 
     def direct_consequences(
         self,
@@ -70,33 +81,47 @@ class ConsequenceEngine:
         if variables is None:
             variables = self._extract_variables(known)
 
-        # Build ground instances of all clauses
-        ground_clauses = self._ground_clauses(self.axioms, variables)
+        # Build ground instances — uses pre-compiled format with negated
+        # literals pre-computed and separate indices for fast lookup.
+        compiled = self._compiled_clauses(self.axioms, variables)
+        sat_index = self._sat_index
+        res_index = self._res_index
 
-        # Forward-chaining closure
         closure = set(known)
-        changed = True
+        satisfied = bytearray(len(compiled))
 
-        while changed:
-            changed = False
+        # Seed worklist and mark initially satisfied clauses
+        worklist = list(known)
+        for fact in known:
+            for ci in sat_index.get(fact, ()):
+                satisfied[ci] = 1
+
+        while worklist:
+            fact = worklist.pop()
 
             # Check for contradiction
-            if self._has_contradiction(closure):
-                return closure  # Everything follows from contradiction
+            if fact.negated() in closure:
+                from .e_ast import BOTTOM
+                closure.add(BOTTOM)
+                closure.add(BOTTOM.negated())
+                return closure
 
-            for clause in ground_clauses:
-                result = self._apply_clause(clause, closure)
+            # Check clauses where knowing `fact` resolves a literal
+            for ci in res_index.get(fact, ()):
+                if satisfied[ci]:
+                    continue
+                result = self._apply_compiled(compiled[ci], closure)
                 if result is self._CLAUSE_CONTRADICTION:
-                    # A ground clause is fully violated — the known
-                    # set is inconsistent.  Inject a contradiction
-                    # pair so that callers can detect it.
                     from .e_ast import BOTTOM
                     closure.add(BOTTOM)
                     closure.add(BOTTOM.negated())
                     return closure
                 if result is not None and result not in closure:
                     closure.add(result)
-                    changed = True
+                    worklist.append(result)
+                    # Mark clauses satisfied by this new literal
+                    for sci in sat_index.get(result, ()):
+                        satisfied[sci] = 1
 
         return closure
 
@@ -160,6 +185,67 @@ class ConsequenceEngine:
         # All literals have their negations known — clause is violated!
         return self._CLAUSE_CONTRADICTION
 
+    def _compiled_clauses(
+        self,
+        axioms: List[Clause],
+        variables: Dict[str, Sort],
+    ) -> List[Tuple]:
+        """Return pre-compiled clause data with negated literals pre-computed.
+
+        Each compiled clause is a tuple of (literal, negated_literal) pairs.
+        Also builds a literal → clause indices index for fast lookup.
+        Both are cached.
+        """
+        cache_key = frozenset(variables.items())
+        if (cache_key == self._compiled_cache_key
+                and self._compiled_cache is not None):
+            return self._compiled_cache
+
+        ground_clauses = self._ground_clauses(axioms, variables)
+        compiled = []
+        sat_index: Dict[Literal, List[int]] = {}
+        res_index: Dict[Literal, List[int]] = {}
+        for i, clause in enumerate(ground_clauses):
+            pairs = tuple(
+                (lit, lit.negated()) for lit in clause.literals
+            )
+            compiled.append(pairs)
+            for lit, neg in pairs:
+                # sat_index[lit] → clause is satisfied when lit is known
+                if lit not in sat_index:
+                    sat_index[lit] = []
+                sat_index[lit].append(i)
+                # res_index[neg] → when neg is known, lit is resolved
+                # (because neg = lit.negated(), so knowing neg eliminates lit)
+                if neg not in res_index:
+                    res_index[neg] = []
+                res_index[neg].append(i)
+        self._compiled_cache_key = cache_key
+        self._compiled_cache = compiled
+        self._sat_index = sat_index
+        self._res_index = res_index
+        return compiled
+
+    @staticmethod
+    def _apply_compiled(clause_pairs: Tuple, known: Set[Literal]):
+        """Unit propagation using pre-compiled (literal, negated) pairs.
+
+        Returns the derivable literal, _CLAUSE_CONTRADICTION, or None.
+        """
+        unknown_lit = None
+        for lit, neg in clause_pairs:
+            if neg in known:
+                continue
+            elif lit in known:
+                return None
+            else:
+                if unknown_lit is not None:
+                    return None
+                unknown_lit = lit
+        if unknown_lit is not None:
+            return unknown_lit
+        return ConsequenceEngine._CLAUSE_CONTRADICTION
+
     # Maximum number of ground clauses produced per axiom before the
     # axiom is skipped.  Prevents combinatorial explosion when the
     # variable set is large (e.g. 9+ points with 5-point axioms).
@@ -180,6 +266,11 @@ class ConsequenceEngine:
         ``_MAX_GROUND_PER_AXIOM`` ground instances are skipped to
         prevent combinatorial explosion.
         """
+        # Check cache — keyed on the variable set (names + sorts)
+        cache_key = frozenset(variables.items())
+        if cache_key == self._ground_cache_key and self._ground_cache is not None:
+            return self._ground_cache
+
         points = [v for v, s in variables.items() if s == Sort.POINT]
         lines = [v for v, s in variables.items() if s == Sort.LINE]
         circles = [v for v, s in variables.items() if s == Sort.CIRCLE]
@@ -204,14 +295,47 @@ class ConsequenceEngine:
             if est > self._MAX_GROUND_PER_AXIOM:
                 continue
 
-            # Generate all substitutions
+            # Extract equality constraints: pairs of schema variable names
+            # that appear in _pos(Equals(x, y)) literals.  When both map
+            # to the same concrete name, the clause is trivially satisfied
+            # (x = x is always true), so we skip those substitutions.
+            eq_pairs = set()
+            for lit in axiom.literals:
+                if (lit.polarity and isinstance(lit.atom, Equals)
+                        and isinstance(lit.atom.left, str)
+                        and isinstance(lit.atom.right, str)
+                        and lit.atom.left != lit.atom.right):
+                    eq_pairs.add((lit.atom.left, lit.atom.right))
+
+            # Similarly for _neg(Between(a,b,c)): between(a,b,c) is
+            # trivially false when any two of a,b,c are equal (B1b/c),
+            # making ¬between(a,b,c) trivially true → clause satisfied.
+            for lit in axiom.literals:
+                if (not lit.polarity and isinstance(lit.atom, Between)):
+                    a, b, c = lit.atom.a, lit.atom.b, lit.atom.c
+                    # between(a,b,a) is always false, etc.
+                    # But this is handled by degenerate between seeding;
+                    # skip for now to avoid over-filtering.
+
+            # Generate all substitutions, skipping trivially satisfied
+            var_names = [name for name, _ in schema_vars]
             for sub in self._all_substitutions(schema_vars, points, lines,
                                                 circles):
+                # Skip if any equality pair maps to the same value
+                skip = False
+                for v1, v2 in eq_pairs:
+                    if sub.get(v1) == sub.get(v2):
+                        skip = True
+                        break
+                if skip:
+                    continue
                 new_lits = frozenset(
                     substitute_literal(lit, sub)
                     for lit in axiom.literals)
                 ground.append(Clause(new_lits))
 
+        self._ground_cache_key = cache_key
+        self._ground_cache = ground
         return ground
 
     def _clause_schema_vars(self, clause: Clause) -> List[Tuple[str, Sort]]:

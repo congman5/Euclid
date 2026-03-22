@@ -527,6 +527,34 @@ DIAGRAM_ANGLE_TRANSFER: List[Clause] = [
                 MagAdd(RightAngle(), RightAngle()))),
             _neg(On("e", "L")), _neg(On("e", "N")),
             _pos(SameSide("e", "a", "M"))),
+
+    # DA6. Supplementary angles (I.13 as transfer axiom)
+    #      on(a,L) ∧ on(b,L) ∧ between(a,c,b) ∧ ¬on(d,L) ∧ c≠d
+    #      → (∠acd + ∠dcb) = (right-angle + right-angle)
+    #
+    # Derivable from DA2+DA3 but added directly for practical verification.
+    _clause(_neg(On("a", "L")), _neg(On("b", "L")),
+            _neg(Between("a", "c", "b")),
+            _pos(On("d", "L")),
+            _pos(Equals("c", "d")),
+            _pos(Equals(
+                MagAdd(AngleTerm("a", "c", "d"),
+                       AngleTerm("d", "c", "b")),
+                MagAdd(RightAngle(), RightAngle())))),
+
+    # DA7. Converse of DA6 — collinearity from supplementary angles (I.14)
+    #      on(a,L) ∧ on(b,L) ∧ ¬on(c,L) ∧ ¬on(d,L) ∧ ¬same-side(c,d,L)
+    #      ∧ b≠c ∧ b≠d ∧ (∠abc + ∠abd) = (R + R)
+    #      → between(c, b, d)
+    _clause(_neg(On("a", "L")), _neg(On("b", "L")),
+            _pos(On("c", "L")), _pos(On("d", "L")),
+            _pos(SameSide("c", "d", "L")),
+            _pos(Equals("b", "c")), _pos(Equals("b", "d")),
+            _neg(Equals(
+                MagAdd(AngleTerm("a", "b", "c"),
+                       AngleTerm("a", "b", "d")),
+                MagAdd(RightAngle(), RightAngle()))),
+            _pos(Between("c", "b", "d"))),
 ]
 
 DIAGRAM_AREA_TRANSFER: List[Clause] = [

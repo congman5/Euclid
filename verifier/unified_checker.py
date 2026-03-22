@@ -265,6 +265,24 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
     # Track depth per line id for subproof scoping.
     line_depth: Dict[int, int] = {}
 
+    # ── Pre-scan all proof lines to collect the full variable set ────
+    # This allows the consequence/transfer engines to ground their
+    # axiom clauses once (with the complete variable pool) instead of
+    # re-grounding every time a construction introduces a new variable.
+    for _prescan_line in lines:
+        _prescan_stmt = _prescan_line.get("statement", "")
+        if _prescan_stmt:
+            try:
+                _prescan_lits = parse_literal_list(_prescan_stmt, sort_ctx)
+                for _pl in _prescan_lits:
+                    _infer_sorts_from_atom(_pl.atom, sort_ctx)
+                    for _vn in _literal_var_names(_pl):
+                        if _vn not in checker.variables:
+                            checker.variables[_vn] = _infer_sort(
+                                _vn, sort_ctx)
+            except EParseError:
+                pass  # Will be caught during the actual check
+
     def _ref_known(refs: List[int]) -> Set[Literal]:
         """Collect literals from referenced lines only."""
         rk: Set[Literal] = set()
@@ -536,7 +554,8 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                 # theorem conclusions so hypotheses can be checked
                 # with the user's actual variable names.
                 var_map = _match_theorem_var_map(
-                    thm, step_lits, known=checker.known)
+                    thm, step_lits, known=checker.known,
+                    checker=checker)
                 # Check hypotheses of the theorem are met
                 for hyp in thm.sequent.hypotheses:
                     inst = substitute_literal(hyp, var_map)
@@ -1497,6 +1516,7 @@ def _match_theorem_var_map(
     thm: ETheorem,
     step_lits: List[Literal],
     known: Optional[Set[Literal]] = None,
+    checker=None,
 ) -> Dict[str, str]:
     """Derive a variable mapping from step literals matched against
     the theorem's conclusions.  Falls back to an empty mapping if
@@ -1577,6 +1597,13 @@ def _match_theorem_var_map(
                                 # than rejecting by literal equality.
                                 if inst.is_metric:
                                     continue
+                                # For diagrammatic hypotheses, try the
+                                # consequence engine (handles G1 line
+                                # uniqueness, B1 betweenness, etc.)
+                                if inst.is_diagrammatic and checker is not None:
+                                    if checker.consequence_engine.is_consequence(
+                                            known, inst):
+                                        continue
                                 return False
                     return True
 
@@ -1880,7 +1907,7 @@ def get_available_rules() -> List[RuleInfo]:
         DIAGRAM_AREA_TRANSFER,
     )
     _SEG_LABELS  = ["1", "2", "3a", "3b", "4a", "4b", "4c", "4d"]
-    _ANG_LABELS  = ["1a", "1b", "1c", "2a", "2b", "2c", "3a", "3b", "4", "5a", "5b"]
+    _ANG_LABELS  = ["1a", "1b", "1c", "2a", "2b", "2c", "3a", "3b", "4", "5a", "5b", "6", "7"]
     _AREA_LABELS = ["1a", "1b", "1c", "2"]
 
     _TRANSFER_GROUPS = [
@@ -1904,7 +1931,9 @@ def get_available_rules() -> List[RuleInfo]:
           "Right angle converse: ∠acd = right-angle → ∠acd = ∠dcb",
           "Angle extension: supplementary ray → ∠bac = ∠b'ac'",
           "Parallel postulate: ∠abc + ∠bcd < 2·right → lines intersect",
-          "Parallel postulate: intersection point same-side"]),
+          "Parallel postulate: intersection point same-side",
+          "Supplementary angles: between(a,c,b) → ∠acd + ∠dcb = 2R",
+          "Converse supplementary: ∠abc + ∠abd = 2R ∧ opposite sides → between(c,b,d)"]),
         ("Area transfer", DIAGRAM_AREA_TRANSFER, _AREA_LABELS,
          ["Zero area → collinear: △abc = 0 → on(c,L)",
           "Collinear → zero area: on(a,L) ∧ on(b,L) ∧ on(c,L) → △abc = 0",

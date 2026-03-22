@@ -231,13 +231,13 @@ INTERSECTION_RULES: List[ConstructionRule] = [
     ),
 
     # 2. Let a be a point of intersection of α and L.
-    #    Prerequisite: intersects(α, L)   [or intersects(L, α)]
+    #    Prerequisite: intersects(L, α)   [axioms produce intersects(L, α)]
     #    Conclusion: on(a, α), on(a, L)
     ConstructionRule(
         name="let-intersection-circle-line-one",
         category="intersection",
         prereq_pattern=[
-            _pos(Intersects("\u03b1", "L")),
+            _pos(Intersects("L", "\u03b1")),
         ],
         new_vars=[("a", Sort.POINT)],
         conclusion_pattern=[
@@ -247,13 +247,13 @@ INTERSECTION_RULES: List[ConstructionRule] = [
     ),
 
     # 3. Let a and b be the two points of intersection of α and L.
-    #    Prerequisite: intersects(α, L)
+    #    Prerequisite: intersects(L, α)   [axioms produce intersects(L, α)]
     #    Conclusion: on(a, α), on(a, L), on(b, α), on(b, L), a ≠ b
     ConstructionRule(
         name="let-intersection-circle-line-two",
         category="intersection",
         prereq_pattern=[
-            _pos(Intersects("\u03b1", "L")),
+            _pos(Intersects("L", "\u03b1")),
         ],
         new_vars=[("a", Sort.POINT), ("b", Sort.POINT)],
         conclusion_pattern=[
