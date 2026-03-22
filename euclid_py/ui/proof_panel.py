@@ -158,15 +158,21 @@ GREEK_LETTERS = ["α", "β", "γ", "δ"]
 class _VerifyWorker(QObject):
     """Runs verify_e_proof_json on a background thread to avoid UI freeze."""
     finished = pyqtSignal(object)  # emits PanelCheckResult or Exception
+    line_checked = pyqtSignal(int, bool, list)  # (line_id, valid, errors)
 
     def __init__(self, proof_json: dict):
         super().__init__()
         self._proof_json = proof_json
 
+    def _on_line_checked(self, line_id: int, valid: bool, errors: list):
+        self.line_checked.emit(line_id, valid, errors)
+
     def run(self):
         try:
             from verifier.unified_checker import verify_e_proof_json
-            result = verify_e_proof_json(self._proof_json)
+            result = verify_e_proof_json(
+                self._proof_json,
+                on_line_checked=self._on_line_checked)
             self.finished.emit(result)
         except Exception as exc:
             log = _get_crash_logger()

@@ -520,6 +520,26 @@ class _VerifierScreen(QWidget):
             f" border-radius: 4px; font-weight: bold;")
         self._mw.statusBar().showMessage("Verifying\u2026")
 
+        # Show all lines as pending (?) before verification starts
+        pending_lines = []
+        for ld in self._proof_data.get("lines", []):
+            pending_lines.append(ProofLineData(
+                line_id=ld["id"],
+                depth=ld.get("depth", 0),
+                formula_text=ld.get("statement", ""),
+                justification=ld.get("justification", ""),
+                refs=ld.get("refs", []),
+                is_assumption=(ld.get("justification", "") == "Assume"),
+                status="pending",
+                diagnostics=[],
+                is_goal_line=False,
+            ))
+        self._proof_panel.set_proof_data(
+            pending_lines,
+            goal_text=self._proof_data.get("goal", ""),
+            goal_achieved=None,
+        )
+
         # Import the worker from proof_panel (shared implementation)
         from .proof_panel import _VerifyWorker
 
@@ -527,9 +547,15 @@ class _VerifierScreen(QWidget):
         self._verify_worker = _VerifyWorker(self._proof_data)
         self._verify_worker.moveToThread(self._verify_thread)
         self._verify_thread.started.connect(self._verify_worker.run)
+        self._verify_worker.line_checked.connect(self._on_line_checked)
         self._verify_worker.finished.connect(self._on_verify_finished)
         self._verify_worker.finished.connect(self._verify_thread.quit)
         self._verify_thread.start()
+
+    def _on_line_checked(self, line_id: int, valid: bool, errors: list):
+        """Update a single line's status as verification progresses."""
+        status = "valid" if valid else "invalid"
+        self._proof_panel.update_line_status(line_id, status)
 
     def _on_verify_finished(self, result_or_exc):
         """Handle verification result from the background thread."""

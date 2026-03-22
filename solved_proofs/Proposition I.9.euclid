@@ -7,33 +7,33 @@
     "points": [
       {
         "label": "A",
-        "x": 150,
-        "y": 400
+        "x": 100,
+        "y": 250
       },
       {
         "label": "B",
-        "x": 500,
-        "y": 400
+        "x": 550,
+        "y": 120
       },
       {
         "label": "C",
-        "x": 400,
-        "y": 100
+        "x": 550,
+        "y": 380
       },
       {
         "label": "D",
-        "x": 246.0,
-        "y": 284.8
+        "x": 340.18,
+        "y": 180.62
       },
       {
         "label": "F",
-        "x": 300.0,
-        "y": 400.0
+        "x": 340.18,
+        "y": 319.38
       },
       {
         "label": "E",
-        "x": 372.8,
-        "y": 295.6
+        "x": 220.0,
+        "y": 250.0
       }
     ],
     "segments": [
@@ -50,47 +50,42 @@
       {
         "from": "A",
         "to": "D",
-        "color": "#f57c00"
+        "color": "#2e8b57"
       },
       {
         "from": "A",
         "to": "F",
-        "color": "#f57c00"
+        "color": "#2e8b57"
       },
       {
         "from": "D",
         "to": "F",
-        "color": "#2d70b3"
+        "color": "#333333"
       },
       {
         "from": "D",
         "to": "E",
-        "color": "#2d70b3"
+        "color": "#cc3333"
       },
       {
         "from": "F",
         "to": "E",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "A",
-        "to": "E",
-        "color": "#388e3c"
+        "color": "#cc3333"
       }
     ],
     "rays": [
       {
         "from": "A",
         "through": "E",
-        "color": "#388e3c"
+        "color": "#e67e22"
       }
     ],
     "circles": [
       {
         "center": "A",
-        "radius": 150,
+        "radius": 250,
         "radius_point": "D",
-        "color": "#f57c00"
+        "color": "#2e8b57"
       }
     ],
     "angleMarks": [
@@ -127,10 +122,6 @@
           [
             "D",
             "E"
-          ],
-          [
-            "D",
-            "F"
           ],
           [
             "F",

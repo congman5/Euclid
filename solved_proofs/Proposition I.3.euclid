@@ -18,21 +18,21 @@
       {
         "label": "C",
         "x": 200,
-        "y": 400
+        "y": 420
       },
       {
         "label": "D",
-        "x": 350,
-        "y": 400
+        "x": 320,
+        "y": 420
       },
       {
         "label": "F",
-        "x": 225.0,
-        "y": 170.1
+        "x": 150,
+        "y": 180.0
       },
       {
         "label": "E",
-        "x": 300.0,
+        "x": 270.0,
         "y": 300.0
       }
     ],
@@ -50,21 +50,21 @@
       {
         "from": "A",
         "to": "F",
-        "color": "#f57c00"
+        "color": "#2e8b57"
       },
       {
         "from": "A",
         "to": "E",
-        "color": "#388e3c"
+        "color": "#cc3333"
       }
     ],
     "rays": [],
     "circles": [
       {
         "center": "A",
-        "radius": 150.0,
+        "radius": 120.0,
         "radius_point": "F",
-        "color": "#f57c00"
+        "color": "#cc3333"
       }
     ],
     "angleMarks": [],

@@ -104,6 +104,14 @@ class FitchProofView(QWidget):
         self.setFixedHeight(max(h, 100))
         self.update()
 
+    def update_line_status(self, line_id: int, status: str):
+        """Update a single line's status and repaint."""
+        for line in self._lines:
+            if line.line_id == line_id:
+                line.status = status
+                break
+        self.update()
+
     def select_line(self, line_id: int):
         self._selected_id = line_id
         self.line_selected.emit(line_id)
@@ -393,6 +401,10 @@ class ProofPanel(QWidget):
                        goal_achieved: bool | None = None):
         self._proof_view.set_lines(lines)
         self._goals.set_goal(goal_text, goal_achieved)
+
+    def update_line_status(self, line_id: int, status: str):
+        """Update a single line's verification status."""
+        self._proof_view.update_line_status(line_id, status)
 
     def scroll_to_line(self, line_id: int):
         for i, ld in enumerate(self._proof_view._lines):

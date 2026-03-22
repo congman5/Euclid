@@ -147,7 +147,7 @@ class PanelCheckResult:
     diagnostics: List[Any] = field(default_factory=list)
 
 
-def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
+def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckResult:
     """Parse and verify a proof in the panel's JSON format using System E.
 
     The JSON format mirrors what the proof panel's ``_build_proof_json``
@@ -325,6 +325,8 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
             if lr.valid:
                 result.derived.add(lid)
             result.line_results[lid] = lr
+            if on_line_checked:
+                on_line_checked(lid, lr.valid, lr.errors)
             continue
 
         # Parse the statement into literals
@@ -334,12 +336,16 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
             lr.valid = False
             lr.errors.append(f"Parse error: {exc}")
             result.line_results[lid] = lr
+            if on_line_checked:
+                on_line_checked(lid, lr.valid, lr.errors)
             continue
 
         if not step_lits:
             lr.valid = False
             lr.errors.append("Empty statement.")
             result.line_results[lid] = lr
+            if on_line_checked:
+                on_line_checked(lid, lr.valid, lr.errors)
             continue
 
         # Determine step kind from justification
@@ -1118,6 +1124,8 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
             if lid not in line_lits:
                 line_lits[lid] = set(step_lits)
         result.line_results[lid] = lr
+        if on_line_checked:
+            on_line_checked(lid, lr.valid, lr.errors)
 
     # ── 6. Check goal ─────────────────────────────────────────────
     if goal_str and not goal_parse_ok:

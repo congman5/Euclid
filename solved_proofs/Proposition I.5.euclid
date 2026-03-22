@@ -8,7 +8,7 @@
       {
         "label": "A",
         "x": 325,
-        "y": 130
+        "y": 100
       },
       {
         "label": "B",
@@ -49,8 +49,8 @@
       },
       {
         "from": "B",
-        "vertex": "A",
-        "to": "C",
+        "vertex": "C",
+        "to": "A",
         "is_right": false
       }
     ],
