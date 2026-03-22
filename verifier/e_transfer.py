@@ -121,18 +121,14 @@ class TransferEngine:
         compiled = []
         sat_index = {}
         res_index = {}
-        for i, clause in enumerate(ground):
+        for i, clause_lits in enumerate(ground):
             pairs = tuple(
-                (lit, lit.negated()) for lit in clause.literals
+                (lit, lit.negated()) for lit in clause_lits
             )
             compiled.append(pairs)
             for lit, neg in pairs:
-                if lit not in sat_index:
-                    sat_index[lit] = []
-                sat_index[lit].append(i)
-                if neg not in res_index:
-                    res_index[neg] = []
-                res_index[neg].append(i)
+                sat_index.setdefault(lit, []).append(i)
+                res_index.setdefault(neg, []).append(i)
         self._compiled_cache_key = cache_key
         self._compiled_cache = compiled
         self._sat_index = sat_index

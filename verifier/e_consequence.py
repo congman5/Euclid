@@ -205,21 +205,14 @@ class ConsequenceEngine:
         compiled = []
         sat_index: Dict[Literal, List[int]] = {}
         res_index: Dict[Literal, List[int]] = {}
-        for i, clause in enumerate(ground_clauses):
+        for i, clause_lits in enumerate(ground_clauses):
             pairs = tuple(
-                (lit, lit.negated()) for lit in clause.literals
+                (lit, lit.negated()) for lit in clause_lits
             )
             compiled.append(pairs)
             for lit, neg in pairs:
-                # sat_index[lit] → clause is satisfied when lit is known
-                if lit not in sat_index:
-                    sat_index[lit] = []
-                sat_index[lit].append(i)
-                # res_index[neg] → when neg is known, lit is resolved
-                # (because neg = lit.negated(), so knowing neg eliminates lit)
-                if neg not in res_index:
-                    res_index[neg] = []
-                res_index[neg].append(i)
+                sat_index.setdefault(lit, []).append(i)
+                res_index.setdefault(neg, []).append(i)
         self._compiled_cache_key = cache_key
         self._compiled_cache = compiled
         self._sat_index = sat_index
@@ -329,10 +322,13 @@ class ConsequenceEngine:
                         break
                 if skip:
                     continue
-                new_lits = frozenset(
+                # Use dict.fromkeys for dedup while preserving first-seen order
+                # (avoids frozenset hashing overhead — ground clauses are
+                # only iterated in _compiled_clauses, never hashed)
+                new_lits = tuple(dict.fromkeys(
                     substitute_literal(lit, sub)
-                    for lit in axiom.literals)
-                ground.append(Clause(new_lits))
+                    for lit in axiom.literals))
+                ground.append(new_lits)
 
         self._ground_cache_key = cache_key
         self._ground_cache = ground
