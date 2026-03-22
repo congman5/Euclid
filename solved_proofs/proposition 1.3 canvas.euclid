@@ -1,0 +1,88 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {},
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150.0,
+        "y": 300.0
+      },
+      {
+        "label": "B",
+        "x": 500.0,
+        "y": 300.0
+      },
+      {
+        "label": "C",
+        "x": 200.0,
+        "y": 400.0
+      },
+      {
+        "label": "D",
+        "x": 350.0,
+        "y": 400.0
+      },
+      {
+        "label": "E",
+        "x": 300.0,
+        "y": 300.0
+      },
+      {
+        "label": "F",
+        "x": 91.28528240911072,
+        "y": 161.96890952317258
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "E",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "F",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [
+      {
+        "center": "A",
+        "radius": 150.0,
+        "radius_point": "E",
+        "color": "#2d70b3"
+      }
+    ],
+    "angleMarks": [],
+    "equalityGroups": [
+      [
+        1,
+        [
+          [
+            "C",
+            "D"
+          ],
+          [
+            "A",
+            "_p0"
+          ]
+        ]
+      ]
+    ]
+  },
+  "exportedAt": "2026-03-14T07:12:55Z"
+}
