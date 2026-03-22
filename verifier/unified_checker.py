@@ -225,17 +225,18 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
         # are available (user-level proof checking in the UI).
         available_theorems = E_THEOREM_LIBRARY
 
-    # Register declared variables — only the original names, not the
-    # lowercase/uppercase parsing helpers, to avoid combinatorial
-    # explosion in axiom grounding.
-    declared_names: Set[str] = set()
+    # Register declared variables using their lowercase canonical form
+    # (System E uses lowercase internally).  Avoid registering both
+    # 'A' and 'a' as separate points — that doubles the grounding
+    # pool and can push axiom grounding over _MAX_GROUND_PER_AXIOM.
     for p in decl.get("points", []):
-        declared_names.add(p)
+        canon = p.lower()
+        if canon not in checker.variables:
+            checker.variables[canon] = Sort.POINT
     for ln in decl.get("lines", []):
-        declared_names.add(ln)
-    for name in declared_names:
-        if name in sort_ctx and name not in checker.variables:
-            checker.variables[name] = sort_ctx[name]
+        canon = ln.lower()
+        if canon not in checker.variables:
+            checker.variables[canon] = Sort.LINE
     # Load premises as known facts and register their variables.
     # Infer variable sorts from premises so that the consequence and
     # transfer engines see correct point/line/circle classification.
