@@ -8,27 +8,22 @@
       {
         "label": "A",
         "x": 150,
-        "y": 350
+        "y": 380
       },
       {
         "label": "B",
-        "x": 500,
-        "y": 350
+        "x": 450,
+        "y": 380
       },
       {
         "label": "C",
-        "x": 325.0,
-        "y": 46.9
+        "x": 300.0,
+        "y": 120.19
       },
       {
         "label": "D",
-        "x": 325.0,
-        "y": 350.0
-      },
-      {
-        "label": "E",
-        "x": 325.0,
-        "y": 228.8
+        "x": 300.0,
+        "y": 380.0
       }
     ],
     "segments": [
@@ -40,35 +35,48 @@
       {
         "from": "A",
         "to": "C",
-        "color": "#f57c00"
+        "color": "#333333"
       },
       {
         "from": "B",
         "to": "C",
-        "color": "#f57c00"
+        "color": "#333333"
       },
       {
         "from": "C",
         "to": "D",
-        "color": "#388e3c"
+        "color": "#cc3333"
       }
     ],
     "rays": [],
     "circles": [
       {
         "center": "A",
-        "radius": 350.0,
+        "radius": 300.0,
         "radius_point": "B",
-        "color": "#2d70b3"
+        "color": "#2e8b57"
       },
       {
         "center": "B",
-        "radius": 350.0,
+        "radius": 300.0,
         "radius_point": "A",
-        "color": "#2d70b3"
+        "color": "#2e8b57"
       }
     ],
-    "angleMarks": [],
+    "angleMarks": [
+      {
+        "from": "A",
+        "vertex": "C",
+        "to": "D",
+        "is_right": false
+      },
+      {
+        "from": "D",
+        "vertex": "C",
+        "to": "B",
+        "is_right": false
+      }
+    ],
     "equalityGroups": [
       [
         1,
@@ -80,10 +88,6 @@
           [
             "B",
             "C"
-          ],
-          [
-            "A",
-            "B"
           ]
         ]
       ],
