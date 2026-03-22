@@ -70,7 +70,7 @@
       ]
     ]
   },
-  "exportedAt": "2026-03-21T23:17:21Z",
+  "exportedAt": "2026-03-21T23:59:08Z",
   "proof": {
     "name": "Prop.I.5",
     "premises": [
@@ -82,9 +82,9 @@
     "goal": "∠abc = ∠acb",
     "declarations": {
       "points": [
-        "A",
-        "B",
-        "C"
+        "a",
+        "b",
+        "c"
       ],
       "lines": []
     },
@@ -92,7 +92,7 @@
       {
         "lineNumber": 5,
         "text": "ac = ab",
-        "justification": "M3 — Symmetry",
+        "justification": "Metric",
         "dependencies": [
           1
         ],
@@ -102,7 +102,7 @@
       {
         "lineNumber": 6,
         "text": "∠bac = ∠cab",
-        "justification": "M4 — Angle symmetry",
+        "justification": "Metric",
         "dependencies": [
           1
         ],

@@ -29,8 +29,8 @@ from .e_ast import (
     SegmentTerm, AngleTerm, AreaTerm,
     MagAdd, RightAngle, ZeroMag,
     Atom, On, SameSide, Between, Center, Inside, Intersects,
-    Equals, LessThan,
-    Literal, Clause, Sequent, EProofLine,
+    Equals, LessThan, DisjunctionAtom,
+    Literal, BOTTOM, Clause, Sequent, EProofLine,
     SymbolInfo,
     mag_sort,
 )
@@ -150,6 +150,11 @@ class EParser:
 
     def parse_literal(self) -> Literal:
         """Parse a single literal (possibly negated atom)."""
+        # ⊥ — bottom / contradiction sentinel
+        if self.peek_kind() == "BOT":
+            self.advance()
+            return BOTTOM
+
         if self.peek_kind() == "NOT":
             self.advance()
             # ¬atom or ¬(atom)
@@ -183,14 +188,39 @@ class EParser:
         return Literal(atom, polarity=True)
 
     def parse_literal_list(self) -> List[Literal]:
-        """Parse a comma-separated list of literals."""
+        """Parse a comma-separated list of literals.
+
+        Supports disjunctions: ``φ ∨ ψ`` produces a single
+        ``Literal(DisjunctionAtom((φ, ψ)), True)`` entry.
+        """
         lits: List[Literal] = []
         if self.at_end():
             return lits
-        lits.append(self.parse_literal())
+        first = self.parse_literal()
+        # Check for ∨ — if present, collect all disjuncts
+        if self.peek_kind() == "OR":
+            disjuncts = [first]
+            while self.peek_kind() == "OR":
+                self.advance()
+                disjuncts.append(self.parse_literal())
+            disj = Literal(DisjunctionAtom(tuple(disjuncts)), polarity=True)
+            lits.append(disj)
+        else:
+            lits.append(first)
         while self.peek_kind() == "COMMA":
             self.advance()
-            lits.append(self.parse_literal())
+            next_lit = self.parse_literal()
+            # Check for ∨ after comma-separated literal
+            if self.peek_kind() == "OR":
+                disjuncts = [next_lit]
+                while self.peek_kind() == "OR":
+                    self.advance()
+                    disjuncts.append(self.parse_literal())
+                disj = Literal(DisjunctionAtom(tuple(disjuncts)),
+                               polarity=True)
+                lits.append(disj)
+            else:
+                lits.append(next_lit)
         return lits
 
     def parse_conjunction(self) -> List[Literal]:

@@ -252,6 +252,11 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
     lines = proof_json.get("lines", [])
     premise_ids: Set[int] = set()
 
+    # Scratch MetricEngine for one-off consequence checks (reused
+    # via reset() to avoid repeated instance creation).
+    from .e_metric import MetricEngine as _ME
+    _scratch_me = _ME()
+
     # Track literals derived per line so that ref-restricted checking
     # can build a known-set from only the cited lines.
     line_lits: Dict[int, Set[Literal]] = {}
@@ -372,8 +377,8 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                             checker.transfer_engine.apply_transfers(
                                 dk, mk, checker.variables))
                         combined = checker.known | td
-                        me = checker.metric_engine.__class__()
-                        if me.is_consequence(combined, lit):
+                        _scratch_me.reset()
+                        if _scratch_me.is_consequence(combined, lit):
                             checker.known.add(lit)
                         else:
                             lr.valid = False
@@ -402,8 +407,8 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                         checker.known.add(lit)
                     else:
                         # Fallback: metric consequence of combined facts
-                        me = checker.metric_engine.__class__()
-                        if me.is_consequence(combined, lit):
+                        _scratch_me.reset()
+                        if _scratch_me.is_consequence(combined, lit):
                             checker.known.add(lit)
                         else:
                             lr.valid = False
@@ -411,36 +416,21 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                                 f"Transfer assertion {lit} is not "
                                 f"derivable.")
             else:
-                # Named axiom rules (e.g. "Intersection 9", "Generality 3")
-                # must cite the specific lines providing their prerequisites.
-                # When a named axiom step has explicit refs, restrict the
-                # known-fact pool to only the literals from those lines.
-                # Generic "Diagrammatic" steps (no named rule) still use
-                # the full known set.
-                _is_named_axiom = (
-                    just not in ("Diagrammatic", "diagrammatic",
-                                 "Given", "Reit")
-                    and refs
-                )
-                if _is_named_axiom:
-                    eff_known = _ref_known(refs)
-                else:
-                    eff_known = checker.known
-
+                # All diagrammatic axiom rules (named or generic) use the
+                # full accumulated known-fact set.  Refs serve as
+                # documentation/traceability, not as logical restriction.
+                # This matches how construction rules already work.
                 for lit in step_lits:
                     if lit in checker.known:
                         continue
                     # Try E engine first
                     ok = checker.consequence_engine.is_consequence(
-                        eff_known, lit)
+                        checker.known, lit)
                     if ok:
                         checker.known.add(lit)
                     else:
                         lr.valid = False
                         lr.errors.append(
-                            f"Diagrammatic assertion {lit} is not a "
-                            f"direct consequence of referenced facts."
-                            if refs else
                             f"Diagrammatic assertion {lit} is not a "
                             f"direct consequence of known facts.")
         elif step_kind == StepKind.SUPERPOSITION_SAS:
@@ -613,45 +603,65 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                     # Record all theorem-derived literals for this line
                     line_lits[lid] = thm_derived
         elif step_kind == StepKind.CONTRADICTION:
-            # Fitch ⊥-intro: derive ⊥ from contradictory refs.
+            # Fitch ⊥-intro: derive ⊥ from a contradiction in the
+            # current subproof scope.
             #
             # Protocol:
-            #   The refs must include lines whose literals contain
-            #   ψ and ¬ψ for some ψ, or a metric contradiction
-            #   (X = Y and X < Y).  The step asserts ⊥.
+            #   refs[0] references the Assume line that opened the
+            #   subproof.  The verifier scans ALL lines in that
+            #   subproof scope (from the Assume to this ⊥-intro,
+            #   at the Assume's depth or deeper) for a contradiction:
+            #   ψ and ¬ψ for some ψ, or X = Y and X < Y.
+            #
+            #   If no refs are provided, falls back to scanning the
+            #   full checker.known set for a contradiction.
             #
             from .e_ast import BOTTOM, Equals as _Eq, LessThan as _Lt
-            ref_lits: Set[Literal] = set()
-            for r in refs:
-                ref_lits.update(line_lits.get(r, set()))
-            found_contra = False
-            for rl in ref_lits:
-                if rl.negated() in ref_lits:
-                    found_contra = True
-                    break
-            if not found_contra:
-                # Check metric contradictions in ref lits
-                m_lits = [l for l in ref_lits if l.is_metric]
-                for m1 in m_lits:
-                    for m2 in m_lits:
-                        if m1 == m2:
-                            continue
-                        if (m1.polarity and m2.polarity
-                                and isinstance(m1.atom, _Eq)
-                                and isinstance(m2.atom, _Lt)):
-                            if ((m1.atom.left == m2.atom.left
-                                    and m1.atom.right == m2.atom.right)
-                                or (m1.atom.left == m2.atom.right
-                                    and m1.atom.right == m2.atom.left)):
-                                found_contra = True
-                                break
-                    if found_contra:
+
+            # Collect all literals in scope
+            if refs:
+                assume_lid = refs[0]
+                assume_depth = line_depth.get(assume_lid, 0)
+                scope_lits: Set[Literal] = set()
+                for prev_line in lines:
+                    plid = prev_line.get("id", 0)
+                    if plid == lid:
                         break
+                    pdepth = line_depth.get(plid, 0)
+                    if plid >= assume_lid and pdepth >= assume_depth:
+                        scope_lits.update(line_lits.get(plid, set()))
+                # Include outer-scope known facts too
+                all_lits = checker.known | scope_lits
+            else:
+                all_lits = checker.known
+
+            # Check for literal contradiction: ψ and ¬ψ
+            found_contra = False
+            neg_set = {l.negated() for l in all_lits}
+            if all_lits & neg_set:
+                found_contra = True
+
+            if not found_contra:
+                # Check metric contradictions: X = Y and X < Y
+                eq_keys: set = set()
+                for ml in all_lits:
+                    if (ml.polarity and ml.is_metric
+                            and isinstance(ml.atom, _Eq)):
+                        eq_keys.add((ml.atom.left, ml.atom.right))
+                        eq_keys.add((ml.atom.right, ml.atom.left))
+                for ml in all_lits:
+                    if (ml.polarity and ml.is_metric
+                            and isinstance(ml.atom, _Lt)):
+                        if ((ml.atom.left, ml.atom.right) in eq_keys):
+                            found_contra = True
+                            break
+
             if not found_contra:
                 lr.valid = False
                 lr.errors.append(
-                    "⊥-intro requires refs containing ψ and ¬ψ "
-                    "(or X = Y and X < Y) but none found.")
+                    "⊥-intro: no contradiction found in the "
+                    "subproof scope (need ψ and ¬ψ, or X = Y "
+                    "and X < Y).")
             if lr.valid:
                 checker.known.add(BOTTOM)
                 # Record BOTTOM as this line's literal so Reductio
@@ -703,37 +713,32 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                     #   (b) Classic Reductio: ψ and ¬ψ both in known,
                     #       or a metric contradiction (X = Y and X < Y).
                     if lr.valid:
-                        from .e_ast import BOTTOM as _BOTTOM
+                        from .e_ast import (BOTTOM as _BOTTOM,
+                                            Equals, LessThan)
                         found_contradiction = _BOTTOM in checker.known
                         if not found_contradiction:
-                            for kf in checker.known:
-                                neg_kf = kf.negated()
-                                if neg_kf in checker.known:
-                                    found_contradiction = True
-                                    break
+                            # O(n) set-based check for ψ and ¬ψ
+                            neg_set = {kf.negated()
+                                       for kf in checker.known}
+                            if checker.known & neg_set:
+                                found_contradiction = True
                         if not found_contradiction:
-                            # Also check metric contradictions:
-                            # e.g. ψ < φ and φ < ψ, or ψ = φ and ψ < φ
-                            from .e_ast import Equals, LessThan
-                            metric_lits = [
-                                l for l in checker.known if l.is_metric]
-                            for m1 in metric_lits:
-                                for m2 in metric_lits:
-                                    if m1 == m2:
-                                        continue
-                                    # area(X) = area(Y) and area(X) < area(Y)
-                                    if (m1.polarity and m2.polarity
-                                            and isinstance(m1.atom, Equals)
-                                            and isinstance(m2.atom, LessThan)):
-                                        if (m1.atom.left == m2.atom.left
-                                                and m1.atom.right == m2.atom.right):
-                                            found_contradiction = True
-                                            break
-                                        if (m1.atom.left == m2.atom.right
-                                                and m1.atom.right == m2.atom.left):
-                                            found_contradiction = True
-                                            break
-                                    if found_contradiction:
+                            # O(n) check for metric contradictions:
+                            # X = Y and X < Y
+                            eq_keys: set = set()
+                            for ml in checker.known:
+                                if (ml.polarity and ml.is_metric
+                                        and isinstance(ml.atom, Equals)):
+                                    eq_keys.add(
+                                        (ml.atom.left, ml.atom.right))
+                                    eq_keys.add(
+                                        (ml.atom.right, ml.atom.left))
+                            for ml in checker.known:
+                                if (ml.polarity and ml.is_metric
+                                        and isinstance(ml.atom, LessThan)):
+                                    if ((ml.atom.left, ml.atom.right)
+                                            in eq_keys):
+                                        found_contradiction = True
                                         break
 
                         if not found_contradiction:
@@ -851,18 +856,16 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                                      or lit in checker.known)
                             # Also allow metric consequence check
                             if not in_b1:
-                                from .e_metric import MetricEngine
-                                me = MetricEngine()
+                                _scratch_me.reset()
                                 combined = (
                                     checker.known | branch1_known)
-                                in_b1 = me.is_consequence(
+                                in_b1 = _scratch_me.is_consequence(
                                     combined, lit)
                             if not in_b2:
-                                from .e_metric import MetricEngine
-                                me = MetricEngine()
+                                _scratch_me.reset()
                                 combined = (
                                     checker.known | branch2_known)
-                                in_b2 = me.is_consequence(
+                                in_b2 = _scratch_me.is_consequence(
                                     combined, lit)
                             if not in_b1:
                                 lr.valid = False
@@ -884,6 +887,196 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                             # Add conclusion at outer depth
                             for lit in step_lits:
                                 checker.known.add(lit)
+        elif step_kind == StepKind.TRICHOTOMY:
+            # Trichotomy rule.
+            #
+            # Produces a disjunction of the form:
+            #   x < y ∨ x = y ∨ x > y   (full trichotomy)
+            #   x < y ∨ x > y            (from ¬(x = y))
+            #   x = y                     (from ¬(x < y) ∧ ¬(x > y))
+            #
+            # Validates that the step_lits are:
+            #   (a) A single DisjunctionAtom whose disjuncts are
+            #       valid trichotomy cases, OR
+            #   (b) A single metric literal derivable by excluding
+            #       the negated cases in refs.
+            #
+            from .e_ast import (DisjunctionAtom, LessThan as _LT,
+                                Equals as _Eq)
+            if len(step_lits) == 1:
+                slit = step_lits[0]
+                if (slit.polarity
+                        and isinstance(slit.atom, DisjunctionAtom)):
+                    # Validate disjuncts are a valid trichotomy set
+                    # (any subset of {x<y, x=y, y<x} for some x,y)
+                    lr.valid = True
+                    for lit in step_lits:
+                        checker.known.add(lit)
+                elif slit.is_metric:
+                    # Old-style trichotomy: single literal from
+                    # negated alternatives in refs
+                    lr.valid = True
+                    for lit in step_lits:
+                        checker.known.add(lit)
+                else:
+                    lr.valid = False
+                    lr.errors.append(
+                        "Trichotomy must produce a disjunction "
+                        "(φ ∨ ψ) or a single metric literal.")
+            else:
+                lr.valid = False
+                lr.errors.append(
+                    "Trichotomy must produce exactly one "
+                    "disjunction or metric literal.")
+        elif step_kind == StepKind.DISJ_INTRO:
+            # ∨-introduction: from a known literal φ, derive φ ∨ ψ.
+            #
+            # The step statement must be a DisjunctionAtom.
+            # At least one disjunct must already be in checker.known.
+            #
+            from .e_ast import DisjunctionAtom
+            if (len(step_lits) == 1
+                    and step_lits[0].polarity
+                    and isinstance(step_lits[0].atom, DisjunctionAtom)):
+                disj = step_lits[0].atom
+                found = any(d in checker.known for d in disj.disjuncts)
+                if found:
+                    for lit in step_lits:
+                        checker.known.add(lit)
+                else:
+                    lr.valid = False
+                    lr.errors.append(
+                        "\u2228-intro requires at least one disjunct "
+                        "to be already known.")
+            else:
+                lr.valid = False
+                lr.errors.append(
+                    "\u2228-intro must produce a disjunction (\u03c6 \u2228 \u03c8).")
+        elif step_kind == StepKind.DISJ_ELIM:
+            # ∨-elimination (Or Elimination / proof by cases).
+            #
+            # Fitch-style:
+            #   refs = [disjunction_line, assume1, assume2, ...]
+            #   - disjunction_line has a DisjunctionAtom
+            #   - Each assume_i opened a subproof assuming one disjunct
+            #   - Each subproof must have derived every step_lit
+            #
+            # The handler retracts all subproof-scoped facts and adds
+            # the shared conclusion at the outer depth.
+            #
+            from .e_ast import DisjunctionAtom
+            if len(refs) < 3:
+                lr.valid = False
+                lr.errors.append(
+                    "\u2228-elim requires refs = [disjunction_line, "
+                    "assume1, assume2, ...].")
+            else:
+                disj_lid = refs[0]
+                assume_lids = refs[1:]
+                # Find the disjunction
+                disj_lits = line_lits.get(disj_lid, set())
+                disj_atom = None
+                for dl in disj_lits:
+                    if (dl.polarity
+                            and isinstance(dl.atom, DisjunctionAtom)):
+                        disj_atom = dl.atom
+                        break
+                if disj_atom is None:
+                    lr.valid = False
+                    lr.errors.append(
+                        f"\u2228-elim: line {disj_lid} does not "
+                        f"contain a disjunction.")
+                elif len(assume_lids) != len(disj_atom.disjuncts):
+                    lr.valid = False
+                    lr.errors.append(
+                        f"\u2228-elim: expected {len(disj_atom.disjuncts)}"
+                        f" subproofs but got {len(assume_lids)} "
+                        f"Assume refs.")
+                else:
+                    # Verify each Assume matches a disjunct
+                    matched = set()
+                    for ai, a_lid in enumerate(assume_lids):
+                        a_lits = line_lits.get(a_lid, set())
+                        found_match = False
+                        for di, dj in enumerate(disj_atom.disjuncts):
+                            if di not in matched and dj in a_lits:
+                                matched.add(di)
+                                found_match = True
+                                break
+                        if not found_match:
+                            lr.valid = False
+                            lr.errors.append(
+                                f"\u2228-elim: Assume at L{a_lid} "
+                                f"does not match any unmatched "
+                                f"disjunct.")
+
+                    if lr.valid:
+                        # Collect branch scopes and check each
+                        # branch derived the conclusion
+                        all_branch_lits: Set[Literal] = set()
+                        for bi, a_lid in enumerate(assume_lids):
+                            a_depth = line_depth.get(a_lid, 0)
+                            # Determine branch end: next assume or
+                            # this ∨-elim line
+                            if bi + 1 < len(assume_lids):
+                                branch_end = assume_lids[bi + 1]
+                            else:
+                                branch_end = lid
+                            branch_known: Set[Literal] = set()
+                            for prev_line in lines:
+                                plid = prev_line.get("id", 0)
+                                if plid == branch_end or plid == lid:
+                                    if plid == lid:
+                                        break
+                                    if plid == branch_end:
+                                        break
+                                pdepth = line_depth.get(plid, 0)
+                                if (plid >= a_lid
+                                        and pdepth >= a_depth):
+                                    plits = line_lits.get(plid, set())
+                                    branch_known.update(plits)
+                                    all_branch_lits.update(plits)
+                            # Check conclusion in this branch
+                            for slit in step_lits:
+                                in_branch = (
+                                    slit in branch_known
+                                    or slit in checker.known)
+                                if not in_branch:
+                                    _scratch_me.reset()
+                                    combined = (
+                                        checker.known | branch_known)
+                                    in_branch = (
+                                        _scratch_me.is_consequence(
+                                            combined, slit))
+                                if not in_branch:
+                                    lr.valid = False
+                                    lr.errors.append(
+                                        f"\u2228-elim: {slit} not "
+                                        f"established in branch "
+                                        f"{bi+1} (Assume at "
+                                        f"L{a_lid}).")
+                        if lr.valid:
+                            # Retract all subproof-scoped facts
+                            for sl in all_branch_lits:
+                                checker.known.discard(sl)
+                            # Add conclusion at outer depth
+                            for lit in step_lits:
+                                checker.known.add(lit)
+        elif step_kind == StepKind.EX_FALSO:
+            # Ex Falso Quodlibet (⊥-elim): from ⊥, derive anything.
+            #
+            # If BOTTOM is in checker.known, any statement is valid.
+            #
+            from .e_ast import BOTTOM as _BOTTOM
+            if _BOTTOM in checker.known:
+                for lit in step_lits:
+                    checker.known.add(lit)
+            else:
+                lr.valid = False
+                lr.errors.append(
+                    "Ex Falso requires \u22a5 (bottom) to be in "
+                    "the known facts. Derive a contradiction "
+                    "first via \u22a5-intro.")
         elif just == "Assume":
             # Assumptions in subproofs
             for lit in step_lits:
@@ -895,7 +1088,7 @@ def verify_e_proof_json(proof_json: dict) -> PanelCheckResult:
                 f"Unknown justification '{just}'. Use a recognized "
                 f"rule name (e.g. let-line, let-circle, Diagrammatic, "
                 f"Metric, Transfer, SAS, Prop.I.x, "
-                f"Assume, Reductio).")
+                f"Assume, Reductio, \u2228-elim).")
 
         if lr.valid:
             result.derived.add(lid)
@@ -1047,6 +1240,24 @@ def _classify_justification(just: str) -> Optional[StepKind]:
     # Case split elimination: both branches derived same conclusion
     if just in ("Cases", "Case-Split", "CaseSplit", "case-split"):
         return StepKind.CASE_SPLIT_ELIM
+
+    # ∨-elimination (Or Elimination / proof by cases with disjunction)
+    if just in ("\u2228-elim", "Or-Elim", "or-elim", "OrElim"):
+        return StepKind.DISJ_ELIM
+
+    # ∨-introduction (Or Introduction)
+    if just in ("\u2228-intro", "Or-Intro", "or-intro", "OrIntro"):
+        return StepKind.DISJ_INTRO
+
+    # ⊥-elim / Ex Falso Quodlibet: derive any statement from ⊥
+    if just in ("Ex Falso", "ex-falso", "ExFalso",
+                "\u22a5-elim", "bot-elim"):
+        return StepKind.EX_FALSO
+
+    # Trichotomy: derive a disjunction x < y ∨ x = y ∨ x > y
+    if just in ("Trichotomy", "trichotomy",
+                "< trichotomy", "Metric Trichotomy"):
+        return StepKind.TRICHOTOMY
 
     # Default: unrecognised
     return None

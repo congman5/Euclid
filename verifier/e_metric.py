@@ -144,6 +144,10 @@ class MetricEngine:
     def __init__(self):
         self.state = MetricState()
 
+    def reset(self):
+        """Reset internal state for reuse without creating a new instance."""
+        self.state = MetricState()
+
     def process_literals(self, literals: Set[Literal]) -> Set[Literal]:
         """Process known metric literals and derive consequences.
 

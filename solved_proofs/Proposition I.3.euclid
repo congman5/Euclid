@@ -88,7 +88,7 @@
       ]
     ]
   },
-  "exportedAt": "2026-03-21T23:17:21Z",
+  "exportedAt": "2026-03-21T23:59:08Z",
   "proof": {
     "name": "Prop.I.3",
     "premises": [
@@ -103,12 +103,14 @@
     "goal": "between(a, e, b), ae = cd",
     "declarations": {
       "points": [
-        "A",
-        "B",
-        "C",
-        "D"
+        "a",
+        "b",
+        "c",
+        "d"
       ],
-      "lines": []
+      "lines": [
+        "L"
+      ]
     },
     "steps": [
       {
@@ -137,7 +139,7 @@
       {
         "lineNumber": 10,
         "text": "af < ab",
-        "justification": "CN1 — Transitivity",
+        "justification": "Metric",
         "dependencies": [
           9,
           4
@@ -148,7 +150,7 @@
       {
         "lineNumber": 11,
         "text": "¬(a = f)",
-        "justification": "M1 — Zero segment",
+        "justification": "Metric",
         "dependencies": [
           9,
           5
@@ -179,7 +181,7 @@
       {
         "lineNumber": 14,
         "text": "¬(inside(b, α)), ¬(on(b, α))",
-        "justification": "Segment transfer 7",
+        "justification": "Transfer",
         "dependencies": [
           12,
           10

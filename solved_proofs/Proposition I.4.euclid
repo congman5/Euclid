@@ -113,7 +113,7 @@
       ]
     ]
   },
-  "exportedAt": "2026-03-21T23:17:21Z",
+  "exportedAt": "2026-03-21T23:59:08Z",
   "proof": {
     "name": "Prop.I.4",
     "premises": [
@@ -123,14 +123,7 @@
     ],
     "goal": "bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
     "declarations": {
-      "points": [
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F"
-      ],
+      "points": [],
       "lines": []
     },
     "steps": [
@@ -149,7 +142,7 @@
       {
         "lineNumber": 5,
         "text": "∠bca = ∠efd",
-        "justification": "M4 — Angle symmetry",
+        "justification": "Metric",
         "dependencies": [
           4
         ],

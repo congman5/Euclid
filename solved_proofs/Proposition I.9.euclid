@@ -140,7 +140,7 @@
       ]
     ]
   },
-  "exportedAt": "2026-03-21T23:17:21Z",
+  "exportedAt": "2026-03-21T23:59:08Z",
   "proof": {
     "name": "Prop.I.9",
     "premises": [
@@ -157,11 +157,14 @@
     "goal": "∠bae = ∠cae, same-side(e, c, M), same-side(e, b, N)",
     "declarations": {
       "points": [
-        "A",
-        "B",
-        "C"
+        "a",
+        "b",
+        "c"
       ],
-      "lines": []
+      "lines": [
+        "M",
+        "N"
+      ]
     },
     "steps": [
       {
@@ -189,9 +192,9 @@
         "text": "on(d, N), between(a, d, c), on(d, α)",
         "justification": "let-point-on-line-between",
         "dependencies": [
-          11,
           6,
-          7
+          7,
+          2
         ],
         "depth": 0,
         "status": "?"
@@ -201,9 +204,9 @@
         "text": "on(f, M), between(a, f, b), on(f, α)",
         "justification": "let-point-on-line-between",
         "dependencies": [
-          11,
           4,
-          5
+          5,
+          1
         ],
         "depth": 0,
         "status": "?"
@@ -211,7 +214,7 @@
       {
         "lineNumber": 14,
         "text": "ad = ab",
-        "justification": "Segment transfer 4",
+        "justification": "Transfer",
         "dependencies": [
           10,
           12
@@ -222,7 +225,7 @@
       {
         "lineNumber": 15,
         "text": "af = ab",
-        "justification": "Segment transfer 4",
+        "justification": "Transfer",
         "dependencies": [
           10,
           13
@@ -233,7 +236,7 @@
       {
         "lineNumber": 16,
         "text": "ad = af",
-        "justification": "CN1 — Transitivity",
+        "justification": "Metric",
         "dependencies": [
           14,
           15
@@ -254,7 +257,7 @@
       {
         "lineNumber": 18,
         "text": "de = fe",
-        "justification": "CN1 — Transitivity",
+        "justification": "Metric",
         "dependencies": [
           17
         ],
@@ -264,7 +267,7 @@
       {
         "lineNumber": 19,
         "text": "ae = ae",
-        "justification": "CN4 — Reflexivity",
+        "justification": "Metric",
         "dependencies": [],
         "depth": 0,
         "status": "?"
@@ -285,9 +288,7 @@
         "lineNumber": 21,
         "text": "¬(e = a)",
         "justification": "Diagrammatic",
-        "dependencies": [
-          17
-        ],
+        "dependencies": [],
         "depth": 0,
         "status": "?"
       },
@@ -304,29 +305,23 @@
       {
         "lineNumber": 23,
         "text": "∠dae = ∠cae",
-        "justification": "Angle transfer 9",
-        "dependencies": [
-          12,
-          22
-        ],
+        "justification": "Transfer",
+        "dependencies": [],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 24,
         "text": "∠fae = ∠bae",
-        "justification": "Angle transfer 9",
-        "dependencies": [
-          13,
-          22
-        ],
+        "justification": "Transfer",
+        "dependencies": [],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 25,
         "text": "∠bae = ∠cae",
-        "justification": "CN1 — Transitivity",
+        "justification": "Metric",
         "dependencies": [
           20,
           23,

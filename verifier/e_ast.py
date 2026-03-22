@@ -300,6 +300,20 @@ class LessThan(Atom):
         return f"{self.left} < {self.right}"
 
 
+@dataclass(frozen=True)
+class DisjunctionAtom(Atom):
+    """φ ∨ ψ ∨ … — a disjunction of literals.
+
+    Used for Fitch-style ∨-intro / ∨-elim (Or Elimination).
+    Disjunctions do not participate in diagrammatic, metric, or
+    transfer reasoning; they exist purely for logical case analysis.
+    """
+    disjuncts: Tuple  # Tuple[Literal, ...] — frozen for hashing
+
+    def __repr__(self) -> str:
+        return " \u2228 ".join(repr(d) for d in self.disjuncts)
+
+
 # ═══════════════════════════════════════════════════════════════════════
 # Literals  (atomic or negated atomic — the assertion language of E)
 # ═══════════════════════════════════════════════════════════════════════
@@ -451,6 +465,10 @@ class StepKind(Enum):
     BOT_INTRO = auto()         # ⊥-intro: derive ⊥ from ψ and ¬ψ
     BOT_ELIM = auto()          # ⊥-elim: discharge Assume via ⊥
     CASE_SPLIT_ELIM = auto()   # case-split elim: derive B from (φ→B) ∧ (¬φ→B)
+    DISJ_INTRO = auto()        # ∨-intro: from φ, derive φ ∨ ψ
+    DISJ_ELIM = auto()         # ∨-elim: from φ∨ψ + subproofs, derive shared conclusion
+    EX_FALSO = auto()          # ⊥-elim (ex falso quodlibet): from ⊥, derive anything
+    TRICHOTOMY = auto()        # trichotomy: derive x < y ∨ x = y ∨ x > y
 
     # ── Backward-compatibility aliases ──────────────────────────────
     DIAGRAMMATIC = AXIOM_ELIM
@@ -575,6 +593,11 @@ def atom_vars(atom: Atom) -> Set[str]:
         return _term_vars(atom.left) | _term_vars(atom.right)
     if isinstance(atom, LessThan):
         return _term_vars(atom.left) | _term_vars(atom.right)
+    if isinstance(atom, DisjunctionAtom):
+        result: Set[str] = set()
+        for d in atom.disjuncts:
+            result |= atom_vars(d.atom)
+        return result
     return set()
 
 
@@ -628,6 +651,9 @@ def substitute_atom(atom: Atom, m: Dict[str, str]) -> Atom:
         return Equals(_sub_term(atom.left, m), _sub_term(atom.right, m))
     if isinstance(atom, LessThan):
         return LessThan(_sub_term(atom.left, m), _sub_term(atom.right, m))
+    if isinstance(atom, DisjunctionAtom):
+        return DisjunctionAtom(tuple(
+            substitute_literal(d, m) for d in atom.disjuncts))
     return atom
 
 
