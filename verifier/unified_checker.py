@@ -265,23 +265,11 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
     # Track depth per line id for subproof scoping.
     line_depth: Dict[int, int] = {}
 
-    # ── Pre-scan all proof lines to collect the full variable set ────
-    # This allows the consequence/transfer engines to ground their
-    # axiom clauses once (with the complete variable pool) instead of
-    # re-grounding every time a construction introduces a new variable.
-    for _prescan_line in lines:
-        _prescan_stmt = _prescan_line.get("statement", "")
-        if _prescan_stmt:
-            try:
-                _prescan_lits = parse_literal_list(_prescan_stmt, sort_ctx)
-                for _pl in _prescan_lits:
-                    _infer_sorts_from_atom(_pl.atom, sort_ctx)
-                    for _vn in _literal_var_names(_pl):
-                        if _vn not in checker.variables:
-                            checker.variables[_vn] = _infer_sort(
-                                _vn, sort_ctx)
-            except EParseError:
-                pass  # Will be caught during the actual check
+    # Variables are registered incrementally as each proof line is
+    # checked rather than pre-scanned.  This keeps the grounding pool
+    # small for early lines (the consequence/transfer engine caches
+    # are keyed on the variable set and automatically regenerate when
+    # new variables appear).
 
     def _ref_known(refs: List[int]) -> Set[Literal]:
         """Collect literals from referenced lines only."""

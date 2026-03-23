@@ -242,7 +242,7 @@ class ConsequenceEngine:
     # Maximum number of ground clauses produced per axiom before the
     # axiom is skipped.  Prevents combinatorial explosion when the
     # variable set is large (e.g. 9+ points with 5-point axioms).
-    _MAX_GROUND_PER_AXIOM = 200_000
+    _MAX_GROUND_PER_AXIOM = 50_000
 
     def _ground_clauses(
         self,

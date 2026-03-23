@@ -54,6 +54,18 @@ class TransferEngine:
         """
         if variables is None:
             variables = self._extract_variables(diagram_known | metric_known)
+        else:
+            # Filter to variables actually appearing in the known facts.
+            # This avoids grounding axioms over variables introduced by
+            # later proof steps, which can explode combinatorially.
+            used_names: set = set()
+            for lit in diagram_known:
+                used_names.update(atom_vars(lit.atom))
+            for lit in metric_known:
+                used_names.update(atom_vars(lit.atom))
+            if len(used_names) < len(variables):
+                variables = {k: v for k, v in variables.items()
+                             if k in used_names}
 
         all_known = diagram_known | metric_known
         derived: Set[Literal] = set()
