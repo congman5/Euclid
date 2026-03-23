@@ -51,7 +51,7 @@ class TestTerms:
 
     def test_right_angle(self):
         r = RightAngle()
-        assert repr(r) == "right-angle"
+        assert repr(r) == "\u221f"
 
     def test_zero_mag(self):
         z = ZeroMag(Sort.SEGMENT)

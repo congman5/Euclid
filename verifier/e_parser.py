@@ -74,8 +74,8 @@ _TOKEN_RE = re.compile("|".join([
     r"(?P<DOT>\.)",
     r"(?P<COLON>:)",
     r"(?P<SEMICOLON>;)",
-    # right-angle as a keyword
-    r"(?P<RIGHT_ANGLE>right-angle\b)",
+    # right-angle as a keyword (∟ is a Unicode alias)
+    r"(?P<RIGHT_ANGLE>\u221f|right-angle\b)",
     # Hyphenated identifiers (same-side, diff-side)
     r"(?P<HYPH_ID>[a-zA-Z_][a-zA-Z0-9_]*(?:-[a-zA-Z_][a-zA-Z0-9_]*))",
     # Regular identifiers

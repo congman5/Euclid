@@ -182,7 +182,7 @@ class TestEProofsNewProps:
         # Goal includes right angle
         right_angle_in_goal = any(
             isinstance(getattr(lit.atom, 'right', None), type(None))
-            or "right-angle" in repr(lit)
+            or "∟" in repr(lit) or "right-angle" in repr(lit)
             for lit in proof.goal
         )
         assert right_angle_in_goal

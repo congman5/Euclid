@@ -195,7 +195,7 @@ class TestTextbookTheorems:
         p = get_proposition("tb-thm-4.1")
         assert p.conclusion_predicate != ""
         assert "∠" in p.conclusion_predicate
-        assert "right-angle" in p.conclusion_predicate
+        assert "∟" in p.conclusion_predicate
 
     def test_thm_4_1_has_proper_statement(self):
         p = get_proposition("tb-thm-4.1")

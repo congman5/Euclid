@@ -143,7 +143,7 @@ PREDICATES = [
     ("∠abc<∠def", "∠ < ∠"),
     # Special
     ("¬intersects", "¬intersects(,)"),
-    ("right∠", "right-angle"),
+    ("∟", "∟"),
     ("△", "△"),
 ]
 
@@ -938,32 +938,29 @@ class ProofPanel(QWidget):
 
         # ── System E predicate buttons ──
         _e_buttons = [
-            ("on(a,L)",            "on(,)"),
-            ("on(a,\u03b1)",       "on(,)"),
-            ("center(a,\u03b1)",   "center(,)"),
-            ("inside(a,\u03b1)",   "inside(,)"),
-            ("between(a,b,c)",     "between(,,)"),
-            ("same-side(a,b,L)",   "same-side(,,)"),
-            ("diff-side(a,b,L)",   "diff-side(,,)"),
-            ("intersects(L,\u03b1)", "intersects(,)"),
-            ("\u00acintersects",   "\u00acintersects(,)"),
-            ("right-angle",        "right-angle"),
-            ("let L=line",         "let L be line(,)"),
-            ("let \u03b1=circle",  "let \u03b1 be circle(,)"),
-            ("\u2220abc=\u2220def", "\u2220 = \u2220"),
-            ("\u2220abc<\u2220def", "\u2220 < \u2220"),
-            ("ab+bc=ac",           " + = "),
-            ("\u25b3abc=\u25b3def", "\u25b3 = \u25b3"),
+            ("on(\u00b7,line)",           "on(,)"),
+            ("on(\u00b7,circle)",         "on(,)"),
+            ("center(\u00b7,\u25cb)",          "center(,)"),
+            ("inside(\u00b7,\u25cb)",          "inside(,)"),
+            ("between(\u00b7,\u00b7,\u00b7)",       "between(,,)"),
+            ("same-side(\u00b7,\u00b7,L)",     "same-side(,,)"),
+            ("diff-side(\u00b7,\u00b7,L)",     "diff-side(,,)"),
+            ("intersects(L,\u25cb)",      "intersects(,)"),
+            ("\u00acintersects",          "\u00acintersects(,)"),
+            ("\u221f",                    "\u221f"),
+            ("let line(\u00b7,\u00b7)",        "let L be line(,)"),
+            ("let circle(\u00b7,\u00b7)",      "let \u03b1 be circle(,)"),
+            ("\u2220 = \u2220",               "\u2220 = \u2220"),
+            ("\u2220 < \u2220",               "\u2220 < \u2220"),
+            ("seg + seg = seg",      " + = "),
+            ("\u25b3 = \u25b3",               "\u25b3 = \u25b3"),
         ]
-        _e_color = "#2d70b3"
         _e_flow = _FlowLayout(None, h_spacing=4, v_spacing=4)
         for label, tmpl in _e_buttons:
             b = QPushButton(label)
             b.setToolTip(tmpl)
             b.setFont(_FONT_SMALL)
             b.setFixedHeight(20)
-            b.setStyleSheet(
-                f"QPushButton {{ border-left: 3px solid {_e_color}; }}")
             b.clicked.connect(
                 lambda _, t=tmpl: self._insert_into_focused(t))
             _e_flow.addWidget(b)

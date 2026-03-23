@@ -154,7 +154,7 @@ class RightAngle(Term):
     """The constant ``right-angle`` of the angle magnitude sort."""
 
     def __repr__(self) -> str:
-        return "right-angle"
+        return "\u221f"
 
 
 @dataclass(frozen=True)
