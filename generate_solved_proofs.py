@@ -210,11 +210,7 @@ def main():
         # Extract proposition number
         prop_num = int(prop_key.split(".")[-1])
 
-        if prop_key == "Prop.I.6":
-            i6_proof = load_i6_proof()
-            euclid_data = verifier_to_euclid(i6_proof, canvas, "Prop.I.6")
-            print(f"  Using working I.6 proof from test script ({len(i6_proof['lines'])} lines)")
-        elif prop_key == "Prop.I.9":
+        if prop_key == "Prop.I.9":
             i9_proof = get_i9_proof()
             euclid_data = verifier_to_euclid(i9_proof, canvas, "Prop.I.9")
             print(f"  Using verified I.9 proof ({len(i9_proof['lines'])} lines)")

@@ -667,14 +667,30 @@ class LoadedLemma:
         self.goal = goal          # conclusion formula string
         self.file_path = file_path
         self.rule_name = "Lemma:" + name  # justification name
+        self._verified = False     # True once bg verification passes
+        self._verifying = False    # True while bg verification running
+        self._verifier_data = None # temp: data being verified
+        self._thread = None        # bg thread ref (prevent GC)
+        self._worker = None        # bg worker ref (prevent GC)
 
     def display_name(self):
-        return self.name
+        if self._verifying:
+            return "\u23f3 " + self.name
+        if self._verified:
+            return "\u2713 " + self.name
+        return "\u2717 " + self.name
 
     def schema_text(self):
-        if self.premises:
-            return ", ".join(self.premises) + "  \u2192  " + self.goal
-        return "\u2014  \u2192  " + self.goal
+        if self._verifying:
+            status = "  (verifying\u2026)"
+        elif self._verified:
+            status = ""
+        else:
+            status = "  (INVALID)"
+        base = (", ".join(self.premises) + "  \u2192  " + self.goal
+                if self.premises
+                else "\u2014  \u2192  " + self.goal)
+        return base + status
 
 
 class ProofPanel(QWidget):
@@ -1827,11 +1843,12 @@ class ProofPanel(QWidget):
 
         lemma_defs = []
         for lem in self._lemmas:
-            lemma_defs.append({
-                "name": lem.name,
-                "premises": lem.premises,
-                "goal": lem.goal,
-            })
+            if lem._verified:
+                lemma_defs.append({
+                    "name": lem.name,
+                    "premises": lem.premises,
+                    "goal": lem.goal,
+                })
 
         out = {
             "name": self._proof_name,
@@ -2107,14 +2124,15 @@ class ProofPanel(QWidget):
         points = list(points_set)
         lines_decl = list(lines_set)
 
-        # Build lemma metadata for the verifier
+        # Build lemma metadata for the verifier (only verified lemmas)
         lemma_defs = []
         for lem in self._lemmas:
-            lemma_defs.append({
-                "name": lem.name,
-                "premises": lem.premises,
-                "goal": lem.goal,
-            })
+            if lem._verified:
+                lemma_defs.append({
+                    "name": lem.name,
+                    "premises": lem.premises,
+                    "goal": lem.goal,
+                })
 
         out = {
             "name": self._proof_name,
@@ -3019,11 +3037,47 @@ class ProofPanel(QWidget):
     # LEMMA MANAGEMENT
     # ===============================================================
 
+    # ── Lemma helpers ────────────────────────────────────────────
+
+    @staticmethod
+    def _euclid_to_verifier(data: dict) -> dict:
+        """Convert a .euclid file to the flat verifier JSON format.
+
+        .euclid files nest proof data under a ``proof`` key with
+        ``steps`` (using ``lineNumber``, ``text``, ``dependencies``)
+        instead of the verifier's ``lines`` (``id``, ``statement``,
+        ``refs``).  Given lines are reconstructed from ``premises``.
+        """
+        proof = data.get("proof", {})
+        steps = proof.get("steps", [])
+        premises = proof.get("premises", [])
+        goal = proof.get("goal", "")
+        name = proof.get("name", data.get("name", "unnamed"))
+
+        lines = []
+        for i, p in enumerate(premises, 1):
+            lines.append({
+                "id": i, "depth": 0,
+                "statement": p, "justification": "Given", "refs": []})
+        for s in steps:
+            lines.append({
+                "id": s["lineNumber"],
+                "depth": s.get("depth", 0),
+                "statement": s["text"],
+                "justification": s["justification"],
+                "refs": s.get("dependencies", [])})
+        return {
+            "name": name,
+            "premises": premises,
+            "goal": goal,
+            "lines": lines,
+        }
+
     def _load_lemma(self):
-        """Load a verified proof JSON as a reusable lemma."""
+        """Load a verified proof (.euclid or .json) as a reusable lemma."""
         path, _ = QFileDialog.getOpenFileName(
             self, "Load Proof as Lemma", "",
-            "JSON Files (*.json);;All Files (*)")
+            "Euclid Files (*.euclid);;JSON Files (*.json);;All Files (*)")
         if not path:
             return
         try:
@@ -3033,36 +3087,95 @@ class ProofPanel(QWidget):
             self._goal_status.setToolTip(
                 "Lemma load error: " + str(exc))
             return
-        name = data.get("name", "unnamed")
-        goal = data.get("goal", "")
-        premises = data.get("premises", [])
+
+        # Detect .euclid format (has a "proof" sub-object with "steps")
+        if "proof" in data and "steps" in data.get("proof", {}):
+            verifier_data = self._euclid_to_verifier(data)
+        else:
+            verifier_data = data
+
+        name = verifier_data.get("name", "unnamed")
+        goal = verifier_data.get("goal", "")
+        premises = verifier_data.get("premises", [])
         if not goal:
             self._goal_status.setToolTip(
                 "Lemma has no goal \u2014 cannot use as a rule.")
             return
-        # Verify the proof first
-        try:
-            from verifier.unified_checker import verify_e_proof_json
-            result = verify_e_proof_json(data)
-        except Exception as exc:
-            self._goal_status.setToolTip(
-                "Lemma verification error: " + str(exc))
-            return
-        if not result.accepted:
-            self._goal_status.setToolTip(
-                "Lemma rejected \u2014 proof is not valid.")
-            return
+
         # Check for duplicates
         for existing in self._lemmas:
             if existing.name == name:
                 self._goal_status.setToolTip(
                     "Lemma '" + name + "' already loaded.")
                 return
+
+        # Add the lemma immediately as "verifying" so it appears in the UI
         lemma = LoadedLemma(name, premises, goal, path)
+        lemma._verified = False
+        lemma._verifying = True
+        lemma._verifier_data = verifier_data
         self._lemmas.append(lemma)
         self._rebuild_lemma_ui()
         self._goal_status.setToolTip(
-            "Lemma '" + name + "' loaded \u2713  Goal: " + goal)
+            "Verifying lemma '" + name + "'\u2026")
+
+        # Run verification in a background thread
+        self._verify_lemma_bg(lemma)
+
+    def _verify_lemma_bg(self, lemma):
+        """Run lemma verification on a background thread."""
+        class _LemmaWorker(QObject):
+            finished = pyqtSignal(object)  # True/False/Exception
+
+            def __init__(self, verifier_data):
+                super().__init__()
+                self._data = verifier_data
+
+            def run(self):
+                try:
+                    from verifier.unified_checker import verify_e_proof_json
+                    result = verify_e_proof_json(self._data)
+                    self.finished.emit(result.accepted)
+                except Exception as exc:
+                    self.finished.emit(exc)
+
+        thread = QThread()
+        worker = _LemmaWorker(lemma._verifier_data)
+        worker.moveToThread(thread)
+        thread.started.connect(worker.run)
+
+        def _on_done(result_or_exc):
+            thread.quit()
+            thread.wait(2000)
+            thread.deleteLater()
+            lemma._verifying = False
+
+            if isinstance(result_or_exc, Exception):
+                lemma._verified = False
+                self._goal_status.setToolTip(
+                    "Lemma '" + lemma.name
+                    + "' verification error: " + str(result_or_exc))
+            elif result_or_exc:
+                lemma._verified = True
+                self._goal_status.setToolTip(
+                    "Lemma '" + lemma.name
+                    + "' loaded \u2713  Goal: " + lemma.goal)
+            else:
+                lemma._verified = False
+                self._goal_status.setToolTip(
+                    "Lemma '" + lemma.name
+                    + "' rejected \u2014 proof is not valid.")
+            # Clean up cached verifier data
+            lemma._verifier_data = None
+            self._rebuild_lemma_ui()
+
+        worker.finished.connect(
+            _on_done, Qt.ConnectionType.QueuedConnection)
+        thread.start()
+
+        # Keep references so they aren't GC'd
+        lemma._thread = thread
+        lemma._worker = worker
 
     def _remove_lemma(self, index):
         """Remove a loaded lemma by index."""
@@ -3085,10 +3198,16 @@ class ProofPanel(QWidget):
             return
         for i, lem in enumerate(self._lemmas):
             row = QFrame()
+            if lem._verifying:
+                bg, border = "#fffde7", "#fff59d"   # yellow – verifying
+            elif lem._verified:
+                bg, border = "#e8f5e9", "#a5d6a7"   # green – valid
+            else:
+                bg, border = "#ffebee", "#ef9a9a"   # red – invalid
             row.setStyleSheet(
-                "QFrame { background:#f7f8fa;"
-                " border:1px solid #dcdee3; border-radius:3px;"
-                " padding:2px 4px; }")
+                f"QFrame {{ background:{bg};"
+                f" border:1px solid {border}; border-radius:3px;"
+                f" padding:2px 4px; }}")
             rl = QHBoxLayout(row)
             rl.setContentsMargins(4, 2, 4, 2)
             rl.setSpacing(6)

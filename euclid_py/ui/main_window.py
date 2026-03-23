@@ -445,6 +445,11 @@ class _VerifierScreen(QWidget):
             QMessageBox.critical(self, "Load Error", f"Failed to load proof:\n{e}")
             return
 
+        # Convert .euclid format to flat verifier format if needed
+        if "proof" in data and "steps" in data.get("proof", {}):
+            from .proof_panel import ProofPanel
+            data = ProofPanel._euclid_to_verifier(data)
+
         self._proof_data = data
         self._last_save_path = path
         self._dirty = True
@@ -547,7 +552,8 @@ class _VerifierScreen(QWidget):
         self._verify_worker = _VerifyWorker(self._proof_data)
         self._verify_worker.moveToThread(self._verify_thread)
         self._verify_thread.started.connect(self._verify_worker.run)
-        self._verify_worker.line_checked.connect(self._on_line_checked)
+        self._verify_worker.line_checked.connect(
+            self._on_line_checked, Qt.ConnectionType.QueuedConnection)
         self._verify_worker.finished.connect(self._on_verify_finished)
         self._verify_worker.finished.connect(self._verify_thread.quit)
         self._verify_thread.start()
