@@ -4,7 +4,7 @@
 
 # Euclid
 
-**The first 48 propositions of Euclid's *Elements*, machine-verified — with an interactive desktop workbench to explore, construct, and check proofs yourself.**
+**An interactive desktop workbench to explore, construct, and check proofs yourself.**
 
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](#-requirements)
 [![PyQt6](https://img.shields.io/badge/GUI-PyQt6-41CD52?logo=qt&logoColor=white)](#-the-desktop-app)
