@@ -21,7 +21,7 @@
 
 ## What is this?
 
-This project does something nobody else has done in quite this way: it takes all 48 propositions from Book I of Euclid's *Elements* — from constructing an equilateral triangle (I.1) all the way to the Pythagorean theorem (I.47) and its converse (I.48) — and verifies every single one with a machine-checked formal proof system called **System E**.
+This project does something nobody else has done in quite this way: it takes all 48 propositions from Book I of Euclid's *Elements* — from constructing an equilateral triangle (I.1) all the way to the Pythagorean theorem (I.47) and its converse (I.48) — and verifies every single one with a machine-checked formal proof system called **System E**. (proofs I.1-I.15 are currently included in the latest release).
 
 It's also a **desktop app** where you can draw diagrams, write proofs step-by-step, and watch the verifier accept or reject each line in real time.
 
@@ -73,7 +73,7 @@ The PyQt6 GUI is a full workbench for Euclidean proof construction:
 
 ## ⚙️ How It Works
 
-Everything is built on **System E**, the formal axiom system from [Avigad, Dean & Mumma (2009)](https://doi.org/10.1017/S1755020309990098). It's the only axiom system — no Hilbert, no Tarski, just Euclid's own geometric language made rigorous.
+Everything is built on **System E**, the formal axiom system from [Avigad, Dean & Mumma (2009)](https://doi.org/10.1017/S1755020309990098).
 
 ### The Language
 
@@ -147,7 +147,7 @@ proof steps  ──▶ │  ┌─────────┐ ┌─────
 
 ## 📖 All 48 Propositions
 
-Every proposition in Book I — hand-written proofs, machine-verified:
+Every proposition in Book I:
 
 | # | Proposition | Type |
 |---|------------|------|
