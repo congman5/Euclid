@@ -105,12 +105,12 @@ class FitchProofView(QWidget):
         self.update()
 
     def update_line_status(self, line_id: int, status: str):
-        """Update a single line's status and repaint."""
+        """Update a single line's status and repaint immediately."""
         for line in self._lines:
             if line.line_id == line_id:
                 line.status = status
                 break
-        self.update()
+        self.repaint()
 
     def select_line(self, line_id: int):
         self._selected_id = line_id

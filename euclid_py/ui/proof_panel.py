@@ -166,6 +166,11 @@ class _VerifyWorker(QObject):
 
     def _on_line_checked(self, line_id: int, valid: bool, errors: list):
         self.line_checked.emit(line_id, valid, errors)
+        # Give the main thread time to process the queued signal and
+        # repaint the UI before we continue verifying the next line.
+        # Without this, all signals pile up and get painted in one batch.
+        import time
+        time.sleep(0.03)
 
     def run(self):
         try:
@@ -1733,6 +1738,9 @@ class ProofPanel(QWidget):
             self._verify_worker = _VerifyWorker(proof_json)
             self._verify_worker.moveToThread(self._verify_thread)
             self._verify_thread.started.connect(self._verify_worker.run)
+            self._verify_worker.line_checked.connect(
+                self._on_line_checked_progressive,
+                Qt.ConnectionType.QueuedConnection)
             self._verify_worker.finished.connect(
                 self._on_verify_selected_finished)
             self._verify_worker.finished.connect(self._verify_thread.quit)
@@ -1951,14 +1959,43 @@ class ProofPanel(QWidget):
             "color:#888; font-weight:bold; background:transparent;")
         self._goal_status.setToolTip("Verifying\u2026")
 
+        # Set all non-autofill-failed steps to pending (?)
+        for s in self._steps:
+            if s.status != "\u2717":  # preserve autofill failures
+                s.status = "?"
+        for lw in self._line_widgets:
+            try:
+                lw.refresh_from_step()
+            except RuntimeError:
+                pass
+
         # Run verification on a background thread
         self._verify_thread = QThread()
         self._verify_worker = _VerifyWorker(proof_json)
         self._verify_worker.moveToThread(self._verify_thread)
         self._verify_thread.started.connect(self._verify_worker.run)
+        self._verify_worker.line_checked.connect(
+            self._on_line_checked_progressive,
+            Qt.ConnectionType.QueuedConnection)
         self._verify_worker.finished.connect(self._on_verify_finished)
         self._verify_worker.finished.connect(self._verify_thread.quit)
         self._verify_thread.start()
+
+    def _on_line_checked_progressive(self, line_id: int, valid: bool,
+                                      errors: list):
+        """Update a single step widget as verification progresses."""
+        status = "\u2713" if valid else "\u2717"
+        for s in self._steps:
+            if s.line_number == line_id:
+                s.status = status
+                break
+        for lw in self._line_widgets:
+            try:
+                if lw.step.line_number == line_id:
+                    lw.refresh_from_step()
+                    break
+            except RuntimeError:
+                pass
 
     def _on_verify_finished(self, result_or_exc):
         """Handle verification result delivered from the background thread."""
