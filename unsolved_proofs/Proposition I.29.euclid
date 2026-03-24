@@ -1,0 +1,78 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.29",
+    "title": "Parallel Lines Give Equal Alternate Angles",
+    "statement": "A transversal cutting parallel lines makes alternate interior angles equal."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 100,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 550,
+        "y": 200
+      },
+      {
+        "label": "C",
+        "x": 100,
+        "y": 380
+      },
+      {
+        "label": "D",
+        "x": 550,
+        "y": 380
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.29",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(b, M)",
+      "on(c, M)",
+      "on(c, N)",
+      "on(d, N)",
+      "¬(a = b)",
+      "¬(b = c)",
+      "¬(c = d)",
+      "¬(L = N)",
+      "¬(same-side(a, d, M))",
+      "¬(intersects(L, N))"
+    ],
+    "goal": "∠abc = ∠bcd",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

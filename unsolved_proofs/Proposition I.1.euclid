@@ -1,0 +1,50 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.1",
+    "title": "Equilateral Triangle Construction",
+    "statement": "To construct an equilateral triangle on a given finite straight-line."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 200,
+        "y": 300
+      },
+      {
+        "label": "B",
+        "x": 450,
+        "y": 300
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.1",
+    "premises": [
+      "¬(a = b)"
+    ],
+    "goal": "ab = ac, ab = bc, ¬(c = a), ¬(c = b)",
+    "declarations": {
+      "points": [
+        "A",
+        "B"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

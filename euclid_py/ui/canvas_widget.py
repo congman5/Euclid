@@ -2157,74 +2157,110 @@ class ConstructionPanel(QFrame):
     construction propositions.  Parented to the CanvasWidget so it
     lives above the QGraphicsView without interfering with the scene."""
 
+    _CATEGORIES = [
+        ("Lines & Segments", {"let-line", "intersect-segs", "extend"}),
+        ("Circles", {"let-circle", "circle-from-seg", "point-on-circle",
+                     "intersect-circles", "intersect-seg-circle"}),
+        ("Triangles", {"equilateral", "triangle", "isosceles", "square"}),
+        ("Measures", {"midpoint", "perp-bisector", "angle-bisector",
+                      "perpendicular", "parallel", "copy-segment",
+                      "centroid", "circumcircle", "incircle"}),
+        ("Other", {"tangent", "reflect"}),
+    ]  # keyed by ConstructionDef.name
+
     def __init__(self, parent: QWidget):
         super().__init__(parent)
         self.setObjectName("constructPanel")
         self.setFrameShape(QFrame.Shape.Box)
         self.setStyleSheet(
-            "QFrame#constructPanel { background: white; border: 1px solid #2d70b3;"
-            " border-radius: 6px; }")
-        self.setFixedWidth(260)
+            "QFrame#constructPanel { background: white;"
+            " border: 1px solid #c0c8d4; border-radius: 8px; }")
+        self.setFixedWidth(280)
+        self.setGraphicsEffect(self._make_shadow())
 
-        self._drag_pos = None  # for dragging
+        self._drag_pos = None
 
         root = QVBoxLayout(self)
-        root.setContentsMargins(8, 6, 8, 8)
-        root.setSpacing(4)
+        root.setContentsMargins(10, 8, 10, 10)
+        root.setSpacing(6)
 
-        # ── Title bar (draggable handle) ──────────────────────────────
+        # Title bar
         title_bar = QWidget()
         title_bar.setCursor(Qt.CursorShape.SizeAllCursor)
         hbox = QHBoxLayout(title_bar)
         hbox.setContentsMargins(0, 0, 0, 0)
         hbox.setSpacing(4)
         title_lbl = QLabel("Constructions")
-        title_lbl.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
+        title_lbl.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
         title_lbl.setStyleSheet("color: #1a1a2e; border: none;")
         hbox.addWidget(title_lbl)
         hbox.addStretch()
-        close_btn = QPushButton("✕")
-        close_btn.setFixedSize(22, 22)
+        close_btn = QPushButton("\u2715")
+        close_btn.setFixedSize(24, 24)
         close_btn.setStyleSheet(
-            "QPushButton { padding:0px; border: 1px solid #d32f2f;"
-            " border-radius: 4px; background: #fff0f0; color: #d32f2f;"
-            " font-size: 13px; font-weight: bold; }"
-            " QPushButton:hover { background: #d32f2f; color: white; }")
+            "QPushButton { padding:0px; border: none;"
+            " border-radius: 12px; background: transparent; color: #888;"
+            " font-size: 14px; }"
+            " QPushButton:hover { background: #f0f0f0; color: #333; }")
         close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         close_btn.clicked.connect(self._on_close)
         hbox.addWidget(close_btn)
         root.addWidget(title_bar)
         self._title_bar = title_bar
 
-        # ── Selection summary ─────────────────────────────────────────
-        self._summary = QLabel("Click points, segments, or circles…")
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setStyleSheet("color: #e5e7eb;")
+        sep.setFixedHeight(1)
+        root.addWidget(sep)
+
+        self._summary = QLabel("Click points, segments, or circles\u2026")
         self._summary.setWordWrap(True)
         self._summary.setStyleSheet(
-            "color: #555; font-size: 11px; border: none; padding: 2px 0px;")
+            "color: #6b7280; font-size: 11px; border: none; padding: 2px 0px;")
         root.addWidget(self._summary)
 
-        # ── Action buttons are inserted dynamically before this index ──
-        self._action_btns: List[QWidget] = []
-        # Index in root layout where action buttons start
-        # (after title_bar at 0 and summary at 1)
-        self._btn_insert_idx = root.count()
+        # Scrollable action area
+        self._scroll = QScrollArea()
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._scroll.setStyleSheet(
+            "QScrollArea { border: none; background: transparent; }"
+            " QScrollBar:vertical { width: 5px; }"
+            " QScrollBar::handle:vertical { background: #c0c0c0;"
+            "   border-radius: 2px; min-height: 20px; }"
+            " QScrollBar::add-line, QScrollBar::sub-line { height: 0px; }")
+        self._scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._scroll_inner = QWidget()
+        self._scroll_layout = QVBoxLayout(self._scroll_inner)
+        self._scroll_layout.setContentsMargins(0, 0, 0, 0)
+        self._scroll_layout.setSpacing(2)
+        self._scroll.setWidget(self._scroll_inner)
+        root.addWidget(self._scroll)
 
-        # ── Clear selection button ────────────────────────────────────
         clear_btn = QPushButton("Clear Selection")
         clear_btn.setStyleSheet(
-            "QPushButton { padding: 4px 10px; border: 1px solid #888;"
-            " border-radius: 4px; background: #f7f8fa; color: #333;"
-            " font-size: 11px; }"
-            " QPushButton:hover { background: #e0e0e0; }")
+            "QPushButton { padding: 5px 12px; border: 1px solid #d0d4da;"
+            " border-radius: 4px; background: #f7f8fa; color: #555;"
+            " font-size: 11px; font-weight: 500; }"
+            " QPushButton:hover { background: #e8eaed; border-color: #aaa; }")
         clear_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         clear_btn.clicked.connect(self._on_clear)
         root.addWidget(clear_btn)
 
+        self._action_widgets: List[QWidget] = []
         self._close_callback = None
         self._clear_callback = None
         self._action_callback = None
 
-    # ── Callbacks ──────────────────────────────────────────────────────
+    def _make_shadow(self):
+        from PyQt6.QtWidgets import QGraphicsDropShadowEffect
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(16)
+        shadow.setOffset(0, 2)
+        shadow.setColor(QColor(0, 0, 0, 40))
+        return shadow
 
     def set_callbacks(self, on_close, on_clear, on_action):
         self._close_callback = on_close
@@ -2239,8 +2275,6 @@ class ConstructionPanel(QFrame):
         if self._clear_callback:
             self._clear_callback()
 
-    # ── Dragging ──────────────────────────────────────────────────────
-
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self._drag_pos = event.globalPosition().toPoint() - self.pos()
@@ -2251,7 +2285,6 @@ class ConstructionPanel(QFrame):
     def mouseMoveEvent(self, event):
         if self._drag_pos is not None and event.buttons() & Qt.MouseButton.LeftButton:
             new_pos = event.globalPosition().toPoint() - self._drag_pos
-            # Clamp within parent
             pw = self.parentWidget()
             if pw:
                 max_x = pw.width() - self.width()
@@ -2267,11 +2300,8 @@ class ConstructionPanel(QFrame):
         self._drag_pos = None
         super().mouseReleaseEvent(event)
 
-    # ── Refresh contents ──────────────────────────────────────────────
-
     def refresh(self, n_pts: int, n_segs: int, n_circs: int,
                 rules: List[ConstructionDef]):
-        """Update summary text and rebuild the action button list."""
         parts = []
         if n_pts:
             parts.append(f"{n_pts} point{'s' if n_pts != 1 else ''}")
@@ -2280,44 +2310,84 @@ class ConstructionPanel(QFrame):
         if n_circs:
             parts.append(f"{n_circs} circle{'s' if n_circs != 1 else ''}")
         if parts:
-            self._summary.setText("Selected: " + ", ".join(parts))
+            self._summary.setText(f"<b>Selected:</b> {', '.join(parts)}")
         else:
-            self._summary.setText("Click points, segments, or circles…")
+            self._summary.setText("Click points, segments, or circles\u2026")
 
-        # Remove old action buttons
-        root = self.layout()
-        for w in self._action_btns:
-            root.removeWidget(w)
+        for w in self._action_widgets:
+            self._scroll_layout.removeWidget(w)
             w.deleteLater()
-        self._action_btns.clear()
+        self._action_widgets.clear()
 
-        idx = self._btn_insert_idx
         if not rules:
-            hint = QLabel("No matching constructions" if parts else "")
-            hint.setStyleSheet("color: #999; font-size: 11px; border:none;")
-            root.insertWidget(idx, hint)
-            self._action_btns.append(hint)
+            if parts:
+                hint = QLabel("No matching constructions")
+                hint.setStyleSheet(
+                    "color: #999; font-size: 11px; border: none; padding: 8px 0;")
+                hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self._scroll_layout.addWidget(hint)
+                self._action_widgets.append(hint)
         else:
+            rule_by_name = {r.name: r for r in rules}
+            shown = set()
+            for cat_name, cat_ids in self._CATEGORIES:
+                cat_rules = [rule_by_name[rid] for rid in cat_ids
+                             if rid in rule_by_name]
+                if not cat_rules:
+                    continue
+                header = QLabel(cat_name)
+                header.setStyleSheet(
+                    "color: #8b8fa3; font-size: 10px; font-weight: 600;"
+                    " border: none; padding: 4px 2px 1px 2px;"
+                    " text-transform: uppercase; letter-spacing: 0.5px;")
+                self._scroll_layout.addWidget(header)
+                self._action_widgets.append(header)
+                for cdef in cat_rules:
+                    shown.add(cdef.name)
+                    card = self._make_action_card(cdef)
+                    self._scroll_layout.addWidget(card)
+                    self._action_widgets.append(card)
             for cdef in rules:
-                btn = QPushButton(cdef.label)
-                btn.setToolTip(cdef.description)
-                btn.setStyleSheet(
-                    "QPushButton { text-align: left; padding: 5px 10px;"
-                    " border: 1px solid #e5e7eb; border-radius: 4px;"
-                    " background: #f7f8fa; color: #1a1a2e; font-size: 12px; }"
-                    " QPushButton:hover { background: #dce8f7;"
-                    " border-color: #2d70b3; }")
-                btn.setCursor(Qt.CursorShape.PointingHandCursor)
-                btn.clicked.connect(
-                    lambda checked, cd=cdef: self._fire_action(cd))
-                root.insertWidget(idx, btn)
-                self._action_btns.append(btn)
-                idx += 1
+                if cdef.name not in shown:
+                    card = self._make_action_card(cdef)
+                    self._scroll_layout.addWidget(card)
+                    self._action_widgets.append(card)
 
+        spacer = QWidget()
+        spacer.setFixedHeight(0)
+        self._scroll_layout.addWidget(spacer)
+        self._action_widgets.append(spacer)
         QTimer.singleShot(0, self._update_height)
 
+    def _make_action_card(self, cdef: ConstructionDef) -> QWidget:
+        container = QWidget()
+        container.setStyleSheet(
+            "QWidget { border: 1px solid #e5e7eb; border-radius: 6px;"
+            " background: #fafbfc; }"
+            " QWidget:hover { background: #edf2ff; border-color: #2d70b3; }")
+        container.setCursor(Qt.CursorShape.PointingHandCursor)
+        vbox = QVBoxLayout(container)
+        vbox.setContentsMargins(10, 6, 10, 6)
+        vbox.setSpacing(1)
+        name_lbl = QLabel(cdef.label)
+        name_lbl.setStyleSheet(
+            "font-size: 12px; font-weight: 600; color: #1a1a2e;"
+            " border: none; background: transparent;")
+        vbox.addWidget(name_lbl)
+        desc_lbl = QLabel(cdef.description)
+        desc_lbl.setWordWrap(True)
+        desc_lbl.setStyleSheet(
+            "font-size: 10px; color: #8b8fa3; border: none;"
+            " background: transparent;")
+        vbox.addWidget(desc_lbl)
+        container.mousePressEvent = lambda e, cd=cdef: self._fire_action(cd)
+        return container
+
     def _update_height(self):
-        self.setFixedHeight(self.layout().sizeHint().height())
+        content_h = self._scroll_layout.sizeHint().height()
+        self._scroll.setFixedHeight(min(content_h + 4, 320))
+        total = self.layout().sizeHint().height()
+        self.setFixedHeight(min(total, 480))
 
     def _fire_action(self, cdef: ConstructionDef):
         if self._action_callback:

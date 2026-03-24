@@ -1,0 +1,59 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.31",
+    "title": "Construct Parallel Through a Point",
+    "statement": "Through a given point, draw a line parallel to a given line."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 325,
+        "y": 180
+      },
+      {
+        "label": "B",
+        "x": 150,
+        "y": 350
+      },
+      {
+        "label": "C",
+        "x": 500,
+        "y": 350
+      }
+    ],
+    "segments": [
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.31",
+    "premises": [
+      "on(b, L)",
+      "on(c, L)",
+      "¬(b = c)",
+      "¬(on(a, L))"
+    ],
+    "goal": "on(a, M), ¬(intersects(L, M))",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

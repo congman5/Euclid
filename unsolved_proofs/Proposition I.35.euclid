@@ -1,0 +1,113 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.35",
+    "title": "Parallelograms on Same Base Between Parallels",
+    "statement": "Parallelograms on the same base and between the same parallels have equal area."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 200,
+        "y": 400
+      },
+      {
+        "label": "C",
+        "x": 450,
+        "y": 400
+      },
+      {
+        "label": "D",
+        "x": 400,
+        "y": 200
+      },
+      {
+        "label": "E",
+        "x": 250,
+        "y": 200
+      },
+      {
+        "label": "F",
+        "x": 500,
+        "y": 200
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "A",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "E",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "F",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "E",
+        "to": "F",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.35",
+    "premises": [
+      "on(b, N)",
+      "on(c, N)",
+      "on(a, L)",
+      "on(d, L)",
+      "on(e, L)",
+      "on(f, L)",
+      "¬(intersects(L, N))",
+      "¬(b = c)",
+      "¬(a = d)",
+      "¬(e = f)"
+    ],
+    "goal": "(△abc + △acd) = (△ebc + △ecf)",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

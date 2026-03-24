@@ -1,0 +1,76 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.9",
+    "title": "Bisect an Angle",
+    "statement": "To bisect a given rectilineal angle."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 350
+      },
+      {
+        "label": "B",
+        "x": 450,
+        "y": 350
+      },
+      {
+        "label": "C",
+        "x": 350,
+        "y": 150
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [
+      {
+        "from": "B",
+        "vertex": "A",
+        "to": "C",
+        "isRight": false
+      }
+    ],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.9",
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "on(a, M)",
+      "on(b, M)",
+      "on(a, N)",
+      "on(c, N)",
+      "¬(on(c, M))",
+      "¬(on(b, N))"
+    ],
+    "goal": "∠bae = ∠cae, same-side(e, c, M), same-side(e, b, N)",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

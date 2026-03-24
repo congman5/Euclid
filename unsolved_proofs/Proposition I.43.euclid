@@ -1,0 +1,100 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.43",
+    "title": "Complements of Parallelogram",
+    "statement": "In any parallelogram, the complements of the parallelograms about the diagonal are equal."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 180
+      },
+      {
+        "label": "B",
+        "x": 400,
+        "y": 180
+      },
+      {
+        "label": "C",
+        "x": 450,
+        "y": 400
+      },
+      {
+        "label": "D",
+        "x": 200,
+        "y": 400
+      },
+      {
+        "label": "K",
+        "x": 300,
+        "y": 290
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "A",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.43",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(c, N)",
+      "on(d, N)",
+      "¬(intersects(L, N))",
+      "on(a, M)",
+      "on(d, M)",
+      "on(b, P)",
+      "on(c, P)",
+      "¬(intersects(M, P))",
+      "between(a, k, c)",
+      "¬(a = b)",
+      "¬(c = d)"
+    ],
+    "goal": "△akb = △kcd",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "K"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

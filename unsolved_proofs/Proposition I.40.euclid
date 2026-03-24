@@ -1,0 +1,111 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.40",
+    "title": "Equal Triangles on Equal Bases Are Between Parallels",
+    "statement": "Equal triangles on equal bases and same side are between the same parallels."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 170,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 120,
+        "y": 400
+      },
+      {
+        "label": "C",
+        "x": 270,
+        "y": 400
+      },
+      {
+        "label": "D",
+        "x": 430,
+        "y": 200
+      },
+      {
+        "label": "E",
+        "x": 380,
+        "y": 400
+      },
+      {
+        "label": "F",
+        "x": 530,
+        "y": 400
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "E",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "F",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "E",
+        "to": "F",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.40",
+    "premises": [
+      "on(b, N)",
+      "on(c, N)",
+      "on(e, N)",
+      "on(f, N)",
+      "¬(b = c)",
+      "¬(e = f)",
+      "¬(on(a, N))",
+      "¬(on(d, N))",
+      "same-side(a, d, N)",
+      "bc = ef",
+      "△abc = △def",
+      "on(a, L)",
+      "on(d, L)"
+    ],
+    "goal": "¬(intersects(L, N))",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

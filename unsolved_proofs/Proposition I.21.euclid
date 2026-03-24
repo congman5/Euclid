@@ -1,0 +1,90 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.21",
+    "title": "Interior Triangle Sides and Angles",
+    "statement": "If from the ends of a side of a triangle two lines are drawn to a point within the triangle, their sum is less than the remaining two sides, but the angle they contain is greater."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 300,
+        "y": 120
+      },
+      {
+        "label": "B",
+        "x": 130,
+        "y": 400
+      },
+      {
+        "label": "C",
+        "x": 470,
+        "y": 400
+      },
+      {
+        "label": "D",
+        "x": 300,
+        "y": 310
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.21",
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "¬(d = b)",
+      "¬(d = c)",
+      "on(b, L)",
+      "on(c, L)",
+      "¬(on(a, L))",
+      "same-side(d, a, L)"
+    ],
+    "goal": "(bd + dc) < (ba + ac), ∠bac < ∠bdc",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

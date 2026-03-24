@@ -1,0 +1,83 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.16",
+    "title": "Exterior Angle Theorem",
+    "statement": "An exterior angle of a triangle is greater than either remote interior angle."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 250,
+        "y": 150
+      },
+      {
+        "label": "B",
+        "x": 150,
+        "y": 350
+      },
+      {
+        "label": "C",
+        "x": 400,
+        "y": 350
+      },
+      {
+        "label": "D",
+        "x": 550,
+        "y": 350
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.16",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "between(a, b, d)",
+      "¬(on(c, L))",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)"
+    ],
+    "goal": "∠bac < ∠dbc, ∠bca < ∠dbc",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

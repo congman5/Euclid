@@ -1,0 +1,116 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.45",
+    "title": "Construct Parallelogram Equal to Rectilineal Figure",
+    "statement": "To construct a parallelogram equal in area to a given rectilineal figure in a given angle."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 120,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 100,
+        "y": 380
+      },
+      {
+        "label": "C",
+        "x": 300,
+        "y": 380
+      },
+      {
+        "label": "D",
+        "x": 280,
+        "y": 200
+      },
+      {
+        "label": "E",
+        "x": 400,
+        "y": 280
+      },
+      {
+        "label": "F",
+        "x": 460,
+        "y": 380
+      },
+      {
+        "label": "G",
+        "x": 500,
+        "y": 280
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "A",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "E",
+        "to": "F",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "E",
+        "to": "G",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [
+      {
+        "from": "F",
+        "vertex": "E",
+        "to": "G",
+        "isRight": false
+      }
+    ],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.45",
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "¬(a = d)",
+      "¬(∠efg = 0)"
+    ],
+    "goal": "(△abc + △acd) = (△hkm + △hmb)",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

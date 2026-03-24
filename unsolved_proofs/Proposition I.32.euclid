@@ -1,0 +1,84 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.32",
+    "title": "Exterior Angle = Sum of Remote Interior Angles",
+    "statement": "An exterior angle of a triangle equals the sum of the two non-adjacent interior angles; and the three interior angles sum to two right angles."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 250,
+        "y": 150
+      },
+      {
+        "label": "B",
+        "x": 150,
+        "y": 350
+      },
+      {
+        "label": "C",
+        "x": 400,
+        "y": 350
+      },
+      {
+        "label": "D",
+        "x": 550,
+        "y": 350
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.32",
+    "premises": [
+      "on(b, L)",
+      "on(c, L)",
+      "¬(on(a, L))",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "between(b, c, d)",
+      "¬(c = d)"
+    ],
+    "goal": "∠acd = (∠cab + ∠abc), (∠abc + (∠bca + ∠cab)) = (∟ + ∟)",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

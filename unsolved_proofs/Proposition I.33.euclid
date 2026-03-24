@@ -1,0 +1,89 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.33",
+    "title": "Joining Equal Parallels",
+    "statement": "Lines joining equal and parallel segments on the same side are themselves equal and parallel."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 400,
+        "y": 200
+      },
+      {
+        "label": "C",
+        "x": 200,
+        "y": 400
+      },
+      {
+        "label": "D",
+        "x": 450,
+        "y": 400
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.33",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(c, N)",
+      "on(d, N)",
+      "¬(intersects(L, N))",
+      "¬(a = b)",
+      "¬(c = d)",
+      "ab = cd",
+      "on(a, M)",
+      "on(c, M)",
+      "on(b, P)",
+      "on(d, P)",
+      "¬(L = N)"
+    ],
+    "goal": "ac = bd, ¬(intersects(M, P))",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}
