@@ -23,7 +23,7 @@ from PyQt6.QtCore import Qt, QSize, QTimer, QThread, QObject, QPropertyAnimation
 from PyQt6.QtGui import QAction, QFont, QIcon, QColor, QPixmap, QPainter, QBrush, QPen
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton,
+    QLabel, QPushButton, QListWidget, QListWidgetItem, QDialog,
     QSplitter, QToolBar, QStatusBar, QScrollArea, QFrame,
     QFileDialog, QMessageBox, QGroupBox, QStackedWidget, QTabWidget,
     QMenu,
@@ -60,6 +60,193 @@ COLORS = {
     "error": "#d32f2f",
     "success": "#388e3c",
 }
+
+
+class _OpenFileDialog(QDialog):
+    """Custom file-open dialog with sidebar showing bundled proof folders."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Open Proof File")
+        self.resize(720, 500)
+        self.selected_path: str | None = None
+
+        from ..resources import resource_path
+        self._unsolved_dir = resource_path("unsolved_proofs")
+        self._solved_dir = resource_path("solved_proofs")
+
+        root = QHBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+
+        # ── Left sidebar — quick access folders ──────────────────────
+        sidebar = QFrame()
+        sidebar.setFixedWidth(180)
+        sidebar.setStyleSheet(
+            f"QFrame {{ background: {COLORS['surface']};"
+            f" border-right: 1px solid {COLORS['border']}; }}")
+        sb_layout = QVBoxLayout(sidebar)
+        sb_layout.setContentsMargins(8, 12, 8, 12)
+        sb_layout.setSpacing(4)
+
+        sb_title = QLabel("Quick Access")
+        sb_title.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
+        sb_title.setStyleSheet(
+            f"color: {COLORS['text']}; border: none; padding: 0 0 6px 4px;")
+        sb_layout.addWidget(sb_title)
+
+        self._sidebar_btns = []
+        for label, folder in [
+            ("📘  Unsolved Proofs", self._unsolved_dir),
+            ("✅  Solved Proofs", self._solved_dir),
+        ]:
+            btn = QPushButton(label)
+            btn.setStyleSheet(
+                "QPushButton { text-align: left; padding: 8px 10px;"
+                " border: none; border-radius: 4px;"
+                f" background: transparent; color: {COLORS['text']};"
+                " font-size: 12px; }"
+                f" QPushButton:hover {{ background: {COLORS['surface_hover']}; }}")
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.clicked.connect(
+                lambda checked, f=folder: self._load_folder(f))
+            sb_layout.addWidget(btn)
+            self._sidebar_btns.append(btn)
+
+        sb_layout.addStretch()
+
+        btn_browse = QPushButton("Browse…")
+        btn_browse.setStyleSheet(
+            "QPushButton { padding: 7px 12px; border: 1px solid #c0c8d4;"
+            " border-radius: 4px; background: white;"
+            f" color: {COLORS['text']}; font-size: 12px; }}"
+            f" QPushButton:hover {{ background: {COLORS['surface_hover']}; }}")
+        btn_browse.clicked.connect(self._browse_file)
+        sb_layout.addWidget(btn_browse)
+
+        root.addWidget(sidebar)
+
+        # ── Right content — file list ────────────────────────────────
+        right = QWidget()
+        right.setStyleSheet("background: white;")
+        rl = QVBoxLayout(right)
+        rl.setContentsMargins(12, 12, 12, 12)
+        rl.setSpacing(8)
+
+        self._folder_label = QLabel("")
+        self._folder_label.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+        self._folder_label.setStyleSheet(f"color: {COLORS['text']};")
+        rl.addWidget(self._folder_label)
+
+        self._file_list = QListWidget()
+        self._file_list.setStyleSheet(f"""
+            QListWidget {{
+                border: 1px solid {COLORS['border']};
+                border-radius: 6px;
+                background: white;
+                outline: none;
+                font-size: 13px;
+            }}
+            QListWidget::item {{
+                padding: 10px 14px;
+                border-bottom: 1px solid #f0f0f0;
+            }}
+            QListWidget::item:hover {{
+                background: #f5f8ff;
+            }}
+            QListWidget::item:selected {{
+                background: {COLORS['surface_selected']};
+                color: {COLORS['primary']};
+            }}
+        """)
+        self._file_list.itemDoubleClicked.connect(self._on_double_click)
+        rl.addWidget(self._file_list)
+
+        # Bottom buttons
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        btn_cancel = QPushButton("Cancel")
+        btn_cancel.setStyleSheet(
+            "QPushButton { padding: 7px 20px; border: 1px solid #c0c8d4;"
+            " border-radius: 4px; background: white;"
+            f" color: {COLORS['text']}; font-size: 12px; }}"
+            f" QPushButton:hover {{ background: #f0f0f0; }}")
+        btn_cancel.clicked.connect(self.reject)
+        btn_row.addWidget(btn_cancel)
+
+        btn_open = QPushButton("Open")
+        btn_open.setStyleSheet(
+            f"QPushButton {{ padding: 7px 20px; border: none;"
+            f" border-radius: 4px; background: {COLORS['primary']};"
+            f" color: white; font-size: 12px; font-weight: 600; }}"
+            f" QPushButton:hover {{ background: #1a5fa0; }}")
+        btn_open.clicked.connect(self._on_open)
+        btn_row.addWidget(btn_open)
+        rl.addLayout(btn_row)
+
+        root.addWidget(right, stretch=1)
+
+        # Default to unsolved proofs
+        self._load_folder(self._unsolved_dir)
+
+    def _load_folder(self, folder: str):
+        self._file_list.clear()
+        self._current_folder = folder
+        basename = os.path.basename(folder)
+        self._folder_label.setText(
+            basename.replace("_", " ").title())
+
+        # Highlight active sidebar button
+        for btn in self._sidebar_btns:
+            is_active = folder in (self._unsolved_dir, self._solved_dir) and \
+                btn.text().endswith(basename.replace("_", " ").title().split()[-1])
+            if is_active:
+                btn.setStyleSheet(
+                    btn.styleSheet().replace(
+                        "background: transparent",
+                        f"background: {COLORS['surface_selected']}"))
+
+        if not os.path.isdir(folder):
+            item = QListWidgetItem("(folder not found)")
+            item.setFlags(Qt.ItemFlag.NoItemFlags)
+            self._file_list.addItem(item)
+            return
+
+        files = sorted(
+            f for f in os.listdir(folder)
+            if f.endswith(".euclid") and os.path.isfile(os.path.join(folder, f)))
+        if not files:
+            item = QListWidgetItem("(no .euclid files found)")
+            item.setFlags(Qt.ItemFlag.NoItemFlags)
+            self._file_list.addItem(item)
+            return
+        for fn in files:
+            display = fn.replace(".euclid", "")
+            item = QListWidgetItem(display)
+            item.setData(Qt.ItemDataRole.UserRole, os.path.join(folder, fn))
+            self._file_list.addItem(item)
+
+    def _on_double_click(self, item: QListWidgetItem):
+        path = item.data(Qt.ItemDataRole.UserRole)
+        if path:
+            self.selected_path = path
+            self.accept()
+
+    def _on_open(self):
+        item = self._file_list.currentItem()
+        if item:
+            path = item.data(Qt.ItemDataRole.UserRole)
+            if path:
+                self.selected_path = path
+                self.accept()
+
+    def _browse_file(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Open Euclid File", "",
+            "Euclid Files (*.euclid);;All Files (*)")
+        if path:
+            self.selected_path = path
+            self.accept()
 
 
 class ToggleSwitch(QWidget):
@@ -697,11 +884,6 @@ class _WorkspaceScreen(QWidget):
         btn_new.clicked.connect(self._new_blank_proof)
         tl.addWidget(btn_new)
 
-        btn_prop = QPushButton("Propositions")
-        btn_prop.setToolTip("Load a proposition from Euclid's Elements Book I")
-        btn_prop.clicked.connect(self._show_proposition_menu)
-        tl.addWidget(btn_prop)
-
         self._title_label = QLabel()
         self._title_label.setFont(QFont("Segoe UI", 13, QFont.Weight.Bold))
         self._title_label.setStyleSheet(f"color: {COLORS['text']};")
@@ -1162,41 +1344,6 @@ class _WorkspaceScreen(QWidget):
                 return
         self._mw.open_blank()
 
-    def _show_proposition_menu(self):
-        """Show a dropdown menu of all 48 Euclid Book I propositions."""
-        menu = QMenu(self)
-        menu.setStyleSheet(
-            "QMenu { background: white; border: 1px solid #d0d4da;"
-            " border-radius: 4px; padding: 4px; }"
-            " QMenu::item { padding: 5px 20px 5px 12px; font-size: 12px; }"
-            " QMenu::item:selected { background: #edf2ff; color: #2d70b3; }")
-        for prop in ALL_PROPOSITIONS:
-            if prop.source != "euclid":
-                continue
-            action = menu.addAction(f"I.{prop.prop_number}  {prop.title}")
-            action.triggered.connect(
-                lambda checked, p=prop: self._load_proposition_with_save_check(p))
-        btn = self.sender()
-        if btn:
-            menu.exec(btn.mapToGlobal(btn.rect().bottomLeft()))
-        else:
-            menu.exec(self.cursor().pos())
-
-    def _load_proposition_with_save_check(self, prop):
-        """Load a proposition, prompting to save if dirty."""
-        if self._dirty:
-            reply = QMessageBox.question(
-                self, "Unsaved Changes",
-                "Save before loading a new proposition?",
-                QMessageBox.StandardButton.Save
-                | QMessageBox.StandardButton.Discard
-                | QMessageBox.StandardButton.Cancel,
-            )
-            if reply == QMessageBox.StandardButton.Save:
-                self._save()
-            elif reply == QMessageBox.StandardButton.Cancel:
-                return
-        self._mw.open_proposition(prop)
 
     def _pick_color(self, idx: int):
         from .canvas_widget import COLOR_PALETTE
@@ -1295,12 +1442,9 @@ class _WorkspaceScreen(QWidget):
         self._reposition_restore_tabs()
 
     def _import(self):
-        path, _ = QFileDialog.getOpenFileName(
-            self, "Open File", "",
-            "Euclid Files (*.euclid)")
-        if not path:
-            return
-        self._import_file(path)
+        dlg = _OpenFileDialog(self)
+        if dlg.exec() == QDialog.DialogCode.Accepted and dlg.selected_path:
+            self._import_file(dlg.selected_path)
 
     def _import_file(self, path: str):
         """Load a .euclid file by path."""
