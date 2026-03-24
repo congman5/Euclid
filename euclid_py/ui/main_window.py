@@ -62,67 +62,139 @@ COLORS = {
 }
 
 
+def _user_bookmarks_path() -> str:
+    """Return the path to the user's saved bookmarks JSON file."""
+    from ..resources import resource_path
+    base = resource_path("")
+    return os.path.join(base, "user_bookmarks.json")
+
+
+def _load_user_bookmarks() -> list:
+    """Load saved custom folders/files from disk."""
+    path = _user_bookmarks_path()
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
+
+
+def _save_user_bookmarks(bookmarks: list):
+    """Persist custom folders/files to disk."""
+    path = _user_bookmarks_path()
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(bookmarks, f, indent=2)
+    except Exception:
+        pass
+
+
+_SB_BTN_STYLE = (
+    "QPushButton {{ text-align: left; padding: 8px 10px;"
+    " border: none; border-radius: 4px;"
+    " background: transparent; color: {text};"
+    " font-size: 12px; }}"
+    " QPushButton:hover {{ background: #edf2ff; }}"
+).format(text=COLORS['text'])
+
+_SB_BTN_ACTIVE_STYLE = (
+    "QPushButton {{ text-align: left; padding: 8px 10px;"
+    " border: none; border-radius: 4px;"
+    " background: #dce8f7; color: {text};"
+    " font-size: 12px; }}"
+    " QPushButton:hover {{ background: #dce8f7; }}"
+).format(text=COLORS['text'])
+
+
 class _OpenFileDialog(QDialog):
-    """Custom file-open dialog with sidebar showing bundled proof folders."""
+    """Custom file-open dialog with sidebar showing bundled proof folders
+    and user-added custom folders/files."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Open Proof File")
-        self.resize(720, 500)
+        self.resize(720, 520)
         self.selected_path: str | None = None
 
         from ..resources import resource_path
         self._unsolved_dir = resource_path("unsolved_proofs")
         self._solved_dir = resource_path("solved_proofs")
+        self._bookmarks = _load_user_bookmarks()
 
         root = QHBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        # ── Left sidebar — quick access folders ──────────────────────
+        # ── Left sidebar ─────────────────────────────────────────────
         sidebar = QFrame()
-        sidebar.setFixedWidth(180)
+        sidebar.setFixedWidth(200)
         sidebar.setStyleSheet(
             f"QFrame {{ background: {COLORS['surface']};"
             f" border-right: 1px solid {COLORS['border']}; }}")
-        sb_layout = QVBoxLayout(sidebar)
-        sb_layout.setContentsMargins(8, 12, 8, 12)
-        sb_layout.setSpacing(4)
+        self._sb_layout = QVBoxLayout(sidebar)
+        self._sb_layout.setContentsMargins(8, 12, 8, 12)
+        self._sb_layout.setSpacing(2)
 
         sb_title = QLabel("Quick Access")
         sb_title.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
         sb_title.setStyleSheet(
             f"color: {COLORS['text']}; border: none; padding: 0 0 6px 4px;")
-        sb_layout.addWidget(sb_title)
+        self._sb_layout.addWidget(sb_title)
 
-        self._sidebar_btns = []
-        for label, folder in [
-            ("\U0001f4d8  Unsolved Proofs", self._unsolved_dir),
-            ("\u2705  Solved Proofs", self._solved_dir),
-        ]:
-            btn = QPushButton(label)
-            btn.setStyleSheet(
-                "QPushButton { text-align: left; padding: 8px 10px;"
-                " border: none; border-radius: 4px;"
-                f" background: transparent; color: {COLORS['text']};"
-                " font-size: 12px; }"
-                " QPushButton:hover { background: #edf2ff; }")
-            btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.clicked.connect(
-                lambda checked, f=folder: self._load_folder(f))
-            sb_layout.addWidget(btn)
-            self._sidebar_btns.append(btn)
+        # Built-in folders
+        self._sidebar_btns: list[tuple[QPushButton, str]] = []
+        self._add_sidebar_entry(
+            "\U0001f4d8  Unsolved Proofs", self._unsolved_dir, removable=False)
+        self._add_sidebar_entry(
+            "\u2705  Solved Proofs", self._solved_dir, removable=False)
 
-        sb_layout.addStretch()
+        # User bookmarks
+        for bm in self._bookmarks:
+            path = bm.get("path", "")
+            name = bm.get("name", os.path.basename(path))
+            is_file = bm.get("type") == "file"
+            icon = "\U0001f4c4" if is_file else "\U0001f4c1"
+            self._add_sidebar_entry(
+                f"{icon}  {name}", path, removable=True)
+
+        # Spacer + add buttons
+        self._sb_layout.addStretch()
+
+        add_row = QHBoxLayout()
+        add_row.setSpacing(4)
+
+        btn_add_folder = QPushButton("+ Folder")
+        btn_add_folder.setStyleSheet(
+            "QPushButton { padding: 5px 8px; border: 1px solid #c0c8d4;"
+            " border-radius: 4px; background: white;"
+            f" color: {COLORS['text']}; font-size: 11px; }}"
+            " QPushButton:hover { background: #f0f4ff; }")
+        btn_add_folder.setToolTip("Add a folder to the sidebar")
+        btn_add_folder.clicked.connect(self._add_folder_bookmark)
+        add_row.addWidget(btn_add_folder)
+
+        btn_add_file = QPushButton("+ File")
+        btn_add_file.setStyleSheet(
+            "QPushButton { padding: 5px 8px; border: 1px solid #c0c8d4;"
+            " border-radius: 4px; background: white;"
+            f" color: {COLORS['text']}; font-size: 11px; }}"
+            " QPushButton:hover { background: #f0f4ff; }")
+        btn_add_file.setToolTip("Add a single file to the sidebar")
+        btn_add_file.clicked.connect(self._add_file_bookmark)
+        add_row.addWidget(btn_add_file)
+
+        self._sb_layout.addLayout(add_row)
 
         btn_browse = QPushButton("Browse\u2026")
         btn_browse.setStyleSheet(
             "QPushButton { padding: 7px 12px; border: 1px solid #c0c8d4;"
-            " border-radius: 4px; background: white;"
+            " border-radius: 4px; background: white; margin-top: 4px;"
             f" color: {COLORS['text']}; font-size: 12px; }}"
             " QPushButton:hover { background: #f0f4ff; }")
         btn_browse.clicked.connect(self._browse_file)
-        sb_layout.addWidget(btn_browse)
+        self._sb_layout.addWidget(btn_browse)
 
         root.addWidget(sidebar)
 
@@ -170,7 +242,7 @@ class _OpenFileDialog(QDialog):
             "QPushButton { padding: 7px 20px; border: 1px solid #c0c8d4;"
             " border-radius: 4px; background: white;"
             f" color: {COLORS['text']}; font-size: 12px; }}"
-            f" QPushButton:hover {{ background: #f0f0f0; }}")
+            " QPushButton:hover { background: #f0f0f0; }")
         btn_cancel.clicked.connect(self.reject)
         btn_row.addWidget(btn_cancel)
 
@@ -187,24 +259,66 @@ class _OpenFileDialog(QDialog):
         root.addWidget(right, stretch=1)
 
         # Default to unsolved proofs
+        self._active_path = None
         self._load_folder(self._unsolved_dir)
+
+    # ── Sidebar helpers ───────────────────────────────────────────────
+
+    def _add_sidebar_entry(self, label: str, path: str, removable: bool):
+        """Add a button to the sidebar for a folder or file."""
+        row = QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(0)
+
+        btn = QPushButton(label)
+        btn.setStyleSheet(_SB_BTN_STYLE)
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        is_file = os.path.isfile(path)
+        if is_file:
+            btn.clicked.connect(
+                lambda checked, p=path: self._select_file_directly(p))
+        else:
+            btn.clicked.connect(
+                lambda checked, p=path: self._load_folder(p))
+        row.addWidget(btn, stretch=1)
+
+        if removable:
+            rm_btn = QPushButton("\u00d7")
+            rm_btn.setFixedSize(20, 20)
+            rm_btn.setStyleSheet(
+                "QPushButton { border: none; background: transparent;"
+                " color: #aaa; font-size: 14px; }"
+                " QPushButton:hover { color: #d32f2f; }")
+            rm_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            rm_btn.setToolTip("Remove from sidebar")
+            rm_btn.clicked.connect(
+                lambda checked, p=path: self._remove_bookmark(p))
+            row.addWidget(rm_btn)
+
+        container = QWidget()
+        container.setLayout(row)
+        # Insert before the stretch (which is after the last sidebar entry)
+        insert_idx = len(self._sidebar_btns) + 1  # +1 for the title label
+        self._sb_layout.insertWidget(insert_idx, container)
+        self._sidebar_btns.append((btn, path))
+
+    def _update_highlight(self, active_path: str):
+        """Highlight the active sidebar button."""
+        for btn, path in self._sidebar_btns:
+            if path == active_path:
+                btn.setStyleSheet(_SB_BTN_ACTIVE_STYLE)
+            else:
+                btn.setStyleSheet(_SB_BTN_STYLE)
+
+    # ── Folder / file loading ─────────────────────────────────────────
 
     def _load_folder(self, folder: str):
         self._file_list.clear()
-        self._current_folder = folder
+        self._active_path = folder
         basename = os.path.basename(folder)
         self._folder_label.setText(
             basename.replace("_", " ").title())
-
-        # Highlight active sidebar button
-        for btn in self._sidebar_btns:
-            is_active = folder in (self._unsolved_dir, self._solved_dir) and \
-                btn.text().endswith(basename.replace("_", " ").title().split()[-1])
-            if is_active:
-                btn.setStyleSheet(
-                    btn.styleSheet().replace(
-                        "background: transparent",
-                        "background: #dce8f7"))
+        self._update_highlight(folder)
 
         if not os.path.isdir(folder):
             item = QListWidgetItem("(folder not found)")
@@ -225,6 +339,12 @@ class _OpenFileDialog(QDialog):
             item = QListWidgetItem(display)
             item.setData(Qt.ItemDataRole.UserRole, os.path.join(folder, fn))
             self._file_list.addItem(item)
+
+    def _select_file_directly(self, path: str):
+        """Sidebar file entry clicked — open it immediately."""
+        if os.path.isfile(path):
+            self.selected_path = path
+            self.accept()
 
     def _on_double_click(self, item: QListWidgetItem):
         path = item.data(Qt.ItemDataRole.UserRole)
@@ -247,6 +367,51 @@ class _OpenFileDialog(QDialog):
         if path:
             self.selected_path = path
             self.accept()
+
+    # ── Bookmark management ───────────────────────────────────────────
+
+    def _add_folder_bookmark(self):
+        folder = QFileDialog.getExistingDirectory(
+            self, "Add Folder to Sidebar")
+        if not folder:
+            return
+        # Don't add duplicates
+        for bm in self._bookmarks:
+            if bm.get("path") == folder:
+                self._load_folder(folder)
+                return
+        name = os.path.basename(folder)
+        self._bookmarks.append({"path": folder, "name": name, "type": "folder"})
+        _save_user_bookmarks(self._bookmarks)
+        self._add_sidebar_entry(f"\U0001f4c1  {name}", folder, removable=True)
+        self._load_folder(folder)
+
+    def _add_file_bookmark(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Add File to Sidebar", "",
+            "Euclid Files (*.euclid);;All Files (*)")
+        if not path:
+            return
+        for bm in self._bookmarks:
+            if bm.get("path") == path:
+                return
+        name = os.path.basename(path).replace(".euclid", "")
+        self._bookmarks.append({"path": path, "name": name, "type": "file"})
+        _save_user_bookmarks(self._bookmarks)
+        self._add_sidebar_entry(f"\U0001f4c4  {name}", path, removable=True)
+
+    def _remove_bookmark(self, path: str):
+        self._bookmarks = [bm for bm in self._bookmarks if bm.get("path") != path]
+        _save_user_bookmarks(self._bookmarks)
+        # Remove from sidebar UI
+        for i, (btn, bm_path) in enumerate(self._sidebar_btns):
+            if bm_path == path:
+                container = btn.parentWidget()
+                if container:
+                    self._sb_layout.removeWidget(container)
+                    container.deleteLater()
+                self._sidebar_btns.pop(i)
+                break
 
 
 class ToggleSwitch(QWidget):
