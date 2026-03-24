@@ -1,0 +1,89 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.22",
+    "title": "Triangle from Three Segments",
+    "statement": "To construct a triangle from three given line segments (subject to the triangle inequality)."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 100,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 250,
+        "y": 200
+      },
+      {
+        "label": "C",
+        "x": 100,
+        "y": 280
+      },
+      {
+        "label": "D",
+        "x": 300,
+        "y": 280
+      },
+      {
+        "label": "E",
+        "x": 100,
+        "y": 360
+      },
+      {
+        "label": "F",
+        "x": 280,
+        "y": 360
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "E",
+        "to": "F",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.22",
+    "premises": [
+      "¬(a = b)",
+      "¬(c = d)",
+      "¬(e = f)",
+      "ab < (cd + ef)",
+      "cd < (ab + ef)",
+      "ef < (ab + cd)"
+    ],
+    "goal": "pq = ab, pr = cd, qr = ef",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.30",
+    "title": "Lines Parallel to the Same Line",
+    "statement": "Lines parallel to the same line are parallel to each other."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 100,
+        "y": 160
+      },
+      {
+        "label": "B",
+        "x": 550,
+        "y": 160
+      },
+      {
+        "label": "C",
+        "x": 100,
+        "y": 290
+      },
+      {
+        "label": "D",
+        "x": 550,
+        "y": 290
+      },
+      {
+        "label": "E",
+        "x": 100,
+        "y": 420
+      },
+      {
+        "label": "F",
+        "x": 550,
+        "y": 420
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "E",
+        "to": "F",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.30",
+    "premises": [
+      "¬(intersects(L, M))",
+      "¬(intersects(M, N))",
+      "¬(L = M)",
+      "¬(M = N)",
+      "¬(L = N)"
+    ],
+    "goal": "¬(intersects(L, N))",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

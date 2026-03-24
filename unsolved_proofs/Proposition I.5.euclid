@@ -1,0 +1,69 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.5",
+    "title": "Isosceles Base Angles",
+    "statement": "In isosceles triangles the angles at the base are equal."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 325,
+        "y": 150
+      },
+      {
+        "label": "B",
+        "x": 175,
+        "y": 400
+      },
+      {
+        "label": "C",
+        "x": 475,
+        "y": 400
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.5",
+    "premises": [
+      "ab = ac",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)"
+    ],
+    "goal": "∠abc = ∠acb",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

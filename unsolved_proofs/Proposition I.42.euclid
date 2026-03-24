@@ -1,0 +1,104 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.42",
+    "title": "Construct Parallelogram Equal to Triangle",
+    "statement": "To construct a parallelogram equal in area to a given triangle in a given angle."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 200,
+        "y": 150
+      },
+      {
+        "label": "B",
+        "x": 100,
+        "y": 350
+      },
+      {
+        "label": "C",
+        "x": 350,
+        "y": 350
+      },
+      {
+        "label": "D",
+        "x": 450,
+        "y": 250
+      },
+      {
+        "label": "E",
+        "x": 500,
+        "y": 350
+      },
+      {
+        "label": "F",
+        "x": 550,
+        "y": 250
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "E",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "F",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [
+      {
+        "from": "E",
+        "vertex": "D",
+        "to": "F",
+        "isRight": false
+      }
+    ],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.42",
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "¬(∠def = 0)"
+    ],
+    "goal": "△abc = (△ghb + △gbc)",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

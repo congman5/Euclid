@@ -1,0 +1,70 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.3",
+    "title": "Cut Off Equal Length",
+    "statement": "Given two unequal straight-lines, cut off from the greater a straight-line equal to the less."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 300
+      },
+      {
+        "label": "B",
+        "x": 500,
+        "y": 300
+      },
+      {
+        "label": "C",
+        "x": 200,
+        "y": 400
+      },
+      {
+        "label": "D",
+        "x": 350,
+        "y": 400
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.3",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)",
+      "cd < ab"
+    ],
+    "goal": "between(a, e, b), ae = cd",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.14",
+    "title": "Converse of Supplementary",
+    "statement": "If adjacent angles on one side sum to two right angles, the lines form a straight line."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 350
+      },
+      {
+        "label": "B",
+        "x": 325,
+        "y": 350
+      },
+      {
+        "label": "C",
+        "x": 500,
+        "y": 350
+      },
+      {
+        "label": "D",
+        "x": 325,
+        "y": 150
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.14",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)",
+      "¬(on(c, L))",
+      "¬(on(d, L))",
+      "¬(b = c)",
+      "¬(b = d)",
+      "¬(same-side(c, d, L))",
+      "(∠abc + ∠abd) = (∟ + ∟)"
+    ],
+    "goal": "between(c, b, d)",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

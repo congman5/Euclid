@@ -1,0 +1,81 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.15",
+    "title": "Vertical Angles",
+    "statement": "Vertical angles are equal."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 500,
+        "y": 400
+      },
+      {
+        "label": "C",
+        "x": 500,
+        "y": 200
+      },
+      {
+        "label": "D",
+        "x": 150,
+        "y": 400
+      },
+      {
+        "label": "E",
+        "x": 325,
+        "y": 300
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.15",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(c, M)",
+      "on(d, M)",
+      "on(e, L)",
+      "on(e, M)",
+      "between(a, e, b)",
+      "between(c, e, d)",
+      "¬(L = M)"
+    ],
+    "goal": "∠aec = ∠bed",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

@@ -80,10 +80,14 @@ def main():
     window = MainWindow()
     window.show()
 
-    # If a proof JSON path is passed on the command line, load it directly
+    # If a proof file is passed on the command line, load it directly
     args = app.arguments()
-    if len(args) > 1 and args[1].endswith(".json"):
-        window.open_proof_json(args[1])
+    if len(args) > 1:
+        path = args[1]
+        if path.endswith(".json"):
+            window.open_proof_json(path)
+        elif path.endswith(".euclid"):
+            window._workspace._import_file(path)
 
     # Mark event loop as running so the proof panel uses background
     # threads for verification instead of blocking the UI.

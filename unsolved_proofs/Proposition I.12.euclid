@@ -1,0 +1,59 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.12",
+    "title": "Perpendicular from Point off Line",
+    "statement": "To draw a perpendicular to a given line from a point not on it."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 350
+      },
+      {
+        "label": "B",
+        "x": 500,
+        "y": 350
+      },
+      {
+        "label": "P",
+        "x": 325,
+        "y": 150
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.12",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)",
+      "¬(on(p, L))"
+    ],
+    "goal": "on(h, L), on(e, L), ¬(e = h), ∠ehp = ∟, ¬(h = p)",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "P"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.34",
+    "title": "Parallelogram Properties",
+    "statement": "In a parallelogram opposite sides and angles are equal, and the diagonal bisects the area."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 400,
+        "y": 200
+      },
+      {
+        "label": "C",
+        "x": 450,
+        "y": 400
+      },
+      {
+        "label": "D",
+        "x": 200,
+        "y": 400
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "A",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.34",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(c, N)",
+      "on(d, N)",
+      "¬(intersects(L, N))",
+      "on(a, M)",
+      "on(d, M)",
+      "on(b, P)",
+      "on(c, P)",
+      "¬(intersects(M, P))",
+      "¬(a = b)",
+      "¬(c = d)",
+      "¬(a = d)",
+      "¬(b = c)"
+    ],
+    "goal": "ab = cd, ad = bc, ∠dab = ∠bcd, ∠abc = ∠cda, △abc = △acd",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

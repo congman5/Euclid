@@ -1,0 +1,72 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.6",
+    "title": "Converse of Isosceles Base Angles",
+    "statement": "If two angles of a triangle are equal, the sides subtending them are equal."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 325,
+        "y": 150
+      },
+      {
+        "label": "B",
+        "x": 175,
+        "y": 400
+      },
+      {
+        "label": "C",
+        "x": 475,
+        "y": 400
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.6",
+    "premises": [
+      "∠abc = ∠acb",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "on(a, L)",
+      "on(b, L)",
+      "¬(on(c, L))"
+    ],
+    "goal": "ab = ac",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.37",
+    "title": "Triangles on Same Base Between Parallels",
+    "statement": "Triangles on the same base and between the same parallels have equal area."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 200,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 150,
+        "y": 400
+      },
+      {
+        "label": "C",
+        "x": 450,
+        "y": 400
+      },
+      {
+        "label": "D",
+        "x": 400,
+        "y": 200
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.37",
+    "premises": [
+      "on(b, N)",
+      "on(c, N)",
+      "on(a, L)",
+      "on(d, L)",
+      "¬(intersects(L, N))",
+      "¬(b = c)",
+      "¬(a = d)",
+      "¬(on(a, N))",
+      "¬(on(d, N))"
+    ],
+    "goal": "△abc = △dbc",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

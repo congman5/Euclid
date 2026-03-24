@@ -1,0 +1,101 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.4",
+    "title": "SAS Congruence",
+    "statement": "If two triangles have two sides equal and the included angle equal, the triangles are congruent."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 100,
+        "y": 380
+      },
+      {
+        "label": "C",
+        "x": 300,
+        "y": 380
+      },
+      {
+        "label": "D",
+        "x": 400,
+        "y": 200
+      },
+      {
+        "label": "E",
+        "x": 350,
+        "y": 380
+      },
+      {
+        "label": "F",
+        "x": 550,
+        "y": 380
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "E",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "F",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "E",
+        "to": "F",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.4",
+    "premises": [
+      "ab = de",
+      "ac = df",
+      "∠bac = ∠edf"
+    ],
+    "goal": "bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

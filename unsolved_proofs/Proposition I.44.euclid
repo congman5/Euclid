@@ -1,0 +1,73 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.44",
+    "title": "Apply Parallelogram to Line Segment",
+    "statement": "To apply a parallelogram equal to a given triangle to a given line in a given angle."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 300
+      },
+      {
+        "label": "B",
+        "x": 350,
+        "y": 300
+      },
+      {
+        "label": "C",
+        "x": 200,
+        "y": 150
+      },
+      {
+        "label": "D",
+        "x": 450,
+        "y": 200
+      },
+      {
+        "label": "E",
+        "x": 500,
+        "y": 300
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.44",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)",
+      "¬(c = d)",
+      "¬(c = e)",
+      "¬(d = e)"
+    ],
+    "goal": "on(f, L)",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

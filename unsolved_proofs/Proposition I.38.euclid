@@ -1,0 +1,110 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.38",
+    "title": "Triangles on Equal Bases Between Parallels",
+    "statement": "Triangles on equal bases and between the same parallels have equal area."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 170,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 120,
+        "y": 400
+      },
+      {
+        "label": "C",
+        "x": 270,
+        "y": 400
+      },
+      {
+        "label": "D",
+        "x": 430,
+        "y": 200
+      },
+      {
+        "label": "E",
+        "x": 380,
+        "y": 400
+      },
+      {
+        "label": "F",
+        "x": 530,
+        "y": 400
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "E",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "F",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "E",
+        "to": "F",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.38",
+    "premises": [
+      "on(b, N)",
+      "on(c, N)",
+      "on(e, N)",
+      "on(f, N)",
+      "on(a, L)",
+      "on(d, L)",
+      "¬(intersects(L, N))",
+      "bc = ef",
+      "¬(b = c)",
+      "¬(e = f)",
+      "¬(on(a, N))",
+      "¬(on(d, N))"
+    ],
+    "goal": "△abc = △def",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}
