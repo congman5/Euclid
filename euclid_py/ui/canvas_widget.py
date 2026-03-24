@@ -2460,6 +2460,13 @@ class CanvasWidget(QWidget):
         self._pan_active = False
         self._pan_start = QPointF()
         self._view.viewport().installEventFilter(self)
+        # Accept native trackpad gestures (pinch-to-zoom)
+        self._view.viewport().setAttribute(
+            Qt.WidgetAttribute.WA_AcceptTouchEvents, True)
+        try:
+            self._view.grabGesture(Qt.GestureType.PinchGesture)
+        except (AttributeError, TypeError):
+            pass
 
         # Keyboard shortcuts
         sc_undo = QShortcut(QKeySequence("Ctrl+Z"), self)
@@ -2506,23 +2513,67 @@ class CanvasWidget(QWidget):
 
     def eventFilter(self, obj, event):
         if obj is self._view.viewport():
-            # Scroll wheel zoom
+
+            # ── Wheel events ──────────────────────────────────────────
             if event.type() == event.Type.Wheel:
-                factor = 1.15 if event.angleDelta().y() > 0 else 1 / 1.15
-                self._view.scale(factor, factor)
-                self._clamp_zoom()
-                if self.zoom_changed:
-                    self.zoom_changed()
+                mods = event.modifiers()
+                pixel = event.pixelDelta()
+                angle = event.angleDelta()
+
+                # Ctrl+scroll (or Cmd+scroll on Mac) → zoom
+                if mods & Qt.KeyboardModifier.ControlModifier:
+                    dy = angle.y() if angle.y() else pixel.y()
+                    if dy:
+                        factor = 1.05 ** (dy / 30.0)
+                        self._view.scale(factor, factor)
+                        self._clamp_zoom()
+                        if self.zoom_changed:
+                            self.zoom_changed()
+                    return True
+
+                # Trackpad two-finger scroll → pan
+                # (pixelDelta is non-zero for high-res trackpad events)
+                if not pixel.isNull():
+                    hs = self._view.horizontalScrollBar()
+                    vs = self._view.verticalScrollBar()
+                    hs.setValue(hs.value() - pixel.x())
+                    vs.setValue(vs.value() - pixel.y())
+                    return True
+
+                # Discrete mouse wheel (no pixelDelta) → zoom
+                dy = angle.y()
+                if dy:
+                    factor = 1.15 if dy > 0 else 1 / 1.15
+                    self._view.scale(factor, factor)
+                    self._clamp_zoom()
+                    if self.zoom_changed:
+                        self.zoom_changed()
                 return True
 
-            # Middle-click pan (always available)
+            # ── Pinch-to-zoom gesture (native trackpad) ───────────────
+            if event.type() == event.Type.NativeGesture:
+                from PyQt6.QtCore import QEvent
+                # Qt.NativeGestureType.ZoomNativeGesture == 5
+                try:
+                    gesture_type = event.gestureType()
+                    if gesture_type == Qt.NativeGestureType.ZoomNativeGesture:
+                        scale_factor = 1.0 + event.value()
+                        self._view.scale(scale_factor, scale_factor)
+                        self._clamp_zoom()
+                        if self.zoom_changed:
+                            self.zoom_changed()
+                        return True
+                except (AttributeError, TypeError):
+                    pass  # NativeGesture not available on this platform
+
+            # ── Middle-click pan (always available) ───────────────────
             if event.type() == event.Type.MouseButtonPress and event.button() == Qt.MouseButton.MiddleButton:
                 self._pan_active = True
                 self._pan_start = event.pos()
                 self._view.setCursor(Qt.CursorShape.ClosedHandCursor)
                 return True
 
-            # Pan tool: left-click pan
+            # ── Pan tool: left-click pan ──────────────────────────────
             if (event.type() == event.Type.MouseButtonPress
                     and event.button() == Qt.MouseButton.LeftButton
                     and self._scene._tool == "pan"):
