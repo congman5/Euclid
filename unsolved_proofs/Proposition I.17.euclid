@@ -1,0 +1,71 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.17",
+    "title": "Two Angles Less Than Two Right Angles",
+    "statement": "Any two angles of a triangle are together less than two right angles."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 250,
+        "y": 150
+      },
+      {
+        "label": "B",
+        "x": 150,
+        "y": 380
+      },
+      {
+        "label": "C",
+        "x": 450,
+        "y": 380
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.17",
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "on(a, L)",
+      "on(b, L)",
+      "¬(on(c, L))"
+    ],
+    "goal": "(∠abc + ∠bca) < (∟ + ∟)",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

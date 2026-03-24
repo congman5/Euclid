@@ -79,22 +79,59 @@ def _get_crash_logger() -> logging.Logger:
 # ===================================================================
 
 def _build_rule_groups():
-    """Build rule groups from System E axioms via unified_checker."""
+    """Build rule groups from System E axioms via unified_checker.
+
+    Filters out sub-axioms that proof authors never directly cite,
+    keeping the rule dropdown manageable.
+    """
     from verifier.unified_checker import get_available_rules
     rules = get_available_rules()
-    # Group by category, preserving paper section order
+
+    # Rules hidden from the dropdown — individual diagrammatic sub-axioms,
+    # rarely-used metric rules, and transfer axiom variants that are
+    # subsumed by more common ones.
+    _HIDDEN_PREFIXES = (
+        "Betweenness 2", "Betweenness 3", "Betweenness 4",
+        "Betweenness 5", "Betweenness 7",
+        "Same-side ", "Pasch ", "Triple incidence ",
+        "Circle 2", "Circle 3", "Circle 4",
+        "Intersection 1", "Intersection 2a", "Intersection 2b",
+        "Intersection 2d", "Intersection 3", "Intersection 4",
+        "Generality 2", "Generality 4", "Generality 5", "Generality 6",
+    )
+    _HIDDEN_EXACT = {
+        "M2 — Non-negative", "M5 — Angle bounds",
+        "M6 — Degenerate area", "M7 — Non-negative area",
+        "M9 — Congruence → area", "CN2 — Addition",
+        "Order transitivity", "Addition preserves order",
+        "Segment transfer 2",
+        "Angle transfer 1a", "Angle transfer 1b", "Angle transfer 1c",
+        "Angle transfer 2b", "Angle transfer 2c",
+        "Angle transfer 3b", "Angle transfer 5a", "Angle transfer 5b",
+        "Area transfer 1b", "Area transfer 1c",
+    }
+
+    def _visible(name):
+        if name in _HIDDEN_EXACT:
+            return False
+        for prefix in _HIDDEN_PREFIXES:
+            if name.startswith(prefix):
+                return False
+        return True
+
     _CAT_LABELS = OrderedDict([
-        ("construction", "Construction (§3.3)"),
-        ("diagrammatic", "Diagrammatic (§3.4)"),
-        ("metric", "Metric (§3.5)"),
-        ("transfer", "Transfer (§3.6)"),
-        ("superposition", "Superposition (§3.7)"),
-        ("structural", "Structural (§3.2)"),
+        ("construction", "Construction"),
+        ("diagrammatic", "Diagrammatic"),
+        ("metric", "Metric"),
+        ("transfer", "Transfer"),
+        ("superposition", "Superposition"),
+        ("structural", "Structural"),
         ("proposition", "Propositions"),
     ])
     groups = OrderedDict()
     for cat, label in _CAT_LABELS.items():
-        names = [r.name for r in rules if r.category == cat]
+        names = [r.name for r in rules
+                 if r.category == cat and _visible(r.name)]
         if names:
             groups[label] = names
     return groups
@@ -155,6 +192,11 @@ GREEK_LETTERS = ["α", "β", "γ", "δ"]
 # BACKGROUND VERIFICATION WORKER
 # ===================================================================
 
+class _CancelledError(Exception):
+    """Raised inside the verifier callback when cancellation is requested."""
+    pass
+
+
 class _VerifyWorker(QObject):
     """Runs verify_e_proof_json on a background thread to avoid UI freeze."""
     finished = pyqtSignal(object)  # emits PanelCheckResult or Exception
@@ -163,8 +205,15 @@ class _VerifyWorker(QObject):
     def __init__(self, proof_json: dict):
         super().__init__()
         self._proof_json = proof_json
+        self._cancelled = False
+
+    def cancel(self):
+        """Request cancellation — checked between verification steps."""
+        self._cancelled = True
 
     def _on_line_checked(self, line_id: int, valid: bool, errors: list):
+        if self._cancelled:
+            raise _CancelledError()
         self.line_checked.emit(line_id, valid, errors)
 
     def run(self):
@@ -173,14 +222,18 @@ class _VerifyWorker(QObject):
             result = verify_e_proof_json(
                 self._proof_json,
                 on_line_checked=self._on_line_checked)
-            self.finished.emit(result)
+            if not self._cancelled:
+                self.finished.emit(result)
+        except _CancelledError:
+            pass  # silently abort
         except Exception as exc:
             log = _get_crash_logger()
             log.error(
                 "Verifier thread exception:\n%s",
                 traceback.format_exc(),
             )
-            self.finished.emit(exc)
+            if not self._cancelled:
+                self.finished.emit(exc)
 
 
 # ===================================================================

@@ -1,0 +1,87 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.7",
+    "title": "Unique Triangle on Segment",
+    "statement": "Given a segment, there cannot be two distinct triangles on the same side with equal corresponding sides."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 175,
+        "y": 380
+      },
+      {
+        "label": "B",
+        "x": 475,
+        "y": 380
+      },
+      {
+        "label": "C",
+        "x": 300,
+        "y": 180
+      },
+      {
+        "label": "D",
+        "x": 350,
+        "y": 220
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.7",
+    "premises": [
+      "on(b, L)",
+      "on(c, L)",
+      "¬(b = c)",
+      "same-side(a, d, L)",
+      "bd = ba",
+      "cd = ca"
+    ],
+    "goal": "d = a",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

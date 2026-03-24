@@ -1,0 +1,103 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.36",
+    "title": "Parallelograms on Equal Bases",
+    "statement": "Parallelograms on equal bases and between the same parallels have equal area."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 120,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 170,
+        "y": 400
+      },
+      {
+        "label": "C",
+        "x": 320,
+        "y": 400
+      },
+      {
+        "label": "D",
+        "x": 270,
+        "y": 200
+      },
+      {
+        "label": "E",
+        "x": 370,
+        "y": 200
+      },
+      {
+        "label": "F",
+        "x": 520,
+        "y": 200
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "A",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "E",
+        "to": "F",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.36",
+    "premises": [
+      "on(b, N)",
+      "on(c, N)",
+      "on(e, N)",
+      "on(f, N)",
+      "on(a, L)",
+      "on(d, L)",
+      "¬(intersects(L, N))",
+      "bc = ef",
+      "¬(b = c)",
+      "¬(e = f)"
+    ],
+    "goal": "(△abc + △acd) = (△def + △dfa)",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

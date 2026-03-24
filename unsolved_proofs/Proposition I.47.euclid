@@ -1,0 +1,76 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.47",
+    "title": "Pythagorean Theorem",
+    "statement": "In right-angled triangles, the square on the hypotenuse equals the sum of the squares on the other two sides."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 200,
+        "y": 380
+      },
+      {
+        "label": "B",
+        "x": 200,
+        "y": 180
+      },
+      {
+        "label": "C",
+        "x": 450,
+        "y": 380
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [
+      {
+        "from": "B",
+        "vertex": "A",
+        "to": "C",
+        "isRight": true
+      }
+    ],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.47",
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "∠bac = ∟"
+    ],
+    "goal": "bc = cd, cd = de, de = eb, ∠cbe = ∟, ab = bf, bf = fg, fg = ga, ∠abf = ∟, ac = ch, ch = hk, hk = ka, ∠cak = ∟, (△bdc + △dec) = ((△abf + △afg) + (△ach + △ahk))",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.13",
+    "title": "Supplementary Angles",
+    "statement": "If a straight line stands on another, the adjacent angles sum to two right angles."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 350
+      },
+      {
+        "label": "B",
+        "x": 500,
+        "y": 350
+      },
+      {
+        "label": "C",
+        "x": 325,
+        "y": 350
+      },
+      {
+        "label": "D",
+        "x": 325,
+        "y": 150
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.13",
+    "premises": [
+      "on(a, L)",
+      "on(c, L)",
+      "between(a, b, c)",
+      "¬(on(d, L))",
+      "¬(b = d)"
+    ],
+    "goal": "(∠abd + ∠dbc) = (∟ + ∟)",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

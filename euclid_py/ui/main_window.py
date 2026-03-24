@@ -19,13 +19,14 @@ import os
 from collections import Counter
 from typing import Dict, List, Optional
 
-from PyQt6.QtCore import Qt, QSize, QTimer, QThread, QObject
-from PyQt6.QtGui import QAction, QFont, QIcon, QColor, QPixmap
+from PyQt6.QtCore import Qt, QSize, QTimer, QThread, QObject, QPropertyAnimation, QEasingCurve, pyqtProperty
+from PyQt6.QtGui import QAction, QFont, QIcon, QColor, QPixmap, QPainter, QBrush, QPen
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QLineEdit, QListWidget, QListWidgetItem,
+    QLabel, QPushButton,
     QSplitter, QToolBar, QStatusBar, QScrollArea, QFrame,
     QFileDialog, QMessageBox, QGroupBox, QStackedWidget, QTabWidget,
+    QMenu,
 )
 
 from ..engine.proposition_data import (
@@ -61,8 +62,82 @@ COLORS = {
 }
 
 
+class ToggleSwitch(QWidget):
+    """iOS-style animated toggle switch."""
+
+    def __init__(self, checked=True, parent=None):
+        super().__init__(parent)
+        self._checked = checked
+        self._knob_x = 1.0 if checked else 0.0
+        self.setFixedSize(40, 22)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        self._anim = QPropertyAnimation(self, b"knob_position", self)
+        self._anim.setDuration(150)
+        self._anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
+        self._callback = None
+
+    def set_toggled_callback(self, cb):
+        self._callback = cb
+
+    def isChecked(self):
+        return self._checked
+
+    def setChecked(self, val):
+        if val != self._checked:
+            self._checked = val
+            self._animate(val)
+
+    def _get_knob_position(self):
+        return self._knob_x
+
+    def _set_knob_position(self, val):
+        self._knob_x = val
+        self.update()
+
+    knob_position = pyqtProperty(float, _get_knob_position, _set_knob_position)
+
+    def _animate(self, on: bool):
+        self._anim.stop()
+        self._anim.setStartValue(self._knob_x)
+        self._anim.setEndValue(1.0 if on else 0.0)
+        self._anim.start()
+
+    def mousePressEvent(self, event):
+        self._checked = not self._checked
+        self._animate(self._checked)
+        if self._callback:
+            self._callback(self._checked)
+        event.accept()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w, h = self.width(), self.height()
+        r = h / 2
+        off_color = QColor("#ccc")
+        on_color = QColor(COLORS["primary"])
+        t = self._knob_x
+        track_color = QColor(
+            int(off_color.red() + t * (on_color.red() - off_color.red())),
+            int(off_color.green() + t * (on_color.green() - off_color.green())),
+            int(off_color.blue() + t * (on_color.blue() - off_color.blue())),
+        )
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(track_color))
+        p.drawRoundedRect(0, 0, w, h, r, r)
+        margin = 2
+        knob_d = h - 2 * margin
+        max_x = w - knob_d - margin
+        knob_cx = margin + self._knob_x * (max_x - margin)
+        p.setBrush(QBrush(QColor("white")))
+        p.setPen(QPen(QColor(0, 0, 0, 30), 0.5))
+        p.drawEllipse(int(knob_cx), margin, int(knob_d), int(knob_d))
+        p.end()
+
+
 class MainWindow(QMainWindow):
-    """Root application window — switches between Home, Workspace, and Verifier screens."""
+    """Root application window — switches between Workspace and Verifier screens."""
 
     # Target aspect ratio (width:height)
     _ASPECT_W = 14
@@ -81,14 +156,13 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self._stack)
 
         # Build screens
-        self._home = _HomeScreen(self)
         self._workspace = _WorkspaceScreen(self)
         self._verifier = _VerifierScreen(self)
-        self._stack.addWidget(self._home)
         self._stack.addWidget(self._workspace)
         self._stack.addWidget(self._verifier)
 
-        self._show_home()
+        self._stack.setCurrentWidget(self._workspace)
+        self.statusBar().showMessage("Ready — select a proposition or start a blank proof.")
 
     def _apply_initial_geometry(self):
         """Size the window to 85% of the available screen while keeping
@@ -117,10 +191,6 @@ class MainWindow(QMainWindow):
         self.move(x, y)
 
     # ── Navigation ────────────────────────────────────────────────────
-    def _show_home(self):
-        self._stack.setCurrentWidget(self._home)
-        self.statusBar().showMessage("Select a proposition or load a proof JSON file.")
-
     def _show_verifier(self):
         self._stack.setCurrentWidget(self._verifier)
 
@@ -151,141 +221,6 @@ class MainWindow(QMainWindow):
             statement="Write your own proposition here.",
         )
         self.open_proposition(blank)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# HOME SCREEN
-# ═══════════════════════════════════════════════════════════════════════════
-
-class _HomeScreen(QWidget):
-    def __init__(self, main_win: MainWindow):
-        super().__init__()
-        self._mw = main_win
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        # ── Header ────────────────────────────────────────────────────
-        header = QFrame()
-        header.setStyleSheet(f"background:{C.header_bg}; padding:12px;")
-        hl = QHBoxLayout(header)
-
-        # Logo
-        from ..resources import resource_path
-        logo_path = resource_path("Euclid Logo.png")
-        if os.path.exists(logo_path):
-            logo_label = QLabel()
-            pixmap = QPixmap(logo_path).scaled(
-                40, 40,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation)
-            logo_label.setPixmap(pixmap)
-            logo_label.setStyleSheet("background: transparent;")
-            hl.addWidget(logo_label)
-
-        title = QLabel("Euclid")
-        title.setFont(Fonts.ui_bold(18))
-        title.setStyleSheet(f"color:{C.header_text}; background: transparent;")
-        subtitle = QLabel("Geometric Proof Verifier")
-        subtitle.setStyleSheet(
-            f"color:rgba(255,255,255,0.8); font-size:12px; background: transparent;")
-        hl.addWidget(title)
-        hl.addWidget(subtitle)
-        hl.addStretch()
-        layout.addWidget(header)
-
-        # ── Action bar: search + buttons ──────────────────────────────
-        action_bar = QHBoxLayout()
-        action_bar.setContentsMargins(24, 16, 24, 8)
-
-        self._search = QLineEdit()
-        self._search.setPlaceholderText("Search propositions…")
-        self._search.setMinimumHeight(36)
-        self._search.textChanged.connect(self._filter)
-        action_bar.addWidget(self._search, stretch=1)
-
-        btn_load = QPushButton("Load Proof JSON")
-        btn_load.setObjectName("primary_btn")
-        btn_load.setMinimumHeight(36)
-        btn_load.clicked.connect(self._load_proof_json)
-        action_bar.addWidget(btn_load)
-
-        layout.addLayout(action_bar)
-
-        # ── New proof button ──────────────────────────────────────────
-        btn_new = QPushButton("＋ Create New Proof")
-        btn_new.setMinimumHeight(40)
-        btn_new.setStyleSheet(f"""
-            QPushButton {{
-                border: 2px dashed {C.border};
-                border-radius: 8px;
-                color: {C.primary};
-                font-weight: 600;
-                font-size: 15px;
-            }}
-            QPushButton:hover {{ border-color: {C.primary}; }}
-        """)
-        btn_new.clicked.connect(main_win.open_blank)
-        wrap = QHBoxLayout()
-        wrap.setContentsMargins(24, 0, 24, 8)
-        wrap.addWidget(btn_new)
-        layout.addLayout(wrap)
-
-        # ── Proposition list ──────────────────────────────────────────
-        self._list = QListWidget()
-        self._list.setStyleSheet(f"""
-            QListWidget {{
-                border: none;
-                background: {C.bg};
-                outline: none;
-            }}
-            QListWidget::item {{
-                color: {C.text};
-                padding: 14px 24px;
-                border-bottom: 1px solid {C.border};
-                background: {C.surface};
-                margin: 0px 16px 4px 16px;
-                border-radius: 6px;
-                border: 1px solid {C.border_light};
-            }}
-            QListWidget::item:hover {{
-                background: {C.surface_hover};
-                border-color: {C.primary};
-            }}
-            QListWidget::item:selected {{
-                background: {C.surface_selected};
-                border-color: {C.primary};
-            }}
-        """)
-        self._list.itemClicked.connect(self._on_select)
-        layout.addWidget(self._list)
-
-        self._populate()
-
-    def _populate(self, term: str = ""):
-        self._list.clear()
-        for p in ALL_PROPOSITIONS:
-            text = f"{p.name} — {p.title}\n{p.statement[:120]}"
-            if term and term.lower() not in text.lower():
-                continue
-            item = QListWidgetItem(text)
-            item.setData(Qt.ItemDataRole.UserRole, p.id)
-            self._list.addItem(item)
-
-    def _filter(self, text: str):
-        self._populate(text)
-
-    def _on_select(self, item: QListWidgetItem):
-        pid = item.data(Qt.ItemDataRole.UserRole)
-        prop = get_proposition(pid)
-        if prop:
-            self._mw.open_proposition(prop)
-
-    def _load_proof_json(self):
-        path, _ = QFileDialog.getOpenFileName(
-            self, "Open Proof JSON", "", "JSON Files (*.json);;All Files (*)"
-        )
-        if path:
-            self._mw.open_proof_json(path)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -415,9 +350,19 @@ class _VerifierScreen(QWidget):
     def _cancel_verification(self):
         """Cancel any in-flight background verification."""
         if self._verify_thread is not None:
+            if self._verify_worker is not None:
+                self._verify_worker.cancel()
+            try:
+                self._verify_worker.line_checked.disconnect(self._on_line_checked)
+            except (TypeError, RuntimeError, AttributeError):
+                pass
             try:
                 self._verify_worker.finished.disconnect(self._on_verify_finished)
-            except (TypeError, RuntimeError):
+            except (TypeError, RuntimeError, AttributeError):
+                pass
+            try:
+                self._verify_worker.finished.disconnect(self._verify_thread.quit)
+            except (TypeError, RuntimeError, AttributeError):
                 pass
             self._verify_thread.quit()
             if not self._verify_thread.wait(3000):
@@ -671,13 +616,13 @@ class _VerifierScreen(QWidget):
             )
             if reply == QMessageBox.StandardButton.Save:
                 self._save_proof()
-                self._mw._show_home()
+                self._mw._stack.setCurrentWidget(self._mw._workspace)
             elif reply == QMessageBox.StandardButton.Discard:
                 self._dirty = False
-                self._mw._show_home()
+                self._mw._stack.setCurrentWidget(self._mw._workspace)
             # Cancel → stay on verifier
         else:
-            self._mw._show_home()
+            self._mw._stack.setCurrentWidget(self._mw._workspace)
 
     def _save_proof(self):
         """Save the current proof data back to a JSON file."""
@@ -742,9 +687,14 @@ class _WorkspaceScreen(QWidget):
         tl = QHBoxLayout(toolbar)
         tl.setContentsMargins(12, 0, 12, 0)
 
-        btn_back = QPushButton("← Back")
-        btn_back.clicked.connect(self._back_with_save_check)
-        tl.addWidget(btn_back)
+        btn_new = QPushButton("+ New Proof")
+        btn_new.clicked.connect(self._new_blank_proof)
+        tl.addWidget(btn_new)
+
+        btn_prop = QPushButton("Propositions")
+        btn_prop.setToolTip("Load a proposition from Euclid's Elements Book I")
+        btn_prop.clicked.connect(self._show_proposition_menu)
+        tl.addWidget(btn_prop)
 
         self._title_label = QLabel()
         self._title_label.setFont(QFont("Segoe UI", 13, QFont.Weight.Bold))
@@ -908,24 +858,16 @@ class _WorkspaceScreen(QWidget):
         sep_snap.setStyleSheet(f"background:{COLORS['border']};")
         draw_row.addWidget(sep_snap)
 
-        self._snap_btn = QPushButton("⊹")
-        self._snap_btn.setToolTip(
+        snap_label = QLabel("Snap")
+        snap_label.setStyleSheet(
+            f"color:{COLORS['textSecondary']}; font-size:11px;")
+        draw_row.addWidget(snap_label)
+
+        self._snap_toggle = ToggleSwitch(checked=True)
+        self._snap_toggle.setToolTip(
             "Toggle snap to circle / line / intersection")
-        self._snap_btn.setCheckable(True)
-        self._snap_btn.setChecked(True)
-        self._snap_btn.setFixedHeight(26)
-        self._snap_btn.setStyleSheet(
-            f"QPushButton {{ background:{COLORS['surface']};"
-            f" color:{COLORS['text']};"
-            f" border:1px solid {COLORS['border']};"
-            " border-radius:3px; padding:3px 8px;"
-            " font-size:14px; min-width:24px; }}"
-            f" QPushButton:hover {{ background:#f0f4ff;"
-            f" border-color:{COLORS['primary']}; }}"
-            f" QPushButton:checked {{ background:{COLORS['primary']};"
-            " color:white; }}")
-        self._snap_btn.toggled.connect(self._toggle_snap)
-        draw_row.addWidget(self._snap_btn)
+        self._snap_toggle.set_toggled_callback(self._toggle_snap)
+        draw_row.addWidget(self._snap_toggle)
 
         draw_inner.setFixedSize(draw_inner.sizeHint())
 
@@ -1198,25 +1140,57 @@ class _WorkspaceScreen(QWidget):
     def _mark_dirty(self):
         self._dirty = True
 
-    def _back_with_save_check(self):
-        """Prompt to save unsaved changes before navigating home."""
+    def _new_blank_proof(self):
+        """Start a blank proof, prompting to save if dirty."""
         if self._dirty:
             reply = QMessageBox.question(
                 self, "Unsaved Changes",
-                "You have unsaved changes. Would you like to save before leaving?",
+                "Save before starting a new proof?",
                 QMessageBox.StandardButton.Save
                 | QMessageBox.StandardButton.Discard
                 | QMessageBox.StandardButton.Cancel,
             )
             if reply == QMessageBox.StandardButton.Save:
                 self._save()
-                self._mw._show_home()
-            elif reply == QMessageBox.StandardButton.Discard:
-                self._dirty = False
-                self._mw._show_home()
-            # Cancel → do nothing, stay on workspace
+            elif reply == QMessageBox.StandardButton.Cancel:
+                return
+        self._mw.open_blank()
+
+    def _show_proposition_menu(self):
+        """Show a dropdown menu of all 48 Euclid Book I propositions."""
+        menu = QMenu(self)
+        menu.setStyleSheet(
+            "QMenu { background: white; border: 1px solid #d0d4da;"
+            " border-radius: 4px; padding: 4px; }"
+            " QMenu::item { padding: 5px 20px 5px 12px; font-size: 12px; }"
+            " QMenu::item:selected { background: #edf2ff; color: #2d70b3; }")
+        for prop in ALL_PROPOSITIONS:
+            if prop.source != "euclid":
+                continue
+            action = menu.addAction(f"I.{prop.prop_number}  {prop.title}")
+            action.triggered.connect(
+                lambda checked, p=prop: self._load_proposition_with_save_check(p))
+        btn = self.sender()
+        if btn:
+            menu.exec(btn.mapToGlobal(btn.rect().bottomLeft()))
         else:
-            self._mw._show_home()
+            menu.exec(self.cursor().pos())
+
+    def _load_proposition_with_save_check(self, prop):
+        """Load a proposition, prompting to save if dirty."""
+        if self._dirty:
+            reply = QMessageBox.question(
+                self, "Unsaved Changes",
+                "Save before loading a new proposition?",
+                QMessageBox.StandardButton.Save
+                | QMessageBox.StandardButton.Discard
+                | QMessageBox.StandardButton.Cancel,
+            )
+            if reply == QMessageBox.StandardButton.Save:
+                self._save()
+            elif reply == QMessageBox.StandardButton.Cancel:
+                return
+        self._mw.open_proposition(prop)
 
     def _pick_color(self, idx: int):
         from .canvas_widget import COLOR_PALETTE
@@ -1320,19 +1294,20 @@ class _WorkspaceScreen(QWidget):
             "Euclid Files (*.euclid)")
         if not path:
             return
+        self._import_file(path)
+
+    def _import_file(self, path: str):
+        """Load a .euclid file by path."""
         fmt = detect_file_format(path)
         self._set_file_title(path)
         if fmt == "euclid-journal":
-            # Proof-only file: update journal, leave canvas untouched
             journal = load_journal_json(path)
             self._proof_panel.clear()
             self._proof_panel.restore_journal_state(journal)
             self._mw.statusBar().showMessage(f"Loaded proof from {path}")
         else:
-            # .euclid file: always load canvas
             data = load_proof(path)
             self._load_canvas_from_data(data)
-            # Only touch the journal if the file contains one
             if data.get("has_journal"):
                 journal = data.get("journal", {})
                 self._proof_panel.clear()
@@ -1342,6 +1317,8 @@ class _WorkspaceScreen(QWidget):
             else:
                 self._mw.statusBar().showMessage(
                     f"Loaded canvas from {path} (proof journal unchanged)")
+        self._dirty = False
+        QTimer.singleShot(50, self._canvas.fit_to_contents)
 
     def _load_canvas_from_data(self, data: dict):
         """Replace the canvas with objects from a deserialized .euclid dict."""

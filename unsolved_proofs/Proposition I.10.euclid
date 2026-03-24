@@ -1,0 +1,52 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.10",
+    "title": "Bisect a Segment",
+    "statement": "To bisect a given finite straight-line."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 175,
+        "y": 300
+      },
+      {
+        "label": "B",
+        "x": 475,
+        "y": 300
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.10",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)"
+    ],
+    "goal": "between(a, d, b), ad = db",
+    "declarations": {
+      "points": [
+        "A",
+        "B"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

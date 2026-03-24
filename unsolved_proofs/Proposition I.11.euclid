@@ -1,0 +1,52 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.11",
+    "title": "Perpendicular from Point on Line",
+    "statement": "To draw a perpendicular to a given line from a point on it."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 300
+      },
+      {
+        "label": "B",
+        "x": 500,
+        "y": 300
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.11",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)"
+    ],
+    "goal": "∠baf = ∟, ¬(f = a), ¬(on(f, L))",
+    "declarations": {
+      "points": [
+        "A",
+        "B"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

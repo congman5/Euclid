@@ -1,0 +1,60 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.2",
+    "title": "Transfer a Length to a Point",
+    "statement": "To place at a given point a straight-line equal to a given straight-line."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 200,
+        "y": 250
+      },
+      {
+        "label": "B",
+        "x": 350,
+        "y": 350
+      },
+      {
+        "label": "C",
+        "x": 480,
+        "y": 350
+      }
+    ],
+    "segments": [
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.2",
+    "premises": [
+      "on(b, L)",
+      "on(c, L)",
+      "¬(b = c)",
+      "¬(a = b)",
+      "¬(a = c)"
+    ],
+    "goal": "af = bc",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "C"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}

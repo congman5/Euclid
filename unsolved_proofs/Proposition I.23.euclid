@@ -1,0 +1,90 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "proposition": "Proposition I.23",
+    "title": "Copy an Angle",
+    "statement": "To construct an angle equal to a given angle on a given line at a given point."
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 350
+      },
+      {
+        "label": "B",
+        "x": 450,
+        "y": 350
+      },
+      {
+        "label": "D",
+        "x": 350,
+        "y": 100
+      },
+      {
+        "label": "E",
+        "x": 500,
+        "y": 200
+      },
+      {
+        "label": "F",
+        "x": 550,
+        "y": 100
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "E",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "E",
+        "to": "F",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [
+      {
+        "from": "D",
+        "vertex": "E",
+        "to": "F",
+        "isRight": false
+      }
+    ],
+    "equalityGroups": []
+  },
+  "proof": {
+    "name": "Prop.I.23",
+    "premises": [
+      "¬(d = e)",
+      "¬(d = f)",
+      "¬(e = f)",
+      "on(a, L)",
+      "on(b, L)",
+      "¬(a = b)"
+    ],
+    "goal": "∠bag = ∠edf, ¬(on(g, L))",
+    "declarations": {
+      "points": [
+        "A",
+        "B",
+        "D",
+        "E",
+        "F"
+      ],
+      "lines": []
+    },
+    "steps": []
+  }
+}
