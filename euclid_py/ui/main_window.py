@@ -69,26 +69,38 @@ def _user_bookmarks_path() -> str:
     return os.path.join(base, "user_bookmarks.json")
 
 
-def _load_user_bookmarks() -> list:
-    """Load saved custom folders/files from disk."""
+def _load_user_bookmarks() -> dict:
+    """Load saved custom folders/files and dialog geometry from disk."""
     path = _user_bookmarks_path()
     if os.path.exists(path):
         try:
             with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+            # Migrate old list format → dict
+            if isinstance(data, list):
+                return {"bookmarks": data}
+            return data
         except Exception:
             pass
-    return []
+    return {"bookmarks": []}
 
 
-def _save_user_bookmarks(bookmarks: list):
-    """Persist custom folders/files to disk."""
+def _save_user_bookmarks(data: dict):
+    """Persist custom folders/files and dialog geometry to disk."""
     path = _user_bookmarks_path()
     try:
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(bookmarks, f, indent=2)
+            json.dump(data, f, indent=2)
     except Exception:
         pass
+
+
+import re as _re
+
+def _natural_sort_key(filename: str):
+    """Sort key that orders numbers numerically: I.2 before I.10."""
+    parts = _re.split(r'(\d+)', filename)
+    return [int(p) if p.isdigit() else p.lower() for p in parts]
 
 
 _SB_BTN_STYLE = (
@@ -121,7 +133,8 @@ class _OpenFileDialog(QDialog):
         from ..resources import resource_path
         self._unsolved_dir = resource_path("unsolved_proofs")
         self._solved_dir = resource_path("solved_proofs")
-        self._bookmarks = _load_user_bookmarks()
+        self._prefs = _load_user_bookmarks()
+        self._bookmarks = self._prefs.get("bookmarks", [])
 
         root = QHBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -262,6 +275,26 @@ class _OpenFileDialog(QDialog):
         self._active_path = None
         self._load_folder(self._unsolved_dir)
 
+        # Restore saved position and size
+        geo = self._prefs.get("dialog_geometry")
+        if geo:
+            self.move(geo.get("x", 100), geo.get("y", 100))
+            self.resize(geo.get("w", 720), geo.get("h", 520))
+
+    def _save_geometry(self):
+        """Persist dialog position and size."""
+        pos = self.pos()
+        size = self.size()
+        self._prefs["dialog_geometry"] = {
+            "x": pos.x(), "y": pos.y(),
+            "w": size.width(), "h": size.height(),
+        }
+        _save_user_bookmarks(self._prefs)
+
+    def done(self, result):
+        self._save_geometry()
+        super().done(result)
+
     # ── Sidebar helpers ───────────────────────────────────────────────
 
     def _add_sidebar_entry(self, label: str, path: str, removable: bool):
@@ -327,8 +360,9 @@ class _OpenFileDialog(QDialog):
             return
 
         files = sorted(
-            f for f in os.listdir(folder)
-            if f.endswith(".euclid") and os.path.isfile(os.path.join(folder, f)))
+            (f for f in os.listdir(folder)
+             if f.endswith(".euclid") and os.path.isfile(os.path.join(folder, f))),
+            key=_natural_sort_key)
         if not files:
             item = QListWidgetItem("(no .euclid files found)")
             item.setFlags(Qt.ItemFlag.NoItemFlags)
@@ -382,7 +416,7 @@ class _OpenFileDialog(QDialog):
                 return
         name = os.path.basename(folder)
         self._bookmarks.append({"path": folder, "name": name, "type": "folder"})
-        _save_user_bookmarks(self._bookmarks)
+        self._prefs["bookmarks"] = self._bookmarks; _save_user_bookmarks(self._prefs)
         self._add_sidebar_entry(f"\U0001f4c1  {name}", folder, removable=True)
         self._load_folder(folder)
 
@@ -397,12 +431,12 @@ class _OpenFileDialog(QDialog):
                 return
         name = os.path.basename(path).replace(".euclid", "")
         self._bookmarks.append({"path": path, "name": name, "type": "file"})
-        _save_user_bookmarks(self._bookmarks)
+        self._prefs["bookmarks"] = self._bookmarks; _save_user_bookmarks(self._prefs)
         self._add_sidebar_entry(f"\U0001f4c4  {name}", path, removable=True)
 
     def _remove_bookmark(self, path: str):
         self._bookmarks = [bm for bm in self._bookmarks if bm.get("path") != path]
-        _save_user_bookmarks(self._bookmarks)
+        self._prefs["bookmarks"] = self._bookmarks; _save_user_bookmarks(self._prefs)
         # Remove from sidebar UI
         for i, (btn, bm_path) in enumerate(self._sidebar_btns):
             if bm_path == path:
