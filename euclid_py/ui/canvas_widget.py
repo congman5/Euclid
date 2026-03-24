@@ -639,6 +639,7 @@ class PointItem(QGraphicsEllipseItem):
         self._text.setDefaultTextColor(COLORS["point_label"])
         self._text.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
         self._text.setPos(r + 2, -r - 4)
+        self._text.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
         # Internal (unlabelled) points start with '_' and hide the label
         self._label_visible = not label.startswith("_")
         self._text.setVisible(self._label_visible)
