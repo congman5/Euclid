@@ -97,8 +97,8 @@ class _OpenFileDialog(QDialog):
 
         self._sidebar_btns = []
         for label, folder in [
-            ("📘  Unsolved Proofs", self._unsolved_dir),
-            ("✅  Solved Proofs", self._solved_dir),
+            ("\U0001f4d8  Unsolved Proofs", self._unsolved_dir),
+            ("\u2705  Solved Proofs", self._solved_dir),
         ]:
             btn = QPushButton(label)
             btn.setStyleSheet(
@@ -106,7 +106,7 @@ class _OpenFileDialog(QDialog):
                 " border: none; border-radius: 4px;"
                 f" background: transparent; color: {COLORS['text']};"
                 " font-size: 12px; }"
-                f" QPushButton:hover {{ background: {COLORS['surface_hover']}; }}")
+                " QPushButton:hover { background: #edf2ff; }")
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.clicked.connect(
                 lambda checked, f=folder: self._load_folder(f))
@@ -115,12 +115,12 @@ class _OpenFileDialog(QDialog):
 
         sb_layout.addStretch()
 
-        btn_browse = QPushButton("Browse…")
+        btn_browse = QPushButton("Browse\u2026")
         btn_browse.setStyleSheet(
             "QPushButton { padding: 7px 12px; border: 1px solid #c0c8d4;"
             " border-radius: 4px; background: white;"
             f" color: {COLORS['text']}; font-size: 12px; }}"
-            f" QPushButton:hover {{ background: {COLORS['surface_hover']}; }}")
+            " QPushButton:hover { background: #f0f4ff; }")
         btn_browse.clicked.connect(self._browse_file)
         sb_layout.addWidget(btn_browse)
 
@@ -155,7 +155,7 @@ class _OpenFileDialog(QDialog):
                 background: #f5f8ff;
             }}
             QListWidget::item:selected {{
-                background: {COLORS['surface_selected']};
+                background: #dce8f7;
                 color: {COLORS['primary']};
             }}
         """)
@@ -204,7 +204,7 @@ class _OpenFileDialog(QDialog):
                 btn.setStyleSheet(
                     btn.styleSheet().replace(
                         "background: transparent",
-                        f"background: {COLORS['surface_selected']}"))
+                        "background: #dce8f7"))
 
         if not os.path.isdir(folder):
             item = QListWidgetItem("(folder not found)")
