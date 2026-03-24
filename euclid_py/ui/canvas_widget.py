@@ -1831,6 +1831,51 @@ class GeometryScene(QGraphicsScene):
 
     # ── Mouse interaction ─────────────────────────────────────────────
 
+    def mouseDoubleClickEvent(self, event):
+        """Double-click on a point in select mode → rename it."""
+        if self._tool != "select":
+            super().mouseDoubleClickEvent(event)
+            return
+        pos = event.scenePos()
+        snap = self._effective_snap()
+        for p in self._points.values():
+            d = math.hypot(p.pos().x() - pos.x(), p.pos().y() - pos.y())
+            if d < snap:
+                self._rename_point(p)
+                event.accept()
+                return
+        super().mouseDoubleClickEvent(event)
+
+    def _rename_point(self, pt: PointItem):
+        """Show an input dialog to rename a point."""
+        from PyQt6.QtWidgets import QInputDialog
+        old_label = pt.label
+        new_label, ok = QInputDialog.getText(
+            self.views()[0] if self.views() else None,
+            "Rename Point",
+            f"New label for point '{old_label}':",
+            text=old_label,
+        )
+        if not ok or not new_label or new_label == old_label:
+            return
+        new_label = new_label.strip()
+        if new_label in self._points:
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                self.views()[0] if self.views() else None,
+                "Rename Failed",
+                f"A point named '{new_label}' already exists.")
+            return
+        self.push_undo()
+        # Update the points dict
+        self._points[new_label] = self._points.pop(old_label)
+        pt.set_label(new_label)
+        # Update any segments that reference the old label
+        for seg in self._segments:
+            if seg.p1 is pt or seg.p2 is pt:
+                seg.update()  # visual refresh
+        self.scene_changed.emit()
+
     def mousePressEvent(self, event):
         pos = event.scenePos()
 

@@ -151,13 +151,14 @@ for _rules in RULE_GROUPS.values():
 CONNECTIVES = ["\u2227", "\u00ac",
                "=", "\u2260", "<",
                "(", ")",
-               "\u25b3"]
+               "\u25b3", "\u221f"]
 CONNECTIVE_MAP = {
     "\u2227": " \u2227 ", "\u00ac": "\u00ac",
     "=": " = ", "\u2260": " \u2260 ",
     "<": " < ",
     "(": "(", ")": ")",
     "\u25b3": "\u25b3",
+    "\u221f": "right-angle",
 }
 
 PREDICATES = [
@@ -331,6 +332,7 @@ class FitchLineWidget(QFrame):
             "#fitch_formula:focus { background:" + _BG_WHITE + ";"
             " border:1px solid #5ca4e6; border-radius:2px; }")
         self._text_edit.textChanged.connect(self._on_text_changed)
+        self._text_edit.installEventFilter(self)
         lay.addWidget(self._text_edit, stretch=1)
 
         # Status indicator
@@ -485,12 +487,19 @@ class FitchLineWidget(QFrame):
     def text_field(self):
         return self._text_edit
 
+    def eventFilter(self, obj, event):
+        """Intercept clicks on the text field: if the line isn't selected
+        yet, select it first instead of entering edit mode."""
+        if obj is self._text_edit and event.type() == event.Type.MouseButtonPress:
+            if not self._is_selected:
+                self.selected.emit(self.step.line_number)
+                return True  # consume the click
+        return super().eventFilter(obj, event)
+
     def mousePressEvent(self, event):
         if self._is_selected:
-            # Second click on already-selected line → enter edit mode
             self._text_edit.setFocus()
         else:
-            # First click → select (red arrow), don't focus text
             self.selected.emit(self.step.line_number)
         super().mousePressEvent(event)
 
@@ -677,7 +686,7 @@ class AddLineBar(QFrame):
     def __init__(self, hover_text="+ Click to add a new line", parent=None):
         super().__init__(parent)
         self._hover_text = hover_text
-        self.setFixedHeight(32)
+        self.setFixedHeight(40)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setStyleSheet(
             "AddLineBar { background:transparent;"
@@ -1272,7 +1281,7 @@ class ProofPanel(QWidget):
 
     def get_journal_state(self) -> dict:
         """Return the full proof journal state for file serialization."""
-        return {
+        state = {
             "name": self._proof_name,
             "premises": list(self._premises),
             "goal": self._conclusion,
@@ -1282,6 +1291,14 @@ class ProofPanel(QWidget):
             },
             "steps": self.get_steps(),
         }
+        if self._lemmas:
+            state["lemmas"] = [
+                {"name": lem.name, "file_path": lem.file_path,
+                 "premises": lem.premises, "goal": lem.goal,
+                 "verified": lem._verified}
+                for lem in self._lemmas
+            ]
+        return state
 
     def restore_journal_state(self, state: dict):
         """Restore the full proof journal from a deserialized state dict."""
@@ -1305,6 +1322,36 @@ class ProofPanel(QWidget):
             self._steps.append(s)
         self._rebuild_lines()
         self._update_counts()
+        # Restore lemmas if saved
+        for lem_data in state.get("lemmas", []):
+            name = lem_data.get("name", "unnamed")
+            # Skip duplicates
+            if any(l.name == name for l in self._lemmas):
+                continue
+            lemma = LoadedLemma(
+                name,
+                lem_data.get("premises", []),
+                lem_data.get("goal", ""),
+                lem_data.get("file_path", ""),
+            )
+            lemma._verified = lem_data.get("verified", False)
+            lemma._verifying = False
+            self._lemmas.append(lemma)
+            # Re-verify if the lemma file still exists
+            if not lemma._verified and lemma.file_path and os.path.exists(lemma.file_path):
+                try:
+                    with open(lemma.file_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    if "proof" in data and "steps" in data.get("proof", {}):
+                        lemma._verifier_data = self._euclid_to_verifier(data)
+                    else:
+                        lemma._verifier_data = data
+                    lemma._verifying = True
+                    self._verify_lemma_bg(lemma)
+                except Exception:
+                    pass
+        if state.get("lemmas"):
+            self._rebuild_lemma_ui()
 
     # ===============================================================
     # LINE REBUILD

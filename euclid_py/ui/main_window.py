@@ -1388,6 +1388,14 @@ class _WorkspaceScreen(QWidget):
     def _save(self):
         """Prompt: Canvas Only (.euclid), Canvas + Proof (.euclid), Proof Only (.json), or Cancel."""
         msg = QMessageBox(self)
+        msg.setStyleSheet(
+            "QMessageBox { background-color: white; }"
+            " QLabel { color: #1a1a2e; background: transparent; }"
+            " QPushButton { background: white; color: #1a1a2e;"
+            "   border: 1px solid #c0c8d4; border-radius: 4px;"
+            "   padding: 6px 16px; font-size: 12px; }"
+            " QPushButton:hover { background: #f0f4ff;"
+            "   border-color: #2d70b3; }")
         msg.setWindowTitle("Save")
         msg.setText("What would you like to save?")
         msg.setInformativeText(
