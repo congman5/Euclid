@@ -1550,6 +1550,9 @@ class MainWindow(QMainWindow):
         self._stack.setCurrentWidget(self._workspace)
         self.statusBar().showMessage("Ready — select a proposition or start a blank proof.")
 
+        # Auto-load a blank proof so the canvas is ready immediately
+        QTimer.singleShot(0, self.open_blank)
+
     def _apply_initial_geometry(self):
         """Size the window to 85% of the available screen while keeping
         the target aspect ratio, then centre it on the primary display."""
