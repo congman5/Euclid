@@ -171,8 +171,8 @@ PREDICATES = [
     ("between(a,b,c)", "between(,,)"),
     ("same-side(a,b,L)", "same-side(,,)"),
     # Constructions (§3.3)
-    ("let L = line(a,b)", "let L be line(,)"),
-    ("let α = circle(a,b)", "let α be circle(,)"),
+    ("let-line", "on(,), on(,)"),
+    ("let-circle", "center(,), on(,)"),
     ("intersects(L,α)", "intersects(,)"),
     # Equality / inequality
     ("a≠b", "¬( = )"), ("a=b", " = "),
@@ -1010,8 +1010,8 @@ class ProofPanel(QWidget):
             ("diff-side(a,b,L)",     "diff-side(,,)"),
             ("intersects(L,\u03b1)", "intersects(,)"),
             ("\u00acintersects(L,\u03b1)", "\u00acintersects(,)"),
-            ("let L = line(a,b)",    "let L be line(,)"),
-            ("let \u03b1 = circle(a,b)", "let \u03b1 be circle(,)"),
+            ("let-line",             "on(,), on(,)"),
+            ("let-circle",           "center(,), on(,)"),
         ]
         _e_flow = _FlowLayout(None, h_spacing=4, v_spacing=4)
         for label, tmpl in _e_buttons:
