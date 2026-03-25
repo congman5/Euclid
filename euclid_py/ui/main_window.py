@@ -1157,7 +1157,8 @@ class _OpenFileDialog(QDialog):
     # ── Drag & drop reorder persistence ────────────────────────────────
 
     def _on_rows_moved(self, *_args):
-        """After the user reorders items via drag-drop, persist the order."""
+        """After the user reorders items via drag-drop, persist the order
+        and reload the folder to fix visual glitches from scrolled drags."""
         if not self._active_path or not os.path.isdir(self._active_path):
             return
         order = []
@@ -1167,6 +1168,8 @@ class _OpenFileDialog(QDialog):
             if path:
                 order.append(os.path.basename(path))
         self._save_custom_order(self._active_path, order)
+        # Reload to fix visual position glitches after scrolled drag
+        QTimer.singleShot(50, lambda: self._load_folder(self._active_path))
 
     # ── Context menu (right-click) ─────────────────────────────────────
 
