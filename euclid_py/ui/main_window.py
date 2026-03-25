@@ -101,7 +101,9 @@ import unicodedata as _ud
 
 def _clean_emoji(text: str) -> str:
     """Strip invisible variation selectors / ZWJ / formatting chars that
-    render as boxes in Qt, keeping just the visible emoji glyph."""
+    render as boxes in Qt, keeping just the visible emoji glyph.
+    If multiple visible glyphs remain, keep only the last one (the user's
+    most recent pick)."""
     # Remove variation selectors (U+FE00–U+FE0F), ZWJ (U+200D),
     # combining enclosing keycaps (U+20E3), and other invisible format chars
     # that the Windows emoji picker appends.
@@ -113,7 +115,14 @@ def _clean_emoji(text: str) -> str:
         if cat in ("Mn", "Cf") or 0xFE00 <= ord(ch) <= 0xFE0F:
             continue
         cleaned.append(ch)
-    return "".join(cleaned)
+    # If multiple visible glyphs remain, keep only the last one
+    # (the user's most recent pick). Use list() which handles surrogates.
+    result = "".join(cleaned)
+    codepoints = list(result)
+    if len(codepoints) > 1:
+        # Keep the last codepoint (the emoji the user just selected)
+        result = codepoints[-1]
+    return result or text[:1]
 
 
 def _natural_sort_key(filename: str):
@@ -590,6 +599,7 @@ class _OpenFileDialog(QDialog):
         # Auto-open the Windows emoji picker after the dialog appears
         def _trigger_emoji_picker():
             icon_input.setFocus()
+            icon_input.selectAll()  # So new emoji replaces the old one
             try:
                 import subprocess
                 # Simulate Win+. via PowerShell to open the emoji picker
