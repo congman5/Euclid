@@ -168,12 +168,12 @@ PREDICATES = [
     ("center(a,α)", "center(,)"),
     ("inside(a,α)", "inside(,)"),
     # Betweenness & collinearity (§3.4)
-    ("between", "between(,,)"),
-    ("same-side", "same-side(,,)"),
+    ("between(a,b,c)", "between(,,)"),
+    ("same-side(a,b,L)", "same-side(,,)"),
     # Constructions (§3.3)
-    ("let L=line", "let L be line(,)"),
-    ("let α=circle", "let α be circle(,)"),
-    ("intersects", "intersects(,)"),
+    ("let L = line(a,b)", "let L be line(,)"),
+    ("let α = circle(a,b)", "let α be circle(,)"),
+    ("intersects(L,α)", "intersects(,)"),
     # Equality / inequality
     ("a≠b", "¬( = )"), ("a=b", " = "),
     # Metric predicates (§3.5)
@@ -1001,17 +1001,17 @@ class ProofPanel(QWidget):
 
         # ── System E predicate buttons ──
         _e_buttons = [
-            ("on(\u00b7,line)",           "on(,)"),
-            ("on(\u00b7,circle)",         "on(,)"),
-            ("center(\u00b7,\u25cb)",          "center(,)"),
-            ("inside(\u00b7,\u25cb)",          "inside(,)"),
-            ("between(\u00b7,\u00b7,\u00b7)",       "between(,,)"),
-            ("same-side(\u00b7,\u00b7,L)",     "same-side(,,)"),
-            ("diff-side(\u00b7,\u00b7,L)",     "diff-side(,,)"),
-            ("intersects(L,\u25cb)",      "intersects(,)"),
-            ("\u00acintersects",          "\u00acintersects(,)"),
-            ("let line(\u00b7,\u00b7)",        "let L be line(,)"),
-            ("let circle(\u00b7,\u00b7)",      "let \u03b1 be circle(,)"),
+            ("on(a,L)",              "on(,)"),
+            ("on(a,\u03b1)",         "on(,)"),
+            ("center(a,\u03b1)",     "center(,)"),
+            ("inside(a,\u03b1)",     "inside(,)"),
+            ("between(a,b,c)",       "between(,,)"),
+            ("same-side(a,b,L)",     "same-side(,,)"),
+            ("diff-side(a,b,L)",     "diff-side(,,)"),
+            ("intersects(L,\u03b1)", "intersects(,)"),
+            ("\u00acintersects(L,\u03b1)", "\u00acintersects(,)"),
+            ("let L = line(a,b)",    "let L be line(,)"),
+            ("let \u03b1 = circle(a,b)", "let \u03b1 be circle(,)"),
         ]
         _e_flow = _FlowLayout(None, h_spacing=4, v_spacing=4)
         for label, tmpl in _e_buttons:
