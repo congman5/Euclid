@@ -370,12 +370,13 @@ class _DropSidebar(QListWidget):
         # Drop from file list onto empty space / non-folder entry
         # → add as Quick Access bookmark
         if source is not None and source is not self:
-            paths = getattr(source, 'dragged_paths', [])
+            paths = list(getattr(source, 'dragged_paths', []))
             if not paths:
                 for sel in source.selectedItems():
                     p = sel.data(Qt.ItemDataRole.UserRole)
                     if p:
                         paths.append(p)
+            print(f"[DEBUG] addToQuickAccess paths={paths}")
             for src_path in paths:
                 self.addToQuickAccess.emit(src_path)
             event.acceptProposedAction()
@@ -1539,15 +1540,25 @@ class _OpenFileDialog(QDialog):
             return
 
         # Move the file to the project root so it leaves the folder
+        moved = False
+        print(f"[DEBUG] _handle_add_to_quick_access file_path={file_path}")
+        print(f"[DEBUG]   isfile={os.path.isfile(file_path)} active={self._active_path}")
         if os.path.isfile(file_path):
             from ..resources import resource_path
             root = resource_path("")
             parent_dir = os.path.dirname(file_path)
+            print(f"[DEBUG]   parent={parent_dir} root={root} same={parent_dir == root}")
             if parent_dir != root:
                 dest = os.path.join(root, os.path.basename(file_path))
+                print(f"[DEBUG]   dest={dest} exists={os.path.exists(dest)}")
                 if not os.path.exists(dest):
                     import shutil
                     shutil.move(file_path, dest)
+                    file_path = dest
+                    moved = True
+                    print(f"[DEBUG]   MOVED to {dest}")
+                else:
+                    # Destination already exists — just bookmark, don't move
                     file_path = dest
 
         # Don't add duplicates
@@ -1566,8 +1577,11 @@ class _OpenFileDialog(QDialog):
         })
         self._rebuild_sidebar()
         self._save_sidebar_bookmarks()
-        # Reload the file list to reflect the move
-        QTimer.singleShot(0, lambda: self._load_folder(self._active_path))
+        # Force-reload the file list so the moved file disappears.
+        # Use a short delay so Qt finishes its internal drag bookkeeping
+        # before we rebuild the list.
+        active = self._active_path
+        QTimer.singleShot(50, lambda: self._load_folder(active))
 
     # ── Rename ─────────────────────────────────────────────────────────
 
