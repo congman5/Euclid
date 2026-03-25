@@ -586,6 +586,13 @@ class _OpenFileDialog(QDialog):
         btn_new_sub.clicked.connect(self._create_subfolder)
         btn_row.addWidget(btn_new_sub)
 
+        btn_add_to_folder = QPushButton("+ Add File")
+        btn_add_to_folder.setStyleSheet(self._SM_BTN)
+        btn_add_to_folder.setToolTip(
+            "Import a .euclid file into the current folder")
+        btn_add_to_folder.clicked.connect(self._add_file_to_folder)
+        btn_row.addWidget(btn_add_to_folder)
+
         btn_delete = QPushButton("Delete")
         btn_delete.setStyleSheet(
             "QPushButton { padding: 7px 14px; border: 1px solid #e0b0b0;"
@@ -1332,6 +1339,39 @@ class _OpenFileDialog(QDialog):
             mb.setStyleSheet(self._white_msgbox_style())
             mb.exec()
             return
+        self._load_folder(self._active_path)
+
+    def _add_file_to_folder(self):
+        """Import a .euclid file (copy) into the currently viewed folder."""
+        if not self._active_path or not os.path.isdir(self._active_path):
+            return
+        paths, _ = QFileDialog.getOpenFileNames(
+            self, "Add File to Folder", "",
+            "Euclid Files (*.euclid);;All Files (*)")
+        if not paths:
+            return
+        import shutil
+        for src in paths:
+            fname = os.path.basename(src)
+            dest = os.path.join(self._active_path, fname)
+            if os.path.abspath(src) == os.path.abspath(dest):
+                continue  # already in this folder
+            if os.path.exists(dest):
+                reply = QMessageBox(self)
+                reply.setWindowTitle("File Exists")
+                reply.setText(
+                    f'"{fname}" already exists here.\nOverwrite it?')
+                reply.setStandardButtons(
+                    QMessageBox.StandardButton.Yes
+                    | QMessageBox.StandardButton.No)
+                reply.setDefaultButton(QMessageBox.StandardButton.No)
+                reply.setStyleSheet(self._white_msgbox_style())
+                if reply.exec() != QMessageBox.StandardButton.Yes:
+                    continue
+            try:
+                shutil.copy2(src, dest)
+            except OSError:
+                pass
         self._load_folder(self._active_path)
 
     # ── Move file to folder ────────────────────────────────────────────
