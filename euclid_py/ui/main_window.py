@@ -270,13 +270,35 @@ class _DropSidebar(QListWidget):
         else:
             super().dragEnterEvent(event)
 
+    def _dragged_is_file(self):
+        """Check if the currently dragged sidebar item is a file (not folder)."""
+        item = self.currentItem()
+        if not item:
+            return False
+        sb_idx = item.data(self._ROLE_SB_INDEX)
+        if sb_idx is None:
+            return False
+        # A file entry is one that is NOT a folder
+        if self._is_folder_cb:
+            return not self._is_folder_cb(sb_idx)
+        return False
+
     def dragMoveEvent(self, event):
         item = self.itemAt(event.position().toPoint())
         old = self._drop_target_item
         dragged = self.currentItem()
+        source = event.source()
 
-        # Only highlight folders, and don't highlight if dragging over itself
-        if item and item is not dragged and self._is_folder_entry(item):
+        # Only show folder-drop highlight when dragging a file onto a folder
+        # (not when reordering sidebar entries)
+        show_folder_drop = (
+            item
+            and item is not dragged
+            and self._is_folder_entry(item)
+            and (source is not self or self._dragged_is_file())
+        )
+
+        if show_folder_drop:
             if old and old is not item:
                 old.setBackground(QColor("transparent"))
             item.setBackground(QColor("#dce8f7"))
@@ -295,10 +317,11 @@ class _DropSidebar(QListWidget):
         target_item = self.itemAt(event.position().toPoint())
         source = event.source()
 
+        # Only handle file-to-folder drops, not folder reordering
         if target_item and self._is_folder_entry(target_item):
             target_sb_idx = target_item.data(self._ROLE_SB_INDEX)
 
-            if source is self:
+            if source is self and self._dragged_is_file():
                 # Internal sidebar drag: file entry dropped onto folder entry
                 for sel in self.selectedItems():
                     src_sb_idx = sel.data(self._ROLE_SB_INDEX)
@@ -308,7 +331,7 @@ class _DropSidebar(QListWidget):
                 event.acceptProposedAction()
                 self._drop_target_item = None
                 return
-            elif source is not None:
+            elif source is not None and source is not self:
                 # Drop from file list onto sidebar folder
                 for sel in source.selectedItems():
                     src_path = sel.data(Qt.ItemDataRole.UserRole)
@@ -320,7 +343,7 @@ class _DropSidebar(QListWidget):
                 self._drop_target_item = None
                 return
 
-        # Normal internal reorder
+        # Normal internal reorder (folders and entries repositioning)
         super().dropEvent(event)
         self._drop_target_item = None
 
@@ -1128,23 +1151,52 @@ class _OpenFileDialog(QDialog):
         if not is_folder and self._active_path:
             move_menu = menu.addMenu("Move to\u2026")
             move_menu.setStyleSheet(self._CTX_STYLE)
-            # List sibling folders
-            parent = self._active_path
+
+            # "Move to Parent Folder" — when inside a subfolder
+            parent_dir = os.path.dirname(self._active_path)
+            if (parent_dir and parent_dir != self._active_path
+                    and os.path.isdir(parent_dir)):
+                act_parent = move_menu.addAction(
+                    f"\u2190  Parent ({os.path.basename(parent_dir)})")
+                act_parent.triggered.connect(
+                    lambda checked, t=parent_dir, p=path:
+                        self._move_to_folder(p, t))
+                move_menu.addSeparator()
+
+            # Sibling subfolders within current folder
             try:
                 subdirs = sorted(
-                    d for d in os.listdir(parent)
-                    if os.path.isdir(os.path.join(parent, d))
+                    d for d in os.listdir(self._active_path)
+                    if os.path.isdir(os.path.join(self._active_path, d))
                     and not d.startswith("."))
                 for sd in subdirs:
-                    target = os.path.join(parent, sd)
+                    target = os.path.join(self._active_path, sd)
                     act = move_menu.addAction(f"\u25B8  {sd}")
                     act.triggered.connect(
                         lambda checked, t=target, p=path:
                             self._move_to_folder(p, t))
             except OSError:
                 pass
+
+            # Sidebar folders (Quick Access)
+            sb_folders = [
+                e for e in self._sb_entries
+                if os.path.isdir(e.get("path", ""))
+                and e["path"] != self._active_path
+                and e["path"] != parent_dir
+            ]
+            if sb_folders:
+                move_menu.addSeparator()
+                for entry in sb_folders:
+                    icon = entry.get("icon", "\u25B8")
+                    act = move_menu.addAction(
+                        f"{icon}  {entry['name']}")
+                    act.triggered.connect(
+                        lambda checked, t=entry["path"], p=path:
+                            self._move_to_folder(p, t))
+
             if not move_menu.actions():
-                move_menu.addAction("(no subfolders)").setEnabled(False)
+                move_menu.addAction("(no folders available)").setEnabled(False)
             menu.addSeparator()
 
         act_rename = menu.addAction("Rename")
