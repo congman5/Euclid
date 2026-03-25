@@ -332,6 +332,7 @@ class _OpenFileDialog(QDialog):
         self._file_list.setDefaultDropAction(Qt.DropAction.MoveAction)
         self._file_list.setSelectionMode(
             QListWidget.SelectionMode.ExtendedSelection)
+        self._file_list.setIconSize(QSize(0, 0))  # Hide empty icon area
         self._file_list.setStyleSheet("""
             QListWidget {
                 border: 1px solid #e5e7eb;
@@ -353,6 +354,21 @@ class _OpenFileDialog(QDialog):
             QListWidget::item:selected {
                 background: #dce8f7;
                 color: #2d70b3;
+            }
+            QListWidget::indicator {
+                width: 0px;
+                height: 0px;
+                border: none;
+                background: transparent;
+                margin: 0px;
+                padding: 0px;
+            }
+            QListWidget::indicator:checked,
+            QListWidget::indicator:unchecked {
+                width: 0px;
+                height: 0px;
+                border: none;
+                image: none;
             }
         """)
         self._file_list.itemDoubleClicked.connect(self._on_double_click)
@@ -791,11 +807,16 @@ class _OpenFileDialog(QDialog):
             self._file_list.addItem(item)
             return
 
+        _drag_flags = (Qt.ItemFlag.ItemIsSelectable
+                       | Qt.ItemFlag.ItemIsEnabled
+                       | Qt.ItemFlag.ItemIsDragEnabled
+                       | Qt.ItemFlag.ItemIsDropEnabled)
         for entry_name in all_entries:
             full = os.path.join(folder, entry_name)
             if os.path.isdir(full):
                 display = f"\u25B8  {entry_name}"
                 item = QListWidgetItem(display)
+                item.setFlags(_drag_flags)
                 item.setData(self._ROLE_PATH, full)
                 item.setData(self._ROLE_IS_FOLDER, True)
                 f = QFont("Segoe UI", 13, QFont.Weight.DemiBold)
@@ -805,6 +826,7 @@ class _OpenFileDialog(QDialog):
             elif entry_name.endswith(".euclid"):
                 display = entry_name.replace(".euclid", "")
                 item = QListWidgetItem(display)
+                item.setFlags(_drag_flags)
                 item.setData(self._ROLE_PATH, full)
                 item.setData(self._ROLE_IS_FOLDER, False)
                 self._file_list.addItem(item)
