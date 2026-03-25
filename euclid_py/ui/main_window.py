@@ -376,7 +376,6 @@ class _DropSidebar(QListWidget):
                     p = sel.data(Qt.ItemDataRole.UserRole)
                     if p:
                         paths.append(p)
-            print(f"[DEBUG] addToQuickAccess paths={paths}")
             for src_path in paths:
                 self.addToQuickAccess.emit(src_path)
             event.acceptProposedAction()
@@ -1540,26 +1539,19 @@ class _OpenFileDialog(QDialog):
             return
 
         # Move the file to the project root so it leaves the folder
-        moved = False
-        print(f"[DEBUG] _handle_add_to_quick_access file_path={file_path}")
-        print(f"[DEBUG]   isfile={os.path.isfile(file_path)} active={self._active_path}")
+        import shutil
         if os.path.isfile(file_path):
             from ..resources import resource_path
             root = resource_path("")
             parent_dir = os.path.dirname(file_path)
-            print(f"[DEBUG]   parent={parent_dir} root={root} same={parent_dir == root}")
             if parent_dir != root:
                 dest = os.path.join(root, os.path.basename(file_path))
-                print(f"[DEBUG]   dest={dest} exists={os.path.exists(dest)}")
-                if not os.path.exists(dest):
-                    import shutil
-                    shutil.move(file_path, dest)
-                    file_path = dest
-                    moved = True
-                    print(f"[DEBUG]   MOVED to {dest}")
+                if os.path.exists(dest):
+                    # Dest already exists — remove the source (it's a dup)
+                    os.remove(file_path)
                 else:
-                    # Destination already exists — just bookmark, don't move
-                    file_path = dest
+                    shutil.move(file_path, dest)
+                file_path = dest
 
         # Don't add duplicates
         for entry in self._sb_entries:
