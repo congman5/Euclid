@@ -150,7 +150,7 @@
       {
         "lineNumber": 5,
         "text": "¬(d = a)",
-        "justification": "Diagrammatic",
+        "justification": "Betweenness 1b",
         "dependencies": [
           4
         ],
@@ -257,7 +257,7 @@
       {
         "lineNumber": 15,
         "text": "¬(e = d)",
-        "justification": "Diagrammatic",
+        "justification": "Generality 3",
         "dependencies": [
           13
         ],
@@ -343,7 +343,7 @@
       {
         "lineNumber": 23,
         "text": "¬(on(f, L))",
-        "justification": "Diagrammatic",
+        "justification": "Generality 4",
         "dependencies": [
           22,
           21
@@ -406,7 +406,7 @@
       {
         "lineNumber": 29,
         "text": "af = af",
-        "justification": "Metric",
+        "justification": "CN1 — Transitivity",
         "dependencies": [],
         "depth": 0,
         "status": "?"
@@ -448,7 +448,7 @@
       {
         "lineNumber": 33,
         "text": "¬(f = a)",
-        "justification": "Diagrammatic",
+        "justification": "Generality 3",
         "dependencies": [
           23,
           1

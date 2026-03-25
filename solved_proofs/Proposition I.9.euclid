@@ -205,7 +205,7 @@
       {
         "lineNumber": 14,
         "text": "ad = ab",
-        "justification": "Transfer",
+        "justification": "Segment transfer 3b",
         "dependencies": [
           10,
           12
@@ -216,7 +216,7 @@
       {
         "lineNumber": 15,
         "text": "af = ab",
-        "justification": "Transfer",
+        "justification": "Segment transfer 3b",
         "dependencies": [
           10,
           13
@@ -227,7 +227,7 @@
       {
         "lineNumber": 16,
         "text": "ad = af",
-        "justification": "Metric",
+        "justification": "CN1 — Transitivity",
         "dependencies": [
           14,
           15
@@ -248,7 +248,7 @@
       {
         "lineNumber": 18,
         "text": "de = fe",
-        "justification": "Metric",
+        "justification": "CN1 — Transitivity",
         "dependencies": [
           17
         ],
@@ -258,7 +258,7 @@
       {
         "lineNumber": 19,
         "text": "ae = ae",
-        "justification": "Metric",
+        "justification": "CN4 — Reflexivity",
         "dependencies": [],
         "depth": 0,
         "status": "?"
@@ -278,7 +278,7 @@
       {
         "lineNumber": 21,
         "text": "¬(e = a)",
-        "justification": "Diagrammatic",
+        "justification": "Generality 3",
         "dependencies": [],
         "depth": 0,
         "status": "?"
@@ -296,7 +296,7 @@
       {
         "lineNumber": 23,
         "text": "∠dae = ∠cae",
-        "justification": "Transfer",
+        "justification": "Angle transfer 4",
         "dependencies": [],
         "depth": 0,
         "status": "?"
@@ -304,7 +304,7 @@
       {
         "lineNumber": 24,
         "text": "∠fae = ∠bae",
-        "justification": "Transfer",
+        "justification": "Angle transfer 4",
         "dependencies": [],
         "depth": 0,
         "status": "?"
@@ -312,7 +312,7 @@
       {
         "lineNumber": 25,
         "text": "∠bae = ∠cae",
-        "justification": "Metric",
+        "justification": "CN1 — Transitivity",
         "dependencies": [
           20,
           23,
@@ -324,7 +324,7 @@
       {
         "lineNumber": 26,
         "text": "same-side(e, c, M)",
-        "justification": "Diagrammatic",
+        "justification": "Same-side 4",
         "dependencies": [],
         "depth": 0,
         "status": "?"
@@ -332,7 +332,7 @@
       {
         "lineNumber": 27,
         "text": "same-side(e, b, N)",
-        "justification": "Diagrammatic",
+        "justification": "Same-side 4",
         "dependencies": [],
         "depth": 0,
         "status": "?"

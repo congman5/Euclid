@@ -138,7 +138,7 @@
       {
         "lineNumber": 5,
         "text": "¬(p = a)",
-        "justification": "Diagrammatic",
+        "justification": "Generality 4",
         "dependencies": [
           1,
           4
@@ -170,7 +170,7 @@
       {
         "lineNumber": 8,
         "text": "¬(p = d)",
-        "justification": "Diagrammatic",
+        "justification": "Betweenness 1c",
         "dependencies": [
           7
         ],
@@ -180,7 +180,7 @@
       {
         "lineNumber": 9,
         "text": "¬(same-side(p, d, L))",
-        "justification": "Diagrammatic",
+        "justification": "Pasch 3",
         "dependencies": [
           7,
           1
@@ -191,7 +191,7 @@
       {
         "lineNumber": 10,
         "text": "¬(on(d, L))",
-        "justification": "Diagrammatic",
+        "justification": "Same-side 3",
         "dependencies": [
           6,
           7,
@@ -291,7 +291,7 @@
       {
         "lineNumber": 19,
         "text": "on(h, L)",
-        "justification": "Diagrammatic",
+        "justification": "Betweenness 2",
         "dependencies": [
           18,
           14
@@ -302,7 +302,7 @@
       {
         "lineNumber": 20,
         "text": "ph = ph",
-        "justification": "Metric",
+        "justification": "CN1 — Transitivity",
         "dependencies": [],
         "depth": 0,
         "status": "?"
@@ -344,7 +344,7 @@
       {
         "lineNumber": 24,
         "text": "¬(h = p)",
-        "justification": "Diagrammatic",
+        "justification": "Generality 3",
         "dependencies": [
           4,
           19
@@ -355,7 +355,7 @@
       {
         "lineNumber": 25,
         "text": "¬(e = h)",
-        "justification": "Diagrammatic",
+        "justification": "Generality 3",
         "dependencies": [
           18
         ],

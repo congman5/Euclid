@@ -110,7 +110,7 @@
       {
         "lineNumber": 7,
         "text": "∠abd + ∠dbc = right-angle + right-angle",
-        "justification": "Metric",
+        "justification": "Angle transfer 6",
         "dependencies": [
           6,
           3

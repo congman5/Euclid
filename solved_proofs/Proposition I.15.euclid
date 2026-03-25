@@ -127,7 +127,7 @@
       {
         "lineNumber": 12,
         "text": "∠aec = ∠bed",
-        "justification": "Metric",
+        "justification": "CN3 — Subtraction",
         "dependencies": [
           10,
           11

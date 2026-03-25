@@ -346,7 +346,7 @@
       {
         "lineNumber": 26,
         "text": "¬(e = c)",
-        "justification": "Diagrammatic",
+        "justification": "Generality 3",
         "dependencies": [],
         "depth": 1,
         "status": "?"
@@ -364,7 +364,7 @@
       {
         "lineNumber": 28,
         "text": "¬(same-side(a, b, K))",
-        "justification": "Diagrammatic",
+        "justification": "Pasch 3",
         "dependencies": [],
         "depth": 1,
         "status": "?"
@@ -372,7 +372,7 @@
       {
         "lineNumber": 29,
         "text": "intersects(K, L)",
-        "justification": "Diagrammatic",
+        "justification": "Intersection 1",
         "dependencies": [],
         "depth": 1,
         "status": "?"
@@ -438,7 +438,7 @@
       {
         "lineNumber": 36,
         "text": "between(a, d, b)",
-        "justification": "Diagrammatic",
+        "justification": "Betweenness 6",
         "dependencies": [],
         "depth": 1,
         "status": "?"
