@@ -1532,9 +1532,29 @@ class _OpenFileDialog(QDialog):
                 pass
 
     def _handle_add_to_quick_access(self, file_path: str):
-        """Add a file or folder from the file list as a Quick Access bookmark."""
+        """Move a file out of its subfolder (if applicable) and add as
+        a Quick Access bookmark."""
         if not file_path:
             return
+
+        # If the file is inside a subfolder of a root sidebar folder,
+        # move it to the parent folder first so it's "taken out"
+        parent_dir = os.path.dirname(file_path)
+        if os.path.isfile(file_path) and self._active_path:
+            # Check if we're inside a subfolder (not a root sidebar folder)
+            for entry in self._sb_entries:
+                ep = entry.get("path", "")
+                if ep and parent_dir != ep and parent_dir.startswith(ep + os.sep):
+                    # We're deeper than a root sidebar folder — move to parent
+                    dest = os.path.join(
+                        os.path.dirname(parent_dir),
+                        os.path.basename(file_path))
+                    if not os.path.exists(dest):
+                        import shutil
+                        shutil.move(file_path, dest)
+                        file_path = dest
+                    break
+
         # Don't add duplicates
         for entry in self._sb_entries:
             if entry["path"] == file_path:
@@ -1551,8 +1571,7 @@ class _OpenFileDialog(QDialog):
         })
         self._rebuild_sidebar()
         self._save_sidebar_bookmarks()
-        # Reload the file list — Qt's InternalMove removes the dragged item
-        # from the source list, so we need to restore it
+        # Reload the file list to reflect the move
         QTimer.singleShot(0, lambda: self._load_folder(self._active_path))
 
     # ── Rename ─────────────────────────────────────────────────────────
