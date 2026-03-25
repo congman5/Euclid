@@ -151,7 +151,7 @@ for _rules in RULE_GROUPS.values():
 CONNECTIVES = ["\u2227", "\u00ac",
                "=", "\u2260", "<",
                "(", ")",
-               "\u25b3", "\u221f"]
+               "\u25b3", "\u221f", "\u2220"]
 CONNECTIVE_MAP = {
     "\u2227": " \u2227 ", "\u00ac": "\u00ac",
     "=": " = ", "\u2260": " \u2260 ",
@@ -159,6 +159,7 @@ CONNECTIVE_MAP = {
     "(": "(", ")": ")",
     "\u25b3": "\u25b3",
     "\u221f": "right-angle",
+    "\u2220": "\u2220",
 }
 
 PREDICATES = [
@@ -1009,13 +1010,8 @@ class ProofPanel(QWidget):
             ("diff-side(\u00b7,\u00b7,L)",     "diff-side(,,)"),
             ("intersects(L,\u25cb)",      "intersects(,)"),
             ("\u00acintersects",          "\u00acintersects(,)"),
-            ("\u221f",                    "\u221f"),
             ("let line(\u00b7,\u00b7)",        "let L be line(,)"),
             ("let circle(\u00b7,\u00b7)",      "let \u03b1 be circle(,)"),
-            ("\u2220 = \u2220",               "\u2220 = \u2220"),
-            ("\u2220 < \u2220",               "\u2220 < \u2220"),
-            ("seg + seg = seg",      " + = "),
-            ("\u25b3 = \u25b3",               "\u25b3 = \u25b3"),
         ]
         _e_flow = _FlowLayout(None, h_spacing=4, v_spacing=4)
         for label, tmpl in _e_buttons:
