@@ -32,7 +32,7 @@ from PyQt6.QtGui import (
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
     QLineEdit, QComboBox, QListWidget, QListWidgetItem,
-    QFrame, QScrollArea, QMenu, QFileDialog,
+    QFrame, QScrollArea, QMenu, QFileDialog, QDialog,
     QSizePolicy, QApplication, QAbstractItemView,
 )
 
@@ -87,36 +87,9 @@ def _build_rule_groups():
     from verifier.unified_checker import get_available_rules
     rules = get_available_rules()
 
-    # Rules hidden from the dropdown — individual diagrammatic sub-axioms,
-    # rarely-used metric rules, and transfer axiom variants that are
-    # subsumed by more common ones.
-    _HIDDEN_PREFIXES = (
-        "Betweenness 2", "Betweenness 3", "Betweenness 4",
-        "Betweenness 5", "Betweenness 7",
-        "Same-side ", "Pasch ", "Triple incidence ",
-        "Circle 2", "Circle 3", "Circle 4",
-        "Intersection 1", "Intersection 2a", "Intersection 2b",
-        "Intersection 2d", "Intersection 3", "Intersection 4",
-        "Generality 2", "Generality 4", "Generality 5", "Generality 6",
-    )
-    _HIDDEN_EXACT = {
-        "M2 — Non-negative", "M5 — Angle bounds",
-        "M6 — Degenerate area", "M7 — Non-negative area",
-        "M9 — Congruence → area", "CN2 — Addition",
-        "Order transitivity", "Addition preserves order",
-        "Segment transfer 2",
-        "Angle transfer 1a", "Angle transfer 1b", "Angle transfer 1c",
-        "Angle transfer 2b", "Angle transfer 2c",
-        "Angle transfer 3b", "Angle transfer 5a", "Angle transfer 5b",
-        "Area transfer 1b", "Area transfer 1c",
-    }
-
+    # Show ALL axioms in the dropdown — users must pick specific names.
+    # Generic "Diagrammatic" / "Metric" / "Transfer" are no longer valid.
     def _visible(name):
-        if name in _HIDDEN_EXACT:
-            return False
-        for prefix in _HIDDEN_PREFIXES:
-            if name.startswith(prefix):
-                return False
         return True
 
     _CAT_LABELS = OrderedDict([
@@ -274,6 +247,123 @@ _BORDER_LINE = "#dcdee3"
 _TEXT_DARK = "#1a1a2e"
 _TEXT_GREEN = "#2e8b57"
 _SEL_BG = "#dce8f7"
+
+
+# ===================================================================
+# RULE SEARCH DIALOG — searchable picker for justification rules
+# ===================================================================
+
+class _RuleSearchDialog(QDialog):
+    """A compact popup with a search box and categorised rule list.
+
+    Typing in the search box instantly filters the list.  Pressing Enter
+    or double-clicking selects the rule and closes the dialog.
+    """
+
+    _STYLE = (
+        "QDialog { background: white; border: 1px solid #c0c8d4; }"
+        " QLineEdit { background: white; color: #1a1a2e;"
+        "   border: 1px solid #c0c8d4; border-radius: 4px;"
+        "   padding: 4px 8px; font-size: 12px; }"
+        " QListWidget { background: white; color: #1a1a2e;"
+        "   border: none; font-size: 12px; }"
+        " QListWidget::item { padding: 3px 8px; color: #1a1a2e; }"
+        " QListWidget::item:selected { background: #e0ebff; color: #1a1a2e; }"
+        " QLabel { color: #888; font-size: 11px; background: transparent; }"
+    )
+
+    def __init__(self, entries: list, parent=None):
+        super().__init__(parent, Qt.WindowType.Popup)
+        self.setStyleSheet(self._STYLE)
+        self.setFixedSize(320, 400)
+        self.selected_rule: str | None = None
+        self._entries = entries  # [(display, rule_name, category), ...]
+
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(6, 6, 6, 6)
+        lay.setSpacing(4)
+
+        # Search box
+        self._search = QLineEdit()
+        self._search.setPlaceholderText("Search rules\u2026")
+        self._search.textChanged.connect(self._filter)
+        lay.addWidget(self._search)
+
+        # Results list
+        self._list = QListWidget()
+        self._list.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._list.itemDoubleClicked.connect(self._accept_item)
+        lay.addWidget(self._list)
+
+        # Populate with all entries, grouped by category
+        self._populate("")
+
+        self._search.setFocus()
+
+    def _populate(self, query: str):
+        """Rebuild the list, filtered by *query*."""
+        self._list.clear()
+        q = query.strip().lower()
+        current_cat = None
+
+        for display, rule_name, cat in self._entries:
+            # Filter: match against display text or category
+            if q and q not in display.lower() and q not in cat.lower():
+                continue
+
+            # Show category header when it changes
+            if cat != current_cat:
+                current_cat = cat
+                header = QListWidgetItem(f"── {cat} ──")
+                header.setFlags(Qt.ItemFlag.NoItemFlags)
+                header.setForeground(QColor("#888"))
+                f = header.font()
+                f.setBold(True)
+                f.setPointSize(9)
+                header.setFont(f)
+                self._list.addItem(header)
+
+            item = QListWidgetItem(f"  {display}")
+            item.setData(Qt.ItemDataRole.UserRole, rule_name)
+            self._list.addItem(item)
+
+    def _filter(self, text: str):
+        self._populate(text)
+
+    def _accept_item(self, item: QListWidgetItem):
+        rule = item.data(Qt.ItemDataRole.UserRole)
+        if rule:
+            self.selected_rule = rule
+            self.accept()
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            item = self._list.currentItem()
+            if item:
+                self._accept_item(item)
+                return
+        elif event.key() == Qt.Key.Key_Escape:
+            self.reject()
+            return
+        elif event.key() == Qt.Key.Key_Down:
+            # Move focus from search to list
+            if self._search.hasFocus():
+                self._list.setFocus()
+                if self._list.count() > 0:
+                    # Select first selectable item (skip headers)
+                    for i in range(self._list.count()):
+                        item = self._list.item(i)
+                        if item.flags() & Qt.ItemFlag.ItemIsSelectable:
+                            self._list.setCurrentRow(i)
+                            break
+                return
+        elif event.key() == Qt.Key.Key_Up:
+            # Move focus back to search if at top of list
+            if self._list.hasFocus() and self._list.currentRow() <= 1:
+                self._search.setFocus()
+                return
+        super().keyPressEvent(event)
 
 
 # ===================================================================
@@ -555,34 +645,25 @@ class FitchLineWidget(QFrame):
         self.refs_changed.emit(self.step.line_number)
 
     def _show_rule_menu(self):
-        menu = QMenu(self)
-        menu.setStyleSheet(
-            "QMenu { background:#fff; border:1px solid #ccc;"
-            " padding:4px; font-size:12px; color:#1a1a2e; }"
-            "QMenu::item { padding:4px 16px; color:#1a1a2e; }"
-            "QMenu::item:selected { background:#e0ebff; color:#1a1a2e; }")
+        """Show a searchable rule picker popup."""
+        # Build flat list of (display_text, rule_name, category) entries
+        entries: list[tuple[str, str, str]] = []
         for grp, rules in RULE_GROUPS.items():
-            sub = menu.addMenu(grp)
             for r in rules:
-                act = sub.addAction(r)
-                act.triggered.connect(
-                    lambda checked, rule=r: self._set_rule(rule))
-        # Lemmas submenu
+                entries.append((r, r, grp))
+        # Add lemmas
         panel = self._find_proof_panel()
         if panel and panel._lemmas:
-            lemma_sub = menu.addMenu("Lemmas")
-            lemma_sub.setStyleSheet(
-                "QMenu { background:#fff; border:1px solid #ccc;"
-                " padding:4px; font-size:12px; color:#1a1a2e; }"
-                "QMenu::item { padding:4px 16px; color:#1a1a2e; }"
-                "QMenu::item:selected { background:#e0ebff; color:#1a1a2e; }")
             for lem in panel._lemmas:
-                act = lemma_sub.addAction(lem.display_name())
-                act.setToolTip(lem.schema_text())
-                act.triggered.connect(
-                    lambda checked, rule=lem.rule_name: self._set_rule(rule))
-        menu.exec(self._rule_btn.mapToGlobal(
-            self._rule_btn.rect().bottomLeft()))
+                entries.append((lem.display_name(), lem.rule_name, "Lemmas"))
+
+        dlg = _RuleSearchDialog(entries, parent=self)
+        # Position near the button
+        pos = self._rule_btn.mapToGlobal(
+            self._rule_btn.rect().bottomLeft())
+        dlg.move(pos)
+        if dlg.exec() == QDialog.DialogCode.Accepted and dlg.selected_rule:
+            self._set_rule(dlg.selected_rule)
 
     def _find_proof_panel(self):
         """Walk up the widget tree to find the parent ProofPanel."""
@@ -2322,6 +2403,26 @@ class ProofPanel(QWidget):
         if not just:
             return None
 
+        # ── Structural rules (Reit, Contradiction, ⊥-intro) ─────
+        # These only need the referenced line text, no pattern matching.
+        if just == "Reit":
+            # Reit copies a single referenced line verbatim
+            if step.refs:
+                text = self._get_line_text(step.refs[0])
+                return text if text else self._AUTOFILL_FAIL
+            return self._AUTOFILL_FAIL
+
+        if just in ("Contradiction", "\u22a5-intro"):
+            # Contradiction derives ⊥ from φ and ¬φ on ref'd lines.
+            # Just fill in "⊥".
+            if step.refs:
+                return "\u22a5"
+            return self._AUTOFILL_FAIL
+
+        if just == "Given":
+            # Given lines should already have text (from premises).
+            return None
+
         # Collect parsed literals from all referenced lines (prioritised)
         ref_lits = self._parse_ref_literals(step.refs)
 
@@ -2349,8 +2450,17 @@ class ProofPanel(QWidget):
             # None from a recognised theorem name means matching failed
             return result if result is not None else self._AUTOFILL_FAIL
 
+        # ── Lemma application (Lemma:Name) ─────────────────────────
+        if just.startswith("Lemma:"):
+            result = self._autofill_lemma(
+                step, just, ref_lits, all_known)
+            return result if result is not None else self._AUTOFILL_FAIL
+
         # ── Metric inference ──────────────────────────────────────
-        if just in ("Metric", "metric"):
+        # ── Metric axioms (CN1, M1, M3, etc.) ──────────────────────
+        _METRIC_PFXS = ("CN", "M1", "M2", "M3", "M4", "M5", "M6",
+                         "M7", "M8", "M9", "< ", "+ ")
+        if any(just.startswith(p) for p in _METRIC_PFXS):
             result = self._autofill_metric(step, ref_lits, all_known)
             return result if result is not None else self._AUTOFILL_FAIL
 
@@ -2561,7 +2671,7 @@ class ProofPanel(QWidget):
         _CIRCLE_LABELS  = ["1", "2a", "2b", "2c", "2d", "3a", "3b", "3c", "3d", "4"]
         _INTER_LABELS   = ["1", "2a", "2b", "2c", "2d", "3", "4a", "4b", "5"]
         _SEG_LABELS     = ["1", "2", "3a", "3b", "4a", "4b", "4c", "4d"]
-        _ANG_LABELS     = ["1a", "1b", "1c", "2a", "2b", "2c", "3a", "3b", "4", "5a", "5b"]
+        _ANG_LABELS     = ["1a", "1b", "1c", "2a", "2b", "2c", "3a", "3b", "4", "5a", "5b", "6", "7"]
         _AREA_LABELS    = ["1a", "1b", "1c", "2"]
 
         groups = [

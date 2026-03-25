@@ -367,7 +367,33 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
                                 checker.variables[vname] = _infer_sort(
                                     vname, sort_ctx)
         elif step_kind == StepKind.AXIOM_ELIM:
-            if axiom_category == "metric":
+            # Warn (but don't reject) deprecated generic justifications
+            _DEPRECATED = {
+                "diagrammatic", "Diagrammatic",
+                "metric", "Metric",
+                "transfer", "Transfer",
+            }
+            if just in _DEPRECATED:
+                lr.valid = False
+                lr.errors.append(
+                    f"Generic justification \"{just}\" is not allowed. "
+                    f"Please use a specific axiom name (e.g. "
+                    f"\"Generality 3\", \"CN1\", \"Segment transfer 1\"). "
+                    f"Use the search box in the rule dropdown to find "
+                    f"the correct axiom.")
+                # Still add to known for downstream steps
+                for lit in step_lits:
+                    checker.known.add(lit)
+            elif axiom_category == "structural":
+                # Reit: literal must already be in known facts
+                for lit in step_lits:
+                    if lit in checker.known:
+                        checker.known.add(lit)
+                    else:
+                        lr.valid = False
+                        lr.errors.append(
+                            f"Reit: {lit} is not among known facts.")
+            elif axiom_category == "metric":
                 for lit in step_lits:
                     if lit in checker.known:
                         continue
@@ -429,14 +455,11 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
                                 f"Transfer assertion {lit} is not "
                                 f"derivable.")
             else:
-                # All diagrammatic axiom rules (named or generic) use the
-                # full accumulated known-fact set.  Refs serve as
-                # documentation/traceability, not as logical restriction.
-                # This matches how construction rules already work.
+                # Named diagrammatic axiom rules use the full
+                # accumulated known-fact set.
                 for lit in step_lits:
                     if lit in checker.known:
                         continue
-                    # Try E engine first
                     ok = checker.consequence_engine.is_consequence(
                         checker.known, lit)
                     if ok:
@@ -1201,14 +1224,17 @@ def _classify_justification(just: str) -> Optional[StepKind]:
     if just.startswith("Lemma:"):
         return StepKind.THEOREM_APP
 
-    # Explicit step kind labels
+    # Explicit step kind labels.
+    # Generic "Diagrammatic", "Metric", "Transfer" are REJECTED — users
+    # must cite a specific axiom name (e.g. "Generality 3", "CN1",
+    # "Segment transfer 1").  However, "Diagrammatic" etc. are kept as
+    # DEPRECATED aliases that still verify but produce a warning.
+    _DEPRECATED_GENERIC = {
+        "diagrammatic", "Diagrammatic",
+        "metric", "Metric",
+        "transfer", "Transfer",
+    }
     _MAP = {
-        "diagrammatic": StepKind.AXIOM_ELIM,
-        "Diagrammatic": StepKind.AXIOM_ELIM,
-        "metric": StepKind.AXIOM_ELIM,
-        "Metric": StepKind.AXIOM_ELIM,
-        "transfer": StepKind.AXIOM_ELIM,
-        "Transfer": StepKind.AXIOM_ELIM,
         "SAS": StepKind.SUPERPOSITION_SAS,
         "SSS": StepKind.SUPERPOSITION_SSS,
         "SAS Superposition": StepKind.SUPERPOSITION_SAS,
@@ -1218,6 +1244,10 @@ def _classify_justification(just: str) -> Optional[StepKind]:
         "Reit": StepKind.AXIOM_ELIM,
         "Given": StepKind.AXIOM_ELIM,
     }
+    # Still route deprecated generics through AXIOM_ELIM so old proofs
+    # don't hard-fail, but the handler adds a warning.
+    for _g in _DEPRECATED_GENERIC:
+        _MAP[_g] = StepKind.AXIOM_ELIM
     kind = _MAP.get(just)
     if kind is not None:
         return kind
@@ -1282,15 +1312,12 @@ def _classify_justification(just: str) -> Optional[StepKind]:
 def _classify_axiom_category(just: str) -> str:
     """Return the axiom category for AXIOM_ELIM steps.
 
-    Returns "diagrammatic", "metric", or "transfer". Defaults to
-    "diagrammatic" when no explicit category is found.
+    Returns "diagrammatic", "metric", "transfer", or "structural".
+    Only accepts specific named axioms — generic category names are
+    rejected by _classify_justification.
     """
-    if just in ("metric", "Metric"):
-        return "metric"
-    if just in ("transfer", "Transfer"):
-        return "transfer"
-    if just in ("diagrammatic", "Diagrammatic"):
-        return "diagrammatic"
+    if just in ("Reit", "Given"):
+        return "structural"
     for pfx in _METRIC_PREFIXES:
         if just.startswith(pfx):
             return "metric"
