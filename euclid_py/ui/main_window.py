@@ -1459,11 +1459,15 @@ class _OpenFileDialog(QDialog):
             target_folder = target_ref
 
         if not source_path or not os.path.isfile(source_path):
+            # File might not exist if Qt's InternalMove already removed it
+            # from the list — reload to restore
+            QTimer.singleShot(0, lambda: self._load_folder(self._active_path))
             return
         if not os.path.isdir(target_folder):
             return
         # Don't move into the same folder
         if os.path.dirname(source_path) == target_folder:
+            QTimer.singleShot(0, lambda: self._load_folder(self._active_path))
             return
         self._move_to_folder(source_path, target_folder)
 
@@ -1525,6 +1529,9 @@ class _OpenFileDialog(QDialog):
         })
         self._rebuild_sidebar()
         self._save_sidebar_bookmarks()
+        # Reload the file list — Qt's InternalMove removes the dragged item
+        # from the source list, so we need to restore it
+        QTimer.singleShot(0, lambda: self._load_folder(self._active_path))
 
     # ── Rename ─────────────────────────────────────────────────────────
 
