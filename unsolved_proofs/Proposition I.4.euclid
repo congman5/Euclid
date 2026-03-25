@@ -80,6 +80,12 @@
   "proof": {
     "name": "Prop.I.4",
     "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "¬(d = e)",
+      "¬(d = f)",
+      "¬(e = f)",
       "ab = de",
       "ac = df",
       "∠bac = ∠edf"

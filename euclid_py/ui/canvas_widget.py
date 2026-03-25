@@ -2279,6 +2279,7 @@ class ConstructionPanel(QFrame):
         self._scroll.setHorizontalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._scroll_inner = QWidget()
+        self._scroll_inner.setStyleSheet("background: white;")
         self._scroll_layout = QVBoxLayout(self._scroll_inner)
         self._scroll_layout.setContentsMargins(0, 0, 0, 0)
         self._scroll_layout.setSpacing(2)
@@ -2626,6 +2627,33 @@ class CanvasWidget(QWidget):
         rules = scene.construct_matching_rules()
         self._construct_panel.refresh(np, ns, nc, rules)
 
+    def _position_construct_panel(self):
+        """Place the construction panel in the region with the most free
+        space so it avoids overlapping the canvas geometry."""
+        margin = 12
+        pw = self._construct_panel.width()
+        ph = self._construct_panel.sizeHint().height()
+        vw = self.width()
+        vh = self.height()
+
+        # Find bounding rect of all scene items in view coordinates
+        items = self._scene.items()
+        if items:
+            scene_rect = self._scene.itemsBoundingRect()
+            top_left = self._view.mapFromScene(scene_rect.topLeft())
+            bot_right = self._view.mapFromScene(scene_rect.bottomRight())
+            cx = (top_left.x() + bot_right.x()) / 2
+        else:
+            cx = vw / 2
+
+        # If content centroid is in the left half, put panel on the right
+        if cx < vw / 2:
+            x = max(margin, vw - pw - margin)
+        else:
+            x = margin
+        y = margin
+        self._construct_panel.move(int(x), int(y))
+
     def _close_construct_panel(self):
         """Close button → switch back to select tool."""
         self.set_tool("select")
@@ -2641,7 +2669,7 @@ class CanvasWidget(QWidget):
     def set_tool(self, tool: str):
         self._scene.set_tool(tool)
         if tool == "construct":
-            self._construct_panel.move(12, 12)
+            self._position_construct_panel()
             self._construct_panel.show()
             self._construct_panel.raise_()
             # Initial refresh

@@ -78,7 +78,7 @@
       "¬(b = c)",
       "¬(b = d)",
       "¬(same-side(c, d, L))",
-      "∠abc + ∠abd = right-angle + right-angle"
+      "(∠abc + ∠abd) = (∟ + ∟)"
     ],
     "goal": "between(c, b, d)",
     "declarations": {

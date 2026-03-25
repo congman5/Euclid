@@ -53,6 +53,9 @@
       "¬(a = b)",
       "¬(a = c)",
       "¬(b = c)",
+      "on(a, L)",
+      "on(b, L)",
+      "¬(on(c, L))",
       "ab < ac"
     ],
     "goal": "∠acb < ∠abc",

@@ -95,10 +95,8 @@
       "on(a, L)",
       "on(b, L)",
       "¬(a = b)",
-      "cd < ab",
       "¬(c = d)",
-      "¬(a = c)",
-      "¬(a = d)"
+      "cd < ab"
     ],
     "goal": "between(a, e, b), ae = cd",
     "declarations": {

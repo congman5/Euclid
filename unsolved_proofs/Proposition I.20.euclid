@@ -52,7 +52,10 @@
     "premises": [
       "¬(a = b)",
       "¬(a = c)",
-      "¬(b = c)"
+      "¬(b = c)",
+      "on(a, L)",
+      "on(b, L)",
+      "¬(on(c, L))"
     ],
     "goal": "bc < (ab + ac)",
     "declarations": {

@@ -53,6 +53,7 @@
       "on(a, L)",
       "on(b, L)",
       "¬(a = b)",
+      "¬(c = d)",
       "cd < ab"
     ],
     "goal": "between(a, e, b), ae = cd",

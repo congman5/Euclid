@@ -72,7 +72,8 @@
       "on(c, M)",
       "on(b, P)",
       "on(d, P)",
-      "¬(L = N)"
+      "¬(L = N)",
+      "same-side(b, d, M)"
     ],
     "goal": "ac = bd, ¬(intersects(M, P))",
     "declarations": {

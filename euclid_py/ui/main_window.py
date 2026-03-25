@@ -96,6 +96,25 @@ def _save_user_bookmarks(data: dict):
 
 
 import re as _re
+import unicodedata as _ud
+
+
+def _clean_emoji(text: str) -> str:
+    """Strip invisible variation selectors / ZWJ / formatting chars that
+    render as boxes in Qt, keeping just the visible emoji glyph."""
+    # Remove variation selectors (U+FE00–U+FE0F), ZWJ (U+200D),
+    # combining enclosing keycaps (U+20E3), and other invisible format chars
+    # that the Windows emoji picker appends.
+    cleaned = []
+    for ch in text:
+        cat = _ud.category(ch)
+        # Keep visible characters; skip Mn (non-spacing mark), Me (enclosing
+        # mark), Cf (format), and specific variation selectors
+        if cat in ("Mn", "Cf") or 0xFE00 <= ord(ch) <= 0xFE0F:
+            continue
+        cleaned.append(ch)
+    return "".join(cleaned)
+
 
 def _natural_sort_key(filename: str):
     """Sort key that orders numbers numerically: I.2 before I.10."""
@@ -103,31 +122,51 @@ def _natural_sort_key(filename: str):
     return [int(p) if p.isdigit() else p.lower() for p in parts]
 
 
-_SB_BTN_STYLE = (
-    "QPushButton {{ text-align: left; padding: 8px 10px;"
-    " border: none; border-radius: 4px;"
-    " background: transparent; color: {text};"
-    " font-size: 12px; }}"
-    " QPushButton:hover {{ background: #edf2ff; }}"
-).format(text=COLORS['text'])
-
-_SB_BTN_ACTIVE_STYLE = (
-    "QPushButton {{ text-align: left; padding: 8px 10px;"
-    " border: none; border-radius: 4px;"
-    " background: #dce8f7; color: {text};"
-    " font-size: 12px; }}"
-    " QPushButton:hover {{ background: #dce8f7; }}"
-).format(text=COLORS['text'])
+# White-theme base stylesheet applied to the entire open dialog to
+# override any dark-theme inheritance from the main window.
+_DIALOG_BASE_STYLE = """
+    QDialog { background: white; }
+    QWidget { background: white; color: #1a1a2e; }
+    QLabel { color: #1a1a2e; background: transparent; }
+    QPushButton { color: #1a1a2e; background: white; }
+    QListWidget { background: white; color: #1a1a2e; }
+    QListWidget::item { color: #1a1a2e; }
+    QMenu { background: white; color: #1a1a2e;
+            border: 1px solid #d0d4da; border-radius: 4px; padding: 4px; }
+    QMenu::item { padding: 6px 20px; color: #1a1a2e; }
+    QMenu::item:selected { background: #edf2ff; color: #1a1a2e; }
+    QMenu::item:disabled { color: #aaa; }
+    QMenu::separator { height: 1px; background: #e5e7eb; margin: 4px 8px; }
+    QInputDialog { background: white; }
+    QInputDialog QLabel { color: #1a1a2e; }
+    QInputDialog QLineEdit { background: white; color: #1a1a2e;
+                              border: 1px solid #d0d4da; border-radius: 4px;
+                              padding: 4px 8px; }
+    QMessageBox { background: white; }
+    QMessageBox QLabel { color: #1a1a2e; }
+"""
 
 
 class _OpenFileDialog(QDialog):
-    """Custom file-open dialog with sidebar showing bundled proof folders
-    and user-added custom folders/files."""
+    """Custom file-open dialog with sidebar, folders-as-features,
+    drag-drop reorder, drag into folders, and delete with confirmation."""
+
+    _ROLE_PATH = Qt.ItemDataRole.UserRole
+    _ROLE_IS_FOLDER = Qt.ItemDataRole.UserRole + 1
+
+    # ── Small button stylesheet (reused) ──────────────────────────
+    _SM_BTN = (
+        "QPushButton { padding: 5px 10px; border: 1px solid #c0c8d4;"
+        " border-radius: 4px; background: white;"
+        " color: #1a1a2e; font-size: 11px; }"
+        " QPushButton:hover { background: #f0f4ff; }"
+    )
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Open Proof File")
-        self.resize(720, 520)
+        self.resize(760, 560)
+        self.setStyleSheet(_DIALOG_BASE_STYLE)
         self.selected_path: str | None = None
 
         from ..resources import resource_path
@@ -135,6 +174,7 @@ class _OpenFileDialog(QDialog):
         self._solved_dir = resource_path("solved_proofs")
         self._prefs = _load_user_bookmarks()
         self._bookmarks = self._prefs.get("bookmarks", [])
+        self._nav_stack: list[str] = []  # for "Back" navigation
 
         root = QHBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -144,70 +184,89 @@ class _OpenFileDialog(QDialog):
         sidebar = QFrame()
         sidebar.setFixedWidth(200)
         sidebar.setStyleSheet(
-            f"QFrame {{ background: {COLORS['surface']};"
-            f" border-right: 1px solid {COLORS['border']}; }}")
-        self._sb_layout = QVBoxLayout(sidebar)
-        self._sb_layout.setContentsMargins(8, 12, 8, 12)
-        self._sb_layout.setSpacing(2)
+            "QFrame { background: #fafbfc;"
+            " border-right: 1px solid #e5e7eb; }")
+        sb_outer = QVBoxLayout(sidebar)
+        sb_outer.setContentsMargins(8, 12, 8, 12)
+        sb_outer.setSpacing(4)
 
         sb_title = QLabel("Quick Access")
         sb_title.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
         sb_title.setStyleSheet(
-            f"color: {COLORS['text']}; border: none; padding: 0 0 6px 4px;")
-        self._sb_layout.addWidget(sb_title)
+            "color: #1a1a2e; border: none; padding: 0 0 6px 4px;"
+            " background: transparent;")
+        sb_outer.addWidget(sb_title)
 
-        # Built-in folders
-        self._sidebar_btns: list[tuple[QPushButton, str]] = []
-        self._add_sidebar_entry(
-            "\U0001f4d8  Unsolved Proofs", self._unsolved_dir, removable=False)
-        self._add_sidebar_entry(
-            "\u2705  Solved Proofs", self._solved_dir, removable=False)
+        # Sidebar list — draggable, right-clickable
+        self._sb_list = QListWidget()
+        self._sb_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
+        self._sb_list.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self._sb_list.setStyleSheet("""
+            QListWidget {
+                border: none; background: transparent;
+                outline: none; font-size: 12px; color: #1a1a2e;
+                font-family: 'Segoe UI Emoji', 'Segoe UI', sans-serif;
+            }
+            QListWidget::item {
+                padding: 8px 10px; border-radius: 4px;
+                color: #1a1a2e;
+            }
+            QListWidget::item:hover {
+                background: #edf2ff;
+            }
+            QListWidget::item:selected {
+                background: #dce8f7; color: #1a1a2e;
+            }
+        """)
+        self._sb_list.clicked.connect(self._on_sidebar_click)
+        self._sb_list.setContextMenuPolicy(
+            Qt.ContextMenuPolicy.CustomContextMenu)
+        self._sb_list.customContextMenuRequested.connect(
+            self._show_sidebar_context_menu)
+        self._sb_list.model().rowsMoved.connect(self._on_sidebar_reordered)
+        sb_outer.addWidget(self._sb_list, stretch=1)
 
-        # User bookmarks
+        # Populate sidebar — built-in + user bookmarks
+        self._sb_entries: list[dict] = []  # {path, name, icon, removable}
+
+        self._sb_entries.append({
+            "path": self._unsolved_dir,
+            "name": "Unsolved Proofs",
+            "icon": "\u25B6",
+            "removable": False,
+        })
+        self._sb_entries.append({
+            "path": self._solved_dir,
+            "name": "Solved Proofs",
+            "icon": "\u2713",
+            "removable": False,
+        })
         for bm in self._bookmarks:
-            path = bm.get("path", "")
-            name = bm.get("name", os.path.basename(path))
-            is_file = bm.get("type") == "file"
-            icon = "\U0001f4c4" if is_file else "\U0001f4c1"
-            self._add_sidebar_entry(
-                f"{icon}  {name}", path, removable=True)
+            raw_icon = bm.get("icon", "\u25B8"
+                              if bm.get("type") != "file" else "\u2022")
+            self._sb_entries.append({
+                "path": bm.get("path", ""),
+                "name": bm.get("name", ""),
+                "icon": _clean_emoji(raw_icon),
+                "removable": True,
+            })
+        self._rebuild_sidebar()
 
-        # Spacer + add buttons
-        self._sb_layout.addStretch()
-
-        add_row = QHBoxLayout()
-        add_row.setSpacing(4)
-
-        btn_add_folder = QPushButton("+ Folder")
-        btn_add_folder.setStyleSheet(
-            "QPushButton { padding: 5px 8px; border: 1px solid #c0c8d4;"
-            " border-radius: 4px; background: white;"
-            f" color: {COLORS['text']}; font-size: 11px; }}"
-            " QPushButton:hover { background: #f0f4ff; }")
-        btn_add_folder.setToolTip("Add a folder to the sidebar")
-        btn_add_folder.clicked.connect(self._add_folder_bookmark)
-        add_row.addWidget(btn_add_folder)
-
+        # Bottom buttons
         btn_add_file = QPushButton("+ File")
-        btn_add_file.setStyleSheet(
-            "QPushButton { padding: 5px 8px; border: 1px solid #c0c8d4;"
-            " border-radius: 4px; background: white;"
-            f" color: {COLORS['text']}; font-size: 11px; }}"
-            " QPushButton:hover { background: #f0f4ff; }")
+        btn_add_file.setStyleSheet(self._SM_BTN)
         btn_add_file.setToolTip("Add a single file to the sidebar")
         btn_add_file.clicked.connect(self._add_file_bookmark)
-        add_row.addWidget(btn_add_file)
-
-        self._sb_layout.addLayout(add_row)
+        sb_outer.addWidget(btn_add_file)
 
         btn_browse = QPushButton("Browse\u2026")
         btn_browse.setStyleSheet(
             "QPushButton { padding: 7px 12px; border: 1px solid #c0c8d4;"
             " border-radius: 4px; background: white; margin-top: 4px;"
-            f" color: {COLORS['text']}; font-size: 12px; }}"
+            " color: #1a1a2e; font-size: 12px; }"
             " QPushButton:hover { background: #f0f4ff; }")
         btn_browse.clicked.connect(self._browse_file)
-        self._sb_layout.addWidget(btn_browse)
+        sb_outer.addWidget(btn_browse)
 
         root.addWidget(sidebar)
 
@@ -218,33 +277,81 @@ class _OpenFileDialog(QDialog):
         rl.setContentsMargins(12, 12, 12, 12)
         rl.setSpacing(8)
 
+        # Toolbar row: back button, folder label, new folder, delete
+        toolbar_row = QHBoxLayout()
+        toolbar_row.setSpacing(6)
+
+        self._back_btn = QPushButton("\u2190")
+        self._back_btn.setFixedSize(28, 28)
+        self._back_btn.setStyleSheet(
+            "QPushButton { border: 1px solid #d0d4da; border-radius: 4px;"
+            " background: white; color: #1a1a2e; font-size: 14px; }"
+            " QPushButton:hover { background: #f0f4ff; }"
+            " QPushButton:disabled { color: #ccc; border-color: #e5e7eb; }")
+        self._back_btn.setToolTip("Go back")
+        self._back_btn.clicked.connect(self._go_back)
+        self._back_btn.setEnabled(False)
+        toolbar_row.addWidget(self._back_btn)
+
         self._folder_label = QLabel("")
         self._folder_label.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
-        self._folder_label.setStyleSheet(f"color: {COLORS['text']};")
-        rl.addWidget(self._folder_label)
+        self._folder_label.setStyleSheet(
+            "color: #1a1a2e; background: transparent;")
+        toolbar_row.addWidget(self._folder_label, stretch=1)
 
+        btn_new_folder = QPushButton("+ New Folder")
+        btn_new_folder.setStyleSheet(self._SM_BTN)
+        btn_new_folder.setToolTip("Create a new folder in Quick Access")
+        btn_new_folder.clicked.connect(self._create_sidebar_folder)
+        toolbar_row.addWidget(btn_new_folder)
+
+        btn_delete = QPushButton("Delete")
+        btn_delete.setStyleSheet(
+            "QPushButton { padding: 5px 10px; border: 1px solid #c0c8d4;"
+            " border-radius: 4px; background: white;"
+            " color: #d32f2f; font-size: 11px; }"
+            " QPushButton:hover { background: #fff0f0; }")
+        btn_delete.setToolTip("Delete selected file or folder")
+        btn_delete.clicked.connect(self._delete_selected)
+        toolbar_row.addWidget(btn_delete)
+
+        rl.addLayout(toolbar_row)
+
+        # File list — with drag & drop
         self._file_list = QListWidget()
-        self._file_list.setStyleSheet(f"""
-            QListWidget {{
-                border: 1px solid {COLORS['border']};
+        self._file_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
+        self._file_list.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self._file_list.setSelectionMode(
+            QListWidget.SelectionMode.ExtendedSelection)
+        self._file_list.setStyleSheet("""
+            QListWidget {
+                border: 1px solid #e5e7eb;
                 border-radius: 6px;
                 background: white;
                 outline: none;
                 font-size: 13px;
-            }}
-            QListWidget::item {{
+                color: #1a1a2e;
+            }
+            QListWidget::item {
                 padding: 10px 14px;
                 border-bottom: 1px solid #f0f0f0;
-            }}
-            QListWidget::item:hover {{
+                color: #1a1a2e;
+            }
+            QListWidget::item:hover {
                 background: #f5f8ff;
-            }}
-            QListWidget::item:selected {{
+                color: #1a1a2e;
+            }
+            QListWidget::item:selected {
                 background: #dce8f7;
-                color: {COLORS['primary']};
-            }}
+                color: #2d70b3;
+            }
         """)
         self._file_list.itemDoubleClicked.connect(self._on_double_click)
+        self._file_list.setContextMenuPolicy(
+            Qt.ContextMenuPolicy.CustomContextMenu)
+        self._file_list.customContextMenuRequested.connect(
+            self._show_context_menu)
+        self._file_list.model().rowsMoved.connect(self._on_rows_moved)
         rl.addWidget(self._file_list)
 
         # Bottom buttons
@@ -254,17 +361,17 @@ class _OpenFileDialog(QDialog):
         btn_cancel.setStyleSheet(
             "QPushButton { padding: 7px 20px; border: 1px solid #c0c8d4;"
             " border-radius: 4px; background: white;"
-            f" color: {COLORS['text']}; font-size: 12px; }}"
+            " color: #1a1a2e; font-size: 12px; }"
             " QPushButton:hover { background: #f0f0f0; }")
         btn_cancel.clicked.connect(self.reject)
         btn_row.addWidget(btn_cancel)
 
         btn_open = QPushButton("Open")
         btn_open.setStyleSheet(
-            f"QPushButton {{ padding: 7px 20px; border: none;"
-            f" border-radius: 4px; background: {COLORS['primary']};"
-            f" color: white; font-size: 12px; font-weight: 600; }}"
-            f" QPushButton:hover {{ background: #1a5fa0; }}")
+            "QPushButton { padding: 7px 20px; border: none;"
+            " border-radius: 4px; background: #2d70b3;"
+            " color: white; font-size: 12px; font-weight: 600; }"
+            " QPushButton:hover { background: #1a5fa0; }")
         btn_open.clicked.connect(self._on_open)
         btn_row.addWidget(btn_open)
         rl.addLayout(btn_row)
@@ -281,6 +388,8 @@ class _OpenFileDialog(QDialog):
             self.move(geo.get("x", 100), geo.get("y", 100))
             self.resize(geo.get("w", 720), geo.get("h", 520))
 
+    # ── Persistence ────────────────────────────────────────────────────
+
     def _save_geometry(self):
         """Persist dialog position and size."""
         pos = self.pos()
@@ -291,57 +400,316 @@ class _OpenFileDialog(QDialog):
         }
         _save_user_bookmarks(self._prefs)
 
+    def _custom_order_path(self, folder: str) -> str:
+        """Path for the custom ordering JSON file within a folder."""
+        return os.path.join(folder, ".euclid_order.json")
+
+    def _load_custom_order(self, folder: str) -> list[str] | None:
+        """Load persisted custom ordering for a folder, or None."""
+        p = self._custom_order_path(folder)
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return None
+
+    def _save_custom_order(self, folder: str, order: list[str]):
+        """Persist the user's custom ordering of items in a folder."""
+        p = self._custom_order_path(folder)
+        try:
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump(order, f, indent=2)
+        except Exception:
+            pass
+
     def done(self, result):
         self._save_geometry()
         super().done(result)
 
     # ── Sidebar helpers ───────────────────────────────────────────────
 
-    def _add_sidebar_entry(self, label: str, path: str, removable: bool):
-        """Add a button to the sidebar for a folder or file."""
-        row = QHBoxLayout()
-        row.setContentsMargins(0, 0, 0, 0)
-        row.setSpacing(0)
+    _ROLE_SB_INDEX = Qt.ItemDataRole.UserRole + 10
 
-        btn = QPushButton(label)
-        btn.setStyleSheet(_SB_BTN_STYLE)
-        btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        is_file = os.path.isfile(path)
-        if is_file:
-            btn.clicked.connect(
-                lambda checked, p=path: self._select_file_directly(p))
-        else:
-            btn.clicked.connect(
-                lambda checked, p=path: self._load_folder(p))
-        row.addWidget(btn, stretch=1)
-
-        if removable:
-            rm_btn = QPushButton("\u00d7")
-            rm_btn.setFixedSize(20, 20)
-            rm_btn.setStyleSheet(
-                "QPushButton { border: none; background: transparent;"
-                " color: #aaa; font-size: 14px; }"
-                " QPushButton:hover { color: #d32f2f; }")
-            rm_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            rm_btn.setToolTip("Remove from sidebar")
-            rm_btn.clicked.connect(
-                lambda checked, p=path: self._remove_bookmark(p))
-            row.addWidget(rm_btn)
-
-        container = QWidget()
-        container.setLayout(row)
-        # Insert before the stretch (which is after the last sidebar entry)
-        insert_idx = len(self._sidebar_btns) + 1  # +1 for the title label
-        self._sb_layout.insertWidget(insert_idx, container)
-        self._sidebar_btns.append((btn, path))
+    def _rebuild_sidebar(self):
+        """Rebuild the sidebar QListWidget from self._sb_entries."""
+        self._sb_list.clear()
+        _emoji_font = QFont("Segoe UI Emoji", 11)
+        for idx, entry in enumerate(self._sb_entries):
+            text = f"{entry['icon']}  {entry['name']}"
+            item = QListWidgetItem(text)
+            item.setFont(_emoji_font)
+            item.setData(self._ROLE_SB_INDEX, idx)
+            self._sb_list.addItem(item)
 
     def _update_highlight(self, active_path: str):
-        """Highlight the active sidebar button."""
-        for btn, path in self._sidebar_btns:
-            if path == active_path:
-                btn.setStyleSheet(_SB_BTN_ACTIVE_STYLE)
+        """Highlight the sidebar row matching active_path."""
+        for i in range(self._sb_list.count()):
+            item = self._sb_list.item(i)
+            idx = item.data(self._ROLE_SB_INDEX)
+            if idx is not None and idx < len(self._sb_entries):
+                if self._sb_entries[idx]["path"] == active_path:
+                    self._sb_list.setCurrentItem(item)
+                    return
+        self._sb_list.clearSelection()
+
+    def _on_sidebar_click(self, index):
+        """User clicked a sidebar entry — navigate to it."""
+        item = self._sb_list.currentItem()
+        if not item:
+            return
+        idx = item.data(self._ROLE_SB_INDEX)
+        if idx is None or idx >= len(self._sb_entries):
+            return
+        entry = self._sb_entries[idx]
+        path = entry["path"]
+        if os.path.isfile(path):
+            self._select_file_directly(path)
+        else:
+            self._nav_stack.clear()
+            self._load_folder(path)
+
+    def _on_sidebar_reordered(self, *_args):
+        """After dragging sidebar entries, sync self._sb_entries and save."""
+        new_order = []
+        for i in range(self._sb_list.count()):
+            item = self._sb_list.item(i)
+            idx = item.data(self._ROLE_SB_INDEX)
+            if idx is not None and idx < len(self._sb_entries):
+                new_order.append(self._sb_entries[idx])
+        self._sb_entries = new_order
+        # Re-assign indices
+        for i in range(self._sb_list.count()):
+            self._sb_list.item(i).setData(self._ROLE_SB_INDEX, i)
+        self._save_sidebar_bookmarks()
+
+    def _save_sidebar_bookmarks(self):
+        """Persist only the user (removable) bookmarks back to disk."""
+        self._bookmarks = []
+        for entry in self._sb_entries:
+            if entry["removable"]:
+                bm = {
+                    "path": entry["path"],
+                    "name": entry["name"],
+                    "icon": entry["icon"],
+                    "type": ("file" if os.path.isfile(entry["path"])
+                             else "folder"),
+                }
+                self._bookmarks.append(bm)
+        self._prefs["bookmarks"] = self._bookmarks
+        _save_user_bookmarks(self._prefs)
+
+    def _show_sidebar_context_menu(self, pos):
+        """Right-click on a sidebar entry."""
+        item = self._sb_list.itemAt(pos)
+        if not item:
+            return
+        idx = item.data(self._ROLE_SB_INDEX)
+        if idx is None or idx >= len(self._sb_entries):
+            return
+        entry = self._sb_entries[idx]
+
+        menu = QMenu(self)
+        menu.setStyleSheet(self._CTX_STYLE)
+
+        act_rename = menu.addAction("Rename")
+        act_rename.triggered.connect(
+            lambda: self._rename_sidebar_entry(idx))
+
+        act_icon = menu.addAction("Change Icon")
+        act_icon.triggered.connect(
+            lambda: self._change_sidebar_icon(idx))
+
+        if entry["removable"]:
+            menu.addSeparator()
+            act_del = menu.addAction("Delete")
+            act_del.triggered.connect(
+                lambda: self._delete_sidebar_entry(idx))
+
+        menu.exec(self._sb_list.mapToGlobal(pos))
+
+    def _rename_sidebar_entry(self, idx: int):
+        entry = self._sb_entries[idx]
+        new_name, ok = self._white_input(
+            "Rename", "Display name:", entry["name"])
+        if not ok or not new_name.strip():
+            return
+        entry["name"] = new_name.strip()
+        self._rebuild_sidebar()
+        self._save_sidebar_bookmarks()
+
+    def _change_sidebar_icon(self, idx: int):
+        """Open a dialog with a text field and trigger the Windows emoji picker."""
+        entry = self._sb_entries[idx]
+
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Choose Icon")
+        dlg.setFixedSize(320, 160)
+        dlg.setStyleSheet(_DIALOG_BASE_STYLE)
+
+        layout = QVBoxLayout(dlg)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(10)
+
+        lbl = QLabel("Type or paste an emoji below.\n"
+                      "The Windows emoji picker (Win + .) will open automatically.")
+        lbl.setWordWrap(True)
+        lbl.setStyleSheet("color: #1a1a2e; background: transparent; font-size: 12px;")
+        layout.addWidget(lbl)
+
+        from PyQt6.QtWidgets import QLineEdit
+        icon_input = QLineEdit(entry.get("icon", ""))
+        icon_input.setMaxLength(10)  # emoji can be multiple code units (ZWJ sequences, flags, etc.)
+        icon_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        icon_input.setStyleSheet(
+            "QLineEdit { font-family: 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;"
+            " font-size: 24px; padding: 6px; border: 2px solid #2d70b3;"
+            " border-radius: 6px; background: white; color: #1a1a2e; }")
+        layout.addWidget(icon_input)
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        ok_btn = QPushButton("OK")
+        ok_btn.setStyleSheet(
+            "QPushButton { background: #2d70b3; color: white;"
+            " border: none; border-radius: 4px; padding: 6px 20px; font-size: 13px; }"
+            " QPushButton:hover { background: #245f9a; }")
+        ok_btn.clicked.connect(dlg.accept)
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.setStyleSheet(
+            "QPushButton { background: white; color: #1a1a2e;"
+            " border: 1px solid #c0c8d4; border-radius: 4px;"
+            " padding: 6px 20px; font-size: 13px; }"
+            " QPushButton:hover { background: #f0f4ff; }")
+        cancel_btn.clicked.connect(dlg.reject)
+        btn_row.addWidget(ok_btn)
+        btn_row.addWidget(cancel_btn)
+        layout.addLayout(btn_row)
+
+        # Auto-open the Windows emoji picker after the dialog appears
+        def _trigger_emoji_picker():
+            icon_input.setFocus()
+            try:
+                import subprocess
+                # Simulate Win+. via PowerShell to open the emoji picker
+                subprocess.Popen(
+                    ['powershell', '-Command',
+                     'Add-Type -AssemblyName System.Windows.Forms;'
+                     '[System.Windows.Forms.SendKeys]::SendWait("^{BACKSPACE}");'
+                     'Start-Sleep -Milliseconds 50;'],
+                    creationflags=0x08000000,  # CREATE_NO_WINDOW
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                # Use ctypes to send Win+. which opens the emoji picker
+                import ctypes
+                user32 = ctypes.windll.user32
+                VK_LWIN = 0x5B
+                VK_OEM_PERIOD = 0xBE
+                KEYEVENTF_KEYUP = 0x0002
+                user32.keybd_event(VK_LWIN, 0, 0, 0)
+                user32.keybd_event(VK_OEM_PERIOD, 0, 0, 0)
+                user32.keybd_event(VK_OEM_PERIOD, 0, KEYEVENTF_KEYUP, 0)
+                user32.keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0)
+            except Exception:
+                pass  # Not on Windows or no ctypes — user can type manually
+
+        QTimer.singleShot(300, _trigger_emoji_picker)
+
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            new_icon = _clean_emoji(icon_input.text().strip())
+            if new_icon:
+                entry["icon"] = new_icon
+                self._rebuild_sidebar()
+                self._save_sidebar_bookmarks()
+                # Refresh folder label if this folder is currently open
+                if self._active_path == entry.get("path"):
+                    self._load_folder(self._active_path)
+
+    def _delete_sidebar_entry(self, idx: int):
+        """Delete a sidebar bookmark (with confirmation)."""
+        if idx < 0 or idx >= len(self._sb_entries):
+            return
+        entry = self._sb_entries[idx]
+        name = entry["name"]
+        path = entry["path"]
+        exists_on_disk = os.path.exists(path)
+        is_folder = os.path.isdir(path)
+
+        # First confirm: "Are you sure?"
+        confirm = QMessageBox(self)
+        confirm.setWindowTitle("Confirm Delete")
+        confirm.setIcon(QMessageBox.Icon.Warning)
+        confirm.setStyleSheet(self._white_msgbox_style())
+
+        if exists_on_disk:
+            confirm.setText(
+                f'Are you sure you want to remove "{name}"?')
+            confirm.setInformativeText(
+                "You can remove it from the sidebar only, "
+                "or permanently delete it from disk.")
+            btn_remove = confirm.addButton(
+                "Remove from Sidebar",
+                QMessageBox.ButtonRole.YesRole)
+            btn_disk = confirm.addButton(
+                "Delete from Disk",
+                QMessageBox.ButtonRole.DestructiveRole)
+            confirm.addButton(QMessageBox.StandardButton.Cancel)
+            confirm.exec()
+
+            clicked = confirm.clickedButton()
+            if clicked == btn_remove:
+                pass  # just remove from sidebar below
+            elif clicked == btn_disk:
+                # Second confirm for destructive disk delete
+                warn = QMessageBox(self)
+                warn.setWindowTitle("Permanently Delete?")
+                warn.setIcon(QMessageBox.Icon.Warning)
+                warn.setStyleSheet(self._white_msgbox_style())
+                extra = (" and all files inside it" if is_folder else "")
+                warn.setText(
+                    f'This will permanently delete "{name}"'
+                    f'{extra}. This cannot be undone.')
+                warn.setStandardButtons(
+                    QMessageBox.StandardButton.Yes
+                    | QMessageBox.StandardButton.No)
+                warn.setDefaultButton(QMessageBox.StandardButton.No)
+                if warn.exec() != QMessageBox.StandardButton.Yes:
+                    return
+                import shutil
+                try:
+                    if is_folder:
+                        shutil.rmtree(path)
+                    elif os.path.isfile(path):
+                        os.remove(path)
+                except OSError as e:
+                    mb = QMessageBox(self)
+                    mb.setWindowTitle("Error")
+                    mb.setText(f"Could not delete:\n{e}")
+                    mb.setStyleSheet(self._white_msgbox_style())
+                    mb.exec()
+                    return
             else:
-                btn.setStyleSheet(_SB_BTN_STYLE)
+                return  # Cancel
+        else:
+            # Path doesn't exist on disk — just confirm sidebar removal
+            confirm.setText(
+                f'Remove "{name}" from Quick Access?')
+            confirm.setStandardButtons(
+                QMessageBox.StandardButton.Yes
+                | QMessageBox.StandardButton.No)
+            confirm.setDefaultButton(QMessageBox.StandardButton.No)
+            if confirm.exec() != QMessageBox.StandardButton.Yes:
+                return
+
+        # Remove from entries list
+        old_path = entry["path"]
+        self._sb_entries.pop(idx)
+        self._rebuild_sidebar()
+        self._save_sidebar_bookmarks()
+        # If we were viewing this folder, go to unsolved
+        if self._active_path == old_path:
+            self._nav_stack.clear()
+            self._load_folder(self._unsolved_dir)
 
     # ── Folder / file loading ─────────────────────────────────────────
 
@@ -349,9 +717,23 @@ class _OpenFileDialog(QDialog):
         self._file_list.clear()
         self._active_path = folder
         basename = os.path.basename(folder)
-        self._folder_label.setText(
-            basename.replace("_", " ").title())
+        display_name = basename.replace("_", " ").title()
+        # Look up icon and custom name from sidebar entries for this folder
+        folder_icon = ""
+        for entry in self._sb_entries:
+            if entry.get("path") == folder:
+                folder_icon = entry.get("icon", "")
+                # Use the sidebar entry's custom display name if available
+                display_name = entry.get("name", display_name)
+                break
+        if folder_icon:
+            self._folder_label.setText(f"{folder_icon}  {display_name}")
+        else:
+            self._folder_label.setText(display_name)
+        self._folder_label.setFont(
+            QFont("Segoe UI Emoji", 12, QFont.Weight.Bold))
         self._update_highlight(folder)
+        self._back_btn.setEnabled(len(self._nav_stack) > 0)
 
         if not os.path.isdir(folder):
             item = QListWidgetItem("(folder not found)")
@@ -359,20 +741,75 @@ class _OpenFileDialog(QDialog):
             self._file_list.addItem(item)
             return
 
+        # Gather subfolders and .euclid files
+        subfolders = sorted(
+            (d for d in os.listdir(folder)
+             if os.path.isdir(os.path.join(folder, d))
+             and not d.startswith(".")),
+            key=_natural_sort_key)
         files = sorted(
             (f for f in os.listdir(folder)
-             if f.endswith(".euclid") and os.path.isfile(os.path.join(folder, f))),
+             if f.endswith(".euclid")
+             and os.path.isfile(os.path.join(folder, f))),
             key=_natural_sort_key)
-        if not files:
-            item = QListWidgetItem("(no .euclid files found)")
+
+        # Apply custom order if one exists
+        custom_order = self._load_custom_order(folder)
+        if custom_order is not None:
+            ordered_names = []
+            remaining_dirs = list(subfolders)
+            remaining_files = list(files)
+            for name in custom_order:
+                if name in remaining_dirs:
+                    ordered_names.append(name)
+                    remaining_dirs.remove(name)
+                elif name in remaining_files:
+                    ordered_names.append(name)
+                    remaining_files.remove(name)
+            # Append any new items not in the saved order
+            for d in remaining_dirs:
+                ordered_names.append(d)
+            for f in remaining_files:
+                ordered_names.append(f)
+            all_entries = ordered_names
+        else:
+            all_entries = subfolders + files
+
+        if not all_entries:
+            item = QListWidgetItem("(empty folder)")
             item.setFlags(Qt.ItemFlag.NoItemFlags)
             self._file_list.addItem(item)
             return
-        for fn in files:
-            display = fn.replace(".euclid", "")
-            item = QListWidgetItem(display)
-            item.setData(Qt.ItemDataRole.UserRole, os.path.join(folder, fn))
-            self._file_list.addItem(item)
+
+        for entry_name in all_entries:
+            full = os.path.join(folder, entry_name)
+            if os.path.isdir(full):
+                display = f"\u25B8  {entry_name}"
+                item = QListWidgetItem(display)
+                item.setData(self._ROLE_PATH, full)
+                item.setData(self._ROLE_IS_FOLDER, True)
+                f = QFont("Segoe UI", 13, QFont.Weight.DemiBold)
+                item.setFont(f)
+                item.setForeground(QColor("#2d70b3"))
+                self._file_list.addItem(item)
+            elif entry_name.endswith(".euclid"):
+                display = entry_name.replace(".euclid", "")
+                item = QListWidgetItem(display)
+                item.setData(self._ROLE_PATH, full)
+                item.setData(self._ROLE_IS_FOLDER, False)
+                self._file_list.addItem(item)
+
+    def _navigate_into(self, folder: str):
+        """Navigate into a subfolder, pushing current to back stack."""
+        if self._active_path:
+            self._nav_stack.append(self._active_path)
+        self._load_folder(folder)
+
+    def _go_back(self):
+        """Navigate back to the previous folder."""
+        if self._nav_stack:
+            prev = self._nav_stack.pop()
+            self._load_folder(prev)
 
     def _select_file_directly(self, path: str):
         """Sidebar file entry clicked — open it immediately."""
@@ -381,18 +818,27 @@ class _OpenFileDialog(QDialog):
             self.accept()
 
     def _on_double_click(self, item: QListWidgetItem):
-        path = item.data(Qt.ItemDataRole.UserRole)
-        if path:
+        path = item.data(self._ROLE_PATH)
+        is_folder = item.data(self._ROLE_IS_FOLDER)
+        if not path:
+            return
+        if is_folder:
+            self._navigate_into(path)
+        else:
             self.selected_path = path
             self.accept()
 
     def _on_open(self):
         item = self._file_list.currentItem()
         if item:
-            path = item.data(Qt.ItemDataRole.UserRole)
+            path = item.data(self._ROLE_PATH)
+            is_folder = item.data(self._ROLE_IS_FOLDER)
             if path:
-                self.selected_path = path
-                self.accept()
+                if is_folder:
+                    self._navigate_into(path)
+                else:
+                    self.selected_path = path
+                    self.accept()
 
     def _browse_file(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -402,23 +848,314 @@ class _OpenFileDialog(QDialog):
             self.selected_path = path
             self.accept()
 
-    # ── Bookmark management ───────────────────────────────────────────
+    # ── Drag & drop reorder persistence ────────────────────────────────
 
-    def _add_folder_bookmark(self):
-        folder = QFileDialog.getExistingDirectory(
-            self, "Add Folder to Sidebar")
-        if not folder:
+    def _on_rows_moved(self, *_args):
+        """After the user reorders items via drag-drop, persist the order."""
+        if not self._active_path or not os.path.isdir(self._active_path):
             return
-        # Don't add duplicates
-        for bm in self._bookmarks:
-            if bm.get("path") == folder:
-                self._load_folder(folder)
+        order = []
+        for i in range(self._file_list.count()):
+            item = self._file_list.item(i)
+            path = item.data(self._ROLE_PATH)
+            if path:
+                order.append(os.path.basename(path))
+        self._save_custom_order(self._active_path, order)
+
+    # ── Context menu (right-click) ─────────────────────────────────────
+
+    _CTX_STYLE = (
+        "QMenu { background: white; color: #1a1a2e;"
+        " border: 1px solid #d0d4da; border-radius: 4px; padding: 4px; }"
+        " QMenu::item { padding: 6px 20px; color: #1a1a2e; }"
+        " QMenu::item:selected { background: #edf2ff; color: #1a1a2e; }"
+        " QMenu::item:disabled { color: #aaa; }"
+        " QMenu::separator { height: 1px; background: #e5e7eb;"
+        "   margin: 4px 8px; }"
+    )
+
+    def _show_context_menu(self, pos):
+        item = self._file_list.itemAt(pos)
+        if not item:
+            # Right-click on empty area
+            menu = QMenu(self)
+            menu.setStyleSheet(self._CTX_STYLE)
+            act_new_folder = menu.addAction("New Folder")
+            act_new_folder.triggered.connect(self._create_sidebar_folder)
+            menu.exec(self._file_list.mapToGlobal(pos))
+            return
+
+        path = item.data(self._ROLE_PATH)
+        is_folder = item.data(self._ROLE_IS_FOLDER)
+        if not path:
+            return
+
+        menu = QMenu(self)
+        menu.setStyleSheet(self._CTX_STYLE)
+
+        if is_folder:
+            act_open = menu.addAction("Open Folder")
+            act_open.triggered.connect(
+                lambda: self._navigate_into(path))
+            menu.addSeparator()
+
+        # Move to folder submenu
+        if not is_folder and self._active_path:
+            move_menu = menu.addMenu("Move to\u2026")
+            move_menu.setStyleSheet(self._CTX_STYLE)
+            # List sibling folders
+            parent = self._active_path
+            try:
+                subdirs = sorted(
+                    d for d in os.listdir(parent)
+                    if os.path.isdir(os.path.join(parent, d))
+                    and not d.startswith("."))
+                for sd in subdirs:
+                    target = os.path.join(parent, sd)
+                    act = move_menu.addAction(f"\u25B8  {sd}")
+                    act.triggered.connect(
+                        lambda checked, t=target, p=path:
+                            self._move_to_folder(p, t))
+            except OSError:
+                pass
+            if not move_menu.actions():
+                move_menu.addAction("(no subfolders)").setEnabled(False)
+            menu.addSeparator()
+
+        act_rename = menu.addAction("Rename")
+        act_rename.triggered.connect(
+            lambda: self._rename_item(item))
+        menu.addSeparator()
+
+        act_del = menu.addAction("Delete")
+        act_del.triggered.connect(
+            lambda: self._delete_item(path, is_folder))
+
+        menu.exec(self._file_list.mapToGlobal(pos))
+
+    # ── Folder creation ────────────────────────────────────────────────
+
+    @staticmethod
+    def _white_msgbox_style():
+        return ("QMessageBox { background: white; }"
+                " QLabel { color: #1a1a2e; background: transparent; }"
+                " QPushButton { background: white; color: #1a1a2e;"
+                "   border: 1px solid #c0c8d4; border-radius: 4px;"
+                "   padding: 5px 16px; }"
+                " QPushButton:hover { background: #f0f4ff; }")
+
+    def _white_input(self, title, label, text=""):
+        """Show a white-themed QInputDialog and return (text, ok)."""
+        from PyQt6.QtWidgets import QInputDialog
+        dlg = QInputDialog(self)
+        dlg.setWindowTitle(title)
+        dlg.setLabelText(label)
+        dlg.setTextValue(text)
+        dlg.setStyleSheet(
+            "QInputDialog { background: white; }"
+            " QLabel { color: #1a1a2e; background: transparent; }"
+            " QLineEdit { background: white; color: #1a1a2e;"
+            "   border: 1px solid #c0c8d4; border-radius: 4px;"
+            "   padding: 4px 8px; }"
+            " QPushButton { background: white; color: #1a1a2e;"
+            "   border: 1px solid #c0c8d4; border-radius: 4px;"
+            "   padding: 5px 16px; }"
+            " QPushButton:hover { background: #f0f4ff; }")
+        ok = dlg.exec() == QInputDialog.DialogCode.Accepted
+        return dlg.textValue(), ok
+
+    def _create_sidebar_folder(self):
+        """Create a brand-new folder and add it to the Quick Access sidebar."""
+        name, ok = self._white_input(
+            "New Folder", "Folder name:", "New Folder")
+        if not ok or not name.strip():
+            return
+        name = name.strip()
+
+        # Create the folder next to the app's data directories
+        from ..resources import resource_path
+        base = resource_path("")
+        target = os.path.join(base, name)
+
+        if os.path.exists(target):
+            # If it already exists, check if already in sidebar
+            for entry in self._sb_entries:
+                if entry["path"] == target:
+                    self._nav_stack.clear()
+                    self._load_folder(target)
+                    return
+        else:
+            try:
+                os.makedirs(target)
+            except OSError as e:
+                mb = QMessageBox(self)
+                mb.setWindowTitle("Error")
+                mb.setText(f"Could not create folder:\n{e}")
+                mb.setStyleSheet(self._white_msgbox_style())
+                mb.exec()
                 return
-        name = os.path.basename(folder)
-        self._bookmarks.append({"path": folder, "name": name, "type": "folder"})
-        self._prefs["bookmarks"] = self._bookmarks; _save_user_bookmarks(self._prefs)
-        self._add_sidebar_entry(f"\U0001f4c1  {name}", folder, removable=True)
-        self._load_folder(folder)
+
+        # Add to sidebar entries
+        self._sb_entries.append({
+            "path": target,
+            "name": name,
+            "icon": "\u25B8",
+            "removable": True,
+        })
+        self._rebuild_sidebar()
+        self._save_sidebar_bookmarks()
+        self._nav_stack.clear()
+        self._load_folder(target)
+
+    # ── Move file to folder ────────────────────────────────────────────
+
+    def _move_to_folder(self, file_path: str, folder_path: str):
+        """Move a .euclid file into a subfolder."""
+        import shutil
+        fname = os.path.basename(file_path)
+        dest = os.path.join(folder_path, fname)
+        if os.path.exists(dest):
+            reply = QMessageBox(self)
+            reply.setWindowTitle("File Exists")
+            reply.setText(
+                f'"{fname}" already exists in '
+                f'"{os.path.basename(folder_path)}".\nOverwrite it?')
+            reply.setStandardButtons(
+                QMessageBox.StandardButton.Yes
+                | QMessageBox.StandardButton.No)
+            reply.setDefaultButton(QMessageBox.StandardButton.No)
+            reply.setStyleSheet(self._white_msgbox_style())
+            if reply.exec() != QMessageBox.StandardButton.Yes:
+                return
+        try:
+            shutil.move(file_path, dest)
+        except OSError as e:
+            mb = QMessageBox(self)
+            mb.setWindowTitle("Error")
+            mb.setText(f"Could not move file:\n{e}")
+            mb.setStyleSheet(self._white_msgbox_style())
+            mb.exec()
+            return
+        self._load_folder(self._active_path)
+
+    # ── Rename ─────────────────────────────────────────────────────────
+
+    def _rename_item(self, item: QListWidgetItem):
+        path = item.data(self._ROLE_PATH)
+        if not path:
+            return
+        old_name = os.path.basename(path)
+        is_folder = item.data(self._ROLE_IS_FOLDER)
+        prompt_name = (old_name if is_folder
+                       else old_name.replace(".euclid", ""))
+        new_name, ok = self._white_input(
+            "Rename", "New name:", prompt_name)
+        if not ok or not new_name.strip():
+            return
+        new_name = new_name.strip()
+        if not is_folder and not new_name.endswith(".euclid"):
+            new_name += ".euclid"
+        new_path = os.path.join(os.path.dirname(path), new_name)
+        if os.path.exists(new_path) and new_path != path:
+            mb = QMessageBox(self)
+            mb.setWindowTitle("Name Taken")
+            mb.setText(f'"{new_name}" already exists.')
+            mb.setStyleSheet(self._white_msgbox_style())
+            mb.exec()
+            return
+        try:
+            os.rename(path, new_path)
+        except OSError as e:
+            mb = QMessageBox(self)
+            mb.setWindowTitle("Error")
+            mb.setText(f"Could not rename:\n{e}")
+            mb.setStyleSheet(self._white_msgbox_style())
+            mb.exec()
+            return
+        self._load_folder(self._active_path)
+
+    # ── Delete with confirmation ───────────────────────────────────────
+
+    def _delete_selected(self):
+        """Delete button in the toolbar — delete all selected items."""
+        items = self._file_list.selectedItems()
+        if not items:
+            return
+        paths = []
+        for it in items:
+            p = it.data(self._ROLE_PATH)
+            if p:
+                paths.append((p, it.data(self._ROLE_IS_FOLDER)))
+        if not paths:
+            return
+        n = len(paths)
+        if n == 1:
+            name = os.path.basename(paths[0][0])
+            msg = f'Are you sure you want to delete "{name}"?'
+        else:
+            msg = f"Are you sure you want to delete {n} items?"
+
+        confirm = QMessageBox(self)
+        confirm.setWindowTitle("Confirm Delete")
+        confirm.setText(msg)
+        confirm.setInformativeText("This action cannot be undone.")
+        confirm.setIcon(QMessageBox.Icon.Warning)
+        confirm.setStandardButtons(
+            QMessageBox.StandardButton.Yes
+            | QMessageBox.StandardButton.No)
+        confirm.setDefaultButton(QMessageBox.StandardButton.No)
+        confirm.setStyleSheet(self._white_msgbox_style())
+        if confirm.exec() != QMessageBox.StandardButton.Yes:
+            return
+
+        import shutil
+        for p, is_dir in paths:
+            try:
+                if is_dir:
+                    shutil.rmtree(p)
+                else:
+                    os.remove(p)
+            except OSError:
+                pass
+        self._load_folder(self._active_path)
+
+    def _delete_item(self, path: str, is_folder: bool):
+        """Delete a single item (from context menu)."""
+        name = os.path.basename(path)
+        kind = "folder" if is_folder else "file"
+        extra = ("\nAll files inside the folder will also be deleted."
+                 if is_folder else "")
+        confirm = QMessageBox(self)
+        confirm.setWindowTitle("Confirm Delete")
+        confirm.setText(
+            f'Are you sure you want to delete the {kind} '
+            f'"{name}"?{extra}')
+        confirm.setInformativeText("This action cannot be undone.")
+        confirm.setIcon(QMessageBox.Icon.Warning)
+        confirm.setStandardButtons(
+            QMessageBox.StandardButton.Yes
+            | QMessageBox.StandardButton.No)
+        confirm.setDefaultButton(QMessageBox.StandardButton.No)
+        confirm.setStyleSheet(self._white_msgbox_style())
+        if confirm.exec() != QMessageBox.StandardButton.Yes:
+            return
+
+        import shutil
+        try:
+            if is_folder:
+                shutil.rmtree(path)
+            else:
+                os.remove(path)
+        except OSError as e:
+            mb = QMessageBox(self)
+            mb.setWindowTitle("Error")
+            mb.setText(f"Could not delete:\n{e}")
+            mb.setStyleSheet(self._white_msgbox_style())
+            mb.exec()
+            return
+        self._load_folder(self._active_path)
+
+    # ── Bookmark management ───────────────────────────────────────────
 
     def _add_file_bookmark(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -426,26 +1163,18 @@ class _OpenFileDialog(QDialog):
             "Euclid Files (*.euclid);;All Files (*)")
         if not path:
             return
-        for bm in self._bookmarks:
-            if bm.get("path") == path:
+        for entry in self._sb_entries:
+            if entry["path"] == path:
                 return
         name = os.path.basename(path).replace(".euclid", "")
-        self._bookmarks.append({"path": path, "name": name, "type": "file"})
-        self._prefs["bookmarks"] = self._bookmarks; _save_user_bookmarks(self._prefs)
-        self._add_sidebar_entry(f"\U0001f4c4  {name}", path, removable=True)
-
-    def _remove_bookmark(self, path: str):
-        self._bookmarks = [bm for bm in self._bookmarks if bm.get("path") != path]
-        self._prefs["bookmarks"] = self._bookmarks; _save_user_bookmarks(self._prefs)
-        # Remove from sidebar UI
-        for i, (btn, bm_path) in enumerate(self._sidebar_btns):
-            if bm_path == path:
-                container = btn.parentWidget()
-                if container:
-                    self._sb_layout.removeWidget(container)
-                    container.deleteLater()
-                self._sidebar_btns.pop(i)
-                break
+        self._sb_entries.append({
+            "path": path,
+            "name": name,
+            "icon": "\u2022",
+            "removable": True,
+        })
+        self._rebuild_sidebar()
+        self._save_sidebar_bookmarks()
 
 
 class ToggleSwitch(QWidget):

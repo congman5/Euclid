@@ -68,12 +68,21 @@
       "¬(a = b)",
       "¬(a = c)",
       "¬(b = c)",
+      "¬(d = a)",
       "¬(d = b)",
       "¬(d = c)",
       "on(b, L)",
       "on(c, L)",
       "¬(on(a, L))",
-      "same-side(d, a, L)"
+      "same-side(d, a, L)",
+      "on(a, M)",
+      "on(c, M)",
+      "¬(on(b, M))",
+      "same-side(d, b, M)",
+      "on(a, N)",
+      "on(b, N)",
+      "¬(on(c, N))",
+      "same-side(d, c, N)"
     ],
     "goal": "(bd + dc) < (ba + ac), ∠bac < ∠bdc",
     "declarations": {

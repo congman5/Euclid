@@ -124,7 +124,7 @@
       "on(b, L)",
       "¬(a = b)"
     ],
-    "goal": "∠baf = right-angle, ¬(f = a), ¬(on(f, L))",
+    "goal": "∠baf = ∟, ¬(f = a), ¬(on(f, L))",
     "declarations": {
       "points": [
         "a",

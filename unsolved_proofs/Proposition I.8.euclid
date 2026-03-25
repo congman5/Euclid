@@ -80,6 +80,12 @@
   "proof": {
     "name": "Prop.I.8",
     "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "¬(d = e)",
+      "¬(d = f)",
+      "¬(e = f)",
       "ab = de",
       "bc = ef",
       "ca = fd"

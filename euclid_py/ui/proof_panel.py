@@ -3209,9 +3209,12 @@ class ProofPanel(QWidget):
 
     def _load_lemma(self):
         """Load a verified proof (.euclid or .json) as a reusable lemma."""
-        path, _ = QFileDialog.getOpenFileName(
-            self, "Load Proof as Lemma", "",
-            "Euclid Files (*.euclid);;JSON Files (*.json);;All Files (*)")
+        from .main_window import _OpenFileDialog
+        dlg = _OpenFileDialog(self)
+        dlg.setWindowTitle("Load Proof as Lemma")
+        if dlg.exec() != _OpenFileDialog.DialogCode.Accepted:
+            return
+        path = dlg.selected_path
         if not path:
             return
         try:

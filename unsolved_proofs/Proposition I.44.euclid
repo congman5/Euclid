@@ -57,7 +57,7 @@
       "¬(c = e)",
       "¬(d = e)"
     ],
-    "goal": "on(f, L)",
+    "goal": "on(f, L), ¬(f = a), ¬(f = b), ¬(g = a), ¬(g = b), (△abg + △bgf) = △cde",
     "declarations": {
       "points": [
         "A",

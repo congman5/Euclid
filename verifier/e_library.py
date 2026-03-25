@@ -98,11 +98,12 @@ PROP_I_3 = ETheorem(
         "straight line equal to the less."
     ),
     sequent=Sequent(
-        # Hypotheses: on(a,L), on(b,L), a≠b, cd < ab
+        # Hypotheses: on(a,L), on(b,L), a≠b, c≠d, cd < ab
         hypotheses=[
             _pos(On("a", "L")),
             _pos(On("b", "L")),
             _neg(Equals("a", "b")),
+            _neg(Equals("c", "d")),
             _pos(LessThan(SegmentTerm("c", "d"), SegmentTerm("a", "b"))),
         ],
         # ∃e: between(a,e,b) ∧ ae = cd
@@ -123,8 +124,14 @@ PROP_I_4 = ETheorem(
     name="Prop.I.4",
     statement="SAS: side-angle-side triangle congruence.",
     sequent=Sequent(
-        # Hypotheses: ab=de, ac=df, ∠bac = ∠edf
+        # Hypotheses: ab=de, ac=df, ∠bac = ∠edf, all points distinct
         hypotheses=[
+            _neg(Equals("a", "b")),
+            _neg(Equals("a", "c")),
+            _neg(Equals("b", "c")),
+            _neg(Equals("d", "e")),
+            _neg(Equals("d", "f")),
+            _neg(Equals("e", "f")),
             _pos(Equals(SegmentTerm("a", "b"), SegmentTerm("d", "e"))),
             _pos(Equals(SegmentTerm("a", "c"), SegmentTerm("d", "f"))),
             _pos(Equals(AngleTerm("b", "a", "c"),
@@ -177,6 +184,12 @@ PROP_I_8 = ETheorem(
     statement="SSS: side-side-side triangle congruence.",
     sequent=Sequent(
         hypotheses=[
+            _neg(Equals("a", "b")),
+            _neg(Equals("a", "c")),
+            _neg(Equals("b", "c")),
+            _neg(Equals("d", "e")),
+            _neg(Equals("d", "f")),
+            _neg(Equals("e", "f")),
             _pos(Equals(SegmentTerm("a", "b"), SegmentTerm("d", "e"))),
             _pos(Equals(SegmentTerm("b", "c"), SegmentTerm("e", "f"))),
             _pos(Equals(SegmentTerm("c", "a"), SegmentTerm("f", "d"))),
@@ -577,6 +590,9 @@ PROP_I_18 = ETheorem(
             _neg(Equals("a", "b")),
             _neg(Equals("a", "c")),
             _neg(Equals("b", "c")),
+            _pos(On("a", "L")),
+            _pos(On("b", "L")),
+            _neg(On("c", "L")),
             _pos(LessThan(SegmentTerm("a", "b"), SegmentTerm("a", "c"))),
         ],
         exists_vars=[],
@@ -607,6 +623,9 @@ PROP_I_19 = ETheorem(
             _neg(Equals("a", "b")),
             _neg(Equals("a", "c")),
             _neg(Equals("b", "c")),
+            _pos(On("a", "L")),
+            _pos(On("b", "L")),
+            _neg(On("c", "L")),
             # ∠B < ∠C (angle at B is smaller)
             _pos(LessThan(AngleTerm("a", "b", "c"),
                           AngleTerm("a", "c", "b"))),
@@ -640,6 +659,9 @@ PROP_I_20 = ETheorem(
             _neg(Equals("a", "b")),
             _neg(Equals("a", "c")),
             _neg(Equals("b", "c")),
+            _pos(On("a", "L")),
+            _pos(On("b", "L")),
+            _neg(On("c", "L")),
         ],
         exists_vars=[],
         conclusions=[
@@ -675,13 +697,24 @@ PROP_I_21 = ETheorem(
             _neg(Equals("a", "b")),
             _neg(Equals("a", "c")),
             _neg(Equals("b", "c")),
+            _neg(Equals("d", "a")),
             _neg(Equals("d", "b")),
             _neg(Equals("d", "c")),
-            # d is inside triangle abc (between-conditions ensure this)
+            # Triangle abc: three sides as lines, a off BC, etc.
             _pos(On("b", "L")),
             _pos(On("c", "L")),
             _neg(On("a", "L")),
+            # d is inside triangle abc: same side as a w.r.t. BC,
+            # same side as b w.r.t. AC, same side as c w.r.t. AB
             _pos(SameSide("d", "a", "L")),
+            _pos(On("a", "M")),
+            _pos(On("c", "M")),
+            _neg(On("b", "M")),
+            _pos(SameSide("d", "b", "M")),
+            _pos(On("a", "N")),
+            _pos(On("b", "N")),
+            _neg(On("c", "N")),
+            _pos(SameSide("d", "c", "N")),
         ],
         exists_vars=[],
         conclusions=[
@@ -1192,6 +1225,9 @@ PROP_I_33 = ETheorem(
             _pos(On("b", "P")),
             _pos(On("d", "P")),
             _neg(Equals("L", "N")),
+            # "in the same directions" — b,d on same side of diagonal ac
+            # (ensures non-crossed quadrilateral ABDC)
+            _pos(SameSide("b", "d", "M")),
         ],
         exists_vars=[],
         conclusions=[
@@ -1593,10 +1629,11 @@ PROP_I_44 = ETheorem(
     ),
     sequent=Sequent(
         hypotheses=[
-            # Given segment ab, triangle c, and angle d
+            # Given segment ab on line L
             _pos(On("a", "L")),
             _pos(On("b", "L")),
             _neg(Equals("a", "b")),
+            # Given triangle cde (non-degenerate)
             _neg(Equals("c", "d")),
             _neg(Equals("c", "e")),
             _neg(Equals("d", "e")),
@@ -1606,8 +1643,17 @@ PROP_I_44 = ETheorem(
             ("g", Sort.POINT),
         ],
         conclusions=[
-            # Parallelogram on AB with equal area
+            # Parallelogram ABFG on segment AB with:
             _pos(On("f", "L")),
+            _neg(Equals("f", "a")),
+            _neg(Equals("f", "b")),
+            _neg(Equals("g", "a")),
+            _neg(Equals("g", "b")),
+            # Area of parallelogram ABFG = area of triangle CDE
+            _pos(Equals(
+                MagAdd(AreaTerm("a", "b", "g"), AreaTerm("b", "g", "f")),
+                AreaTerm("c", "d", "e"),
+            )),
         ],
     ),
 )

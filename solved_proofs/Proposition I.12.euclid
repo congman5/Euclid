@@ -123,7 +123,7 @@
       "¬(a = b)",
       "¬(on(p, L))"
     ],
-    "goal": "on(h, L), on(e, L), ¬(e = h), ∠ehp = right-angle, ¬(h = p)",
+    "goal": "on(h, L), on(e, L), ¬(e = h), ∠ehp = ∟, ¬(h = p)",
     "declarations": {
       "points": [
         "a",

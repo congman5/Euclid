@@ -82,7 +82,7 @@
       "¬(on(d, L))",
       "¬(b = d)"
     ],
-    "goal": "∠abd + ∠dbc = right-angle + right-angle",
+    "goal": "(∠abd + ∠dbc) = (∟ + ∟)",
     "declarations": {
       "points": [
         "a",
