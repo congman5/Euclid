@@ -375,6 +375,12 @@ class _OpenFileDialog(QDialog):
         btn_browse.clicked.connect(self._browse_file)
         btn_row.addWidget(btn_browse)
 
+        btn_new_sub = QPushButton("+ Subfolder")
+        btn_new_sub.setStyleSheet(self._SM_BTN)
+        btn_new_sub.setToolTip("Create a new subfolder inside the current folder")
+        btn_new_sub.clicked.connect(self._create_subfolder)
+        btn_row.addWidget(btn_new_sub)
+
         btn_delete = QPushButton("Delete")
         btn_delete.setStyleSheet(
             "QPushButton { padding: 7px 14px; border: 1px solid #e0b0b0;"
@@ -1043,6 +1049,34 @@ class _OpenFileDialog(QDialog):
         self._save_sidebar_bookmarks()
         self._nav_stack.clear()
         self._load_folder(target)
+
+    def _create_subfolder(self):
+        """Create a new subfolder inside the currently viewed folder."""
+        if not self._active_path or not os.path.isdir(self._active_path):
+            return
+        name, ok = self._white_input(
+            "New Subfolder", "Subfolder name:", "New Folder")
+        if not ok or not name.strip():
+            return
+        name = name.strip()
+        target = os.path.join(self._active_path, name)
+        if os.path.exists(target):
+            mb = QMessageBox(self)
+            mb.setWindowTitle("Folder Exists")
+            mb.setText(f'A folder named "{name}" already exists here.')
+            mb.setStyleSheet(self._white_msgbox_style())
+            mb.exec()
+            return
+        try:
+            os.makedirs(target)
+        except OSError as e:
+            mb = QMessageBox(self)
+            mb.setWindowTitle("Error")
+            mb.setText(f"Could not create folder:\n{e}")
+            mb.setStyleSheet(self._white_msgbox_style())
+            mb.exec()
+            return
+        self._load_folder(self._active_path)
 
     # ── Move file to folder ────────────────────────────────────────────
 
