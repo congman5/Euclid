@@ -243,6 +243,8 @@ class _DropSidebar(QListWidget):
     fileDroppedOnSidebarFolder = pyqtSignal(str, str)  # (source_path, target_folder)
     # Emitted when a sidebar file entry is dropped onto a sidebar folder entry
     sidebarFileToFolder = pyqtSignal(int, int)  # (source_sb_idx, target_sb_idx)
+    # Emitted when a file from the file list is dropped onto empty sidebar space
+    addToQuickAccess = pyqtSignal(str)  # file_path
 
     _ROLE_SB_INDEX = Qt.ItemDataRole.UserRole + 10
 
@@ -308,7 +310,11 @@ class _DropSidebar(QListWidget):
             if old:
                 old.setBackground(QColor("transparent"))
                 self._drop_target_item = None
-            super().dragMoveEvent(event)
+            # Accept external drops anywhere (add to Quick Access)
+            if source is not None and source is not self:
+                event.acceptProposedAction()
+            else:
+                super().dragMoveEvent(event)
 
     def dropEvent(self, event):
         if self._drop_target_item:
@@ -342,6 +348,17 @@ class _DropSidebar(QListWidget):
                 event.acceptProposedAction()
                 self._drop_target_item = None
                 return
+
+        # Drop from file list onto empty space / non-folder entry
+        # → add as Quick Access bookmark
+        if source is not None and source is not self:
+            for sel in source.selectedItems():
+                src_path = sel.data(Qt.ItemDataRole.UserRole)
+                if src_path:
+                    self.addToQuickAccess.emit(src_path)
+            event.acceptProposedAction()
+            self._drop_target_item = None
+            return
 
         # Normal internal reorder (folders and entries repositioning)
         super().dropEvent(event)
@@ -564,6 +581,8 @@ class _OpenFileDialog(QDialog):
             self._handle_drop_on_sidebar_folder)
         self._sb_list.sidebarFileToFolder.connect(
             self._handle_sidebar_file_to_folder)
+        self._sb_list.addToQuickAccess.connect(
+            self._handle_add_to_quick_access)
         rl.addWidget(self._file_list)
 
         # Bottom action bar
@@ -1485,6 +1504,27 @@ class _OpenFileDialog(QDialog):
                 self._save_sidebar_bookmarks()
             except ValueError:
                 pass
+
+    def _handle_add_to_quick_access(self, file_path: str):
+        """Add a file or folder from the file list as a Quick Access bookmark."""
+        if not file_path:
+            return
+        # Don't add duplicates
+        for entry in self._sb_entries:
+            if entry["path"] == file_path:
+                return
+        is_dir = os.path.isdir(file_path)
+        name = os.path.basename(file_path)
+        if not is_dir:
+            name = name.replace(".euclid", "")
+        self._sb_entries.append({
+            "path": file_path,
+            "name": name,
+            "icon": "\u25B8" if is_dir else "\u2022",
+            "removable": True,
+        })
+        self._rebuild_sidebar()
+        self._save_sidebar_bookmarks()
 
     # ── Rename ─────────────────────────────────────────────────────────
 
