@@ -156,6 +156,160 @@ _DIALOG_BASE_STYLE = """
 """
 
 
+class _DropFileList(QListWidget):
+    """File list that supports dropping items onto folder rows to move them."""
+
+    _ROLE_PATH = Qt.ItemDataRole.UserRole
+    _ROLE_IS_FOLDER = Qt.ItemDataRole.UserRole + 1
+
+    # Signal: file_path was dropped onto folder_path
+    from PyQt6.QtCore import pyqtSignal
+    fileDroppedOnFolder = pyqtSignal(str, str)  # (source_path, target_folder)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self._drop_target_item = None
+
+    def dragEnterEvent(self, event):
+        # Accept both internal moves and drops from the sidebar
+        if event.source() is self or isinstance(event.source(), QListWidget):
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event):
+        # Highlight the folder item under the cursor
+        item = self.itemAt(event.position().toPoint())
+        old = self._drop_target_item
+
+        if item and item.data(self._ROLE_IS_FOLDER):
+            if old and old is not item:
+                old.setBackground(QColor("transparent"))
+            item.setBackground(QColor("#dce8f7"))
+            self._drop_target_item = item
+            event.acceptProposedAction()
+        else:
+            if old:
+                old.setBackground(QColor("transparent"))
+                self._drop_target_item = None
+            # Allow normal internal reorder when not over a folder
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event):
+        # Clear highlight
+        if self._drop_target_item:
+            self._drop_target_item.setBackground(QColor("transparent"))
+
+        target_item = self.itemAt(event.position().toPoint())
+
+        if target_item and target_item.data(self._ROLE_IS_FOLDER):
+            target_folder = target_item.data(self._ROLE_PATH)
+            source = event.source()
+
+            if source is self:
+                # Dropping a file-list item onto a folder within the same list
+                for sel in self.selectedItems():
+                    src_path = sel.data(self._ROLE_PATH)
+                    if src_path and not sel.data(self._ROLE_IS_FOLDER):
+                        self.fileDroppedOnFolder.emit(src_path, target_folder)
+            elif isinstance(source, QListWidget):
+                # Dropping from the sidebar
+                for sel in source.selectedItems():
+                    sb_idx = sel.data(Qt.ItemDataRole.UserRole + 10)
+                    if sb_idx is not None:
+                        # Pass the sidebar index via a property so the
+                        # dialog can look up the path
+                        self.fileDroppedOnFolder.emit(
+                            f"__sb__{sb_idx}", target_folder)
+            event.acceptProposedAction()
+        else:
+            # Normal internal reorder
+            super().dropEvent(event)
+            self._drop_target_item = None
+
+    def dragLeaveEvent(self, event):
+        if self._drop_target_item:
+            self._drop_target_item.setBackground(QColor("transparent"))
+            self._drop_target_item = None
+        super().dragLeaveEvent(event)
+
+
+class _DropSidebar(QListWidget):
+    """Sidebar that accepts drops from the file list onto folder entries."""
+
+    from PyQt6.QtCore import pyqtSignal
+    fileDroppedOnSidebarFolder = pyqtSignal(str, str)  # (source_path, target_folder)
+
+    _ROLE_SB_INDEX = Qt.ItemDataRole.UserRole + 10
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self._drop_target_item = None
+
+    def dragEnterEvent(self, event):
+        if isinstance(event.source(), QListWidget):
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event):
+        item = self.itemAt(event.position().toPoint())
+        old = self._drop_target_item
+
+        # Check if the item under cursor is a folder sidebar entry
+        is_folder_entry = False
+        if item:
+            sb_idx = item.data(self._ROLE_SB_INDEX)
+            if sb_idx is not None:
+                # Will be checked in the dialog via a callback
+                is_folder_entry = True
+
+        if is_folder_entry:
+            if old and old is not item:
+                old.setBackground(QColor("transparent"))
+            item.setBackground(QColor("#dce8f7"))
+            self._drop_target_item = item
+            event.acceptProposedAction()
+        else:
+            if old:
+                old.setBackground(QColor("transparent"))
+                self._drop_target_item = None
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event):
+        if self._drop_target_item:
+            self._drop_target_item.setBackground(QColor("transparent"))
+
+        target_item = self.itemAt(event.position().toPoint())
+        source = event.source()
+
+        if target_item and source and source is not self:
+            sb_idx = target_item.data(self._ROLE_SB_INDEX)
+            if sb_idx is not None:
+                # Get selected file paths from the file list
+                from PyQt6.QtCore import QMimeData
+                for sel in source.selectedItems():
+                    src_path = sel.data(Qt.ItemDataRole.UserRole)
+                    is_folder = sel.data(Qt.ItemDataRole.UserRole + 1)
+                    if src_path and not is_folder:
+                        self.fileDroppedOnSidebarFolder.emit(
+                            src_path, f"__sb__{sb_idx}")
+                event.acceptProposedAction()
+                return
+
+        # Normal internal reorder
+        super().dropEvent(event)
+        self._drop_target_item = None
+
+    def dragLeaveEvent(self, event):
+        if self._drop_target_item:
+            self._drop_target_item.setBackground(QColor("transparent"))
+            self._drop_target_item = None
+        super().dragLeaveEvent(event)
+
+
 class _OpenFileDialog(QDialog):
     """Custom file-open dialog with sidebar, folders-as-features,
     drag-drop reorder, drag into folders, and delete with confirmation."""
@@ -206,8 +360,8 @@ class _OpenFileDialog(QDialog):
             " background: transparent;")
         sb_outer.addWidget(sb_title)
 
-        # Sidebar list — draggable, right-clickable
-        self._sb_list = QListWidget()
+        # Sidebar list — draggable, right-clickable, accepts drops from file list
+        self._sb_list = _DropSidebar()
         self._sb_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
         self._sb_list.setDefaultDropAction(Qt.DropAction.MoveAction)
         self._sb_list.setStyleSheet("""
@@ -308,8 +462,8 @@ class _OpenFileDialog(QDialog):
 
         rl.addLayout(toolbar_row)
 
-        # File list — with drag & drop
-        self._file_list = QListWidget()
+        # File list — with drag & drop onto folders
+        self._file_list = _DropFileList()
         self._file_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
         self._file_list.setDefaultDropAction(Qt.DropAction.MoveAction)
         self._file_list.setSelectionMode(
@@ -359,6 +513,9 @@ class _OpenFileDialog(QDialog):
         self._file_list.customContextMenuRequested.connect(
             self._show_context_menu)
         self._file_list.model().rowsMoved.connect(self._on_rows_moved)
+        self._file_list.fileDroppedOnFolder.connect(self._handle_drop_on_folder)
+        self._sb_list.fileDroppedOnSidebarFolder.connect(
+            self._handle_drop_on_sidebar_folder)
         rl.addWidget(self._file_list)
 
         # Bottom action bar
@@ -1108,6 +1265,49 @@ class _OpenFileDialog(QDialog):
             mb.exec()
             return
         self._load_folder(self._active_path)
+
+    # ── Drag-and-drop into folders ────────────────────────────────────
+
+    def _handle_drop_on_folder(self, source_path: str, target_folder: str):
+        """Handle a file dropped onto a folder in the file list."""
+        if source_path.startswith("__sb__"):
+            # Dropped from sidebar — resolve path from sidebar entry
+            try:
+                sb_idx = int(source_path.replace("__sb__", ""))
+                if 0 <= sb_idx < len(self._sb_entries):
+                    source_path = self._sb_entries[sb_idx]["path"]
+                else:
+                    return
+            except (ValueError, IndexError):
+                return
+        if not source_path or not os.path.isfile(source_path):
+            return
+        if os.path.isdir(target_folder):
+            self._move_to_folder(source_path, target_folder)
+
+    def _handle_drop_on_sidebar_folder(self, source_path: str,
+                                        target_ref: str):
+        """Handle a file dropped onto a sidebar folder entry."""
+        if target_ref.startswith("__sb__"):
+            try:
+                sb_idx = int(target_ref.replace("__sb__", ""))
+                if 0 <= sb_idx < len(self._sb_entries):
+                    target_folder = self._sb_entries[sb_idx]["path"]
+                else:
+                    return
+            except (ValueError, IndexError):
+                return
+        else:
+            target_folder = target_ref
+
+        if not source_path or not os.path.isfile(source_path):
+            return
+        if not os.path.isdir(target_folder):
+            return
+        # Don't move into the same folder
+        if os.path.dirname(source_path) == target_folder:
+            return
+        self._move_to_folder(source_path, target_folder)
 
     # ── Rename ─────────────────────────────────────────────────────────
 
