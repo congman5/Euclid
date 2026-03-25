@@ -261,21 +261,20 @@ class _OpenFileDialog(QDialog):
             })
         self._rebuild_sidebar()
 
-        # Bottom buttons
+        # Sidebar bottom buttons — compact row
+        sb_btn_row = QHBoxLayout()
+        sb_btn_row.setSpacing(4)
+        btn_add_folder = QPushButton("+ Folder")
+        btn_add_folder.setStyleSheet(self._SM_BTN)
+        btn_add_folder.setToolTip("Create a new folder in Quick Access")
+        btn_add_folder.clicked.connect(self._create_sidebar_folder)
+        sb_btn_row.addWidget(btn_add_folder)
         btn_add_file = QPushButton("+ File")
         btn_add_file.setStyleSheet(self._SM_BTN)
         btn_add_file.setToolTip("Add a single file to the sidebar")
         btn_add_file.clicked.connect(self._add_file_bookmark)
-        sb_outer.addWidget(btn_add_file)
-
-        btn_browse = QPushButton("Browse\u2026")
-        btn_browse.setStyleSheet(
-            "QPushButton { padding: 7px 12px; border: 1px solid #c0c8d4;"
-            " border-radius: 4px; background: white; margin-top: 4px;"
-            " color: #1a1a2e; font-size: 12px; }"
-            " QPushButton:hover { background: #f0f4ff; }")
-        btn_browse.clicked.connect(self._browse_file)
-        sb_outer.addWidget(btn_browse)
+        sb_btn_row.addWidget(btn_add_file)
+        sb_outer.addLayout(sb_btn_row)
 
         root.addWidget(sidebar)
 
@@ -306,22 +305,6 @@ class _OpenFileDialog(QDialog):
         self._folder_label.setStyleSheet(
             "color: #1a1a2e; background: transparent;")
         toolbar_row.addWidget(self._folder_label, stretch=1)
-
-        btn_new_folder = QPushButton("+ New Folder")
-        btn_new_folder.setStyleSheet(self._SM_BTN)
-        btn_new_folder.setToolTip("Create a new folder in Quick Access")
-        btn_new_folder.clicked.connect(self._create_sidebar_folder)
-        toolbar_row.addWidget(btn_new_folder)
-
-        btn_delete = QPushButton("Delete")
-        btn_delete.setStyleSheet(
-            "QPushButton { padding: 5px 10px; border: 1px solid #c0c8d4;"
-            " border-radius: 4px; background: white;"
-            " color: #d32f2f; font-size: 11px; }"
-            " QPushButton:hover { background: #fff0f0; }")
-        btn_delete.setToolTip("Delete selected file or folder")
-        btn_delete.clicked.connect(self._delete_selected)
-        toolbar_row.addWidget(btn_delete)
 
         rl.addLayout(toolbar_row)
 
@@ -378,9 +361,32 @@ class _OpenFileDialog(QDialog):
         self._file_list.model().rowsMoved.connect(self._on_rows_moved)
         rl.addWidget(self._file_list)
 
-        # Bottom buttons
+        # Bottom action bar
         btn_row = QHBoxLayout()
+        btn_row.setSpacing(6)
+
+        btn_browse = QPushButton("Browse\u2026")
+        btn_browse.setStyleSheet(
+            "QPushButton { padding: 7px 14px; border: 1px solid #c0c8d4;"
+            " border-radius: 4px; background: white;"
+            " color: #1a1a2e; font-size: 12px; }"
+            " QPushButton:hover { background: #f0f4ff; }")
+        btn_browse.setToolTip("Open system file browser")
+        btn_browse.clicked.connect(self._browse_file)
+        btn_row.addWidget(btn_browse)
+
+        btn_delete = QPushButton("Delete")
+        btn_delete.setStyleSheet(
+            "QPushButton { padding: 7px 14px; border: 1px solid #e0b0b0;"
+            " border-radius: 4px; background: white;"
+            " color: #d32f2f; font-size: 12px; }"
+            " QPushButton:hover { background: #fff0f0; }")
+        btn_delete.setToolTip("Delete selected file or folder")
+        btn_delete.clicked.connect(self._delete_selected)
+        btn_row.addWidget(btn_delete)
+
         btn_row.addStretch()
+
         btn_cancel = QPushButton("Cancel")
         btn_cancel.setStyleSheet(
             "QPushButton { padding: 7px 20px; border: 1px solid #c0c8d4;"
