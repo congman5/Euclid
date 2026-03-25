@@ -1017,6 +1017,23 @@ class _OpenFileDialog(QDialog):
         else:
             all_entries = subfolders + files
 
+        # Show a ".." parent row when inside a subfolder — can drag files onto it
+        parent_dir = os.path.dirname(folder)
+        if (self._nav_stack and parent_dir
+                and parent_dir != folder and os.path.isdir(parent_dir)):
+            parent_name = os.path.basename(parent_dir)
+            item = QListWidgetItem(f"\u2190  .. ({parent_name})")
+            item.setData(self._ROLE_PATH, parent_dir)
+            item.setData(self._ROLE_IS_FOLDER, True)
+            item.setData(self._ROLE_IS_PARENT, True)
+            f = QFont("Segoe UI", 12)
+            item.setFont(f)
+            item.setForeground(QColor("#8b8ba0"))
+            # Not draggable itself, but accepts drops
+            item.setFlags(Qt.ItemFlag.ItemIsEnabled
+                          | Qt.ItemFlag.ItemIsDropEnabled)
+            self._file_list.addItem(item)
+
         if not all_entries:
             item = QListWidgetItem("(empty folder)")
             item.setFlags(Qt.ItemFlag.NoItemFlags)
@@ -1065,12 +1082,17 @@ class _OpenFileDialog(QDialog):
             self.selected_path = path
             self.accept()
 
+    _ROLE_IS_PARENT = Qt.ItemDataRole.UserRole + 2
+
     def _on_double_click(self, item: QListWidgetItem):
         path = item.data(self._ROLE_PATH)
         is_folder = item.data(self._ROLE_IS_FOLDER)
         if not path:
             return
-        if is_folder:
+        if item.data(self._ROLE_IS_PARENT):
+            # ".." row — go back instead of navigating deeper
+            self._go_back()
+        elif is_folder:
             self._navigate_into(path)
         else:
             self.selected_path = path
