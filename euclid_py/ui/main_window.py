@@ -528,17 +528,6 @@ class _OpenFileDialog(QDialog):
         toolbar_row = QHBoxLayout()
         toolbar_row.setSpacing(6)
 
-        self._back_btn = QPushButton("\u2190")
-        self._back_btn.setFixedSize(28, 28)
-        self._back_btn.setStyleSheet(
-            "QPushButton { border: 1px solid #d0d4da; border-radius: 4px;"
-            " background: white; color: #1a1a2e; font-size: 14px; }"
-            " QPushButton:hover { background: #f0f4ff; }")
-        self._back_btn.setToolTip("Go back")
-        self._back_btn.clicked.connect(self._go_back)
-        self._back_btn.setVisible(False)  # Hidden until we navigate into a subfolder
-        toolbar_row.addWidget(self._back_btn)
-
         self._folder_label = QLabel("")
         self._folder_label.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
         self._folder_label.setStyleSheet(
@@ -1023,7 +1012,6 @@ class _OpenFileDialog(QDialog):
         self._folder_label.setFont(
             QFont("Segoe UI Emoji", 12, QFont.Weight.Bold))
         self._update_highlight(folder)
-        self._back_btn.setVisible(len(self._nav_stack) > 0)
 
         if not os.path.isdir(folder):
             item = QListWidgetItem("(folder not found)")
