@@ -1532,28 +1532,23 @@ class _OpenFileDialog(QDialog):
                 pass
 
     def _handle_add_to_quick_access(self, file_path: str):
-        """Move a file out of its subfolder (if applicable) and add as
-        a Quick Access bookmark."""
+        """Move a file out of its current folder and add as a Quick Access
+        bookmark.  The file is moved to the project root so it is no longer
+        inside the source folder."""
         if not file_path:
             return
 
-        # If the file is inside a subfolder of a root sidebar folder,
-        # move it to the parent folder first so it's "taken out"
-        parent_dir = os.path.dirname(file_path)
-        if os.path.isfile(file_path) and self._active_path:
-            # Check if we're inside a subfolder (not a root sidebar folder)
-            for entry in self._sb_entries:
-                ep = entry.get("path", "")
-                if ep and parent_dir != ep and parent_dir.startswith(ep + os.sep):
-                    # We're deeper than a root sidebar folder — move to parent
-                    dest = os.path.join(
-                        os.path.dirname(parent_dir),
-                        os.path.basename(file_path))
-                    if not os.path.exists(dest):
-                        import shutil
-                        shutil.move(file_path, dest)
-                        file_path = dest
-                    break
+        # Move the file to the project root so it leaves the folder
+        if os.path.isfile(file_path):
+            from ..resources import resource_path
+            root = resource_path("")
+            parent_dir = os.path.dirname(file_path)
+            if parent_dir != root:
+                dest = os.path.join(root, os.path.basename(file_path))
+                if not os.path.exists(dest):
+                    import shutil
+                    shutil.move(file_path, dest)
+                    file_path = dest
 
         # Don't add duplicates
         for entry in self._sb_entries:
