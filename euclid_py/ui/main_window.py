@@ -170,6 +170,19 @@ class _DropFileList(QListWidget):
         super().__init__(parent)
         self.setAcceptDrops(True)
         self._drop_target_item = None
+        # Cache of file paths being dragged — selectedItems() may be empty
+        # after Qt processes the drag, so we snapshot at drag start
+        self.dragged_paths: list[str] = []
+
+    def startDrag(self, supportedActions):
+        """Snapshot selected file paths before Qt clears the selection."""
+        self.dragged_paths = []
+        for sel in self.selectedItems():
+            p = sel.data(self._ROLE_PATH)
+            is_folder = sel.data(self._ROLE_IS_FOLDER)
+            if p and not is_folder:
+                self.dragged_paths.append(p)
+        super().startDrag(supportedActions)
 
     def dragEnterEvent(self, event):
         # Accept both internal moves and drops from the sidebar
@@ -339,12 +352,17 @@ class _DropSidebar(QListWidget):
                 return
             elif source is not None and source is not self:
                 # Drop from file list onto sidebar folder
-                for sel in source.selectedItems():
-                    src_path = sel.data(Qt.ItemDataRole.UserRole)
-                    is_folder = sel.data(Qt.ItemDataRole.UserRole + 1)
-                    if src_path and not is_folder:
-                        self.fileDroppedOnSidebarFolder.emit(
-                            src_path, f"__sb__{target_sb_idx}")
+                # Use cached dragged_paths since selectedItems() may be empty
+                paths = getattr(source, 'dragged_paths', [])
+                if not paths:
+                    # Fallback to selectedItems
+                    for sel in source.selectedItems():
+                        p = sel.data(Qt.ItemDataRole.UserRole)
+                        if p and not sel.data(Qt.ItemDataRole.UserRole + 1):
+                            paths.append(p)
+                for src_path in paths:
+                    self.fileDroppedOnSidebarFolder.emit(
+                        src_path, f"__sb__{target_sb_idx}")
                 event.acceptProposedAction()
                 self._drop_target_item = None
                 return
@@ -352,10 +370,14 @@ class _DropSidebar(QListWidget):
         # Drop from file list onto empty space / non-folder entry
         # → add as Quick Access bookmark
         if source is not None and source is not self:
-            for sel in source.selectedItems():
-                src_path = sel.data(Qt.ItemDataRole.UserRole)
-                if src_path:
-                    self.addToQuickAccess.emit(src_path)
+            paths = getattr(source, 'dragged_paths', [])
+            if not paths:
+                for sel in source.selectedItems():
+                    p = sel.data(Qt.ItemDataRole.UserRole)
+                    if p:
+                        paths.append(p)
+            for src_path in paths:
+                self.addToQuickAccess.emit(src_path)
             event.acceptProposedAction()
             self._drop_target_item = None
             return
