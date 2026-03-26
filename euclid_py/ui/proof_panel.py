@@ -33,7 +33,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
     QLineEdit, QComboBox, QListWidget, QListWidgetItem,
     QFrame, QScrollArea, QMenu, QFileDialog, QDialog,
-    QSizePolicy, QApplication, QAbstractItemView,
+    QSizePolicy, QApplication, QAbstractItemView, QWidgetAction,
 )
 
 
@@ -645,25 +645,86 @@ class FitchLineWidget(QFrame):
         self.refs_changed.emit(self.step.line_number)
 
     def _show_rule_menu(self):
-        """Show a searchable rule picker popup."""
-        # Build flat list of (display_text, rule_name, category) entries
-        entries: list[tuple[str, str, str]] = []
+        """Show a QMenu with category submenus and a search bar at the top."""
+        _MENU_STYLE = (
+            "QMenu { background: white; color: #1a1a2e;"
+            "  border: 1px solid #d0d4da; border-radius: 4px; padding: 4px; }"
+            " QMenu::item { padding: 5px 20px; color: #1a1a2e; }"
+            " QMenu::item:selected { background: #edf2ff; color: #1a1a2e; }"
+            " QMenu::item:disabled { color: #aaa; }"
+            " QMenu::separator { height: 1px; background: #e5e7eb;"
+            "   margin: 4px 8px; }"
+        )
+        menu = QMenu(self)
+        menu.setStyleSheet(_MENU_STYLE)
+
+        # --- Search bar as a QWidgetAction at the top ---
+        search_widget = QWidget()
+        search_layout = QHBoxLayout(search_widget)
+        search_layout.setContentsMargins(8, 4, 8, 4)
+        search_edit = QLineEdit()
+        search_edit.setPlaceholderText("Search rules\u2026")
+        search_edit.setStyleSheet(
+            "QLineEdit { background: white; color: #1a1a2e;"
+            "  border: 1px solid #c0c8d4; border-radius: 4px;"
+            "  padding: 4px 8px; font-size: 12px; }")
+        search_layout.addWidget(search_edit)
+        search_action = QWidgetAction(menu)
+        search_action.setDefaultWidget(search_widget)
+        menu.addAction(search_action)
+        menu.addSeparator()
+
+        # --- Build category submenus ---
+        all_entries: list[tuple[str, str, str]] = []
         for grp, rules in RULE_GROUPS.items():
             for r in rules:
-                entries.append((r, r, grp))
+                all_entries.append((r, r, grp))
         # Add lemmas
         panel = self._find_proof_panel()
         if panel and panel._lemmas:
             for lem in panel._lemmas:
-                entries.append((lem.display_name(), lem.rule_name, "Lemmas"))
+                all_entries.append((
+                    lem.display_name(), lem.rule_name, "Lemmas"))
 
-        dlg = _RuleSearchDialog(entries, parent=self)
-        # Position near the button
+        # Store references so we can rebuild on search
+        self._rule_menu_ref = menu
+        self._rule_all_entries = all_entries
+        self._rule_search_edit = search_edit
+
+        def _rebuild_menu(query=""):
+            """Rebuild menu items below the search bar."""
+            # Remove all actions except the search widget and first separator
+            actions = menu.actions()
+            for a in actions[2:]:  # keep search_action + separator
+                menu.removeAction(a)
+
+            q = query.strip().lower()
+            if q:
+                # Flat filtered list
+                for display, rule_name, cat in all_entries:
+                    if q in display.lower() or q in cat.lower():
+                        act = menu.addAction(f"{display}  ({cat})")
+                        act.setData(rule_name)
+            else:
+                # Grouped submenus per category
+                seen_cats: dict[str, QMenu] = {}
+                for display, rule_name, cat in all_entries:
+                    if cat not in seen_cats:
+                        sub = menu.addMenu(cat)
+                        sub.setStyleSheet(_MENU_STYLE)
+                        seen_cats[cat] = sub
+                    act = seen_cats[cat].addAction(display)
+                    act.setData(rule_name)
+
+        _rebuild_menu()
+        search_edit.textChanged.connect(_rebuild_menu)
+
+        # Show menu and handle selection
         pos = self._rule_btn.mapToGlobal(
             self._rule_btn.rect().bottomLeft())
-        dlg.move(pos)
-        if dlg.exec() == QDialog.DialogCode.Accepted and dlg.selected_rule:
-            self._set_rule(dlg.selected_rule)
+        chosen = menu.exec(pos)
+        if chosen and chosen.data():
+            self._set_rule(chosen.data())
 
     def _find_proof_panel(self):
         """Walk up the widget tree to find the parent ProofPanel."""
