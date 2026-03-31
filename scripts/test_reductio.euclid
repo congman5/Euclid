@@ -1,0 +1,134 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "test",
+  "metadata": {},
+  "canvas": {},
+  "proof": {
+    "name": "test-reductio",
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "on(a, M)",
+      "on(b, M)",
+      "on(a, N)",
+      "on(c, N)",
+      "¬(on(c, M))",
+      "¬(on(b, N))",
+      "on(d, N)",
+      "between(d, a, c)",
+      "on(f, M)",
+      "between(f, a, b)",
+      "¬(d = a)",
+      "¬(M = N)",
+      "¬(on(d, M))",
+      "¬(f = d)",
+      "¬(a = f)",
+      "on(d, K)",
+      "on(f, K)",
+      "¬(same-side(e, a, K))",
+      "¬(on(e, K))",
+      "¬(e = d)",
+      "¬(e = f)",
+      "¬(a = e)",
+      "on(a, L)",
+      "on(e, L)"
+    ],
+    "goal": "¬(on(e, N)), ¬(on(e, M))",
+    "declarations": {
+      "points": ["a","b","c","d","e","f"],
+      "lines": ["K","L","M","N"]
+    },
+    "steps": [
+      {
+        "lineNumber": 50,
+        "text": "¬(on(f, N))",
+        "justification": "Generality 1",
+        "dependencies": [4, 6, 5, 11, 15, 18],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 51,
+        "text": "on(e, N)",
+        "justification": "Assume",
+        "dependencies": [],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 52,
+        "text": "L = N",
+        "justification": "Generality 1",
+        "dependencies": [26, 27, 6, 51, 25],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 53,
+        "text": "on(f, N)",
+        "justification": "Generality 5",
+        "dependencies": [52, 13],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 54,
+        "text": "⊥",
+        "justification": "Contradiction",
+        "dependencies": [51],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 55,
+        "text": "¬(on(e, N))",
+        "justification": "Reductio",
+        "dependencies": [51],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 56,
+        "text": "on(e, M)",
+        "justification": "Assume",
+        "dependencies": [],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 57,
+        "text": "M = L",
+        "justification": "Generality 1",
+        "dependencies": [4, 56, 26, 27, 25],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 58,
+        "text": "on(e, M)",
+        "justification": "Generality 5",
+        "dependencies": [57, 27],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 59,
+        "text": "⊥",
+        "justification": "Contradiction",
+        "dependencies": [56],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 60,
+        "text": "¬(on(e, M))",
+        "justification": "Reductio",
+        "dependencies": [56],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

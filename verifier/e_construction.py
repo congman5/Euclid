@@ -308,6 +308,40 @@ INTERSECTION_RULES: List[ConstructionRule] = [
         ],
     ),
 
+    # 5b. Let a be the other point of intersection of L and α, given
+    #     that c is already on α and L, with b inside α on L.
+    #     Prerequisites: on(c, α), on(c, L), inside(b, α), on(b, L)
+    #     Conclusion: on(a, α), on(a, L), between(c, b, a)
+    #
+    #     Justification: By I3 (inside(b,α) ∧ on(b,L) → intersects(L,α)),
+    #     L intersects α in two points.  c is one such point.  By C1,
+    #     the inside point b lies between the two intersection points,
+    #     so between(c, b, a).  This rule resolves the ambiguity left by
+    #     rule 3 (which introduces two unnamed intersection points) by
+    #     anchoring one to the already-known point c.
+    #
+    #     This is needed for Proposition I.9: the "extend" rule (5) always
+    #     produces the intersection on the far side of the interior point,
+    #     but the proof requires the intersection on the near side (on
+    #     the arm of the angle).  See Beeson, Narboux & Wiedijk (2018)
+    #     for discussion of this "interiority gap" in Euclid's I.9.
+    ConstructionRule(
+        name="let-intersection-line-circle-other",
+        category="intersection",
+        prereq_pattern=[
+            _pos(On("c", "\u03b1")),
+            _pos(On("c", "L")),
+            _pos(Inside("b", "\u03b1")),
+            _pos(On("b", "L")),
+        ],
+        new_vars=[("a", Sort.POINT)],
+        conclusion_pattern=[
+            _pos(On("a", "\u03b1")),
+            _pos(On("a", "L")),
+            _pos(Between("c", "b", "a")),
+        ],
+    ),
+
     # 6. Let a be a point on the intersection of α and β.
     #    Prerequisite: intersects(α, β)
     #    Conclusion: on(a, α), on(a, β)

@@ -115,6 +115,9 @@
         "justification": "Prop.I.4",
         "dependencies": [
           1,
+          2,
+          3,
+          4,
           5,
           6
         ],

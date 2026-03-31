@@ -77,10 +77,9 @@ class TestELibraryNewProps:
         seq = PROP_I_12.sequent
         # Hypotheses: on(a,L), on(b,L), a≠b, ¬on(p,L)
         assert len(seq.hypotheses) == 4
-        # ∃h: on(h,L), ∠ahp = right-angle
-        assert len(seq.exists_vars) == 1
-        assert seq.exists_vars[0] == ("h", Sort.POINT)
-        assert len(seq.conclusions) == 3
+        # ∃h,e: on(h,L), on(e,L), ¬(e=h), ∠ehp=∟, ¬(h=p)
+        assert len(seq.exists_vars) == 2
+        assert len(seq.conclusions) == 5
 
     def test_prop_i13_sequent(self):
         from verifier.e_library import PROP_I_13

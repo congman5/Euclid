@@ -1,0 +1,39 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "description": "on(a, L) and not-on(b, L) implies a is distinct from b"
+  },
+  "canvas": {
+    "points": [],
+    "segments": [],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-03-22T23:56:00Z",
+  "proof": {
+    "name": "Lemma:distinct-from-non-incidence",
+    "premises": [
+      "on(a, L)",
+      "\u00ac(on(b, L))"
+    ],
+    "goal": "\u00ac(a = b)",
+    "declarations": {
+      "points": ["a", "b"],
+      "lines": ["L"]
+    },
+    "steps": [
+      {
+        "lineNumber": 3,
+        "text": "\u00ac(a = b)",
+        "justification": "Generality 6",
+        "dependencies": [1, 2],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

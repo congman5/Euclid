@@ -602,56 +602,42 @@ ALL[6] = p6()
 # Prop I.7 — Uniqueness of triangle construction
 # Given: on(b,L), on(c,L), b≠c, same-side(a,d,L), bd=ba, cd=ca
 # Goal: d = a
-# Strategy: Reductio (assume ¬(d=a)), construct line R through a,b.
-#   Case 1 (on(d,R)): nested betweenness splits on a,d,b collinear;
-#     each sub-case uses DS1 segment addition to derive ad=0 → d=a,
-#     or B6 fully negated → contradiction.
-#   Case 2 (¬on(d,R)): contradictory closure (d=a leaked from Case 1
-#     plus ¬(d=a) from reductio).
+# Strategy: Circle-based proof using I6 + C4.
+#     Construct circles α (center b through a) and β (center c through a).
+#     Since bd=ba and cd=ca, both a and d lie on both circles.
+#     Assume ¬(d=a); derive α≠β (G5d), intersects(α,β) (I6),
+#     then ¬same-side(a,d,L) (C4) — contradicts same-side(a,d,L).
 # ═════════════════════════════════════════════════════════════════
 def p7():
     b = PB("Prop.I.7",
            ["on(b, L)", "on(c, L)", "\u00ac(b = c)",
             "same-side(a, d, L)", "bd = ba", "cd = ca"],
            "d = a")
-    b.auto_given()
-    # --- Reductio: Assume ¬(d = a) ---
-    s7 = b.assume("\u00ac(d = a)")
-    # Construct line R through a and b (a≠b from SS3 + Axiom 5)
-    s8 = b.s("on(a, R), on(b, R)", "let-line", [])
-    # ── Case 1: on(d, R) ──
-    s_c1 = b.assume("on(d, R)")
-    # ── Case 1a: between(a, d, b) ──
-    s_c1a = b.assume("between(a, d, b)")
-    s_t1 = b.s("(ad + db) = ab", "Segment transfer 1", [s_c1a])
-    s_m1 = b.s("ad = 0", "CN3 \u2014 Subtraction", [s_t1])
-    s_d1 = b.s("d = a", "M1 \u2014 Zero segment", [s_m1])
-    # ── Case 1b: ¬between(a, d, b) ──
-    s_c1b = b.assume("\u00ac(between(a, d, b))")
-    # ── Case 1b-i: between(b, a, d) ──
-    s_c1bi = b.assume("between(b, a, d)")
-    s_t2 = b.s("(ba + ad) = bd", "Segment transfer 1", [s_c1bi])
-    s_m2 = b.s("ad = 0", "CN3 \u2014 Subtraction", [s_t2])
-    s_d2 = b.s("d = a", "M1 \u2014 Zero segment", [s_m2])
-    # ── Case 1b-ii: ¬between(b, a, d) ──
-    # B6 trichotomy fully negated (a≠d, a≠b, d≠b, ¬between(a,d,b),
-    # ¬between(b,a,d), and P3 kills between(d,b,a)) → contradiction
-    s_c1bii = b.assume("\u00ac(between(b, a, d))")
-    s_d3 = b.s("d = a", "Betweenness 6", [])
-    # Close Case 1b-i / 1b-ii
-    s_da_1b = b.cases("d = a", s_c1bi, s_c1bii)
-    # Close Case 1a / 1b
-    s_da_c1 = b.cases("d = a", s_c1a, s_c1b)
-    # ── Case 2: ¬on(d, R) ──
-    # Contradictory closure: d=a already in checker.known from Case 1,
-    # combined with ¬(d=a) from reductio assumption.
-    s_c2 = b.assume("\u00ac(on(d, R))")
-    s_d4 = b.s("d = a", "Reit", [])
-    # Close Case 1 / 2
-    s_da = b.cases("d = a", s_c1, s_c2)
-    # ⊥ from d=a ∧ ¬(d=a)
-    b.s("\u22a5", "Contradiction", [s_da, s7])
-    b.reductio("d = a", s7)
+    g = b.auto_given()
+    # ── Depth 0: setup circles ──
+    s7 = b.s("\u00ac(on(a, L))", "Same-side 3", [g["same-side(a, d, L)"]])
+    s8 = b.s("\u00ac(b = a)", "Generality 6",
+             [g["on(b, L)"], s7])
+    s9 = b.s("\u00ac(c = a)", "Generality 6",
+             [g["on(c, L)"], s7])
+    s10 = b.s("center(b, \u03b1), on(a, \u03b1)", "let-circle", [s8])
+    s11 = b.s("on(d, \u03b1)", "Segment transfer 3a",
+              [s10, g["bd = ba"]])
+    s12 = b.s("center(c, \u03b2), on(a, \u03b2)", "let-circle", [s9])
+    s13 = b.s("on(d, \u03b2)", "Segment transfer 3a",
+              [s12, g["cd = ca"]])
+    # ── Depth 1: Reductio — assume ¬(d = a) ──
+    s14 = b.assume("\u00ac(d = a)")
+    s15 = b.s("\u00ac(\u03b1 = \u03b2)", "Generality 5d",
+              [s10, s12, g["\u00ac(b = c)"]])
+    s16 = b.s("intersects(\u03b1, \u03b2)", "Intersection 6",
+              [s15, s10, s11, s12, s13, s14])
+    s17 = b.s("\u00ac(same-side(a, d, L))", "Circle 4",
+              [s15, s16, s10, s11, s12, s13, s14,
+               g["on(b, L)"], g["on(c, L)"]])
+    b.s("\u22a5", "Contradiction",
+        [g["same-side(a, d, L)"], s17])
+    b.reductio("d = a", s14)
     return b.build()
 
 ALL[7] = p7()

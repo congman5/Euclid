@@ -96,28 +96,21 @@
       "on(b, L)",
       "¬(a = b)",
       "¬(c = d)",
-      "cd < ab"
+      "cd < ab",
+      "¬(a = c)",
+      "¬(a = d)"
     ],
     "goal": "between(a, e, b), ae = cd",
     "declarations": {
-      "points": [
-        "a",
-        "b",
-        "c",
-        "d"
-      ],
-      "lines": [
-        "L"
-      ]
+      "points": ["a", "b", "c", "d"],
+      "lines": ["L"]
     },
     "steps": [
       {
         "lineNumber": 8,
         "text": "on(c, M), on(d, M)",
         "justification": "let-line",
-        "dependencies": [
-          5
-        ],
+        "dependencies": [4],
         "depth": 0,
         "status": "?"
       },
@@ -125,12 +118,7 @@
         "lineNumber": 9,
         "text": "af = cd",
         "justification": "Prop.I.2",
-        "dependencies": [
-          8,
-          5,
-          6,
-          7
-        ],
+        "dependencies": [8, 4, 6, 7],
         "depth": 0,
         "status": "?"
       },
@@ -138,10 +126,7 @@
         "lineNumber": 10,
         "text": "af < ab",
         "justification": "CN1 — Transitivity",
-        "dependencies": [
-          9,
-          4
-        ],
+        "dependencies": [9, 5],
         "depth": 0,
         "status": "?"
       },
@@ -149,10 +134,7 @@
         "lineNumber": 11,
         "text": "¬(a = f)",
         "justification": "M1 — Zero segment",
-        "dependencies": [
-          9,
-          5
-        ],
+        "dependencies": [9, 4],
         "depth": 0,
         "status": "?"
       },
@@ -160,9 +142,7 @@
         "lineNumber": 12,
         "text": "center(a, α), on(f, α)",
         "justification": "let-circle",
-        "dependencies": [
-          11
-        ],
+        "dependencies": [11],
         "depth": 0,
         "status": "?"
       },
@@ -170,55 +150,47 @@
         "lineNumber": 13,
         "text": "inside(a, α)",
         "justification": "Generality 3",
-        "dependencies": [
-          12
-        ],
+        "dependencies": [12],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 14,
-        "text": "¬(inside(b, α)), ¬(on(b, α))",
+        "text": "¬(inside(b, α))",
         "justification": "Segment transfer 4c",
-        "dependencies": [
-          12,
-          10
-        ],
+        "dependencies": [12, 10],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 15,
-        "text": "on(e, α), on(e, L), between(a, e, b)",
-        "justification": "let-intersection-line-circle-between",
-        "dependencies": [
-          13,
-          1,
-          14,
-          2
-        ],
+        "text": "¬(on(b, α))",
+        "justification": "Segment transfer 4d",
+        "dependencies": [12, 10],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 16,
-        "text": "ae = af",
-        "justification": "Segment transfer 3b",
-        "dependencies": [
-          12,
-          15
-        ],
+        "text": "on(e, α), on(e, L), between(a, e, b)",
+        "justification": "let-intersection-line-circle-between",
+        "dependencies": [13, 1, 14, 15, 2],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 17,
+        "text": "ae = af",
+        "justification": "Segment transfer 3b",
+        "dependencies": [12, 16],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 18,
         "text": "ae = cd",
         "justification": "CN1 — Transitivity",
-        "dependencies": [
-          16,
-          9
-        ],
+        "dependencies": [17, 9],
         "depth": 0,
         "status": "?"
       }

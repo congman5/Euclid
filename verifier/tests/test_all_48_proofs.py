@@ -93,13 +93,13 @@ _PROP_I_1_EXPANDED = {
         {"id": 9,  "depth": 0, "statement": "bc = ba",
          "justification": "Segment transfer 4", "refs": [3, 7]},
         {"id": 10, "depth": 0, "statement": "ab = ac",
-         "justification": "Metric", "refs": [8]},
+         "justification": "M3 \u2014 Symmetry", "refs": [8]},
         {"id": 11, "depth": 0, "statement": "ab = bc",
-         "justification": "Metric", "refs": [9, 10]},
+         "justification": "CN1 \u2014 Transitivity", "refs": [9, 10]},
         {"id": 12, "depth": 0, "statement": "\u00ac(c = a)",
-         "justification": "Metric", "refs": [10]},
+         "justification": "CN1 \u2014 Transitivity", "refs": [1, 10]},
         {"id": 13, "depth": 0, "statement": "\u00ac(c = b)",
-         "justification": "Metric", "refs": [11]},
+         "justification": "CN1 \u2014 Transitivity", "refs": [1, 11]},
     ],
 }
 
@@ -120,11 +120,11 @@ _PROP_I_4_EXPANDED = {
          "statement": "bc = ef, \u2220abc = \u2220def, \u2220acb = \u2220dfe, \u25b3abc = \u25b3def",
          "justification": "SAS", "refs": [1, 2, 3]},
         {"id": 5, "depth": 0, "statement": "\u2220bca = \u2220efd",
-         "justification": "Metric", "refs": [4]},
+         "justification": "M3 \u2014 Symmetry", "refs": [4]},
     ],
 }
 
-# Prop.I.8 — SSS superposition (axiom, depends on I.7)
+# Prop.I.8
 _PROP_I_8_EXPANDED = {
     "name": "Prop.I.8",
     "declarations": {"points": [], "lines": []},
@@ -141,12 +141,12 @@ _PROP_I_8_EXPANDED = {
          "statement": "\u2220bac = \u2220edf, \u2220abc = \u2220def, \u2220acb = \u2220dfe, \u25b3abc = \u25b3def",
          "justification": "SSS", "refs": [1, 2, 3]},
         {"id": 5, "depth": 0, "statement": "\u2220bca = \u2220efd",
-         "justification": "Metric", "refs": [4]},
+         "justification": "M3 \u2014 Symmetry", "refs": [4]},
     ],
 }
 
 
-# ── parametrised test ──────────────────────────────────────────────────
+# ── parametrised test
 
 @pytest.mark.parametrize("prop_num", range(1, 49),
                          ids=[f"Prop.I.{n}" for n in range(1, 49)])

@@ -162,7 +162,7 @@ class TestVerifyEProofJson:
                 {"id": 1, "depth": 0, "statement": "between(a, b, c)",
                  "justification": "Given", "refs": []},
                 {"id": 2, "depth": 0, "statement": "between(c, b, a)",
-                 "justification": "diagrammatic", "refs": [1]},
+                 "justification": "Betweenness 1", "refs": [1]},
             ],
         }
         result = verify_e_proof_json(pj)

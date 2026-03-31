@@ -82,12 +82,15 @@ class TransferEngine:
                 neg_bet = Literal(Between(p, q, p), False)
                 if neg_bet not in all_known:
                     all_known.add(neg_bet)
+                    derived.add(neg_bet)
                 neg_bet2 = Literal(Between(q, p, p), False)
                 if neg_bet2 not in all_known:
                     all_known.add(neg_bet2)
+                    derived.add(neg_bet2)
                 neg_bet3 = Literal(Between(p, p, q), False)
                 if neg_bet3 not in all_known:
                     all_known.add(neg_bet3)
+                    derived.add(neg_bet3)
 
         # Ground the transfer axiom clauses — use pre-compiled format
         # with cached separate indices for fast lookup.

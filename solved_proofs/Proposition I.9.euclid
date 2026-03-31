@@ -180,42 +180,46 @@
       },
       {
         "lineNumber": 12,
-        "text": "on(d, N), between(a, d, c), on(d, α)",
-        "justification": "let-point-on-line-between",
+        "text": "on(g, α), on(g, N), between(g, a, c)",
+        "justification": "let-intersection-line-circle-extend",
         "dependencies": [
+          11,
           6,
-          7,
-          2
+          2,
+          7
         ],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 13,
-        "text": "on(f, M), between(a, f, b), on(f, α)",
-        "justification": "let-point-on-line-between",
+        "text": "on(d, α), on(d, N), between(g, a, d)",
+        "justification": "let-intersection-line-circle-other",
         "dependencies": [
-          4,
-          5,
-          1
+          12,
+          12,
+          11,
+          6
         ],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 14,
-        "text": "ad = ab",
-        "justification": "Segment transfer 3b",
+        "text": "on(f, α), on(f, M), between(f, a, b)",
+        "justification": "let-intersection-line-circle-extend",
         "dependencies": [
-          10,
-          12
+          11,
+          4,
+          1,
+          5
         ],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 15,
-        "text": "af = ab",
+        "text": "ad = ab",
         "justification": "Segment transfer 3b",
         "dependencies": [
           10,
@@ -226,37 +230,292 @@
       },
       {
         "lineNumber": 16,
-        "text": "ad = af",
-        "justification": "CN1 — Transitivity",
+        "text": "¬(g = a)",
+        "justification": "Betweenness 1b",
         "dependencies": [
-          14,
-          15
+          12
         ],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 17,
-        "text": "df = de, df = fe, ¬(e = d), ¬(e = f)",
-        "justification": "Prop.I.1",
+        "text": "¬(d = a)",
+        "justification": "Betweenness 1b",
         "dependencies": [
-          16
+          13
         ],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 18,
-        "text": "de = fe",
-        "justification": "CN1 — Transitivity",
+        "text": "¬(M = N)",
+        "justification": "Generality 5",
         "dependencies": [
-          17
+          5,
+          9
         ],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 19,
+        "text": "¬(on(d, M))",
+        "justification": "Generality 1",
+        "dependencies": [
+          4,
+          6,
+          13,
+          17,
+          18
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 20,
+        "text": "¬(on(g, M))",
+        "justification": "Generality 1",
+        "dependencies": [
+          4,
+          6,
+          12,
+          16,
+          18
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 21,
+        "text": "¬(a = f)",
+        "justification": "Betweenness 1b",
+        "dependencies": [
+          14
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 22,
+        "text": "¬(on(f, N))",
+        "justification": "Generality 1",
+        "dependencies": [
+          4,
+          6,
+          14,
+          21,
+          18
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 23,
+        "text": "¬(d = b)",
+        "justification": "Generality 6",
+        "dependencies": [
+          5,
+          19
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 24,
+        "text": "on(d, K), on(b, K)",
+        "justification": "let-line",
+        "dependencies": [
+          23
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 25,
+        "text": "center(d, β), on(b, β)",
+        "justification": "let-circle",
+        "dependencies": [
+          23
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 26,
+        "text": "center(b, γ), on(d, γ)",
+        "justification": "let-circle",
+        "dependencies": [
+          23
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 27,
+        "text": "inside(d, β)",
+        "justification": "Generality 3",
+        "dependencies": [
+          25
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 28,
+        "text": "inside(b, γ)",
+        "justification": "Generality 3",
+        "dependencies": [
+          26
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 29,
+        "text": "intersects(β, γ)",
+        "justification": "Intersection 5",
+        "dependencies": [
+          25,
+          26,
+          27,
+          28
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 30,
+        "text": "¬(K = N)",
+        "justification": "Generality 5",
+        "dependencies": [
+          24,
+          9
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 31,
+        "text": "¬(K = M)",
+        "justification": "Generality 5",
+        "dependencies": [
+          24,
+          19
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 32,
+        "text": "¬(on(a, K))",
+        "justification": "Generality 1",
+        "dependencies": [
+          24,
+          6,
+          13,
+          17,
+          30
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 33,
+        "text": "on(e, β), on(e, γ), ¬(same-side(e, a, K)), ¬(on(e, K))",
+        "justification": "let-intersection-circle-circle-opposite-side",
+        "dependencies": [
+          29,
+          25,
+          26,
+          24,
+          32
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 34,
+        "text": "de = db",
+        "justification": "Segment transfer 3b",
+        "dependencies": [
+          25,
+          33
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 35,
+        "text": "be = bd",
+        "justification": "Segment transfer 3b",
+        "dependencies": [
+          26,
+          33
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 36,
+        "text": "db = bd",
+        "justification": "M3 — Symmetry",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 37,
+        "text": "de = be",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          34,
+          35,
+          36
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 38,
+        "text": "¬(e = d)",
+        "justification": "Generality 6",
+        "dependencies": [
+          24,
+          33
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 39,
+        "text": "¬(e = b)",
+        "justification": "Generality 6",
+        "dependencies": [
+          24,
+          33
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 40,
+        "text": "¬(a = e)",
+        "justification": "Same-side 6",
+        "dependencies": [
+          33,
+          24,
+          6,
+          13,
+          17,
+          30
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 41,
         "text": "ae = ae",
         "justification": "CN4 — Reflexivity",
         "dependencies": [],
@@ -264,76 +523,381 @@
         "status": "?"
       },
       {
-        "lineNumber": 20,
-        "text": "∠dae = ∠fae, ∠ade = ∠afe, ∠aed = ∠aef, △ade = △afe",
+        "lineNumber": 42,
+        "text": "∠dae = ∠bae, ∠ade = ∠abe, ∠aed = ∠aeb, △ade = △abe",
         "justification": "SSS",
         "dependencies": [
-          16,
-          18,
-          19
+          15,
+          37,
+          41
         ],
         "depth": 0,
         "status": "?"
       },
       {
-        "lineNumber": 21,
-        "text": "¬(e = a)",
-        "justification": "Generality 3",
-        "dependencies": [],
-        "depth": 0,
-        "status": "?"
-      },
-      {
-        "lineNumber": 22,
-        "text": "on(a, K), on(e, K)",
+        "lineNumber": 43,
+        "text": "on(a, L), on(e, L)",
         "justification": "let-line",
         "dependencies": [
-          21
+          40
         ],
         "depth": 0,
         "status": "?"
       },
       {
-        "lineNumber": 23,
-        "text": "∠dae = ∠cae",
-        "justification": "Angle transfer 4",
+        "lineNumber": 44,
+        "text": "on(e, M)",
+        "justification": "Assume",
         "dependencies": [],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 45,
+        "text": "between(a, b, e)",
+        "justification": "Pasch 4",
+        "dependencies": [
+          31,
+          24,
+          44,
+          4,
+          5,
+          1,
+          39,
+          33
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 46,
+        "text": "between(b, a, f)",
+        "justification": "Betweenness 1a",
+        "dependencies": [
+          14
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 47,
+        "text": "between(e, b, a)",
+        "justification": "Betweenness 1a",
+        "dependencies": [
+          45
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 48,
+        "text": "between(e, b, f)",
+        "justification": "Betweenness 5",
+        "dependencies": [
+          47,
+          46
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 49,
+        "text": "¬(between(b, a, f))",
+        "justification": "Betweenness 7",
+        "dependencies": [
+          47,
+          48
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 50,
+        "text": "⊥",
+        "justification": "⊥-intro",
+        "dependencies": [
+          44
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 51,
+        "text": "¬(on(e, M))",
+        "justification": "⊥-elim",
+        "dependencies": [
+          44
+        ],
         "depth": 0,
         "status": "?"
       },
       {
-        "lineNumber": 24,
-        "text": "∠fae = ∠bae",
-        "justification": "Angle transfer 4",
+        "lineNumber": 52,
+        "text": "on(e, N)",
+        "justification": "Assume",
         "dependencies": [],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 53,
+        "text": "between(a, d, e)",
+        "justification": "Pasch 4",
+        "dependencies": [
+          30,
+          24,
+          52,
+          6,
+          13,
+          17,
+          38,
+          33
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 54,
+        "text": "between(g, a, e)",
+        "justification": "Betweenness 5",
+        "dependencies": [
+          13,
+          53
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 55,
+        "text": "¬(between(a, d, e))",
+        "justification": "Betweenness 7",
+        "dependencies": [
+          13,
+          54
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 56,
+        "text": "⊥",
+        "justification": "⊥-intro",
+        "dependencies": [
+          52
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 57,
+        "text": "¬(on(e, N))",
+        "justification": "⊥-elim",
+        "dependencies": [
+          52
+        ],
         "depth": 0,
         "status": "?"
       },
       {
-        "lineNumber": 25,
+        "lineNumber": 58,
+        "text": "∠gae + ∠eac = right-angle + right-angle",
+        "justification": "Angle transfer 6",
+        "dependencies": [
+          12,
+          7,
+          12,
+          57,
+          40
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 59,
+        "text": "∠gae + ∠ead = right-angle + right-angle",
+        "justification": "Angle transfer 6",
+        "dependencies": [
+          12,
+          13,
+          13,
+          57,
+          40
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 60,
+        "text": "∠gae + ∠eac = ∠gae + ∠ead",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          58,
+          59
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 61,
+        "text": "∠eac = ∠ead",
+        "justification": "CN3 — Subtraction",
+        "dependencies": [
+          60,
+          58
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 62,
         "text": "∠bae = ∠cae",
         "justification": "CN1 — Transitivity",
         "dependencies": [
-          20,
-          23,
-          24
+          61,
+          42
         ],
         "depth": 0,
         "status": "?"
       },
       {
-        "lineNumber": 26,
-        "text": "same-side(e, c, M)",
-        "justification": "Same-side 4",
-        "dependencies": [],
+        "lineNumber": 63,
+        "text": "¬(same-side(g, d, M))",
+        "justification": "Pasch 3",
+        "dependencies": [
+          13,
+          4
+        ],
         "depth": 0,
         "status": "?"
       },
       {
-        "lineNumber": 27,
-        "text": "same-side(e, b, N)",
+        "lineNumber": 64,
+        "text": "¬(same-side(g, c, M))",
+        "justification": "Pasch 3",
+        "dependencies": [
+          12,
+          4
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 65,
+        "text": "same-side(d, c, M)",
+        "justification": "Same-side 5",
+        "dependencies": [
+          20,
+          19,
+          8,
+          63,
+          64
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 66,
+        "text": "¬(same-side(f, b, N))",
+        "justification": "Pasch 3",
+        "dependencies": [
+          14,
+          6
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 67,
+        "text": "¬(g = d)",
+        "justification": "Betweenness 1c",
+        "dependencies": [
+          13
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 68,
+        "text": "¬(on(g, K))",
+        "justification": "Generality 1",
+        "dependencies": [
+          13,
+          24,
+          12,
+          67,
+          30
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 69,
+        "text": "same-side(e, d, M)",
+        "justification": "Circle 5",
+        "dependencies": [
+          26,
+          25,
+          26,
+          25,
+          33,
+          33,
+          24,
+          24,
+          32,
+          33,
+          33,
+          4,
+          5,
+          19,
+          51,
+          15
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 70,
+        "text": "same-side(d, e, M)",
+        "justification": "Same-side 2",
+        "dependencies": [
+          69
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 71,
+        "text": "same-side(e, c, M)",
         "justification": "Same-side 4",
-        "dependencies": [],
+        "dependencies": [
+          70,
+          65
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 72,
+        "text": "same-side(e, b, N)",
+        "justification": "Circle 5",
+        "dependencies": [
+          25,
+          26,
+          25,
+          26,
+          33,
+          33,
+          24,
+          24,
+          32,
+          33,
+          33,
+          6,
+          13,
+          9,
+          57,
+          15
+        ],
         "depth": 0,
         "status": "?"
       }

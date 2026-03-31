@@ -1,18 +1,5 @@
 {
-  "bookmarks": [
-    {
-      "path": "C:/Users/Connor Gorman/source/repos/congman5/Euclid/solved_proofs/Proposition 1.2.euclid",
-      "name": "Proposition 1.2",
-      "icon": "\u2022",
-      "type": "file"
-    },
-    {
-      "path": "C:\\Users\\Connor Gorman\\source\\repos\\congman5\\Euclid\\New Folder",
-      "name": "Custom Folder",
-      "icon": "\u26a0",
-      "type": "folder"
-    }
-  ],
+  "bookmarks": [],
   "dialog_geometry": {
     "x": 271,
     "y": 96,

@@ -43,10 +43,10 @@ def _make_proof(declarations, premises, goal, lines):
     }
 
 
-def _line(lid, stmt, just, refs=None):
+def _line(lid, stmt, just, refs=None, depth=0):
     return {
         "id": lid,
-        "depth": 0,
+        "depth": depth,
         "statement": stmt,
         "justification": just,
         "refs": refs or [],
@@ -97,7 +97,7 @@ class TestConstructionSoundness:
             goal="",
             lines=[
                 _line(1, "\u00ac(a = b)", "Given"),
-                _line(2, "center(a, \u03b1), on(b, \u03b1)", "let-circle"),
+                _line(2, "center(a, \u03b1), on(b, \u03b1)", "let-circle", refs=[1]),
             ],
         )
         result = verify_e_proof_json(pj)
@@ -132,7 +132,7 @@ class TestConstructionSoundness:
             goal="",
             lines=[
                 _line(1, "\u00ac(a = b)", "Given"),
-                _line(2, "on(a, L), on(b, L)", "let-line"),
+                _line(2, "on(a, L), on(b, L)", "let-line", refs=[1]),
             ],
         )
         result = verify_e_proof_json(pj)
@@ -224,7 +224,7 @@ class TestTheoremApplicationSoundness:
             lines=[
                 _line(1, "\u00ac(p = q)", "Given"),
                 _line(2, "pq = pr, pq = qr, \u00ac(r = p), \u00ac(r = q)",
-                      "Prop.I.1"),
+                      "Prop.I.1", refs=[1]),
             ],
         )
         result = verify_e_proof_json(pj)
@@ -297,14 +297,14 @@ class TestDiagrammaticSoundness:
                     for e in errors)
 
     def test_valid_consequence_accepted(self):
-        """between(a,b,c) entails between(c,b,a) by symmetry axiom."""
+        """between(a,b,c) entails between(c,b,a) by Betweenness 1."""
         pj = _make_proof(
             declarations={"points": ["a", "b", "c"], "lines": []},
             premises=["between(a, b, c)"],
             goal="between(c, b, a)",
             lines=[
                 _line(1, "between(a, b, c)", "Given"),
-                _line(2, "between(c, b, a)", "Diagrammatic"),
+                _line(2, "between(c, b, a)", "Betweenness 1", refs=[1]),
             ],
         )
         result = verify_e_proof_json(pj)
@@ -327,6 +327,104 @@ class TestDiagrammaticSoundness:
         result = verify_e_proof_json(pj)
         assert not _line_valid(result, 2), (
             "Fabricated same-side accepted from unrelated on(a, L)")
+
+
+class TestDisjunctiveAxiomSoundness:
+    """L2: Disjunctive axioms (e.g. B6) must negate ALL other disjuncts
+    before deriving one.  Regression for _check_remaining fix."""
+
+    def test_b6_all_negated_derives_between(self):
+        """B6 with 8 of 9 disjuncts negated derives the remaining one."""
+        # on(a,R), on(d,R), on(b,R), ¬(a=b), ¬(d=a), ¬(d=b),
+        # ¬between(a,d,b), ¬between(b,a,d)  → between(d,b,a)
+        pj = _make_proof(
+            declarations={"points": ["a", "b", "d"], "lines": ["R"]},
+            premises=[
+                "on(a, R)", "on(d, R)", "on(b, R)",
+                "\u00ac(a = b)", "\u00ac(d = a)", "\u00ac(d = b)",
+                "\u00ac(between(a, d, b))", "\u00ac(between(b, a, d))",
+            ],
+            goal="between(d, b, a)",
+            lines=[
+                _line(1, "on(a, R)", "Given"),
+                _line(2, "on(d, R)", "Given"),
+                _line(3, "on(b, R)", "Given"),
+                _line(4, "\u00ac(a = b)", "Given"),
+                _line(5, "\u00ac(d = a)", "Given"),
+                _line(6, "\u00ac(d = b)", "Given"),
+                _line(7, "\u00ac(between(a, d, b))", "Given"),
+                _line(8, "\u00ac(between(b, a, d))", "Given"),
+                _line(9, "between(d, b, a)", "Betweenness 6",
+                      refs=[1, 2, 3, 4, 5, 6, 7, 8]),
+            ],
+        )
+        result = verify_e_proof_json(pj)
+        assert _line_valid(result, 9), (
+            f"B6 should derive between(d,b,a): {_line_errors(result, 9)}")
+        assert result.accepted
+
+    def test_b6_partial_negation_rejects_wrong_disjunct(self):
+        """B6 with only 7 of 9 disjuncts negated must NOT derive a
+        disjunct that isn't the unique remaining one."""
+        # ¬(a=b), ¬(d=a) negated but NOT ¬(d=b), leaving TWO
+        # positive disjuncts (d=b and between(d,b,a)).
+        # Requesting d=a should fail (it's already negated!).
+        pj = _make_proof(
+            declarations={"points": ["a", "b", "d"], "lines": ["R"]},
+            premises=[
+                "on(a, R)", "on(d, R)", "on(b, R)",
+                "\u00ac(a = b)", "\u00ac(d = a)",
+                "\u00ac(between(a, d, b))", "\u00ac(between(b, a, d))",
+            ],
+            goal="",
+            lines=[
+                _line(1, "on(a, R)", "Given"),
+                _line(2, "on(d, R)", "Given"),
+                _line(3, "on(b, R)", "Given"),
+                _line(4, "\u00ac(a = b)", "Given"),
+                _line(5, "\u00ac(d = a)", "Given"),
+                _line(6, "\u00ac(between(a, d, b))", "Given"),
+                _line(7, "\u00ac(between(b, a, d))", "Given"),
+                _line(8, "d = a", "Betweenness 6",
+                      refs=[1, 2, 3, 4, 5, 6, 7]),
+            ],
+        )
+        result = verify_e_proof_json(pj)
+        assert not _line_valid(result, 8), (
+            "B6 should NOT derive d=a when its negation is in known "
+            "and other positive disjuncts remain un-negated")
+
+    def test_b6_fully_negated_derives_equality(self):
+        """B6 with all 8 other disjuncts negated derives the remaining
+        equality."""
+        # All between orderings and 2 equalities negated → a=d
+        pj = _make_proof(
+            declarations={"points": ["a", "b", "d"], "lines": ["R"]},
+            premises=[
+                "on(a, R)", "on(d, R)", "on(b, R)",
+                "\u00ac(a = b)", "\u00ac(d = b)",
+                "\u00ac(between(a, d, b))",
+                "\u00ac(between(b, a, d))",
+                "\u00ac(between(d, b, a))",
+            ],
+            goal="d = a",
+            lines=[
+                _line(1, "on(a, R)", "Given"),
+                _line(2, "on(d, R)", "Given"),
+                _line(3, "on(b, R)", "Given"),
+                _line(4, "\u00ac(a = b)", "Given"),
+                _line(5, "\u00ac(d = b)", "Given"),
+                _line(6, "\u00ac(between(a, d, b))", "Given"),
+                _line(7, "\u00ac(between(b, a, d))", "Given"),
+                _line(8, "\u00ac(between(d, b, a))", "Given"),
+                _line(9, "d = a", "Betweenness 6",
+                      refs=[1, 2, 3, 4, 5, 6, 7, 8]),
+            ],
+        )
+        result = verify_e_proof_json(pj)
+        assert _line_valid(result, 9), (
+            f"B6 fully negated should give d=a: {_line_errors(result, 9)}")
+        assert result.accepted
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -542,9 +640,9 @@ class TestMultiStepSoundness:
             goal="",
             lines=[
                 _line(1, "\u00ac(a = b)", "Given"),
-                _line(2, "center(a, \u03b1), on(b, \u03b1)", "let-circle"),
+                _line(2, "center(a, \u03b1), on(b, \u03b1)", "let-circle", refs=[1]),
                 # center(a,α) should now be known — inside(a,α) follows
-                _line(3, "inside(a, \u03b1)", "Diagrammatic"),
+                _line(3, "inside(a, \u03b1)", "Generality 3", refs=[2]),
             ],
         )
         result = verify_e_proof_json(pj)
@@ -914,7 +1012,7 @@ class TestReiterationSoundness:
             goal="",
             lines=[
                 _line(1, "between(a, b, c)", "Given"),
-                _line(2, "between(a, b, c)", "Reit"),
+                _line(2, "between(a, b, c)", "Reit", refs=[1]),
             ],
         )
         result = verify_e_proof_json(pj)
@@ -935,6 +1033,155 @@ class TestReiterationSoundness:
         )
         result = verify_e_proof_json(pj)
         assert not _line_valid(result, 2)
+
+
+class TestCasesBotElimSoundness:
+    """L2: Structural proof rules — Cases, ⊥-intro, ⊥-elim."""
+
+    def test_simple_cases_accepted(self):
+        """Two complementary branches both deriving the same conclusion."""
+        pj = _make_proof(
+            declarations={"points": ["a", "b"], "lines": ["L"]},
+            premises=["on(a, L)"],
+            goal="on(a, L)",
+            lines=[
+                _line(1, "on(a, L)", "Given"),
+                _line(2, "on(b, L)", "Assume", depth=1),
+                _line(3, "on(a, L)", "Reit", refs=[1], depth=1),
+                _line(4, "\u00ac(on(b, L))", "Assume", depth=1),
+                _line(5, "on(a, L)", "Reit", refs=[1], depth=1),
+                _line(6, "on(a, L)", "Cases", refs=[2, 4]),
+            ],
+        )
+        result = verify_e_proof_json(pj)
+        assert _line_valid(result, 6), (
+            f"Cases should accept: {_line_errors(result, 6)}")
+        assert result.accepted
+
+    def test_cases_non_complementary_rejected(self):
+        """Cases with non-complementary assumes must fail."""
+        pj = _make_proof(
+            declarations={"points": ["a", "b", "c"], "lines": ["L"]},
+            premises=["on(a, L)"],
+            goal="",
+            lines=[
+                _line(1, "on(a, L)", "Given"),
+                _line(2, "on(b, L)", "Assume", depth=1),
+                _line(3, "on(a, L)", "Reit", refs=[1], depth=1),
+                _line(4, "on(c, L)", "Assume", depth=1),
+                _line(5, "on(a, L)", "Reit", refs=[1], depth=1),
+                _line(6, "on(a, L)", "Cases", refs=[2, 4]),
+            ],
+        )
+        result = verify_e_proof_json(pj)
+        assert not _line_valid(result, 6), (
+            "Cases should reject non-complementary assumes")
+
+    def test_nested_cases_accepted(self):
+        """Inner cases conclusion visible in outer case branch."""
+        pj = _make_proof(
+            declarations={"points": ["a", "b", "c"], "lines": ["L"]},
+            premises=["on(a, L)"],
+            goal="on(a, L)",
+            lines=[
+                _line(1, "on(a, L)", "Given"),
+                # Outer case 1
+                _line(2, "on(b, L)", "Assume", depth=1),
+                # Inner cases
+                _line(3, "on(c, L)", "Assume", depth=2),
+                _line(4, "on(a, L)", "Reit", refs=[1], depth=2),
+                _line(5, "\u00ac(on(c, L))", "Assume", depth=2),
+                _line(6, "on(a, L)", "Reit", refs=[1], depth=2),
+                _line(7, "on(a, L)", "Cases", refs=[3, 5], depth=1),
+                # Outer case 2
+                _line(8, "\u00ac(on(b, L))", "Assume", depth=1),
+                _line(9, "on(a, L)", "Reit", refs=[1], depth=1),
+                _line(10, "on(a, L)", "Cases", refs=[2, 8]),
+            ],
+        )
+        result = verify_e_proof_json(pj)
+        assert _line_valid(result, 10), (
+            f"Nested Cases should accept: {_line_errors(result, 10)}")
+        assert result.accepted
+
+    def test_bot_elim_with_contradiction(self):
+        """⊥-elim: Assume ¬φ, derive ⊥, conclude φ."""
+        pj = _make_proof(
+            declarations={"points": ["a"], "lines": ["L"]},
+            premises=["on(a, L)"],
+            goal="on(a, L)",
+            lines=[
+                _line(1, "on(a, L)", "Given"),
+                _line(2, "\u00ac(on(a, L))", "Assume", depth=1),
+                _line(3, "on(a, L)", "Reit", refs=[1], depth=1),
+                _line(4, "\u22a5", "Contradiction", refs=[2], depth=1),
+                _line(5, "on(a, L)", "\u22a5-elim", refs=[2]),
+            ],
+        )
+        result = verify_e_proof_json(pj)
+        assert _line_valid(result, 4), (
+            f"Contradiction should detect \u03c8/\u00ac\u03c8: {_line_errors(result, 4)}")
+        assert _line_valid(result, 5), (
+            f"\u22a5-elim should derive on(a,L): {_line_errors(result, 5)}")
+        assert result.accepted
+
+    def test_cases_plus_bot_elim(self):
+        """Cases conclusion feeds Contradiction → ⊥-elim."""
+        pj = _make_proof(
+            declarations={"points": ["a", "b"], "lines": ["L"]},
+            premises=["on(a, L)"],
+            goal="on(a, L)",
+            lines=[
+                _line(1, "on(a, L)", "Given"),
+                _line(2, "\u00ac(on(a, L))", "Assume", depth=1),
+                _line(3, "on(b, L)", "Assume", depth=2),
+                _line(4, "on(a, L)", "Reit", refs=[1], depth=2),
+                _line(5, "\u00ac(on(b, L))", "Assume", depth=2),
+                _line(6, "on(a, L)", "Reit", refs=[1], depth=2),
+                _line(7, "on(a, L)", "Cases", refs=[3, 5], depth=1),
+                _line(8, "\u22a5", "Contradiction", refs=[2], depth=1),
+                _line(9, "on(a, L)", "\u22a5-elim", refs=[2]),
+            ],
+        )
+        result = verify_e_proof_json(pj)
+        for lid in range(1, 10):
+            assert _line_valid(result, lid), (
+                f"Line {lid} failed: {_line_errors(result, lid)}")
+        assert result.accepted
+
+    def test_reit_from_cases_conclusion_in_sibling(self):
+        """After Cases adds conclusion, Reit from that line works in
+        a sibling case branch."""
+        pj = _make_proof(
+            declarations={"points": ["a", "b", "c"], "lines": ["L"]},
+            premises=["on(a, L)"],
+            goal="on(a, L)",
+            lines=[
+                _line(1, "on(a, L)", "Given"),
+                # Outer Assume for ⊥-elim
+                _line(2, "\u00ac(on(a, L))", "Assume", depth=1),
+                # Case 1 — inner cases
+                _line(3, "on(b, L)", "Assume", depth=2),
+                _line(4, "on(a, L)", "Reit", refs=[1], depth=2),
+                _line(5, "\u00ac(on(b, L))", "Assume", depth=2),
+                _line(6, "on(a, L)", "Reit", refs=[1], depth=2),
+                _line(7, "on(a, L)", "Cases", refs=[3, 5], depth=1),
+                # Case 2 — Reit from Cases conclusion
+                _line(8, "on(c, L)", "Assume", depth=2),
+                _line(9, "on(a, L)", "Reit", refs=[7], depth=2),
+                _line(10, "\u00ac(on(c, L))", "Assume", depth=2),
+                _line(11, "on(a, L)", "Reit", refs=[7], depth=2),
+                _line(12, "on(a, L)", "Cases", refs=[8, 10], depth=1),
+                # Contradiction + ⊥-elim
+                _line(13, "\u22a5", "Contradiction", refs=[2], depth=1),
+                _line(14, "on(a, L)", "\u22a5-elim", refs=[2]),
+            ],
+        )
+        result = verify_e_proof_json(pj)
+        assert _line_valid(result, 9), (
+            f"Reit from Cases conclusion should work: "
+            f"{_line_errors(result, 9)}")
+        assert result.accepted
 
 
 class TestLemmaCitationSoundness:
@@ -970,7 +1217,7 @@ class TestLemmaCitationSoundness:
             "lines": [
                 _line(1, "on(a, L)", "Given"),
                 _line(2, "on(b, L)", "Given"),
-                _line(3, "on(a, L)", "Lemma:trivial"),
+                _line(3, "on(a, L)", "Lemma:trivial", refs=[1]),
             ],
         }
         result = verify_e_proof_json(pj)
@@ -1044,8 +1291,8 @@ class TestMultiStepChains:
             goal="inside(a, \u03b1)",
             lines=[
                 _line(1, "\u00ac(a = b)", "Given"),
-                _line(2, "center(a, \u03b1), on(b, \u03b1)", "let-circle"),
-                _line(3, "inside(a, \u03b1)", "Diagrammatic"),
+                _line(2, "center(a, \u03b1), on(b, \u03b1)", "let-circle", refs=[1]),
+                _line(3, "inside(a, \u03b1)", "Generality 3", refs=[2]),
             ],
         )
         result = verify_e_proof_json(pj)
@@ -1063,11 +1310,11 @@ class TestMultiStepChains:
             goal="",
             lines=[
                 _line(1, "\u00ac(a = b)", "Given"),
-                _line(2, "center(a, \u03b1), on(b, \u03b1)", "let-circle"),
-                _line(3, "center(b, \u03b2), on(a, \u03b2)", "let-circle"),
+                _line(2, "center(a, \u03b1), on(b, \u03b1)", "let-circle", refs=[1]),
+                _line(3, "center(b, \u03b2), on(a, \u03b2)", "let-circle", refs=[1]),
                 # Both centers are inside their own circles
-                _line(4, "inside(a, \u03b1)", "Diagrammatic"),
-                _line(5, "inside(b, \u03b2)", "Diagrammatic"),
+                _line(4, "inside(a, \u03b1)", "Generality 3", refs=[2]),
+                _line(5, "inside(b, \u03b2)", "Generality 3", refs=[3]),
             ],
         )
         result = verify_e_proof_json(pj)
@@ -1119,14 +1366,14 @@ class TestMultiStepChains:
             goal="",
             lines=[
                 _line(1, "\u00ac(a = b)", "Given"),
-                _line(2, "center(a, \u03b1), on(b, \u03b1)", "let-circle"),
-                _line(3, "center(b, \u03b2), on(a, \u03b2)", "let-circle"),
-                _line(4, "inside(a, \u03b1)", "Diagrammatic"),
-                _line(5, "inside(b, \u03b2)", "Diagrammatic"),
+                _line(2, "center(a, \u03b1), on(b, \u03b1)", "let-circle", refs=[1]),
+                _line(3, "center(b, \u03b2), on(a, \u03b2)", "let-circle", refs=[1]),
+                _line(4, "inside(a, \u03b1)", "Generality 3", refs=[2]),
+                _line(5, "inside(b, \u03b2)", "Generality 3", refs=[3]),
                 # on(b,α) is known from step 2, inside(b,β) from step 5
                 # on(a,β) is known from step 3, inside(a,α) from step 4
                 # The intersection axiom can derive intersects(α,β)
-                _line(6, "intersects(\u03b1, \u03b2)", "Diagrammatic"),
+                _line(6, "intersects(\u03b1, \u03b2)", "Intersection 5", refs=[2, 3, 4, 5]),
             ],
         )
         result = verify_e_proof_json(pj)

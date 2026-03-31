@@ -1,0 +1,2 @@
+RULE_GROUPS loaded OK, categories: ['Construction', 'Diagrammatic', 'Metric', 'Transfer', 'Superposition', 'Structural', 'Propositions']
+Total rules: 167

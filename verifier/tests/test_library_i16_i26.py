@@ -52,16 +52,16 @@ class TestELibraryI16I26:
     def test_prop_i18_sequent(self):
         from verifier.e_library import PROP_I_18
         seq = PROP_I_18.sequent
-        # Hypotheses include segment inequality
-        assert len(seq.hypotheses) == 4
+        # Hypotheses: ¬(a=b), ¬(a=c), ¬(b=c), on(a,L), on(b,L), ¬on(c,L), ab < ac
+        assert len(seq.hypotheses) == 7
         # Conclusion: angle inequality
         assert len(seq.conclusions) == 1
 
     def test_prop_i19_sequent(self):
         from verifier.e_library import PROP_I_19
         seq = PROP_I_19.sequent
-        # Converse of I.18: angle < → segment <
-        assert len(seq.hypotheses) == 4
+        # Converse of I.18: ¬(a=b), ¬(a=c), ¬(b=c), on(a,L), on(b,L), ¬on(c,L), ∠abc < ∠acb
+        assert len(seq.hypotheses) == 7
         assert len(seq.conclusions) == 1
 
     def test_prop_i18_i19_are_converses(self):
@@ -78,9 +78,8 @@ class TestELibraryI16I26:
     def test_prop_i20_sequent(self):
         from verifier.e_library import PROP_I_20
         seq = PROP_I_20.sequent
-        # Only distinctness hypotheses
-        assert len(seq.hypotheses) == 3
-        assert all(h.is_negative for h in seq.hypotheses)
+        # ¬(a=b), ¬(a=c), ¬(b=c), on(a,L), on(b,L), ¬on(c,L)
+        assert len(seq.hypotheses) == 6
         # Conclusion: bc < ab + ac (uses MagAdd)
         assert len(seq.conclusions) == 1
 

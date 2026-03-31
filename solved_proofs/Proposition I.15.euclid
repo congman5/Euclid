@@ -92,16 +92,9 @@
     "steps": [
       {
         "lineNumber": 10,
-        "text": "∠aec + ∠ceb = right-angle + right-angle",
-        "justification": "Prop.I.13",
+        "text": "¬(c = e)",
+        "justification": "Betweenness 1b",
         "dependencies": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
           8
         ],
         "depth": 0,
@@ -109,28 +102,97 @@
       },
       {
         "lineNumber": 11,
-        "text": "∠ceb + ∠bed = right-angle + right-angle",
-        "justification": "Prop.I.13",
+        "text": "¬on(c, L)",
+        "justification": "Generality 1",
         "dependencies": [
-          1,
-          2,
-          3,
-          4,
           5,
           6,
-          7,
-          8
+          3,
+          9,
+          10
         ],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 12,
+        "text": "between(b, e, a)",
+        "justification": "Betweenness 1a",
+        "dependencies": [
+          7
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "¬(b = e)",
+        "justification": "Betweenness 1b",
+        "dependencies": [
+          12
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "¬on(b, M)",
+        "justification": "Generality 1",
+        "dependencies": [
+          5,
+          6,
+          2,
+          9,
+          13
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 15,
+        "text": "(∠bec + ∠cea) = (∟ + ∟)",
+        "justification": "Angle transfer 6",
+        "dependencies": [
+          2,
+          1,
+          12,
+          11,
+          10
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "(∠ceb + ∠bed) = (∟ + ∟)",
+        "justification": "Angle transfer 6",
+        "dependencies": [
+          3,
+          4,
+          8,
+          14,
+          13
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
+        "text": "(∠bec + ∠cea) = (∠ceb + ∠bed)",
+        "justification": "CN1 — Transitivity",
+        "dependencies": [
+          15,
+          16
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 18,
         "text": "∠aec = ∠bed",
         "justification": "CN3 — Subtraction",
         "dependencies": [
-          10,
-          11
+          17
         ],
         "depth": 0,
         "status": "?"

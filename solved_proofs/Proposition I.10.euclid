@@ -215,6 +215,7 @@
         "text": "¬(c = a)",
         "justification": "M1 — Zero segment",
         "dependencies": [
+          3,
           10
         ],
         "depth": 0,
@@ -225,6 +226,7 @@
         "text": "¬(c = b)",
         "justification": "M1 — Zero segment",
         "dependencies": [
+          3,
           11
         ],
         "depth": 0,
@@ -242,7 +244,15 @@
         "lineNumber": 15,
         "text": "between(b, a, c)",
         "justification": "Circle 1",
-        "dependencies": [],
+        "dependencies": [
+          1,
+          2,
+          4,
+          6,
+          9,
+          13,
+          14
+        ],
         "depth": 1,
         "status": "?"
       },
@@ -250,7 +260,15 @@
         "lineNumber": 16,
         "text": "between(a, b, c)",
         "justification": "Circle 1",
-        "dependencies": [],
+        "dependencies": [
+          1,
+          2,
+          5,
+          7,
+          9,
+          12,
+          14
+        ],
         "depth": 1,
         "status": "?"
       },
@@ -259,6 +277,7 @@
         "text": "¬(between(b, a, c))",
         "justification": "Betweenness 1d",
         "dependencies": [
+          15,
           16
         ],
         "depth": 1,
@@ -269,6 +288,7 @@
         "text": "⊥",
         "justification": "⊥-intro",
         "dependencies": [
+          14,
           15,
           17
         ],
@@ -282,7 +302,7 @@
         "dependencies": [
           14
         ],
-        "depth": 1,
+        "depth": 0,
         "status": "?"
       },
       {
@@ -293,7 +313,7 @@
           10,
           11
         ],
-        "depth": 1,
+        "depth": 0,
         "status": "?"
       },
       {
@@ -303,7 +323,7 @@
         "dependencies": [
           12
         ],
-        "depth": 1,
+        "depth": 0,
         "status": "?"
       },
       {
@@ -313,23 +333,35 @@
         "dependencies": [
           13
         ],
-        "depth": 1,
+        "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 23,
         "text": "¬(on(b, M))",
         "justification": "Generality 1",
-        "dependencies": [],
-        "depth": 1,
+        "dependencies": [
+          1,
+          2,
+          3,
+          19,
+          21
+        ],
+        "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 24,
         "text": "¬(on(a, N))",
         "justification": "Generality 1",
-        "dependencies": [],
-        "depth": 1,
+        "dependencies": [
+          1,
+          2,
+          3,
+          19,
+          22
+        ],
+        "depth": 0,
         "status": "?"
       },
       {
@@ -337,18 +369,26 @@
         "text": "∠ace = ∠bce, same-side(e, b, M), same-side(e, a, N)",
         "justification": "Prop.I.9",
         "dependencies": [
+          3,
           12,
-          13
+          13,
+          21,
+          22,
+          23,
+          24
         ],
-        "depth": 1,
+        "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 26,
-        "text": "¬(e = c)",
-        "justification": "Generality 3",
-        "dependencies": [],
-        "depth": 1,
+        "text": "¬(c = e)",
+        "justification": "Generality 6",
+        "dependencies": [
+          21,
+          25
+        ],
+        "depth": 0,
         "status": "?"
       },
       {
@@ -358,23 +398,39 @@
         "dependencies": [
           26
         ],
-        "depth": 1,
+        "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 28,
         "text": "¬(same-side(a, b, K))",
-        "justification": "Pasch 3",
-        "dependencies": [],
-        "depth": 1,
+        "justification": "Triple incidence 1",
+        "dependencies": [
+          21,
+          22,
+          25,
+          27
+        ],
+        "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 29,
         "text": "intersects(K, L)",
         "justification": "Intersection 1",
-        "dependencies": [],
-        "depth": 1,
+        "dependencies": [
+          1,
+          2,
+          12,
+          13,
+          21,
+          22,
+          25,
+          26,
+          27,
+          28
+        ],
+        "depth": 0,
         "status": "?"
       },
       {
@@ -384,23 +440,43 @@
         "dependencies": [
           29
         ],
-        "depth": 1,
+        "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 31,
         "text": "∠ace = ∠acd",
         "justification": "Angle transfer 4",
-        "dependencies": [],
-        "depth": 1,
+        "dependencies": [
+          1,
+          2,
+          12,
+          21,
+          22,
+          25,
+          26,
+          27,
+          30
+        ],
+        "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 32,
         "text": "∠bce = ∠bcd",
         "justification": "Angle transfer 4",
-        "dependencies": [],
-        "depth": 1,
+        "dependencies": [
+          1,
+          2,
+          13,
+          21,
+          22,
+          25,
+          26,
+          27,
+          30
+        ],
+        "depth": 0,
         "status": "?"
       },
       {
@@ -412,7 +488,7 @@
           31,
           32
         ],
-        "depth": 1,
+        "depth": 0,
         "status": "?"
       },
       {
@@ -420,7 +496,7 @@
         "text": "cd = cd",
         "justification": "CN4 — Reflexivity",
         "dependencies": [],
-        "depth": 1,
+        "depth": 0,
         "status": "?"
       },
       {
@@ -432,15 +508,25 @@
           33,
           34
         ],
-        "depth": 1,
+        "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 36,
         "text": "between(a, d, b)",
-        "justification": "Betweenness 6",
-        "dependencies": [],
-        "depth": 1,
+        "justification": "Pasch 4",
+        "dependencies": [
+          1,
+          2,
+          19,
+          21,
+          22,
+          25,
+          27,
+          28,
+          30
+        ],
+        "depth": 0,
         "status": "?"
       },
       {
@@ -450,7 +536,7 @@
         "dependencies": [
           35
         ],
-        "depth": 1,
+        "depth": 0,
         "status": "?"
       }
     ]

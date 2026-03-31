@@ -418,6 +418,7 @@ class _OpenFileDialog(QDialog):
         from ..resources import resource_path
         self._unsolved_dir = resource_path("unsolved_proofs")
         self._solved_dir = resource_path("solved_proofs")
+        self._lemmas_dir = resource_path("lemmas")
         self._prefs = _load_user_bookmarks()
         self._bookmarks = self._prefs.get("bookmarks", [])
         self._nav_stack: list[str] = []  # for "Back" navigation
@@ -487,6 +488,12 @@ class _OpenFileDialog(QDialog):
             "path": self._solved_dir,
             "name": "Solved Proofs",
             "icon": "\u2713",
+            "removable": False,
+        })
+        self._sb_entries.append({
+            "path": self._lemmas_dir,
+            "name": "Lemmas",
+            "icon": "\u00A7",
             "removable": False,
         })
         for bm in self._bookmarks:

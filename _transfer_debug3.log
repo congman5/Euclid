@@ -1,0 +1,5 @@
+Input vars: ['K', 'M', 'N', 'a', 'b', 'c', 'd', 'e', 'f', 'α']
+Filtered vars: pts=['a', 'b', 'c', 'd', 'e', 'f'] lns=['K', 'M', 'N'] circs=['α']
+DA4 estimate: 69984 (limit=150000)
+diagram_known size: 173
+metric_known size: 12

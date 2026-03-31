@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l \"/c/Users/Connor Gorman/source/repos/congman5/Euclid/euclid_py/ui\"/*.py)",
+      "Bash(grep \"\\\\.py$\")",
+      "Bash(python -c \"from euclid_py.ui.proof_panel import ProofPanel, CONNECTIVES, CONNECTIVE_MAP; print\\(''CONNECTIVES:'', CONNECTIVES\\); print\\(''Has right-angle:'', ''∟'' in CONNECTIVES\\); print\\(''ProofPanel imported OK''\\)\")",
+      "Bash(python -c \"from euclid_py.ui.proof_panel import ProofPanel, CONNECTIVES, CONNECTIVE_MAP; print\\(''Connectives count:'', len\\(CONNECTIVES\\)\\); print\\(''Has right-angle:'', chr\\(0x221f\\) in CONNECTIVES\\); print\\(''ProofPanel imported OK''\\)\")",
+      "Bash(python -c \"from euclid_py.ui.canvas_widget import GeometryScene; print\\(''Canvas imported OK''\\)\")"
+    ]
+  }
+}

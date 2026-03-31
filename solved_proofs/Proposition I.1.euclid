@@ -132,12 +132,12 @@
       {
         "lineNumber": 6,
         "text": "intersects(α, β)",
-        "justification": "Intersection 9",
+        "justification": "Intersection 5",
         "dependencies": [
-          4,
-          5,
           2,
-          3
+          3,
+          4,
+          5
         ],
         "depth": 0,
         "status": "?"
@@ -154,11 +154,11 @@
       },
       {
         "lineNumber": 8,
-        "text": "ab = ac",
-        "justification": "Segment transfer 4",
+        "text": "ac = ab",
+        "justification": "Segment transfer 3b",
         "dependencies": [
-          7,
-          2
+          2,
+          7
         ],
         "depth": 0,
         "status": "?"
@@ -166,7 +166,7 @@
       {
         "lineNumber": 9,
         "text": "bc = ba",
-        "justification": "Segment transfer 4",
+        "justification": "Segment transfer 3b",
         "dependencies": [
           3,
           7
@@ -184,21 +184,20 @@
       },
       {
         "lineNumber": 11,
-        "text": "ab = bc",
+        "text": "ab = ac",
         "justification": "CN1 — Transitivity",
         "dependencies": [
-          8,
-          10
+          8
         ],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 12,
-        "text": "ab = ac",
+        "text": "ab = bc",
         "justification": "CN1 — Transitivity",
         "dependencies": [
-          8,
+          9,
           10
         ],
         "depth": 0,
@@ -207,16 +206,23 @@
       {
         "lineNumber": 13,
         "text": "¬(c = a)",
-        "justification": "CN1 — Transitivity",
-        "dependencies": [],
+        "justification": "M1 — Zero segment",
+        "dependencies": [
+          1,
+          8
+        ],
         "depth": 0,
         "status": "?"
       },
       {
         "lineNumber": 14,
         "text": "¬(c = b)",
-        "justification": "CN1 — Transitivity",
-        "dependencies": [],
+        "justification": "M1 — Zero segment",
+        "dependencies": [
+          1,
+          9,
+          10
+        ],
         "depth": 0,
         "status": "?"
       }

@@ -97,23 +97,14 @@
     "steps": [
       {
         "lineNumber": 6,
-        "text": "∠abe = right-angle, ¬(on(e, L))",
-        "justification": "Prop.I.11",
+        "text": "(∠abd + ∠dbc) = (∟ + ∟)",
+        "justification": "Angle transfer 6",
         "dependencies": [
           1,
           2,
-          3
-        ],
-        "depth": 0,
-        "status": "?"
-      },
-      {
-        "lineNumber": 7,
-        "text": "∠abd + ∠dbc = right-angle + right-angle",
-        "justification": "Angle transfer 6",
-        "dependencies": [
-          6,
-          3
+          3,
+          4,
+          5
         ],
         "depth": 0,
         "status": "?"

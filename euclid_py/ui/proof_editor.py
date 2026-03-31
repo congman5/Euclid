@@ -33,11 +33,9 @@ _RULE_GROUPS = {
     "Logical": [
         "Given", "Assume", "Reit",
         "AndIntro", "AndElimL", "AndElimR",
-        "OrIntroL", "OrIntroR",
         "IffElimLR", "IffElimRL",
         "EqSym", "EqTrans",
         "ContrIntro", "ContrElim",
-        "RAA",
         "ExactlyOneContradiction",
     ],
     "Geometric": [

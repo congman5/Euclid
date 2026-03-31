@@ -465,9 +465,6 @@ class StepKind(Enum):
     BOT_INTRO = auto()         # ⊥-intro: derive ⊥ from ψ and ¬ψ
     BOT_ELIM = auto()          # ⊥-elim: discharge Assume via ⊥
     CASE_SPLIT_ELIM = auto()   # case-split elim: derive B from (φ→B) ∧ (¬φ→B)
-    DISJ_INTRO = auto()        # ∨-intro: from φ, derive φ ∨ ψ
-    DISJ_ELIM = auto()         # ∨-elim: from φ∨ψ + subproofs, derive shared conclusion
-    EX_FALSO = auto()          # ⊥-elim (ex falso quodlibet): from ⊥, derive anything
     TRICHOTOMY = auto()        # trichotomy: derive x < y ∨ x = y ∨ x > y
 
     # ── Backward-compatibility aliases ──────────────────────────────
@@ -476,7 +473,6 @@ class StepKind(Enum):
     TRANSFER = AXIOM_ELIM
     SUPERPOSITION = SUPERPOSITION_SAS  # default: SAS
     CASE_SPLIT = CASE_SPLIT_ELIM
-    REDUCTIO = BOT_ELIM
     CONTRADICTION = BOT_INTRO
 
 

@@ -990,7 +990,7 @@ class ProofPanel(QWidget):
              "Open a subproof: inserts an Assume line at depth+1",
              self._begin_subproof),
             ("End Subproof",
-             "Close a subproof: inserts a Reductio line at depth\u22121, "
+             "Close a subproof: inserts a \u22a5-elim line at depth\u22121, "
              "referencing the Assume line",
              self._end_subproof),
         ]:
@@ -1691,10 +1691,10 @@ class ProofPanel(QWidget):
                 50, self._line_widgets[pos].focus_text)
 
     def _end_subproof(self):
-        """Close a subproof by inserting a Reductio line at depth\u22121.
+        """Close a subproof by inserting a \u22a5-elim line at depth\u22121.
 
         Finds the nearest Assume line above the current position and
-        inserts a Reductio line referencing it.
+        inserts a \u22a5-elim line referencing it.
         """
         self._push_undo()
         # Find the most recent Assume line (searching backward)
@@ -1717,15 +1717,15 @@ class ProofPanel(QWidget):
         if assume_idx is None:
             return  # no Assume to close
 
-        # Insert Reductio at depth - 1, after the selected line (or end)
+        # Insert \u22a5-elim at depth - 1, after the selected line (or end)
         outer_depth = max(0, assume_depth - 1)
         pos = search_from + 1 if self._selected > 0 else len(self._steps)
-        step = ProofStep(0, "", "Reductio", [assume_line_num], outer_depth)
+        step = ProofStep(0, "", "\u22a5-elim", [assume_line_num], outer_depth)
         self._steps.insert(pos, step)
         self._renumber()
         self._rebuild_lines()
         self.step_changed.emit()
-        # Focus the new Reductio line for typing the conclusion
+        # Focus the new \u22a5-elim line for typing the conclusion
         if 0 <= pos < len(self._line_widgets):
             QTimer.singleShot(
                 50, self._line_widgets[pos].focus_text)
@@ -2728,15 +2728,16 @@ class ProofPanel(QWidget):
 
         # Paper-label suffixes for non-sequential axiom groups.
         # Groups that ARE sequential use None (label == str(i+1)).
+        _GEN_LABELS     = ["1", "2", "3", "4", "5", "5c", "5d", "6", "6c"]
         _BETWEEN_LABELS = ["1a", "1b", "1c", "1d", "2", "3", "4", "5", "6", "7"]
         _CIRCLE_LABELS  = ["1", "2a", "2b", "2c", "2d", "3a", "3b", "3c", "3d", "4"]
-        _INTER_LABELS   = ["1", "2a", "2b", "2c", "2d", "3", "4a", "4b", "5"]
+        _INTER_LABELS   = ["1", "2a", "2b", "2c", "2d", "3", "4a", "4b", "5", "6"]
         _SEG_LABELS     = ["1", "2", "3a", "3b", "4a", "4b", "4c", "4d"]
         _ANG_LABELS     = ["1a", "1b", "1c", "2a", "2b", "2c", "3a", "3b", "4", "5a", "5b", "6", "7"]
         _AREA_LABELS    = ["1a", "1b", "1c", "2"]
 
         groups = [
-            ("Generality", GENERALITY_AXIOMS, None),
+            ("Generality", GENERALITY_AXIOMS, _GEN_LABELS),
             ("Betweenness", BETWEEN_AXIOMS, _BETWEEN_LABELS),
             ("Same-side", SAME_SIDE_AXIOMS, None),
             ("Pasch", PASCH_AXIOMS, None),

@@ -206,10 +206,16 @@ class MetricEngine:
         if isinstance(atom, Equals):
             if lit.polarity:
                 # Positive: x = y
-                left = self._to_term(atom.left)
-                right = self._to_term(atom.right)
-                if left is not None and right is not None:
-                    self.state.union(left, right)
+                if (isinstance(atom.left, str) and
+                        isinstance(atom.right, str)):
+                    # Point equality: a = b
+                    self.state._point_eq.add(
+                        frozenset({atom.left, atom.right}))
+                else:
+                    left = self._to_term(atom.left)
+                    right = self._to_term(atom.right)
+                    if left is not None and right is not None:
+                        self.state.union(left, right)
             else:
                 # Negative equality: x ≠ y
                 if (isinstance(atom.left, str) and
@@ -292,8 +298,33 @@ class MetricEngine:
                 return self.state.is_less(left, right)
             else:
                 # ¬(a < b) means a ≥ b
-                return (self.state.are_equal(left, right) or
-                        self.state.is_less(right, left))
+                if (self.state.are_equal(left, right) or
+                        self.state.is_less(right, left)):
+                    return True
+                # M2/M5/M7: Non-negativity axioms
+                # ¬(X < 0) is always true for segment, angle, area terms
+                if isinstance(right, ZeroMag):
+                    return True
+                r_rep = self.state.find(right)
+                for s in (Sort.SEGMENT, Sort.ANGLE, Sort.AREA):
+                    z = ZeroMag(s)
+                    self.state.add_term(z)
+                    if self.state.find(z) == r_rep:
+                        return True
+                # M5 upper bound: ¬(2L < ∠abc) — always true for angles
+                two_right = MagAdd(RightAngle(), RightAngle())
+                self.state.add_term(two_right)
+                l_rep = self.state.find(left)
+                if self.state.find(two_right) == l_rep:
+                    if isinstance(right, AngleTerm):
+                        return True
+                    # Also check if right is equal to an AngleTerm
+                    r_rep2 = self.state.find(right)
+                    for t in self.state._terms:
+                        if isinstance(t, AngleTerm):
+                            if self.state.find(t) == r_rep2:
+                                return True
+                return False
         return False
 
     def _apply_rules(self) -> Set[Literal]:
@@ -389,6 +420,7 @@ class MetricEngine:
 
         # M1: ab = 0 ↔ a = b
         # Forward: ab = 0 → a = b (point equality from zero segment)
+        # Converse: a = b → ab = 0 (M1-converse in .tex)
         # Contrapositive: a ≠ b → ab ≠ 0 (segment is nonzero)
         zero_seg = ZeroMag(Sort.SEGMENT)
         self.state.add_term(zero_seg)
@@ -402,6 +434,32 @@ class MetricEngine:
                     if pair not in self.state._point_eq:
                         self.state._point_eq.add(pair)
                         new.add(Literal(Equals(t.p1, t.p2)))
+
+        # M1-converse: a = b → ab = 0
+        for pair in list(self.state._point_eq):
+            pts = sorted(pair)
+            if len(pts) == 2:
+                a, b = pts[0], pts[1]
+                for seg in (SegmentTerm(a, b), SegmentTerm(b, a)):
+                    self.state.add_term(seg)
+                    if not self.state.are_equal(seg, zero_seg):
+                        self.state.union(seg, zero_seg)
+                        new.add(Literal(Equals(seg, zero_seg)))
+            elif len(pts) == 1:
+                # a = a case: aa = 0
+                a = pts[0]
+                seg = SegmentTerm(a, a)
+                self.state.add_term(seg)
+                if not self.state.are_equal(seg, zero_seg):
+                    self.state.union(seg, zero_seg)
+                    new.add(Literal(Equals(seg, zero_seg)))
+
+        # Also handle: for any SegmentTerm(a, a), aa = 0 always
+        for t in list(self.state._terms):
+            if isinstance(t, SegmentTerm) and t.p1 == t.p2:
+                if not self.state.are_equal(t, zero_seg):
+                    self.state.union(t, zero_seg)
+                    new.add(Literal(Equals(t, zero_seg)))
 
         # Contrapositive: a ≠ b → ab ≠ 0
         for pair in list(self.state._point_diseq):
@@ -426,6 +484,27 @@ class MetricEngine:
                     if pair not in self.state._point_diseq:
                         self.state._point_diseq.add(pair)
                         new.add(Literal(Equals(t.p1, t.p2), False))
+
+        # M6: △aab = 0 (degenerate area)
+        zero_area = ZeroMag(Sort.AREA)
+        self.state.add_term(zero_area)
+        for t in list(self.state._terms):
+            if isinstance(t, AreaTerm):
+                # Check if any two of the three points are the same
+                # or known to be equal (via point equality).
+                pts = [t.p1, t.p2, t.p3]
+                degenerate = False
+                for i in range(3):
+                    for j in range(i + 1, 3):
+                        if pts[i] == pts[j]:
+                            degenerate = True
+                        elif (frozenset({pts[i], pts[j]})
+                              in self.state._point_eq):
+                            degenerate = True
+                if degenerate:
+                    if not self.state.are_equal(t, zero_area):
+                        self.state.union(t, zero_area)
+                        new.add(Literal(Equals(t, zero_area)))
 
         # ── CN5: Whole > Part ─────────────────────────────────────
         # If a + b = c and b > 0 then a < c   (and symmetrically

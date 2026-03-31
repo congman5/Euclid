@@ -1,0 +1,39 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "description": "between(d, b, c) with on(b, L) implies not same-side(d, c, L)"
+  },
+  "canvas": {
+    "points": [],
+    "segments": [],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-03-22T23:56:00Z",
+  "proof": {
+    "name": "Lemma:pasch-neg-rev-b",
+    "premises": [
+      "on(b, L)",
+      "between(d, b, c)"
+    ],
+    "goal": "\u00ac(same-side(d, c, L))",
+    "declarations": {
+      "points": ["b", "c", "d"],
+      "lines": ["L"]
+    },
+    "steps": [
+      {
+        "lineNumber": 3,
+        "text": "\u00ac(same-side(d, c, L))",
+        "justification": "Pasch 3",
+        "dependencies": [2, 1],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

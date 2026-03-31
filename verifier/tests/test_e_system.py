@@ -358,7 +358,9 @@ class TestDiagrammaticAxioms:
 
     def test_generality_axiom_count(self):
         from verifier.e_axioms import GENERALITY_AXIOMS
-        assert len(GENERALITY_AXIOMS) == 6
+        # G1-G4 + G5 (line) + G5c (circle on) + G5d (circle center)
+        # + G6 (line) + G6c (circle) = 9
+        assert len(GENERALITY_AXIOMS) == 9
 
     def test_between_axiom_count(self):
         from verifier.e_axioms import BETWEEN_AXIOMS
@@ -367,7 +369,7 @@ class TestDiagrammaticAxioms:
 
     def test_same_side_axiom_count(self):
         from verifier.e_axioms import SAME_SIDE_AXIOMS
-        assert len(SAME_SIDE_AXIOMS) == 5
+        assert len(SAME_SIDE_AXIOMS) == 6
 
     def test_pasch_axiom_count(self):
         from verifier.e_axioms import PASCH_AXIOMS
@@ -384,8 +386,8 @@ class TestDiagrammaticAxioms:
 
     def test_intersection_axiom_count(self):
         from verifier.e_axioms import INTERSECTION_AXIOMS
-        # I1: 1, I2: 4 variants, I3: 1, I4: 2 variants, I5: 1 = 9
-        assert len(INTERSECTION_AXIOMS) == 9
+        # I1: 1, I2: 4 variants, I3: 1, I4: 2 variants, I5: 1, I6: 1 = 10
+        assert len(INTERSECTION_AXIOMS) == 10
 
     def test_clause_structure(self):
         from verifier.e_axioms import BETWEEN_AXIOMS
@@ -878,8 +880,8 @@ class TestELibrary:
     def test_prop_i4_sequent(self):
         from verifier.e_library import PROP_I_4
         seq = PROP_I_4.sequent
-        # SAS: 3 hypotheses (ab=de, ac=df, ∠bac=∠edf)
-        assert len(seq.hypotheses) == 3
+        # SAS: 9 hypotheses (¬(a=b), ¬(a=c), ¬(b=c), ¬(d=e), ¬(d=f), ¬(e=f), ab=de, ac=df, ∠bac=∠edf)
+        assert len(seq.hypotheses) == 9
         # No new objects constructed
         assert len(seq.exists_vars) == 0
         # 4 conclusions (bc=ef, ∠abc=∠def, ∠bca=∠efd, △abc=△def)
@@ -950,20 +952,20 @@ class TestNewAxiomCounts:
     def test_diagram_angle_transfer_count(self):
         from verifier.e_axioms import DIAGRAM_ANGLE_TRANSFER
         # DA1: 3 clauses, DA2: 3 clauses, DA3: 2 clauses,
-        # DA4: 1 clause, DA5: 2 clauses = 11
-        assert len(DIAGRAM_ANGLE_TRANSFER) == 11
+        # DA4: 1 clause, DA5: 2 clauses, DA6: 1 clause, DA7: 1 clause = 13
+        assert len(DIAGRAM_ANGLE_TRANSFER) == 13
 
     def test_all_transfer_axioms_increased(self):
         from verifier.e_axioms import ALL_TRANSFER_AXIOMS
-        # DS: 6, DA: 11, DAr: 4 (incl. DAr1c contrapositive) = 23
-        assert len(ALL_TRANSFER_AXIOMS) == 23
+        # DS: 8, DA: 13, DAr: 4 (incl. DAr1c contrapositive) = 25
+        assert len(ALL_TRANSFER_AXIOMS) == 25
 
     def test_da5_parallel_postulate_present(self):
         """DA5 clauses should contain Intersects and angle sum."""
         from verifier.e_axioms import DIAGRAM_ANGLE_TRANSFER
-        # The last two clauses should be DA5
-        da5a = DIAGRAM_ANGLE_TRANSFER[-2]
-        da5b = DIAGRAM_ANGLE_TRANSFER[-1]
+        # DA5 is at indices 9 and 10 (after DA6/DA7 were appended)
+        da5a = DIAGRAM_ANGLE_TRANSFER[9]
+        da5b = DIAGRAM_ANGLE_TRANSFER[10]
         # DA5a should conclude with intersects
         has_intersects = any(
             isinstance(lit.atom, Intersects) and lit.polarity
@@ -1189,18 +1191,85 @@ class TestM1Forward:
             MagAdd(SegmentTerm("c", "d"), SegmentTerm("e", "f"))))
         assert me.is_consequence(known, query) is True
 
+    def test_m1_converse_point_eq_to_zero_segment(self):
+        """M1-converse: a = b → ab = 0."""
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = {Literal(Equals("a", "b"))}
+        query = Literal(Equals(SegmentTerm("a", "b"),
+                                ZeroMag(Sort.SEGMENT)))
+        assert me.is_consequence(known, query) is True
+
+    def test_m2_segment_nonneg(self):
+        """M2: ¬(ab < 0) — segments are non-negative."""
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = set()
+        query = Literal(LessThan(SegmentTerm("a", "b"),
+                                  ZeroMag(Sort.SEGMENT)),
+                        False)
+        assert me.is_consequence(known, query) is True
+
+    def test_m5_angle_nonneg(self):
+        """M5 lower: ¬(∠abc < 0) — angles are non-negative."""
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = set()
+        query = Literal(LessThan(AngleTerm("a", "b", "c"),
+                                  ZeroMag(Sort.ANGLE)),
+                        False)
+        assert me.is_consequence(known, query) is True
+
+    def test_m5_angle_upper_bound(self):
+        """M5 upper: ¬(2L < ∠abc) — angles ≤ two right angles."""
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = set()
+        query = Literal(LessThan(MagAdd(RightAngle(), RightAngle()),
+                                  AngleTerm("a", "b", "c")),
+                        False)
+        assert me.is_consequence(known, query) is True
+
+    def test_m6_degenerate_area(self):
+        """M6: △aab = 0."""
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = set()
+        query = Literal(Equals(AreaTerm("a", "a", "b"),
+                                ZeroMag(Sort.AREA)))
+        assert me.is_consequence(known, query) is True
+
+    def test_m6_degenerate_area_second_pair(self):
+        """M6: △aba = 0 (second pair degenerate)."""
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = set()
+        query = Literal(Equals(AreaTerm("a", "b", "a"),
+                                ZeroMag(Sort.AREA)))
+        assert me.is_consequence(known, query) is True
+
+    def test_m7_area_nonneg(self):
+        """M7: ¬(△abc < 0) — areas are non-negative."""
+        from verifier.e_metric import MetricEngine
+        me = MetricEngine()
+        known = set()
+        query = Literal(LessThan(AreaTerm("a", "b", "c"),
+                                  ZeroMag(Sort.AREA)),
+                        False)
+        assert me.is_consequence(known, query) is True
+
 
 # ═══════════════════════════════════════════════════════════════════════
-# Reductio step type tests
+# ⊥-intro / ⊥-elim step type tests
 # ═══════════════════════════════════════════════════════════════════════
 
-class TestReductioStepType:
-    """Verify the Reductio step type in the JSON proof checker."""
+class TestBotElimStepType:
+    """Verify the ⊥-intro + ⊥-elim step types in the JSON proof checker."""
 
-    def test_reductio_with_contradiction(self):
+    def test_bot_elim_with_contradiction(self):
         from verifier.unified_checker import verify_e_proof_json
         pj = {
-            "name": "reductio_test",
+            "name": "bot_elim_test",
             "declarations": {"points": ["a", "b"], "lines": ["L"]},
             "premises": ["on(a, L)", "on(b, L)"],
             "goal": "a = b",
@@ -1215,34 +1284,44 @@ class TestReductioStepType:
                 # Derive a contradiction: on(a, L) and ¬on(a, L)
                 {"id": 4, "depth": 1, "statement": "\u00ac(on(a, L))",
                  "justification": "Assume", "refs": []},
-                # Reductio: conclude a = b
-                {"id": 5, "depth": 0, "statement": "a = b",
-                 "justification": "Reductio", "refs": [3]},
+                # ⊥-intro: contradiction found
+                {"id": 5, "depth": 1, "statement": "\u22a5",
+                 "justification": "\u22a5-intro", "refs": [3]},
+                # ⊥-elim: conclude a = b
+                {"id": 6, "depth": 0, "statement": "a = b",
+                 "justification": "\u22a5-elim", "refs": [3]},
             ],
         }
         result = verify_e_proof_json(pj)
-        # The assume ¬on(a,L) contradicts given on(a,L)
+        # ⊥-intro should find the contradiction
         assert 5 in result.derived
+        # ⊥-elim should derive a = b
+        assert 6 in result.derived
 
-    def test_reductio_without_refs_fails(self):
+    def test_bot_elim_without_refs_fails(self):
         from verifier.unified_checker import verify_e_proof_json
         pj = {
-            "name": "reductio_no_refs",
+            "name": "bot_elim_no_refs",
             "declarations": {"points": ["a", "b"], "lines": []},
             "premises": [],
             "goal": "",
             "lines": [
                 {"id": 1, "depth": 0, "statement": "a = b",
-                 "justification": "Reductio", "refs": []},
+                 "justification": "\u22a5-elim", "refs": []},
             ],
         }
         result = verify_e_proof_json(pj)
         assert 1 not in result.derived
 
-    def test_classify_reductio(self):
+    def test_classify_bot_elim(self):
         from verifier.unified_checker import _classify_justification
         from verifier.e_ast import StepKind
-        assert _classify_justification("Reductio") == StepKind.REDUCTIO
+        assert _classify_justification("\u22a5-elim") == StepKind.BOT_ELIM
+
+    def test_reductio_rejected(self):
+        """Reductio justification is no longer recognized."""
+        from verifier.unified_checker import _classify_justification
+        assert _classify_justification("Reductio") is None
 
     def test_classify_assume(self):
         """Assume is handled as special case, not via _classify_justification."""
@@ -1256,11 +1335,15 @@ class TestReductioStepType:
         structural = [r for r in rules if r.category == "structural"]
         names = [r.name for r in structural]
         assert "Assume" in names
-        assert "Reductio" in names
+        assert "\u22a5-elim" in names
+        assert "\u22a5-intro" in names
         assert "Reit" in names
+        assert "Reductio" not in names
+        assert "\u2228-intro" not in names
+        assert "\u2228-elim" not in names
 
-    def test_reductio_retracts_subproof_facts(self):
-        """After Reductio closes, subproof-scoped facts must not persist."""
+    def test_bot_elim_retracts_subproof_facts(self):
+        """After ⊥-elim closes, subproof-scoped facts must not persist."""
         from verifier.unified_checker import verify_e_proof_json
         pj = {
             "name": "scoping_test",
@@ -1278,19 +1361,22 @@ class TestReductioStepType:
                 # Create contradiction: assume ¬on(a, L)
                 {"id": 4, "depth": 1, "statement": "\u00ac(on(a, L))",
                  "justification": "Assume", "refs": []},
-                # Reductio: conclude a = b
-                {"id": 5, "depth": 0, "statement": "a = b",
-                 "justification": "Reductio", "refs": [2]},
+                # ⊥-intro: contradiction found
+                {"id": 5, "depth": 1, "statement": "\u22a5",
+                 "justification": "\u22a5-intro", "refs": [2]},
+                # ⊥-elim: conclude a = b
+                {"id": 6, "depth": 0, "statement": "a = b",
+                 "justification": "\u22a5-elim", "refs": [2]},
                 # Now try to use between(a,c,b) which was only in the
                 # subproof.  This should fail because it was retracted.
-                {"id": 6, "depth": 0,
+                {"id": 7, "depth": 0,
                  "statement": "between(a, c, b)",
                  "justification": "Diagrammatic", "refs": []},
             ],
         }
         result = verify_e_proof_json(pj)
-        # Line 5 (Reductio) should succeed
-        assert 5 in result.derived
-        # Line 6 should fail — between(a,c,b) was retracted with the
+        # Line 6 (⊥-elim) should succeed
+        assert 6 in result.derived
+        # Line 7 should fail — between(a,c,b) was retracted with the
         # subproof and cannot be re-derived at the outer depth.
-        assert 6 not in result.derived
+        assert 7 not in result.derived

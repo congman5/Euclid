@@ -137,8 +137,8 @@
     "steps": [
       {
         "lineNumber": 5,
-        "text": "¬(p = a)",
-        "justification": "Generality 4",
+        "text": "¬(a = p)",
+        "justification": "Generality 6",
         "dependencies": [
           1,
           4
@@ -291,7 +291,7 @@
       {
         "lineNumber": 19,
         "text": "on(h, L)",
-        "justification": "Betweenness 2",
+        "justification": "Betweenness 3",
         "dependencies": [
           18,
           14
@@ -334,9 +334,10 @@
         "text": "∠ehp = right-angle",
         "justification": "Angle transfer 3a",
         "dependencies": [
-          21,
-          22,
-          19
+          14,
+          18,
+          4,
+          21
         ],
         "depth": 0,
         "status": "?"
@@ -344,10 +345,10 @@
       {
         "lineNumber": 24,
         "text": "¬(h = p)",
-        "justification": "Generality 3",
+        "justification": "Generality 6",
         "dependencies": [
-          4,
-          19
+          19,
+          4
         ],
         "depth": 0,
         "status": "?"
@@ -355,7 +356,7 @@
       {
         "lineNumber": 25,
         "text": "¬(e = h)",
-        "justification": "Generality 3",
+        "justification": "Betweenness 1b",
         "dependencies": [
           18
         ],

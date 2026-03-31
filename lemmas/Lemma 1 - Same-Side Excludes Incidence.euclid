@@ -1,0 +1,54 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python)",
+  "metadata": {
+    "description": "same-side(a, b, L) implies neither a nor b is on L"
+  },
+  "canvas": {
+    "points": [],
+    "segments": [],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-03-22T23:56:00Z",
+  "proof": {
+    "name": "Lemma:same-side-off-line",
+    "premises": [
+      "same-side(a, b, L)"
+    ],
+    "goal": "\u00ac(on(a, L)), \u00ac(on(b, L))",
+    "declarations": {
+      "points": ["a", "b"],
+      "lines": ["L"]
+    },
+    "steps": [
+      {
+        "lineNumber": 2,
+        "text": "\u00ac(on(a, L))",
+        "justification": "Same-side 3",
+        "dependencies": [1],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 3,
+        "text": "same-side(b, a, L)",
+        "justification": "Same-side 2",
+        "dependencies": [1],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 4,
+        "text": "\u00ac(on(b, L))",
+        "justification": "Same-side 3",
+        "dependencies": [3],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

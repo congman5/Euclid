@@ -98,13 +98,15 @@ PROP_I_3 = ETheorem(
         "straight line equal to the less."
     ),
     sequent=Sequent(
-        # Hypotheses: on(a,L), on(b,L), a≠b, c≠d, cd < ab
+        # Hypotheses: on(a,L), on(b,L), a≠b, c≠d, cd < ab, a≠c, a≠d
         hypotheses=[
             _pos(On("a", "L")),
             _pos(On("b", "L")),
             _neg(Equals("a", "b")),
             _neg(Equals("c", "d")),
             _pos(LessThan(SegmentTerm("c", "d"), SegmentTerm("a", "b"))),
+            _neg(Equals("a", "c")),
+            _neg(Equals("a", "d")),
         ],
         # ∃e: between(a,e,b) ∧ ae = cd
         exists_vars=[("e", Sort.POINT)],
