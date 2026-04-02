@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.34",
     "title": "Parallelogram Properties",
-    "statement": "In a parallelogram opposite sides and angles are equal, and the diagonal bisects the area."
+    "statement": "In a parallelogram opposite sides and angles are equal, and the diagonal bisects the area.",
+    "difficulty": 3,
+    "hints": [
+      "Draw diagonal BC, apply Prop.I.29 for alternate angles, then use ASA."
+    ]
   },
   "canvas": {
     "points": [

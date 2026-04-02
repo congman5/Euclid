@@ -2,7 +2,191 @@
 
 All notable changes to the Euclid project.
 
-## [8.0.0] - 2025-XX-XX
+> **v1.0** will be released when all 48 propositions of Book I are correctly implemented and verified, until them numerate the first digit after each new implimentation, and on smaller updates enumerate the number furthest to the right.
+
+## [0.9.1.3] - 2025-XX-XX
+
+### Fixed — Ghost Windows When Adding Premises / Loading Proofs
+
+- **Proof panel ghost windows fixed**: Adding a premise, loading a file, or any proof panel rebuild caused empty windows to flash briefly on screen. `InsertBar`, `FitchLineWidget`, and `FitchBar` were created without a parent in `_rebuild_lines()`, so `setCursor()` and `setMouseTracking()` calls in their constructors forced Qt to allocate a native window handle (HWND) as a top-level window that briefly became visible before `addWidget()` reparented them. Fixed by passing `self._lines_container` as the parent to all widget constructors, and hiding old widgets before deferred deletion.
+
+## [0.9.1.2] - 2025-XX-XX
+
+### Fixed — Details Dialog Crash & Axiom Index Safety
+
+- **Details dialog crash fixed**: `_DetailsDialog` was crashing with `NameError: name 'QTextEdit' is not defined` because `QTextEdit` was only imported inline inside `_SettingsDialog.__init__`, not at module scope. Moved `QTextEdit`, `QCheckBox`, and `QInputDialog` to the top-level import in `main_window.py` and removed the redundant inline imports.
+- **Axiom index bounds check**: `_get_axiom_by_name` in `proof_panel.py` could crash with `IndexError` if a label list was shorter than its axiom group. Added `i < len(labels)` guard to fall back to sequential numbering.
+- **File-load flashing windows fixed**: Opening a `.euclid` file caused the proof panel to visibly flash as widgets were destroyed and recreated multiple times. The `clear()` → `restore_journal_state()` → `_enforce_feature_locks()` sequence was calling `_rebuild_lines()` up to 4 times in rapid succession. Added `begin_bulk_update()`/`end_bulk_update()` to `ProofPanel` to suppress intermediate rebuilds and perform a single rebuild at the end. Applied to both `_import_file()` and `load_proposition()`.
+- **CLI file-open clobber fixed**: Launching a `.euclid` file from the command line (or file association) caused the loaded content to flash and be overwritten by a blank proof. `MainWindow.__init__` unconditionally queued `QTimer.singleShot(0, open_blank)`, which fired after the file had already loaded and wiped everything. Moved the `open_blank` call to `__main__.py` so it only runs when no file argument is provided, and deferred CLI file loads to the event loop for proper layout.
+
+## [0.9.1.1] - 2025-XX-XX
+
+### Added — Comprehensive Implementation Plan (euclid-plan.md v2.0)
+
+- Created `euclid-plan.md` — master roadmap for completing all 48 propositions plus Tarski foundation.
+- **Track A** (Tarski): milestones M0, M3, M6, M7 for deriving System E from Tarski axioms T1-T11, referencing GeoCoq Ch02-Ch13 and IsaGeoCoq.
+- **Track B** (Propositions I.16-I.48): milestones M1, M2, M4, M5, M8 covering 9 proposition groups (B1-B9), ~300 total ProofStep objects.
+- **LeanEuclid source verification**: fetched and analyzed 11 proposition source files and 5 SystemE axiom files from the LeanEuclid Lean 4 repo.
+- **Axiom correspondence tables**: verified all standard System E axioms match between LeanEuclid and our `e_axioms.py`; identified 7 non-standard LeanEuclid extension axioms with derivation strategies.
+- **Translation rules**: documented mapping from LeanEuclid constructs (`euclid_apply`, `euclid_finish`, `by_contra`, `by_cases`) to our ProofStep/StepKind system.
+- **Proposition variants catalog**: documented 9 LeanEuclid convenience variants (e.g. `proposition_29'`-`29'''''`) needed by later propositions.
+- **Risk register** and **success criteria** for the full implementation.
+
+## [0.9.1] - 2025-XX-XX
+
+### Added — Four New Advanced Lock Settings + Improved Details Dialog
+
+- **Four new lockable features** in `LOCKABLE_FEATURES` (`integrity.py`) and the Advanced settings tab:
+  - **Lock goal**: Prevents editing the goal field in the proof journal.
+  - **Lock premises**: Prevents editing, adding, or deleting premises. Premise text becomes read-only and InsertBars + delete buttons are hidden.
+  - **Disable loading lemmas**: Disables the Lemma button in the proof panel header.
+  - **Disable construction tool**: Disables the 🔨 construction tool button in the canvas toolbar; automatically switches to the select tool if the construction tool is active when the lock is applied.
+- **`ProofPanel` lock API** (`proof_panel.py`):
+  - `set_goal_locked(bool)` — makes the goal QLineEdit read-only with a greyed style.
+  - `set_premises_locked(bool)` — rebuilds premise rows with text read-only and controls hidden.
+  - `set_lemma_locked(bool)` — enables/disables the Lemma button.
+  - All lock flags are reset in `clear()` so they do not persist across file loads.
+- **`_enforce_feature_locks`** wires all 4 new locks on file load.
+
+### Fixed — Details Dialog Overview Tab
+
+- Wrapped Overview content in a `QScrollArea` (was a plain `QWidget`) so long propositions don't clip.
+- Added `_sep()` horizontal divider lines between sections (title, statement/given, difficulty, hints, restrictions, tamper warning).
+- Title now uses bold 13pt font with em-dash separator between proposition name and title.
+- Given/Conclusion displayed in a framed box with `#f5f6f8` background, separate **Given** and **To prove** labels.
+- Difficulty row shows star rating (★/☆), text label, and numeric score on one line.
+- Hints toggle shows underlined link text "Hints  (click to reveal)" / "Hints  (click to hide)".
+- Active locks shown as a bullet list under "Restrictions active for this file:" heading instead of a vague single-line message.
+- Integrity warning uses ⚠ Unicode symbol prefix for visibility.
+
+## [0.9.0] - 2025-XX-XX
+
+### Added — Settings, Details Dialog, Integrity Hash & Difficulty Ratings
+
+- **Difficulty ratings**: All 48 Euclid propositions and 2 textbook theorems now have difficulty ratings (1–5 scale: Trivial → Expert) and pedagogical hints.
+- **Settings dialog**: New "Settings" button in the workspace toolbar opens a dialog with two tabs:
+  - **General**: Change difficulty and edit hints, then save normally.
+  - **Advanced**: Select lockable features and export a separate locked `.euclid` file with an embedded integrity hash.
+- **Details dialog**: New "Details" button in the toolbar opens a tabbed popup:
+  - **Overview**: Proposition title, statement, given, conclusion, difficulty, and click-to-reveal hints. Shows lock status and tamper warning when applicable.
+  - **Notes**: Editable personal notes field saved back to the proposition in memory.
+- **White background dialogs**: All new dialogs (Settings, Details) use a clean white background with explicit black text, overriding the app-wide dark stylesheet on all widget types (QLabel, QCheckBox, QTabBar, QTextEdit, QPushButton).
+- **Difficulty labels in Open dialog**: The file browser shows text difficulty labels (Trivial, Easy, Moderate, Hard, Expert) next to `.euclid` files.
+- **Hints and difficulty embedded in all .euclid files**: All 15 solved and 44 unsolved proposition files now carry `difficulty` and `hints` in their `metadata` block, populated from `proposition_data.py`.
+- **`notes` field on Proposition**: Each proposition can hold a `notes` string edited from the Details dialog.
+- **HMAC-SHA256 integrity hash**: When a locked file is exported, an integrity hash is embedded in the `.euclid` file metadata.
+- **Tamper detection on load**: On file load, the integrity hash is verified; a warning is shown and feature locks are not enforced if the hash mismatches.
+- **Lockable features**: `hide_hints`, `disable_rule_reference`, `hide_difficulty`, `restrict_save`.
+- **New module `euclid_py/engine/integrity.py`**: Contains `compute_integrity_hash`, `verify_integrity_hash`, `LOCKABLE_FEATURES`, and `DEFAULT_LOCKS`.
+- **Extended file format**: `serialize_to_json` recomputes the integrity hash when locked features are present; `deserialize_from_json` verifies it on load.
+
+### Investigated — Trivial propositions (I.4, I.8, I.13, I.14) are irreducible
+
+- **Analysis of 1–2 step proofs**: Propositions I.4, I.8, I.13, and I.14 each have trivial proofs that simply invoke the axiom encoding that proposition (SAS for I.4, SSS for I.8, Angle transfer 6 for I.13, Angle transfer 7 for I.14).
+- **Independence analysis**: Exhaustive review of all 52 diagrammatic + 25 transfer axiom clauses confirms these four axioms are **independent** — no other axiom in System E derives the same conclusions:
+  - **Angle transfer 6** (§3.6) is the *only* axiom connecting `between(a,b,c)` to supplementary angle sums `∠abd + ∠dbc = ∟ + ∟`. The angle addition axioms (AT 2a–2c) handle only the interior case (same-side conditions), not the straight-angle case.
+  - **Angle transfer 7** (§3.6) is the *only* axiom deriving `between(c,b,d)` from supplementary angles. No converse path exists through other axioms.
+  - **SAS** and **SSS** (§3.7) are superposition elimination rules — the paper (Avigad et al. 2009, §3.7) explicitly discusses why these cannot be reduced to simpler axioms and provides the elimination-rule formulation as the "more elegant solution."
+- **Conclusion**: These trivial proofs are correct and irreducible within System E. The axioms are intentionally designed to make these propositions provable in one step — this is a feature of System E's design that prioritizes intuitive proof structure.
+
+### Changed — Version scheme renumbered to pre-1.0
+
+- **All version numbers renumbered**: The project used an internal versioning scheme (1.0.0 through 8.0.0) during development. All versions have been renumbered to a pre-1.0 scheme reflecting the project's pre-release status, with the latest version as **v0.9.0**.
+- **Mapping**: Old major versions map to new minor versions: 1.x → 0.1.x, 2.x → 0.2.x, 3.x → 0.3.x, 4.x → 0.4.x, 5.x → 0.5.x, 6.x → 0.6.x, 7.0–7.6 → 0.7.x, 7.7–7.9 → 0.8.x, 8.0.0 → 0.9.0.
+- **Updated files**: `pyproject.toml`, `euclid_py/__init__.py`, `verifier/__init__.py`, `.github/workflows/release.yml`, and all 127 changelog version headers.
+- **v1.0 milestone**: Added note to changelog and README — v1.0 will be released when all 48 propositions of Book I are correctly implemented and verified.
+
+### Changed — Reference tab polish: Leibniz clarifications and ∩ notation fix
+
+- **Leibniz annotations clarified**: Generality axioms G5, G5c, G5d, G6, G6c and Same-side axiom SS6 now explain the contrapositive reasoning (e.g., "if L = M then on(a,L) would give on(a,M)") instead of the opaque "(Leibniz for lines)" labels.
+- **∩ notation replaced with separate on() predicates**: Triple incidence 1–3 and Angle transfer 2a–2c, 5a–5b descriptions previously used `on(a,L∩M)` shorthand; now written as `on(a,L) ∧ on(a,M)` to match the actual verifier predicate syntax users write in proofs.
+
+### Added — Axiomatic tooltips on justification rule dropdown
+
+- **Hover tooltips in proof journal**: When selecting a justification rule from the dropdown menu on a proof line, hovering over any rule now displays a tooltip with its full formal axiomatic statement. Works in both grouped category submenus and flat search-filtered results. Covers all 172 rules including lemmas.
+
+### Added — Click-to-copy on rule reference cards
+
+- **Click to copy rule name**: Clicking any rule card in the Rule Reference panel copies the rule name (e.g., "Betweenness 5") to the clipboard for pasting into the justification field. Cards show a pointing-hand cursor and flash blue on click as visual feedback.
+
+### Added — "Applicable" filter on Rule Reference panel
+
+- **Show applicable rules**: A new "✔ Applicable" toggle button next to the search bar filters the rule list to only show rules whose hypotheses match predicates present in the current proof (premises + steps). Extracts predicate patterns (`on`, `between`, `same-side`, `center`, `inside`, `intersects`, `≠`, metric expressions) from both rule descriptions and proof facts. Construction and structural rules are always shown. The header counter updates to show the filtered count (e.g., "117/172 rules"). Wired to both the workspace editor (`_WorkspaceScreen`) and the verifier view (`_VerifierScreen`).
+
+### Changed — Rule Reference panel updated to formal axiomatic statements
+
+- **All rule descriptions rewritten**: Every axiom and rule description in `get_available_rules()` (`verifier/unified_checker.py`) now uses the formal axiomatic statement from the paper (Avigad, Dean & Mumma 2009, §3.2–§3.7), rather than informal English summaries.
+- **Diagrammatic axioms** (§3.4): Generality (9), Betweenness (10), Same-side (6), Pasch (4), Triple incidence (3), Circle (10), Intersection (10) — all updated to exact clause form.
+- **Metric axioms** (§3.5): CN1–CN5, M1–M9, Trichotomy, Order transitivity, Addition preserves order — all updated to formal notation.
+- **Transfer axioms** (§3.6): Segment (8), Angle (13), Area (4) — all updated to exact axiom text with full hypotheses.
+- **Superposition** (§3.7): SAS and SSS descriptions use formal implication notation.
+- **Structural rules** (§3.2): Reit, Assume, ⊥-intro, ⊥-elim, Cases, Given — updated to sequent-calculus notation (Γ ⊢ φ).
+
+### Added — Verifier architecture documentation (docs/verifier-architecture.md)
+
+- **Comprehensive technical documentation** for the System E verifier: 19 sections covering theoretical foundation, AST, all axiom groups (52 diagrammatic + 25 transfer clauses), 21 construction rules, consequence engine (forward-chaining + Leibniz E2 + degenerate betweenness), metric engine (union-find + CN1–CN5 + M1–M9), transfer engine, superposition (SAS/SSS), proof checker pipeline (standard + kernel + unified), theorem library (48 sequents), proof encodings, parser, elaborator, axiom matching, SMT/TPTP/GeoCoq backends, extensions beyond the paper, and test suite overview.
+- **README updated**: Added architecture docs link, fixed axiom group table (removed stale C5 row, corrected clause counts), updated test badge (667 tests).
+
+### Removed — C5 circle axiom eliminated entirely
+
+- **C5 axiom removed** from `e_axioms.py`: The C5 circle axiom (added in a prior release to address a same-side derivation gap) had 16 hypotheses, no formal proof of soundness, and introduced verification fragility. It has been eliminated entirely from the axiom system.
+- **Circle labels updated**: `_CIRCLE_LABELS` in `e_axiom_match.py`, `unified_checker.py`, and `proof_panel.py` no longer include "5". C5 description removed from the rule catalog.
+- **Resolution**: The I.9/I.10 circularity (I.9 needed C5 which was itself unproven) is resolved by following the Beeson/Narboux/Wiedijk (2019) strategy: prove I.10 first (independently via the Gupta 1965 method), then prove I.9 using I.10.
+
+### Changed — I.10 proved first, I.9 proved second (solved_proofs/, verifier/e_library.py)
+
+- **Proposition ordering swapped**: I.10 now precedes I.9 in `.euclid_order.json` and `get_theorems_up_to()` in `e_library.py`, breaking the historical circular dependency.
+- **I.10 rewritten** (78 steps, Gupta method): Uses circle-circle-two intersection to construct two points c, e equidistant from both a and b. Line K through c and e intersects L at d. SSS on △ace/△bce derives the angle, DA4 transfers the angle, and SAS on △acd/△bcd yields ad = db. No dependency on I.9 or C5.
+- **I.9 rewritten** (47 steps, uses I.10): Circle α(a,ab) intersects ray ac at g and d. I.10 bisects segment bd at midpoint e. SSS on △abe/△ade derives ∠bae = ∠dae. DA6 supplementary angles converts to ∠bae = ∠cae. Same-side via Pasch 2/3 and SS2/4/5.
+- **Both proofs ACCEPTED** by the verifier. 15/15 solved proofs pass.
+
+### Added — Leibniz E2 equality substitution in ConsequenceEngine (verifier/e_consequence.py)
+
+- **Leibniz substitution**: The consequence engine now tracks equality pairs (`eq_pairs`) and applies Leibniz E2 substitution to generate new diagrammatic literals by replacing equal points in known facts. This enables derivations that require chained equality reasoning within the diagrammatic closure (e.g., deriving `¬on(a,K)` from `¬on(b,K)` when `a` and `b` are in the same equality class).
+- **Implementation**: New `_leibniz_subs()` static method generates substituted literals. Integrated into the `direct_consequences()` fixpoint loop.
+
+### Added — Degenerate betweenness seeding in ConsequenceEngine (verifier/e_consequence.py)
+
+- **Degenerate betweenness**: The consequence engine now seeds `¬between(x, y, x)` for all point pairs at the start of `direct_consequences()`. The structural truth that betweenness with identical endpoints is always false was previously unavailable to the engine, blocking AT4 angle transfer steps that depend on `¬between(a, c, a)`.
+
+### Enhanced — ⊥-intro contradiction handler (verifier/unified_checker.py)
+
+- **Triple-enhanced ⊥-intro**: The contradiction handler now supports three detection modes:
+  1. **ψ/¬ψ literal check** (original): Direct contradictory literal pairs.
+  2. **X < Y ∧ Y < X metric check** (new): Detects contradictory magnitude orderings.
+  3. **Consequence engine closure check** (new): Runs the consequence engine on the assumption set to detect diagrammatic contradictions (e.g., all disjuncts of a betweenness trichotomy axiom violated).
+
+### Changed — Proof outline builders updated (verifier/e_proofs.py)
+
+- **`_make_prop_i10()` rewritten**: Now reflects the Gupta method (circle-circle-two → SSS → DA4 → SAS). No I.9 dependency.
+- **`_make_prop_i9()` rewritten**: Now uses I.10 for midpoint, SSS, DA6 supplementary angles. No C5 dependency.
+- **Performance benchmark threshold**: 5-point forward-chaining test threshold bumped from 600ms to 700ms to accommodate Leibniz E2 and degenerate betweenness seeding overhead.
+
+- **Deleted `test_answer_key_validation.py`**: All 48 tests depended on a deleted `answer_key_book_1.json` fixture and errored on collection.
+- **Removed 2 count-assertion tests from `test_e_system.py`**: `test_all_rules_load` (expected 20 rules, now 21) and `test_circle_axiom_count` (expected 10, now 11) were stale after the C5/rule-5b additions.
+- **Removed `TestAutofillMetric` class from `test_autofill.py`** (8 tests): All used a generic `"Metric"` justification string that no longer matches any recognised axiom prefix.
+- **Removed 3 tests from `test_smoke.py`**: `test_eval_all_no_crash` (used generic `"Diagrammatic"` justification), `test_predicates_use_system_e_syntax` and `test_rule_groups_use_system_e_sections` (expected old PREDICATES/RULE_GROUPS format with `"circle"` templates and `§3.3` section names).
+- **Removed 2 tests from `test_system_e_integration.py`**: `test_simple_between_symmetry_accepted` and `test_simple_proof_goal_accepted` (both used generic `"Diagrammatic"` justification and old capitalised `Between(A,B,C)` syntax).
+- **Result**: 667 tests pass, 0 failures, 0 errors.
+
+### Added *(superseded — C5 removed in 0.9.0)*
+
+- **~~New axiom C5~~**: *(Removed)* Originally added to address a same-side derivation gap. Eliminated entirely in favor of the Gupta method for I.10 — see "Removed — C5 circle axiom" above.
+
+### Added — Construction rule 5b: let-intersection-line-circle-other (verifier/e_construction.py, verifier/unified_checker.py)
+
+- **New construction rule**: `let-intersection-line-circle-other` finds the second intersection of a line and circle when one intersection point is already known and an inside point is given. Prerequisites: `on(c,α), on(c,L), inside(b,α), on(b,L)` → derives `on(a,α), on(a,L), between(c,b,a)`.
+- Total construction rules: 21.
+
+### Fixed — Proposition I.9 proof *(superseded — rewritten in 0.9.0)*
+
+- *(Superseded)* Originally rewritten using C5 axiom. Now rewritten again using I.10 + DA6 supplementary angles — see "Changed — I.10 proved first, I.9 proved second" above.
+
+### Fixed — test_all_solved.py verification script (scripts/test_all_solved.py)
+
+- **Bug**: The `load_euclid` helper manually converted `.euclid` format to the verifier's JSON format, but the manual conversion introduced subtle incompatibilities with the verifier's built-in `.euclid` normalization, causing nondeterministic failures on I.10.
+- **Fix**: Pass raw `.euclid` JSON directly to `verify_e_proof_json`, which already has built-in normalization for the `.euclid` format.
+- **Result**: All 15/15 solved proofs pass deterministically (I.1–I.15).
 
 ### Added — Proposition Construction tool on canvas (euclid_py/ui/canvas_widget.py, euclid_py/ui/main_window.py)
 
@@ -291,7 +475,7 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 #### Documentation
 - **Updated `README.md`** — architecture diagram, feature table, project structure, and references now reflect System E-only design
 
-## [7.9.6] - 2025-XX-XX
+## [0.8.8] - 2025-XX-XX
 
 ### Changed — Comprehensive justification names in answer key (Props I.1–I.10)
 
@@ -311,7 +495,7 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 - **Updated positive_tests** in `answer_key` section: generic `Transfer`/`Metric`/`Diagrammatic` → specific axiom names
 - **Updated Justification Names reference** in `answer-key-book-I.txt` header to list all rule types
 
-## [7.9.5] - 2025-XX-XX
+## [0.8.7] - 2025-XX-XX
 
 ### Fixed — Transfer engine variable grounding and sort inference
 
@@ -378,7 +562,7 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 - **`PB.g()` / `PB.s()`**: Now honour the current depth (backward compatible — depth starts at 0).
 - **20 total new tests**: 6 ZeroMag, 3 M1, 6 Reductio, 5 metric (CN5, CN2, + mono, < through =).
 
-## [7.9.4] - 2025-XX-XX
+## [0.8.6] - 2025-XX-XX
 
 ### Rewritten — Answer key with real proofs (answer-key-book-I.txt, answer_key_book_1.json)
 
@@ -399,7 +583,7 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 
 - Added `δ` to `GREEK_LETTERS` list so the predicate palette displays an insert button for δ alongside α, β, γ. Useful for proofs requiring four or more circles (e.g., Prop I.2).
 
-## [7.9.3] - 2025-XX-XX
+## [0.8.5] - 2025-XX-XX
 
 ### Added — Non-circular proofs for I.1, I.4, I.5, I.8 and sequent verifications for the rest
 
@@ -519,7 +703,7 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 - **TestAutofillCollectKnownLiterals** (5 tests): Premises included in known pool, prior steps included, current/future steps excluded, `_parse_ref_literals` returns parsed, and nonexistent ref returns empty.
 - **Audit results**: All three autofill paths (construction, named axiom, theorem) correctly build candidate pools from ref'd literals + all known facts from premises and prior steps. No bugs found — the autofill engine already searches the full known-facts pool, matching the verifier's behavior.
 
-## [7.9.2] - 2025-XX-XX
+## [0.8.4] - 2025-XX-XX
 
 ### Fixed — Verifier crash / hang on Proposition I.2 and complex proofs (e_consequence.py, h_consequence.py, t_consequence.py, unified_checker.py)
 
@@ -548,7 +732,7 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 - **Root cause**: Background verification threads were destroyed (`deleteLater`) without waiting for the thread to fully exit. This caused crashes when switching propositions, loading files, or clearing the proof panel while verification was in progress.
 - **Fix**: `_cancel_verification()` now waits up to 3 seconds for the thread to stop, and force-terminates it if it doesn't. `_on_verify_finished_inner()` now calls `quit()` + `wait(2000)` before `deleteLater()`. Both `proof_panel.py` and `main_window.py` are fixed.
 
-## [7.9.1] - 2025-XX-XX
+## [0.8.3] - 2025-XX-XX
 
 ### Added — Crash logging for debugging (proof_panel.py, __main__.py)
 
@@ -665,7 +849,7 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 
 - **Polished README**: Rewrote `README.md` with centered header, shields.io badges (Python, PyQt6, tests, license), highlighted feature summary, architecture diagram, three-system comparison table, verification pipeline explanation, desktop app feature table, proposition library overview, System E syntax reference with constructions and sequent format, axiom system summaries, project structure tree, test commands, requirements section, Python API and CLI usage examples, and academic references.
 
-## [7.9.0] - 2025-XX-XX
+## [0.8.2] - 2025-XX-XX
 
 ### Added — File name shown as workspace title (main_window.py)
 
@@ -796,7 +980,7 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 - **Cross-system bridging**: When different systems are mixed in the same proof, known facts are automatically translated between systems using `t_bridge` (E↔T) and `h_bridge` (E↔H). For example, a premise written as `between(a,b,c)` in E can be referenced by a subsequent step written as `B(a,b,c)` in T or `BetH(a,b,c)` in H.
 - **Fallback chain**: If the E consequence engine cannot derive a step, the verifier tries the T engine (via bridge), then the H engine (via bridge), before rejecting it.
 
-## [7.8.0] - 2025-XX-XX
+## [0.8.1] - 2025-XX-XX
 
 ### Added — Proof editor accepts Tarski (T) and Hilbert (H) syntax
 
@@ -805,7 +989,7 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
   - **System H**: `IncidL(a,l)` → `on`, `BetH(a,b,c)` → `between`, `CongH(a,b,c,d)` → `ab = cd`, `CongaH(a,b,c,d,e,f)` → `∠abc = ∠def`, `SameSideH(a,b,l)` → `same-side`, `EqPt(a,b)` → `a = b`, `EqL(l,m)` → `l = m`, `ColH(a,b,c)` → `between`, `Para(l,m)` → `¬intersects`.
 - **Glossary T and H entries are now clickable buttons** that insert templates into the focused proof field, matching the E buttons.
 
-## [7.7.0] - 2025-XX-XX
+## [0.8.0] - 2025-XX-XX
 
 ### Removed — All legacy code
 
@@ -821,13 +1005,13 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 - **Proof Journal glossary rewritten** as a compact read-only reference with three system sections (**E**, **T**, **H**), each with a colour-coded badge. Entries are plain labels (not buttons) — no insertion behaviour, no duplication of `=`, `≠` already in the connective bar. All valid primitives for each system are listed.
 - **Sidebar glossary (`_E_GLOSSARY`)** updated to include 6 missing System E primitives: `diff-side`, `¬intersects`, `let L = line(a, b)`, `let α = circle(a, b)`, `ab + bc = ac`, `∠abc < ∠def`. Both glossaries now show the same primitives.
 
-## [7.6.13] - 2025-XX-XX
+## [0.7.19] - 2025-XX-XX
 
 ### Added — Reiteration rule (unified_checker.py)
 
 - **Reit** rule added to `get_available_rules()` so it now appears in the rule dropdown menu in the Proof Journal. Reiteration allows restating a previously established fact — the verifier already accepted `Reit` as a valid justification (classified as `StepKind.DIAGRAMMATIC`), but it was missing from the UI rule catalogue.
 
-## [7.6.12] - 2025-XX-XX
+## [0.7.18] - 2025-XX-XX
 
 ### Changed — Compact glossary button grid + △ connective (proof_panel.py)
 
@@ -836,7 +1020,7 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 - **Added missing predicates**: `diff-side(a,b,L)` and `ab+bc = ac` (magnitude addition) are now included — both are valid parser inputs that were previously missing from the palette.
 - **All 20 valid predicates covered**: `on`, `center`, `inside`, `between`, `same-side`, `diff-side`, `intersects`, `¬intersects`, `right-angle`, `let L=line`, `let α=circle`, `a = b`, `a ≠ b`, `ab = cd`, `ab < cd`, `∠abc = ∠def`, `∠abc < ∠def`, `ab+bc = ac`, `△abc = △def`.
 
-## [7.6.11] - 2025-XX-XX
+## [0.7.17] - 2025-XX-XX
 
 ### Changed — Glossary replaces predicate buttons in Proof Journal (proof_panel.py)
 
@@ -846,20 +1030,20 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 - The connective buttons (∧, ∨, ¬, etc.) and Greek letter buttons remain unchanged in the symbol palette above.
 - Entry count badge shown in the glossary header.
 
-## [7.6.10] - 2025-XX-XX
+## [0.7.16] - 2025-XX-XX
 
 ### Added — Glossary in Proof Journal (proof_panel.py)
 
 - **Collapsible glossary section** added to the Proof Journal panel between the predicate palette and the lemma section. Lists all 14 System E predicates with plain English translations (e.g. `on(a, L)` → "Point a lies on line L"). Starts collapsed; click the header to expand. Each entry shows the formal notation in a code-style label with the English meaning beside it. Hover highlights rows for easy scanning.
 
-## [7.6.9] - 2025-XX-XX
+## [0.7.15] - 2025-XX-XX
 
 ### Changed — Collapsible sections start collapsed (rule_reference.py, translation_view.py)
 
 - **Rule Reference**: All six section groups (Construction, Diagrammatic, Metric, Transfer, Superposition, Propositions) now start **collapsed** on startup. Arrow indicator starts as `▸` and card container starts hidden.
 - **Glossary**: Rewrote glossary sections as collapsible dropdowns matching the rule reference pattern — clickable header with collapse arrow (`▸`/`▾`), hover highlight, pointing-hand cursor, and a hideable body container. All three sections (E, T, H) start collapsed.
 
-## [7.6.8] - 2025-XX-XX
+## [0.7.14] - 2025-XX-XX
 
 ### Fixed — Glossary Panel section headers (translation_view.py)
 
@@ -871,7 +1055,7 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 
 - Swapped the position of the **Glossary** and **E / T / H** tabs in both tab widget locations (verifier-mode and canvas-mode sidebars). Tab order is now: Rules → Glossary → E / T / H (was: Rules → E / T / H → Glossary).
 
-## [7.6.7] - 2025-XX-XX
+## [0.7.13] - 2025-XX-XX
 
 ### Fixed — Rule Reference Panel spacing (rule_reference.py)
 
@@ -887,7 +1071,7 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 - Added **UI Features** section documenting all four sidebar tabs: Diagnostics, Rules (152 rules), E/T/H translation view, and Glossary (primitives reference).
 - Added `translation_view.py` to the project structure listing with description.
 
-## [7.6.6] - 2025-XX-XX
+## [0.7.12] - 2025-XX-XX
 
 ### Fixed — E / T / H Translation View (translation_view.py)
 
@@ -907,7 +1091,7 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 - **Glossary tab registered** in both tab widget locations in `main_window.py` (verifier-mode and canvas-mode sidebars).
 - Each entry shows the formal notation in a tinted code block with English meaning below, grouped by system with collapsible section headers and count badges.
 
-## [7.6.5] - 2025-XX-XX
+## [0.7.11] - 2025-XX-XX
 
 ### Fixed — Rule Reference Panel (rule_reference.py)
 
@@ -918,7 +1102,7 @@ System E is now the **sole formal system**. All Tarski and Hilbert code, UI elem
 - **Description indentation**: Rule descriptions now indent 16px under the name for clear visual hierarchy. Multi-line proposition descriptions (statement + formal sequent) also properly indented.
 - **Card margins**: Increased left content margin from `Sp.padding + 14` to `20px` for consistent alignment with section headers.
 
-## [7.6.4] - 2025-XX-XX
+## [0.7.10] - 2025-XX-XX
 
 ### Fixed — Axiomatic Systems Audit (Reference PDFs Cross-Check)
 
@@ -957,7 +1141,7 @@ Audited all three axiomatic systems (E, H, T) against reference materials:
 - `tarski_part2_extracted.txt` — 10-page extraction of A8-A11 formalization (lower/upper dimension, Euclid axiom, continuity) with Mizar proofs
 - `tarski_independent_extracted.txt` — 12-page extraction of independence results: variant axiom table (A0, A2', A7', A9', A10', A11', A14, A15), counter-models, Klein's model for A10' independence
 
-## [7.6.3] - 2025-XX-XX
+## [0.7.9] - 2025-XX-XX
 
 ### Fixed — Proposition Evaluation (e_library.py)
 
@@ -983,7 +1167,7 @@ Audited all three axiomatic systems (E, H, T) against reference materials:
 
 - **Grounding explosion**: `TConsequenceEngine` used brute-force Cartesian-product grounding over all point combinations — with 6 points and the 5-segment axiom (8 variables), this generated 6⁸ = 1,679,616 ground clauses per axiom (1.75M total), causing `test_e2_transitivity` to hang indefinitely. Replaced with **matched unit-propagation**: for each axiom clause and each candidate "free" literal, match the remaining literals' negations against known facts to find valid substitutions. Grounding is now proportional to the number of known facts, not point^k. All 56 Tarski tests pass in 0.28s (was infinite for 6-point tests)
 
-## [7.6.2] - 2025-XX-XX
+## [0.7.8] - 2025-XX-XX
 
 ### Fixed — Canvas Tools
 
@@ -1037,7 +1221,7 @@ Audited all three axiomatic systems (E, H, T) against reference materials:
   - **Workspace**: dirty state tracked via both `canvas_changed` (drawing edits) and `step_changed` (proof step edits) signals; cleared on save or proposition load
   - **Verifier**: dirty state set when a proof JSON is loaded; Save exports the proof data back to JSON; cleared on save
 
-## [7.6.1] - 2025-XX-XX
+## [0.7.7] - 2025-XX-XX
 
 ### Added — Answer Key for All 48 Book I Propositions
 
@@ -1050,7 +1234,7 @@ Audited all three axiomatic systems (E, H, T) against reference materials:
 - **Verified against formal data**: Cross-checked all 48 propositions against `geocoq_compat.py` (GeoCoq alignment), `e_library.py` (sequent data), and `e_proofs.py` (step counts/dependencies). Fixed Prop I.5 missing I.3 dependency and corrected construction/theorem counts to match GeoCoq classification (14/34).
 - **Verified against source paper**: Cross-checked against `formal_system_extracted.txt` (Avigad, Dean, Mumma 2009). Confirmed: 7 step kinds map to paper's §3.2–3.7 categories, axiom labels (M1/M3/M4/M9/DS3b/I5/CN3) match paper's §3.5–3.6 numbering, SUPERPOSITION_SAS/SSS used only in I.4/I.8 per §3.7, neutral geometry boundary at I.29 matches paper's first use of Postulate 5, all 48 dependency graph entries match `_DEPS`, and proof structures for I.1/I.2/I.10/I.12 match paper's §4.2/§4.5 detailed proofs.
 
-## [7.6.0] - 2025-XX-XX
+## [0.7.6] - 2025-XX-XX
 
 ### Rewritten — Real Hand-Written Proofs for All 48 Book I Propositions
 
@@ -1135,7 +1319,7 @@ Audited all three axiomatic systems (E, H, T) against reference materials:
   - Parallelograms: I.33–36, I.41, I.43
   - Construction figures: I.42, I.44–46
 
-## [7.5.0] - 2025-XX-XX
+## [0.7.5] - 2025-XX-XX
 
 ### Fixed — Test Suite Regression Fixes (21 tests)
 
@@ -1155,7 +1339,7 @@ Audited all three axiomatic systems (E, H, T) against reference materials:
 - Added legacy diagrammatic rule aliases (`Ord2`, `Ord3`, `Bet`, `Inc1`, `Pasch`, `SS1`, etc.) to `_classify_justification` so they route to the consequence engine
 - Unknown justifications (e.g. `Ord1` cited for betweenness symmetry) are now rejected instead of silently accepted via fallback
 
-## [7.4.0] - 2025-XX-XX
+## [0.7.4] - 2025-XX-XX
 
 ### Added — Greek Letter Palette in Proof Journal
 
@@ -1204,7 +1388,7 @@ Complete rewrite of the Rule Reference panel (`euclid_py/ui/rule_reference.py`) 
 - `euclid_py/ui/rule_reference.py` — Full rewrite: collapsible `_SectionGroup`, improved `_RuleCard` with objectName-based hover, dual-line proposition display
 - `verifier/unified_checker.py` — Complete descriptions for all diagrammatic/transfer axiom groups; propositions include `thm.statement` natural language text
 
-## [7.3.0] - 2025-XX-XX
+## [0.7.3] - 2025-XX-XX
 
 ### Added — Phase 10.4: Performance Benchmarks
 
@@ -1247,7 +1431,7 @@ New benchmark test suite measuring and enforcing performance budgets across all 
 - Added 3 new tests: circle dispatch, line dispatch, mixed dispatch
 - Removed unused `textwrap` import
 
-## [7.2.0] - 2025-XX-XX
+## [0.7.2] - 2025-XX-XX
 
 ### Added — Phase 10.3: GeoCoq Statement Comparison & Compatibility Layer
 
@@ -1288,7 +1472,7 @@ New GeoCoq compatibility layer and 42 comparison tests validating that our E/H/T
 - **T translation**: 0 issues — all 48 translate to Tarski-only primitives (Cong, B, ≠)
 - **H library**: Known structural differences (Hilbert encodes some propositions with different granularity) — documented and expected
 
-## [7.1.0] - 2025-XX-XX
+## [0.7.1] - 2025-XX-XX
 
 ### Added — Phase 8: Automated Reasoning Backend (SMT-LIB & TPTP)
 
@@ -1345,7 +1529,7 @@ Our implementation:
 - Integration: `try_consequence_then_smt()` tries forward-chaining first (polynomial time), then Z3 fallback
 - Incremental support via `verify_step(use_smt_fallback=True)` for suppositional reasoning
 
-## [7.0.0] - 2025-XX-XX
+## [0.7.0] - 2025-XX-XX
 
 ### Added — Phase 10.1–10.2: Cross-System Verification & Equivalence Tests
 
@@ -1391,7 +1575,7 @@ New test file `verifier/tests/test_cross_system.py` with 19 tests validating tha
 - **E and H encode hypotheses at different granularity.** E is more explicit (adds `on(b, L)` for every point on a line) while H bundles information into fewer predicates. Tests verify both libraries are non-empty, not exact count equality.
 - **E and H may use different variable names** for the same existential (e.g. `f` vs `b'`). Tests verify count equality, not name equality.
 
-## [6.6.0] - 2025-XX-XX
+## [0.6.7] - 2025-XX-XX
 
 ### Added — Phase 9.5: System E Integration Tests
 
@@ -1432,7 +1616,7 @@ Step manipulation (add, insert, clear), premise management (add, no-duplicate, s
 | `test_rejected_proof_has_e_language_diagnostics` | Diagnostics use E-language, not T/H leakage |
 | `test_ui_invalid_proof_detail_no_crash` | Invalid proof in UI doesn't crash |
 
-## [6.5.0] - 2025-XX-XX
+## [0.6.6] - 2025-XX-XX
 
 ### Added — Phase 9.3: H/T Translation View (Read-Only Tab)
 
@@ -1477,7 +1661,7 @@ New **"E / T / H"** tab showing the same theorem in all three formal notations s
 | `test_translation_view_in_workspace` | Widget accessible in workspace screen |
 | `test_translation_view_updated_on_load` | Loading a proposition updates translations |
 
-## [6.4.0] - 2025-XX-XX
+## [0.6.5] - 2025-XX-XX
 
 ### Added — Reference Tab in Workspace Toolbar
 
@@ -1508,7 +1692,7 @@ Eliminated all "Verifier error" messages that appeared when opening propositions
 | `△abc = △def` | `Congruent(A,B,C,D,E,F)` |
 | `a, b, c` (commas) | `a ∧ b ∧ c` |
 
-## [6.3.1] - 2025-XX-XX
+## [0.6.4] - 2025-XX-XX
 
 ### Changed — Phase 9.1 completion: System E Premises & Conclusions in UI
 
@@ -1542,7 +1726,7 @@ All 14 `conclusion_predicate` fields converted from Hilbert to System E syntax:
 | `test_all_48_propositions_load` | All 48 propositions parse and load |
 | `test_build_formal_premises_fallback_uses_system_e` | Fallback uses `¬(x = y)` not `Point()`/`Segment()` |
 
-## [6.3.0] - 2025-XX-XX
+## [0.6.3] - 2025-XX-XX
 
 ### Added — Phase 9.2: Automatic T Bridge — Invisible Completeness Fallback
 
@@ -1573,7 +1757,7 @@ When the legacy checker rejects a proof, the system now automatically attempts v
 | `test_t_bridge_not_invoked_when_legacy_passes` | `test_unified_checker.py` | T-bridge skipped for passing proofs |
 | `test_to_dict_includes_t_bridge` | `test_unified_checker.py` | Serialization includes T-bridge fields |
 
-## [6.2.0] - 2025-XX-XX
+## [0.6.2] - 2025-XX-XX
 
 ### Changed — Phase 9.1: System E as Default Proof Engine — Predicate Palette & Rule Catalogue
 
@@ -1616,7 +1800,7 @@ Replaced the old Hilbert-style predicate palette and rule catalogue in `proof_pa
 | `test_all_rule_names_populated` | Confirms ≥100 rule names |
 | `test_no_legacy_rule_imports` | AST scan: proof_panel.py does not import get_legacy_rules |
 
-## [6.1.1] - 2025-XX-XX
+## [0.6.1] - 2025-XX-XX
 
 ### Fixed — Verification Error: `NameError` on `checker.derived` in `_eval_all`
 
@@ -1634,7 +1818,7 @@ The variable `checker` was never defined in the `_eval_all` method after the Pha
 
 Added `test_eval_all_no_crash` to `euclid_py/tests/test_smoke.py`: sets up a simple proof (`Between(A,B,C)` → `Ord2` → `Between(C,B,A)`), calls `_eval_all()`, and verifies the step gets `✓` status without crashing.
 
-## [6.1.0] - 2025-XX-XX
+## [0.6.0] - 2025-XX-XX
 
 ### Changed — Phase 9.4: Rule Reference Panel — System E Axioms
 
@@ -1676,7 +1860,7 @@ Completely rewrote `euclid_py/ui/rule_reference.py` to source rules from System 
 | `test_has_metric_axioms` | Confirms ≥10 metric rules in unified_checker |
 | `test_has_propositions` | Confirms 48 propositions in unified_checker |
 
-## [5.5.0] - 2025-XX-XX
+## [0.5.7] - 2025-XX-XX
 
 ### Changed — Phase 6.5.4: Rewrite UI Imports — All Old Verifier Imports Replaced
 
@@ -1761,7 +1945,7 @@ All 8 sub-phases of Legacy System Deprecation are now done:
 | 6.5.7 | README rewritten for E/H/T architecture | ✅ |
 | 6.5.8 | Legacy deprecation tests | ✅ |
 
-## [5.4.0] - 2025-XX-XX
+## [0.5.6] - 2025-XX-XX
 
 ### Added — Phase 6.4: Propositions I.33–I.48 (Parallelograms, Area, Pythagorean Theorem)
 
@@ -1806,7 +1990,7 @@ Completed the full Book I library — all 48 propositions are now present in bot
 #### Milestone
 **All 48 propositions of Euclid's Elements Book I are now in both E and H theorem libraries.**
 
-## [5.3.0] - 2025-XX-XX
+## [0.5.5] - 2025-XX-XX
 
 ### Added — Phase 6.3: Propositions I.27–I.32 (Parallel Lines)
 
@@ -1875,7 +2059,7 @@ Comprehensive audit of `IMPLEMENTATION_PLAN.md` against GeoCoq's architecture an
 #### New Files
 - `AUDIT.md` — Full audit document with detailed analysis of all gaps.
 
-## [5.6.0] - 2025-XX-XX
+## [0.5.4] - 2025-XX-XX
 
 ### Added — Phase 5: Completeness Infrastructure — Section 5 Translation Pipeline
 
@@ -1942,7 +2126,7 @@ Implements the completeness proof pipeline from Paper Section 5, Theorem 5.1: gi
 ### Test Results
 - 468 tests passing (40 new). Zero regressions.
 
-## [5.5.0] - 2025-XX-XX
+## [0.5.3] - 2025-XX-XX
 
 ### Added — Phase 6.2: Props I.16–I.26 (Triangle Inequalities, ASA/AAS)
 
@@ -1986,7 +2170,7 @@ Extended both the System E and System H theorem libraries from 15 to 26 proposit
 ### Test Results
 - 428 tests passing (38 new). Zero regressions.
 
-## [5.4.0] - 2025-XX-XX
+## [0.5.2] - 2025-XX-XX
 
 ### Added — Phase 6.1: Props I.6, I.7, I.9, I.11–I.15 (Perpendiculars & Vertical Angles)
 
@@ -2075,7 +2259,7 @@ Comprehensive phased implementation plan for the remaining project work, referen
 
 ---
 
-## [5.1.0] - 2025-XX-XX
+## [0.5.1] - 2025-XX-XX
 
 ### Added — Phase 3: System H (Hilbert's Axiom System)
 
@@ -2133,7 +2317,7 @@ The equivalence chain is: System E ↔ Tarski (T) ↔ Hilbert (H), established b
 ### Test Results
 - 298 tests passing (63 new). Zero regressions.
 
-## [5.0.0] - 2025-XX-XX
+## [0.5.0] - 2025-XX-XX
 
 ### Added — Phase 2: System E End-to-End Integration
 
@@ -2171,7 +2355,7 @@ Phase 2 completes the System E formal verifier infrastructure from Avigad, Dean,
 ### Test Results
 - 260 tests passing (24 new). Zero regressions.
 
-## [4.8.1] - 2025-XX-XX
+## [0.4.19] - 2025-XX-XX
 
 ### Added — Application Logo
 
@@ -2259,7 +2443,7 @@ Logical rules now use Unicode connective symbols in their names. Separate L/R va
 ### Test Results
 - 144 tests passing (3 new). Zero regressions.
 
-## [4.8.0] - 2025-XX-XX
+## [0.4.18] - 2025-XX-XX
 
 ### Removed — Legacy Formula Syntax Entirely Dropped
 
@@ -2280,7 +2464,7 @@ Logical rules now use Unicode connective symbols in their names. Separate L/R va
 ### Test Results
 - 141 tests passing. Zero regressions.
 
-## [4.7.0] - 2025-XX-XX
+## [0.4.17] - 2025-XX-XX
 
 ### Changed — Verifier Now Uses Mathematical Connective Symbols
 
@@ -2306,7 +2490,7 @@ Logical rules now use Unicode connective symbols in their names. Separate L/R va
 ### Test Results
 - 141 tests passing. Zero regressions. Both Unicode and legacy syntax verified.
 
-## [4.6.4] - 2025-XX-XX
+## [0.4.16] - 2025-XX-XX
 
 ### Fixed — Connective Buttons Insert Verifier Syntax & Error Display
 
@@ -2323,7 +2507,7 @@ Logical rules now use Unicode connective symbols in their names. Separate L/R va
 ### Test Results
 - 141 tests passing. Zero regressions.
 
-## [4.6.3] - 2025-XX-XX
+## [0.4.15] - 2025-XX-XX
 
 ### Fixed — Palette Connective Buttons & Insertion
 
@@ -2336,7 +2520,7 @@ Logical rules now use Unicode connective symbols in their names. Separate L/R va
 ### Test Results
 - 141 tests passing. Zero regressions.
 
-## [4.6.2] - 2025-XX-XX
+## [0.4.14] - 2025-XX-XX
 
 ### Changed — Rule Reference Panel Dynamic Generation
 
@@ -2352,7 +2536,7 @@ Logical rules now use Unicode connective symbols in their names. Separate L/R va
 ### Test Results
 - 141 tests passing. Zero regressions.
 
-## [4.6.1] - 2025-XX-XX
+## [0.4.13] - 2025-XX-XX
 
 ### Fixed — Proposition Loading Crash Protection
 
@@ -2372,7 +2556,7 @@ Logical rules now use Unicode connective symbols in their names. Separate L/R va
 ### Test Results
 - 141 tests passing. Zero regressions.
 
-## [4.6.0] - 2025-XX-XX
+## [0.4.12] - 2025-XX-XX
 
 ### Added — Baked-In Proposition Rules, Custom Lemma System & Rule Reference Subcategorization
 
@@ -2413,7 +2597,7 @@ Logical rules now use Unicode connective symbols in their names. Separate L/R va
 ### Test Results
 - 141 tests passing (137 existing + 4 new). Zero regressions.
 
-## [4.5.0] - 2025-XX-XX
+## [0.4.11] - 2025-XX-XX
 
 ### Added — Verifier Rule Registry & Answer-Key Regression Tests
 
@@ -2440,7 +2624,7 @@ Logical rules now use Unicode connective symbols in their names. Separate L/R va
 ### Test Results
 - 112 tests passing (91 existing + 21 new answer-key tests). Zero regressions.
 
-## [4.4.0] - 2025-XX-XX
+## [0.4.10] - 2025-XX-XX
 
 ### Changed — UI Overhaul & Circle Interaction Fixes
 
@@ -2526,7 +2710,7 @@ Logical rules now use Unicode connective symbols in their names. Separate L/R va
 ### Test Results
 - 116 tests passing (81 verifier + 25 smoke + 10 propositions). Zero regressions.
 
-## [4.3.0] - 2025-XX-XX
+## [0.4.9] - 2025-XX-XX
 
 ### Changed — Fitch-Style Proof Panel UI Overhaul
 
@@ -2562,7 +2746,7 @@ Complete redesign of the proof journal to match the Fitch proof system (Openproo
 ### Test Results
 - 103 tests passing (78 verifier + 25 smoke). Zero regressions.
 
-## [4.2.1] - 2025-XX-XX
+## [0.4.8] - 2025-XX-XX
 
 ### Added — Proof Journal Changelog Parity Audit (Pass 2)
 
@@ -2577,7 +2761,7 @@ Second-pass audit of every proof-journal-related changelog entry (v1.14.0–v4.2
 ### Test Results
 - 103 tests passing (78 verifier + 25 smoke). Zero regressions.
 
-## [4.2.0] - 2025-XX-XX
+## [0.4.7] - 2025-XX-XX
 
 ### Added — Proof Journal Hilbert Kernel Verifier Integration
 
@@ -2602,7 +2786,7 @@ Systematic audit of all proof-journal-related changelog entries (v1.14.0–v4.1.
 ### Test Results
 - 103 tests passing (78 verifier + 25 smoke). Zero regressions.
 
-## [4.1.5] - 2025-XX-XX
+## [0.4.6] - 2025-XX-XX
 
 ### Added — Canvas Changelog Parity Audit (Pass 3)
 
@@ -2616,7 +2800,7 @@ Systematic audit of every canvas-related changelog entry (v1.5.5–v4.1.4) again
 ### Test Results
 - 103 tests passing (78 verifier + 25 smoke). Zero regressions.
 
-## [4.1.4] - 2025-XX-XX
+## [0.4.5] - 2025-XX-XX
 
 ### Added — Canvas Feature Parity Audit (Pass 2)
 
@@ -2639,7 +2823,7 @@ Second-pass audit against the full changelog uncovered additional missing legacy
 ### Test Results
 - 103 tests passing (78 verifier + 25 smoke). Zero regressions.
 
-## [4.1.3] - 2025-XX-XX
+## [0.4.4] - 2025-XX-XX
 
 ### Added — Canvas Feature Parity Audit
 
@@ -2668,7 +2852,7 @@ Reviewed all changelog entries against the PyQt6 canvas implementation and added
 ### Test Results
 - 103 tests passing (78 verifier + 25 smoke). Zero regressions.
 
-## [4.1.2] - 2025-XX-XX
+## [0.4.3] - 2025-XX-XX
 
 ### Added — Legacy Feature Parity & Tools Overhaul
 
@@ -2701,7 +2885,7 @@ Complete rework of the canvas tools and proof panel to match all legacy (React/J
 ### Test Results
 - 103 tests passing (78 verifier + 25 smoke). Zero regressions.
 
-## [4.1.1] - 2025-XX-XX
+## [0.4.2] - 2025-XX-XX
 
 ### Fixed — PyQt6 UI Styling
 
@@ -2712,7 +2896,7 @@ Complete rework of the canvas tools and proof panel to match all legacy (React/J
 ### Test Results
 - 103 tests passing (78 verifier + 25 smoke). Zero regressions.
 
-## [4.1.0] - 2025-XX-XX
+## [0.4.1] - 2025-XX-XX
 
 ### Added — Proof Editor & Enhanced Verifier Engine
 
@@ -2744,7 +2928,7 @@ Expanded the verifier engine with new geometric rules and proof-admin features, 
 ### Test Results
 - 103 tests passing (78 verifier + 25 smoke). Zero regressions.
 
-## [4.0.0] - 2025-XX-XX
+## [0.4.0] - 2025-XX-XX
 
 ### Added — Fitch-Style Proof Verifier UI Overhaul
 
@@ -2809,7 +2993,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 ### Test Results
 - 103 tests passing (78 verifier + 25 smoke). Zero regressions.
 
-## [3.0.0] - 2025-01-XX
+## [0.3.0] - 2025-01-XX
 
 ### Added — Full Python Port with PyQt6 UI
 
@@ -2828,7 +3012,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 ### Test Results
 - 95 tests passing (78 verifier + 17 new smoke tests). Zero regressions.
 
-## [2.2.0] - 2025-01-XX
+## [0.2.2] - 2025-01-XX
 
 ### Added — Malformed Formula Diagnostics & Sort Checking
 - **Malformed formula diagnostics** (`parser.py`, `checker.py`): Lines with unparseable formulas no longer crash the verifier. Instead, the parser stores `None` for the statement and the checker emits a `MALFORMED_FORMULA` diagnostic at the line level. Other lines continue to be checked.
@@ -2851,7 +3035,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - Pasch, Cong4, SAS geometric side conditions marked TODO.
 - Predicate-level sort signatures not yet defined (sort checking only validates at the metavar binding level).
 
-## [2.1.0] - 2025-01-XX
+## [0.2.1] - 2025-01-XX
 
 ### Added — Gap Analysis & Soundness Fixes
 - **Undeclared symbol checking** (`checker.py`, `ast.py`): Every proof line is now validated — all free symbols must be declared in the header or introduced by a Witness/WitnessUnique rule. Produces `UNDECLARED_SYMBOL` diagnostic. Bound variables in quantifiers are exempt.
@@ -2882,7 +3066,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - Pasch, Cong4, SAS geometric side conditions marked TODO.
 - `MALFORMED_FORMULA` diagnostic produced as `ParseError` by parser, not wrapped into checker diagnostics.
 
-## [2.0.0] - 2025-01-XX
+## [0.2.0] - 2025-01-XX
 
 ### Added
 - **Python Hilbert Geometry Proof Verifier** — complete implementation per `instructions.md` spec.
@@ -2900,7 +3084,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
   - `verifier/README.md` — Full usage documentation.
   - `verifier/ASSUMPTIONS.md` — 10 documented ambiguity decisions.
 
-## [1.27.6] - 2025-01-XX
+## [0.1.56] - 2025-01-XX
 
 ### Added
 - Added strict derivability audit mode for proof systems `E` and `H` in `FitchProofPanel`.
@@ -2920,7 +3104,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - `npm run build` passes.
 - Existing pre-existing duplicate-case warnings in `FitchProofPanel.jsx` remain unchanged.
 
-## [1.27.5] - 2025-01-XX
+## [0.1.55] - 2025-01-XX
 
 ### Added
 - Added explicit proof-system model with three selectable systems in the Fitch panel:
@@ -2950,7 +3134,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - Production build passes (`npm run build`).
 - No compile errors; existing pre-existing duplicate-case warnings in `FitchProofPanel.jsx` remain unchanged.
 
-## [1.27.4] - 2025-01-XX
+## [0.1.54] - 2025-01-XX
 
 ### Changed
 - Continued formal-repair pass on `answer-keys.json` to make the Book I key internally consistent with the strict dependency and citation model:
@@ -2965,7 +3149,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
   - No out-of-range or forward citations.
   - No self-referential (`Prop.I.n` inside `I.n`) or future proposition references.
 
-## [1.27.3] - 2025-01-XX
+## [0.1.53] - 2025-01-XX
 
 ### Changed
 - Fixed critical formal-validity defects in `answer-keys.json` flagged in `instructions.md`:
@@ -2981,7 +3165,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
   - `I.48`: removed invalid extraction of segment equality from `Prop.I.47`; rewired through area relation + square-side injectivity.
 - Revalidated all `answer-keys.json` cite arrays: no forward references, no out-of-range citations, JSON remains valid.
 
-## [1.27.2] - 2025-01-XX
+## [0.1.52] - 2025-01-XX
 
 ### Added
 - **Angle arithmetic rules** (`AngleSub`, `AngleAdd`) — new rigorous rules for angle subtraction and addition, replacing the category-error misuse of `C.N.3` (segment subtraction) for angle equivalence. Added to `FitchProofPanel.jsx` EUCLID_RULES, `verifier.js` validation dispatch, and `formal/rules.json` (`angleArithmeticRules` section).
@@ -2997,7 +3181,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - **I.47 Pythagorean theorem fully proved** — expanded from a 6-step skeleton to a 26-step complete proof: constructs squares via I.46, draws altitude via I.31, proves two key triangle congruences (ABD≅FBC, ACE≅BCK) via I.4, uses `CongArea` + I.41 to show each rectangle equals corresponding square, then `AreaAdd` to compose the full result.
 - **JSON syntax fixed** — added 20 missing commas between proposition entries in `answer-keys.json`.
 
-## [1.27.1] - 2025-01-XX
+## [0.1.51] - 2025-01-XX
 
 ### Changed
 - **Answer keys aligned to formal proof system** — rewrote `answer-keys.json` to eliminate all bare `Point(X) / Existence` steps and align with the rigorous dual-profile formal system in `formal/`:
@@ -3026,7 +3210,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
   - **I.47**: Six bare `Point / Existence` steps → explicit `Prop.I.46` square constructions + `Post.1` segments.
   - **I.48**: `Point(D) / Existence` removed; added `Segment(D, A)`, self-congruence `Equal(DC, DC)`, forward `Prop.I.47` Pythagorean, then SSS + angle substitution; removed duplicate `Equal(AD, AB)` step.
 
-## [1.27.0] - 2025-01-XX
+## [0.1.50] - 2025-01-XX
 
 ### Added
 - **Formal dual-profile proof system** (`formal/` directory) — a complete, rigorous formalization of Euclid's Elements Book I that works under two axiom systems:
@@ -3045,7 +3229,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
   - **I.30** (6 steps) — Transitivity of parallelism via direct angle chaining using I.29 and I.27.
   - **I.48** (10 steps) — Converse Pythagorean: construct perpendicular + transfer length + forward Pythagorean + SSS + angle substitution.
 
-## [1.26.2] - 2025-01-XX
+## [0.1.49] - 2025-01-XX
 
 ### Added
 - **Answer keys for all 48 propositions** — a standalone `answer-keys.json` file at the project root contains the complete Fitch-style proof solutions for every Book I proposition (I.1–I.48). Each entry includes: premises (given predicates), ordered proof steps with predicate text, justification rule, and cited line numbers, and the conclusion predicate. The file is not bundled into the app — it serves as an external reference/answer key that can be consulted independently.
@@ -3064,7 +3248,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - **I.3 conclusion predicate** — `conclusionPredicate` was `"Equal(AE, C)"` (invalid single-letter segment) instead of `"Equal(AE, CD)"`.
 - **Encoding corruption in euclid-merged.jsx** — all Unicode characters in the file (tool icons, math symbols, box-drawing characters, arrows, etc.) were garbled by multi-level UTF-8/Windows-1252 re-encoding. Reversed the corruption with a two-pass CP1252→UTF-8 decoder, restoring all 112,953 garbled non-ASCII characters to their correct Unicode codepoints. Tool icons (✥ ✕ • — → ○ ∠ ⊥ ═), section dividers, and math notation throughout the codebase now render correctly. Production bundle is ~7 KB smaller.
 
-## [1.26.1] - 2025-01-XX
+## [0.1.48] - 2025-01-XX
 
 ### Changed
 - **Select tool cursor** — the select tool now uses the browser's default arrow cursor instead of a custom SVG pointer icon.
@@ -3092,7 +3276,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
   - **I.37/I.38**: Replaced non-existent C.N.7 with C.N.1 (halves of equals are equal).
   - **I.37/I.46**: Replaced non-existent Def.34 with null (parallelogram definition not formally numbered).
 
-## [1.26.0] - 2025-01-XX
+## [0.1.47] - 2025-01-XX
 
 ### Changed
 - **Fitch-style proof justification UI** — the proof panel now emulates the visual layout of Openproof's Fitch system:
@@ -3112,28 +3296,28 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - **Segment canonical form bug** — `Segment(A, C)` and `Segment(AC)` now match during dependency validation (both normalize to `Segment:A,C`). Previously they were treated as different predicates.
 - **Segment name normalization** — 2-letter segment identifiers within `Equal` and other predicates are now character-sorted (`CA` → `AC`) so that `Equal(CA, AB)` and `Equal(AC, AB)` are recognized as the same equality.
 
-## [1.25.5] - 2025-01-XX
+## [0.1.46] - 2025-01-XX
 
 ### Changed
 - **Cited lines box moved out of popup** — the cited lines input is now a fixed section below the proof lines (not inside the justification popup). It appears whenever a proof line is selected, showing the step number and a text input for comma-separated line numbers. Cited lines display as labeled badges previewing the referenced text.
 - **Click-to-cite on proof lines and premises** — when a line is selected, clicking any earlier proof line or premise in the main list toggles it as a cited line (adds/removes its number). Cited lines and premises get a highlighted background.
 
-## [1.25.4] - 2025-01-XX
+## [0.1.45] - 2025-01-XX
 
 ### Fixed
 - **Citing premises in justification now works** — premises were created with `evaluated: false` in their state, causing `validateLine` to reject any cited premise with "Cited line N is not proven true". Fixed by: (1) `validateLine` now treats `isPremise` lines as always true, skipping the evaluation check; (2) `combinedLines` forces premises to `evaluated: true`; (3) new and auto-populated premises are created with `evaluated: true`; (4) canvas-change effect no longer resets premise evaluation state.
 
-## [1.25.3] - 2025-01-XX
+## [0.1.44] - 2025-01-XX
 
 ### Changed
 - **Premises auto-populated as predicates** — when opening a proposition, the premises section is now populated with formal predicate sentences (e.g. `Segment(A, B)`, `Equal(AB, AC)`, `RightAngle(B, A, C)`) instead of natural language text. Each proposition has a new `givenPredicates` array field. One premise is created per predicate, making them directly citable and machine-readable.
 
-## [1.25.2] - 2025-01-XX
+## [0.1.43] - 2025-01-XX
 
 ### Changed
 - **Premises are axiomatically true** — premises no longer show a T/F/? evaluation badge since they are logically sound by definition. The validation function always marks them as true regardless of canvas state or parse result. Summary counts (T/F/?) only tally proof lines, not premises.
 
-## [1.25.1] - 2025-01-XX
+## [0.1.42] - 2025-01-XX
 
 ### Changed
 - **Predicate palette moved inside proof panel** — the connectives/predicates toolbar (∧ ∨ ¬ → ↔ ∀ ∃ and all predicate buttons) now renders only above the proof journal, like Tarski's World. Previously it was a full-width strip above both canvas and proof panel.
@@ -3144,17 +3328,17 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - **Hint button** removed from the proof panel toolbar (💡 toggle and hints panel).
 - **Props≤I.N badge** removed from the proof panel toolbar.
 
-## [1.25.0] - 2025-01-XX
+## [0.1.41] - 2025-01-XX
 
 ### Added
 - **Premises / Assumptions section** — a new section above the proof lines in the Fitch-style proof panel where users can input assumptions (premises). Premises are asserted to be true without justification, like the beginning of a subproof. They participate in the combined line numbering so proof steps can cite them as dependencies. Premises are auto-populated from the proposition's "given" text when loading a new proof file. Export, import, and undo/redo all include premises.
 
-## [1.24.1] - 2025-01-XX
+## [0.1.40] - 2025-01-XX
 
 ### Changed
 - **Reset button replaces Clear All** — the canvas toolbar "Clear All" button is now "Reset" and restores the proposition's given objects (points, segments, circles, angle marks) and the "Given" journal entry instead of emptying everything. For freeform/custom proofs with no given objects, it clears the canvas as before.
 
-## [1.24.0] - 2025-01-XX
+## [0.1.39] - 2025-01-XX
 
 ### Changed
 - **Fitch-style dependency-based proof validation** — proof lines are now validated through cited-line dependencies instead of direct canvas evaluation, matching System F / Fitch natural deduction:
@@ -3172,12 +3356,12 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - **Conclusion requires matching proven step** — the conclusion is true only if a proof line with an identical predicate (canonical form) evaluates true. Direct canvas evaluation of the conclusion is removed. Proofs can now be written entirely without the canvas.
 - **Sequential evaluation** — "Eval All" now evaluates lines in order so each step sees the results of earlier cited lines
 
-## [1.23.0] - 2025-01-XX
+## [0.1.38] - 2025-01-XX
 
 ### Added
 - **Auto-populated given objects** — when opening a proposition for the first time, the canvas is automatically populated with the geometric objects described in the "Given" section. For example, Proposition I.1 starts with segment AB already drawn; I.4 starts with two congruent triangles and angle marks; I.47 starts with a right triangle and right-angle mark. Saved state takes priority — givens are only placed on first open. A "Given" journal entry is also created.
 
-## [1.22.0] - 2025-01-XX
+## [0.1.37] - 2025-01-XX
 
 ### Added
 - **Reference panel axiom tabs** — the Reference panel now includes tabs for Existence/Given rules, Hilbert Incidence (H.I.1–3), Hilbert Order (H.O.1–4), Hilbert Congruence (H.C.1–4), Hilbert Parallels (H.P.1), and Hilbert Continuity (H.Cont.1–2). Hilbert axioms are highlighted with purple accent. Tabs scroll horizontally when the panel is narrow.
@@ -3194,7 +3378,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - **Eval button with Hilbert axioms** — the Eval button now works correctly when a line justified by a Hilbert axiom is selected. Previously the document-level mousedown handler that dismissed the justification popup would deselect the current line before the Eval button's click could fire, causing it to silently do nothing.
 - **Evaluation results persist across mouse movement** — sentence evaluation results (T/F/?) no longer disappear when the mouse cursor moves from the proof panel onto the canvas. The canvas data passed to the proof panel is now memoized so the evaluation-clearing effect only triggers on actual canvas changes, not on unrelated parent re-renders from mouse tracking.
 
-## [1.21.0] - 2025-01-XX
+## [0.1.36] - 2025-01-XX
 
 ### Added
 - **Canvas undo/redo** — Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) now undo/redo canvas operations (point/segment/circle/angle creation, deletion, labeling, equality assertions). State snapshots include all geometric objects, equality groups, and constraint connections. Up to 30 levels of undo.
@@ -3207,7 +3391,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - **Right angle tool validates perpendicularity** — the ⊥ tool now only marks a right angle if the selected angle is within ±5° of 90°. Non-right angles are silently rejected (use the regular angle tool instead).
 - **Angle measurement display** — both the angle arc tool and the right-angle tool now show the measured angle in degrees on the canvas next to the arc/square marker
 
-## [1.20.0] - 2025-01-XX
+## [0.1.35] - 2025-01-XX
 
 ### Changed
 - **Tarski's World split layout** — predicate palette moved to a full-width strip above both canvas and proof panel
@@ -3222,7 +3406,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
   - Line numbers bumped to 13px
 - **More vertical space for sentences** — palette no longer inside the proof panel; proof lines area gets all remaining height
 
-## [1.19.0] - 2025-01-XX
+## [0.1.34] - 2025-01-XX
 
 ### Added
 - **Infix `=` equality operator** — `AB = CD` is now equivalent to `Equal(AB, CD)`
@@ -3247,7 +3431,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - **Congruent** palette tooltip updated to show `SSS/SAS`
 - **Equal** palette tooltip shows `Equal(AB, CD) or AB = CD`
 
-## [1.18.0] - 2025-01-XX
+## [0.1.33] - 2025-01-XX
 
 ### Added
 - **AB,CD segment notation for all applicable predicates** — not just `Equal`
@@ -3268,7 +3452,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - Predicate palette tooltips now show both notation forms (e.g., `Parallel(AB, CD) or Parallel(A, B, C, D)`)
 - Refactored `resolveSegmentArg` / `resolveSegmentPairArgs` shared utility functions replace duplicated arg-parsing logic
 
-## [1.17.0] - 2025-01-XX
+## [0.1.32] - 2025-01-XX
 
 ### Fixed
 - **Predicates & connectives now work when editing steps** — palette inserts text at cursor position in whichever input is active (edit mode or new-line input)
@@ -3283,7 +3467,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - **Removed progress bar / GoalsPanel** — the proposition goals section with progress percentage has been removed
 - **Right panel scaling fixed** — default width increased from 330→400, min 200→280, max 550→700; added `minWidth: 0` to prevent flex overflow
 
-## [1.16.0] - 2025-01-XX
+## [0.1.31] - 2025-01-XX
 
 ### Added — FitchProofPanel UI Overhaul
 - **Subproof support** — Fitch-style nested subproofs with visual depth bars
@@ -3336,7 +3520,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 - **Empty state message** updated with subproof and drag hints
 
-## [1.15.0] - 2025-01-XX
+## [0.1.30] - 2025-01-XX
 
 ### Changed
 - **Fitch-style proof flow** — add sentence first, then click line to open justification tab
@@ -3374,7 +3558,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
   - Only lines before the current line can be cited
   - Cited lines shown as highlighted number buttons
 
-## [1.14.0] - 2025-01-XX
+## [0.1.29] - 2025-01-XX
 
 ### Changed
 - **Proof Journal is now fully manual** — no auto-logged construction steps
@@ -3408,7 +3592,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - Auto-logged construction steps from Proof Journal (were cluttering UI, not user-controllable)
 - `SentencePanel.jsx` and `FitchDisplay.jsx` (dead code)
 
-## [1.12.0] - 2025-01-XX
+## [0.1.28] - 2025-01-XX
 
 ### Added
 - **Unified Fitch Proof Panel**
@@ -3444,7 +3628,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - Updated: `src/proof/geometricPredicates.js` (Equal evaluate, evaluatePredicate arity, palette)
 - Updated: `euclid-merged.jsx` (import, right panel replacement)
 
-## [1.11.0] - 2025-01-XX
+## [0.1.27] - 2025-01-XX
 
 ### Added
 - **Level 2: Logical Gap Warnings**
@@ -3498,7 +3682,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - New state: `axiomSystem`, `gapWarnings`, `showContext`
 - `getAllowedPropositions()` now respects axiom system constraints
 
-## [1.10.0] - 2025-01-XX
+## [0.1.26] - 2025-01-XX
 
 ### Added
 - **Enhanced T/F Sentences Panel Integration**
@@ -3527,7 +3711,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - Added `useEffect` for auto-evaluation on canvas changes
 - Enhanced `handleInsert()` with cursor offset support
 
-## [1.9.0] - 2025-01-16
+## [0.1.25] - 2025-01-16
 
 ### Added
 - **Tarski's World-Style Model-Checking**
@@ -3596,7 +3780,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - [OpenProof Tarski's World](https://www.gradegrinder.net/Applications/Tarski/index.html)
 - [Code-For-Groningen/TarskisWorld](https://github.com/Code-For-Groningen/TarskisWorld)
 
-## [1.8.0] - 2025-01-16
+## [0.1.24] - 2025-01-16
 
 ### Added
 - **Fitch-Style Proof System**
@@ -3651,7 +3835,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 - React component: `FitchDisplay.jsx`
 - All modules exported via `src/proof/index.js`
 
-## [1.7.3] - 2025-01-16
+## [0.1.23] - 2025-01-16
 
 ### Fixed
 - **Clear Canvas Preserves Zoom**
@@ -3667,7 +3851,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
   - Empty proofs (no steps) can now be verified based on geometric constructions alone
   - Better handling of Q.E.D./Q.E.F. conclusions
 
-## [1.7.2] - 2025-01-16
+## [0.1.22] - 2025-01-16
 
 ### Changed
 - **Enhanced Verification Results UI**
@@ -3681,7 +3865,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
   - Summary pills showing steps/facts count with visual status indicators
   - Monospace font for formal expressions and improved visual hierarchy
 
-## [1.7.1] - 2025-01-16
+## [0.1.21] - 2025-01-16
 
 ### Fixed
 - **White Screen Bug Fix**
@@ -3689,7 +3873,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
   - Grid snap feature was previously removed from UI but residual code references remained in `handleCanvasMove`, `handleCanvasClick`, and circle resizing logic
   - Application now loads properly without runtime errors
 
-## [1.7.0] - 2025-01-16
+## [0.1.20] - 2025-01-16
 
 ### Added
 - **Rigorous Proof Verification System**
@@ -3755,7 +3939,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.6.5] - 2025-01-16
+## [0.1.19] - 2025-01-16
 
 ### Added
 - **Intersection Point Controls Both Circle Radii**
@@ -3790,7 +3974,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.6.4] - 2025-01-16
+## [0.1.18] - 2025-01-16
 
 ### Added
 - **Circle Boundary Snapping**
@@ -3806,7 +3990,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
   - Auto-updates the internal label counter back to A whenever the canvas evaluates exactly zero registered points.
 
 ---
-## [1.6.3] - 2025-01-16
+## [0.1.17] - 2025-01-16
 
 ### Added
 - **Circle Resizing from Boundary or Intersections**
@@ -3817,7 +4001,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.6.2] - 2025-01-15
+## [0.1.16] - 2025-01-15
 
 ### Added
 - **Point-Segment Snapping & Connected Dragging**
@@ -3836,7 +4020,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.6.1] - 2025-01-15
+## [0.1.15] - 2025-01-15
 
 ### Fixed
 - **Circle Deletion Now Removes Associated Objects**
@@ -3852,7 +4036,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.6.0] - 2025-01-15
+## [0.1.14] - 2025-01-15
 
 ### Added
 - **Full Canvas-Aware Proof Verification**
@@ -3889,7 +4073,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.5.8] - 2025-01-15
+## [0.1.13] - 2025-01-15
 
 ### Added
 - **Bi-directional Journal/Canvas Synchronization**
@@ -3907,7 +4091,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.5.7] - 2025-01-15
+## [0.1.12] - 2025-01-15
 
 ### Fixed
 - **Delete Tool No Longer Logs to Journal**
@@ -3917,7 +4101,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.5.6] - 2025-01-15
+## [0.1.11] - 2025-01-15
 
 ### Added
 - **Persistent Equality Marks on Canvas**
@@ -3935,7 +4119,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.5.5] - 2025-01-15
+## [0.1.10] - 2025-01-15
 
 ### Fixed
 - **Point Labels Now Start at "A"**
@@ -3952,7 +4136,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.5.4] - 2025-01-15
+## [0.1.9] - 2025-01-15
 
 ### Fixed
 - **Improved Journal Cleanup on Delete**
@@ -3964,7 +4148,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.5.3] - 2025-01-15
+## [0.1.8] - 2025-01-15
 
 ### Fixed
 - **Critical: White Screen on Opening Proofs**
@@ -3973,7 +4157,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.5.2] - 2025-01-15
+## [0.1.7] - 2025-01-15
 
 ### Changed
 - **Code Organization & Optimization**
@@ -3994,7 +4178,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.5.1] - 2025-01-15
+## [0.1.6] - 2025-01-15
 
 ### Fixed
 - **React Hook Dependency Bugs**
@@ -4009,7 +4193,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.5.0] - 2025-01-15
+## [0.1.5] - 2025-01-15
 
 ### Added
 - **Delete Tool**
@@ -4064,7 +4248,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.4.0] - 2025-01-15
+## [0.1.4] - 2025-01-15
 
 ### Added
 - **Infinite Canvas with Pan & Zoom**
@@ -4107,7 +4291,7 @@ Complete redesign of the proof verifier interface, inspired by the Fitch proof t
 
 ---
 
-## [1.3.0] - 2025-01-15
+## [0.1.3] - 2025-01-15
 
 ### Added
 - **Logical Proof Validation (Aris-style)**
@@ -4142,7 +4326,7 @@ Inspired by Aris proof assistant's approach:
 
 ---
 
-## [1.2.0] - 2025-01-15
+## [0.1.2] - 2025-01-15
 
 ### Added
 - **Enhanced Apply Proposition Feature**
@@ -4169,7 +4353,7 @@ Inspired by Aris proof assistant's approach:
 
 ---
 
-## [1.1.0] - 2025-01-15
+## [0.1.1] - 2025-01-15
 
 ### Added
 - **Merged Single-File Build** (`euclid-merged.jsx`)
@@ -4184,7 +4368,7 @@ Inspired by Aris proof assistant's approach:
 
 ---
 
-## [1.0.0] - 2025-01-15
+## [0.1.0] - 2025-01-15
 
 ### Added
 

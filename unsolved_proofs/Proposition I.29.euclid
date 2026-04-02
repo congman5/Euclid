@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.29",
     "title": "Parallel Lines Give Equal Alternate Angles",
-    "statement": "A transversal cutting parallel lines makes alternate interior angles equal."
+    "statement": "A transversal cutting parallel lines makes alternate interior angles equal.",
+    "difficulty": 4,
+    "hints": [
+      "This is the converse — uses the parallel postulate (Angle transfer 5a/5b).",
+      "Assume alternate angles are unequal and derive a contradiction using the parallel postulate."
+    ]
   },
   "canvas": {
     "points": [

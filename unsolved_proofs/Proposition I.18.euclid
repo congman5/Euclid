@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.18",
     "title": "Greater Side Opposite Greater Angle",
-    "statement": "In any triangle, the greater side subtends the greater angle."
+    "statement": "In any triangle, the greater side subtends the greater angle.",
+    "difficulty": 3,
+    "hints": [
+      "Place a point D on AC such that AD = AB, forming an isosceles triangle.",
+      "Use Prop.I.5 on the isosceles triangle, then Prop.I.16."
+    ]
   },
   "canvas": {
     "points": [

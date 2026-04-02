@@ -2,7 +2,12 @@
   "format": "euclid-proof",
   "version": "1.0.0",
   "program": "Euclid Elements Simulator (Python)",
-  "metadata": {},
+  "metadata": {
+    "difficulty": 2,
+    "hints": [
+      "Use M3 (segment symmetry) to get ba = ca, then apply SAS with the equal base angles."
+    ]
+  },
   "canvas": {
     "points": [
       {

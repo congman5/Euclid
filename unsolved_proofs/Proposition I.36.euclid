@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.36",
     "title": "Parallelograms on Equal Bases",
-    "statement": "Parallelograms on equal bases and between the same parallels have equal area."
+    "statement": "Parallelograms on equal bases and between the same parallels have equal area.",
+    "difficulty": 3,
+    "hints": [
+      "Connect the parallelograms via Prop.I.33 and Prop.I.34, then apply Prop.I.35."
+    ]
   },
   "canvas": {
     "points": [

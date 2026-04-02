@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.5",
     "title": "Isosceles Base Angles",
-    "statement": "In isosceles triangles the angles at the base are equal."
+    "statement": "In isosceles triangles the angles at the base are equal.",
+    "difficulty": 2,
+    "hints": [
+      "Use M3 (segment symmetry) to get ba = ca, then apply SAS with the equal base angles."
+    ]
   },
   "canvas": {
     "points": [

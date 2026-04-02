@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.41",
     "title": "Parallelogram Double Triangle",
-    "statement": "A parallelogram has twice the area of a triangle on the same base and between the same parallels."
+    "statement": "A parallelogram has twice the area of a triangle on the same base and between the same parallels.",
+    "difficulty": 2,
+    "hints": [
+      "The triangle is half the parallelogram by Prop.I.34 — apply Prop.I.35 or I.37."
+    ]
   },
   "canvas": {
     "points": [

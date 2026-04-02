@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.35",
     "title": "Parallelograms on Same Base Between Parallels",
-    "statement": "Parallelograms on the same base and between the same parallels have equal area."
+    "statement": "Parallelograms on the same base and between the same parallels have equal area.",
+    "difficulty": 4,
+    "hints": [
+      "Consider the several cases for the relative positions of D and E.",
+      "Use area addition/subtraction with Prop.I.34 and congruent triangles."
+    ]
   },
   "canvas": {
     "points": [

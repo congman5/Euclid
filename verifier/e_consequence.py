@@ -96,6 +96,32 @@ class ConsequenceEngine:
             for ci in sat_index.get(fact, ()):
                 satisfied[ci] = 1
 
+        # ── Degenerate betweenness (B1c contrapositive) ─────────────
+        # between(x,y,x) → x≠x is absurd, so ¬between(x,y,x) always
+        # holds.  Seed these structural truths for all point pairs.
+        pts = [v for v, s in variables.items() if s == Sort.POINT]
+        for x in pts:
+            for y in pts:
+                deg = Literal(Between(x, y, x), False)  # ¬between(x,y,x)
+                if deg not in closure:
+                    closure.add(deg)
+                    worklist.append(deg)
+                    for ci in sat_index.get(deg, ()):
+                        satisfied[ci] = 1
+
+        # ── Leibniz equality substitution (E2) ──────────────────────
+        # Track diagrammatic point-equalities for substitution.
+        # When x = y is known, every diagrammatic literal φ(x) also
+        # yields φ(y) and vice versa.
+        eq_pairs: Set[Tuple[str, str]] = set()  # (a, b) pairs
+        for lit in known:
+            if (lit.polarity and isinstance(lit.atom, Equals)
+                    and isinstance(lit.atom.left, str)
+                    and isinstance(lit.atom.right, str)
+                    and lit.atom.left != lit.atom.right):
+                eq_pairs.add((lit.atom.left, lit.atom.right))
+                eq_pairs.add((lit.atom.right, lit.atom.left))
+
         while worklist:
             fact = worklist.pop()
 
@@ -105,6 +131,35 @@ class ConsequenceEngine:
                 closure.add(BOTTOM)
                 closure.add(BOTTOM.negated())
                 return closure
+
+            # Register new diagrammatic equalities for Leibniz E2
+            if (fact.polarity and isinstance(fact.atom, Equals)
+                    and isinstance(fact.atom.left, str)
+                    and isinstance(fact.atom.right, str)
+                    and fact.atom.left != fact.atom.right):
+                a, b = fact.atom.left, fact.atom.right
+                if (a, b) not in eq_pairs:
+                    eq_pairs.add((a, b))
+                    eq_pairs.add((b, a))
+                    # Apply substitution to ALL existing closure
+                    # literals to derive new facts.
+                    for lit in list(closure):
+                        for new_lit in self._leibniz_subs(
+                                lit, eq_pairs):
+                            if new_lit not in closure:
+                                closure.add(new_lit)
+                                worklist.append(new_lit)
+                                for sci in sat_index.get(
+                                        new_lit, ()):
+                                    satisfied[sci] = 1
+            else:
+                # Apply Leibniz substitution to this new fact
+                for new_lit in self._leibniz_subs(fact, eq_pairs):
+                    if new_lit not in closure:
+                        closure.add(new_lit)
+                        worklist.append(new_lit)
+                        for sci in sat_index.get(new_lit, ()):
+                            satisfied[sci] = 1
 
             # Check clauses where knowing `fact` resolves a literal
             for ci in res_index.get(fact, ()):
@@ -141,6 +196,40 @@ class ConsequenceEngine:
         if self._has_contradiction(closure):
             return True
         return query in closure
+
+    # ── Leibniz equality substitution (E2) ────────────────────────
+
+    @staticmethod
+    def _leibniz_subs(
+        lit: Literal,
+        eq_pairs: Set[Tuple[str, str]],
+    ) -> List[Literal]:
+        """Generate new diagrammatic literals by applying known
+        point/line/circle equalities.
+
+        For each equality a = b (stored as both (a,b) and (b,a) in
+        *eq_pairs*), substitute a→b in *lit* and yield the result
+        if it differs from *lit*.
+
+        Only processes diagrammatic atoms (On, SameSide, Between,
+        Center, Inside, Intersects, and diagrammatic Equals).
+        Metric literals are handled by the metric engine's union-find.
+        """
+        if not eq_pairs or not lit.is_diagrammatic:
+            return []
+        results: List[Literal] = []
+        # Collect unique substitution targets from all pairs
+        seen_mappings: Set[Tuple[Tuple[str, str], ...]] = set()
+        for a, b in eq_pairs:
+            mapping = {a: b}
+            key = ((a, b),)
+            if key in seen_mappings:
+                continue
+            seen_mappings.add(key)
+            new_lit = substitute_literal(lit, mapping)
+            if new_lit != lit and new_lit not in results:
+                results.append(new_lit)
+        return results
 
     # ── Internal methods ──────────────────────────────────────────────
 

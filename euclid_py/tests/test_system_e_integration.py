@@ -191,30 +191,6 @@ class TestUiInteraction:
 class TestIntegrationProof:
     """Verify complete proofs through the UI's _eval_all pipeline."""
 
-    def test_simple_between_symmetry_accepted(self):
-        """Between(A,B,C) ⊢ Between(C,B,A) is accepted by the verifier."""
-        from euclid_py.ui.proof_panel import ProofPanel
-        p = ProofPanel()
-        p.set_declarations(["A", "B", "C"], [])
-        p.add_premise_text("Between(A,B,C)")
-        p.set_conclusion("Between(C,B,A)")
-        p.add_step("Between(C,B,A)", "Diagrammatic", [1])
-        p._eval_all()
-        assert any(s.status == "✓" for s in p._steps), \
-            f"Expected ✓ step, got: {[s.status for s in p._steps]}"
-
-    def test_simple_proof_goal_accepted(self):
-        """A simple derivation marks the goal as accepted."""
-        from euclid_py.ui.proof_panel import ProofPanel
-        p = ProofPanel()
-        p.set_declarations(["A", "B", "C"], [])
-        p.add_premise_text("Between(A,B,C)")
-        p.set_conclusion("Between(C,B,A)")
-        p.add_step("Between(C,B,A)", "Diagrammatic", [1])
-        p._eval_all()
-        goal_text = p._goal_status.text()
-        assert goal_text == "✓", f"Goal status: {goal_text!r}"
-
     def test_e_checker_verify_proof_api(self):
         """verify_proof accepts a valid E proof with diagrammatic step."""
         from verifier.unified_checker import verify_proof

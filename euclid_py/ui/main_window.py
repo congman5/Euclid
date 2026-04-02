@@ -26,15 +26,19 @@ from PyQt6.QtWidgets import (
     QLabel, QPushButton, QListWidget, QListWidgetItem, QDialog,
     QSplitter, QToolBar, QStatusBar, QScrollArea, QFrame,
     QFileDialog, QMessageBox, QGroupBox, QStackedWidget, QTabWidget,
-    QMenu,
+    QMenu, QTextEdit, QCheckBox, QInputDialog,
 )
 
-from ..engine.proposition_data import (
-    ALL_PROPOSITIONS, Proposition, get_proposition, get_allowed_propositions,
-)
 from ..engine.file_format import (
     save_proof, load_proof, save_journal_json, load_journal_json,
     detect_file_format,
+)
+from ..engine.integrity import (
+    LOCKABLE_FEATURES, DEFAULT_LOCKS, compute_integrity_hash,
+    verify_integrity_hash,
+)
+from ..engine.proposition_data import (
+    ALL_PROPOSITIONS, Proposition, get_proposition, get_allowed_propositions,
 )
 from .canvas_widget import CanvasWidget, COLOR_PALETTE
 from .proof_panel import ProofPanel
@@ -1101,6 +1105,10 @@ class _OpenFileDialog(QDialog):
                 self._file_list.addItem(item)
             elif entry_name.endswith(".euclid"):
                 display = entry_name.replace(".euclid", "")
+                # Add difficulty indicator from proposition data
+                diff_badge = self._difficulty_badge(full)
+                if diff_badge:
+                    display = f"{display}  {diff_badge}"
                 item = QListWidgetItem(display)
                 item.setFlags(_drag_flags)
                 item.setData(self._ROLE_PATH, full)
@@ -1112,6 +1120,31 @@ class _OpenFileDialog(QDialog):
         if self._active_path:
             self._nav_stack.append(self._active_path)
         self._load_folder(folder)
+
+    @staticmethod
+    def _difficulty_badge(filepath: str) -> str:
+        """Return a text difficulty label for a .euclid file.
+
+        Tries to match the filename to a known proposition, falling back
+        to reading the file's metadata.  Returns '' if no difficulty
+        information is available.
+        """
+        _DIFF_LABELS = {1: "Trivial", 2: "Easy", 3: "Moderate", 4: "Hard", 5: "Expert"}
+        # Quick match from proposition data
+        basename = os.path.basename(filepath).replace(".euclid", "")
+        for prop in ALL_PROPOSITIONS:
+            if prop.name == basename or prop.title == basename:
+                return _DIFF_LABELS.get(prop.difficulty, "")
+        # Fallback: read metadata from file
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            diff = data.get("metadata", {}).get("difficulty", 0)
+            if diff:
+                return _DIFF_LABELS.get(diff, "")
+        except Exception:
+            pass
+        return ""
 
     def _go_back(self):
         """Navigate back to the previous folder."""
@@ -1291,7 +1324,6 @@ class _OpenFileDialog(QDialog):
 
     def _white_input(self, title, label, text=""):
         """Show a white-themed QInputDialog and return (text, ok)."""
-        from PyQt6.QtWidgets import QInputDialog
         dlg = QInputDialog(self)
         dlg.setWindowTitle(title)
         dlg.setLabelText(label)
@@ -1814,9 +1846,6 @@ class MainWindow(QMainWindow):
         self._stack.setCurrentWidget(self._workspace)
         self.statusBar().showMessage("Ready — select a proposition or start a blank proof.")
 
-        # Auto-load a blank proof so the canvas is ready immediately
-        QTimer.singleShot(0, self.open_blank)
-
     def _apply_initial_geometry(self):
         """Size the window to 85% of the available screen while keeping
         the target aspect ratio, then centre it on the primary display."""
@@ -1988,6 +2017,7 @@ class _VerifierScreen(QWidget):
         self._diagnostics = DiagnosticsPanel()
         self._diagnostics.navigate_to_line.connect(self._navigate_to_line)
         self._rule_ref = RuleReferencePanel()
+        self._rule_ref.set_facts_provider(self._collect_proof_facts)
         right_tabs.addTab(self._diagnostics, "Diagnostics")
         right_tabs.addTab(self._rule_ref, "Rules")
         body_splitter.addWidget(right_tabs)
@@ -2090,9 +2120,36 @@ class _VerifierScreen(QWidget):
                 goal_achieved=None,
             )
             self._diagnostics.set_diagnostics([])
+
+            # Push known predicates to rule reference panel
+            facts: set[str] = set()
+            for prem in data.get("premises", []):
+                if prem and prem.strip():
+                    facts.add(prem.strip())
+            for ld in data.get("lines", []):
+                stmt = ld.get("statement", "").strip()
+                if stmt:
+                    facts.add(stmt)
+            self._rule_ref.set_proof_facts(facts)
         except Exception as e:
             QMessageBox.warning(self, "Display Error",
                                 f"Error displaying proof data:\n{e}")
+
+    # ── Proof facts for rule reference panel ────────────────────────────
+
+    def _collect_proof_facts(self) -> set[str]:
+        """Gather predicates from the loaded proof data."""
+        facts: set[str] = set()
+        if self._proof_data is None:
+            return facts
+        for prem in self._proof_data.get("premises", []):
+            if prem and prem.strip():
+                facts.add(prem.strip())
+        for ld in self._proof_data.get("lines", []):
+            stmt = ld.get("statement", "").strip()
+            if stmt:
+                facts.add(stmt)
+        return facts
 
     # ── Run verification ──────────────────────────────────────────────
 
@@ -2310,6 +2367,461 @@ class _VerifierScreen(QWidget):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# SETTINGS DIALOG (General + Advanced tabs)
+# ═══════════════════════════════════════════════════════════════════════════
+
+_DIALOG_BG = (
+    "QDialog { background: #ffffff; color: #1a1a2e; }"
+    " QWidget { background: #ffffff; color: #1a1a2e; }"
+    " QGroupBox { background: #ffffff; color: #1a1a2e; border: 1px solid #e5e7eb;"
+    "   border-radius: 4px; margin-top: 14px; padding: 12px 8px 8px; }"
+    " QGroupBox::title { subcontrol-origin: margin; left: 10px;"
+    "   padding: 0 4px; color: #1a1a2e; font-weight: bold; }"
+    " QLabel { background: transparent; color: #1a1a2e; }"
+    " QCheckBox { background: transparent; color: #1a1a2e; }"
+    " QCheckBox::indicator { background: #ffffff; border: 1px solid #c0c8d4;"
+    "   border-radius: 3px; width: 14px; height: 14px; }"
+    " QCheckBox::indicator:checked { background: #2d70b3; border-color: #2d70b3; }"
+    " QTextEdit { background: #ffffff; color: #1a1a2e;"
+    "   border: 1px solid #e5e7eb; border-radius: 3px; padding: 4px; }"
+    " QTabWidget::pane { border: 1px solid #e5e7eb; background: #ffffff; }"
+    " QTabBar { background: #f5f6f8; }"
+    " QTabBar::tab { background: #f5f6f8; color: #1a1a2e; border: 1px solid #e5e7eb;"
+    "   border-bottom: none; padding: 6px 16px; margin-right: 2px;"
+    "   border-top-left-radius: 4px; border-top-right-radius: 4px; }"
+    " QTabBar::tab:selected { background: #ffffff; color: #1a1a2e;"
+    "   border-bottom: 1px solid #ffffff; }"
+    " QPushButton { background: #ffffff; color: #1a1a2e; border: 1px solid #d0d0d8;"
+    "   border-radius: 4px; padding: 5px 14px; }"
+    " QPushButton:hover { border-color: #2d70b3; }"
+    " QScrollArea { background: #ffffff; border: none; }"
+    " QScrollBar:vertical { background: #f5f6f8; width: 8px; }"
+    " QScrollBar::handle:vertical { background: #c0c8d4; border-radius: 4px; }"
+)
+
+
+class _SettingsDialog(QDialog):
+    """Settings dialog with General (difficulty, hints) and Advanced (locked export) tabs.
+
+    Difficulty and hints can be changed and saved normally.
+    The Advanced tab generates a separate locked file with an integrity hash.
+    """
+
+    def __init__(self, parent, current_prop: Proposition | None = None,
+                 current_metadata: dict | None = None):
+        super().__init__(parent)
+        self.setWindowTitle("Settings")
+        self.setMinimumSize(520, 480)
+        self.setStyleSheet(_DIALOG_BG)
+        self._result_metadata: dict = {}
+        self._export_requested: bool = False
+
+        meta = current_metadata or {}
+        layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+        layout.setContentsMargins(16, 16, 16, 12)
+
+        tabs = QTabWidget()
+        layout.addWidget(tabs)
+
+        # ── General tab ────────────────────────────────────────────
+        general = QWidget()
+        general.setStyleSheet("background: #ffffff;")
+        gl = QVBoxLayout(general)
+        gl.setSpacing(10)
+        gl.setContentsMargins(8, 8, 8, 8)
+
+        # Difficulty
+        diff_group = QGroupBox("Difficulty Rating")
+        diff_layout = QHBoxLayout(diff_group)
+        self._diff_buttons: list[QPushButton] = []
+        diff_labels = {1: "Trivial", 2: "Easy", 3: "Moderate",
+                       4: "Hard", 5: "Expert"}
+        initial_diff = meta.get("difficulty",
+                                current_prop.difficulty if current_prop else 1)
+        for d, label in diff_labels.items():
+            btn = QPushButton(f"{d}  {label}")
+            btn.setCheckable(True)
+            btn.setChecked(d == initial_diff)
+            btn.setStyleSheet(
+                "QPushButton { padding: 5px 10px; border: 1px solid #d0d0d8;"
+                " border-radius: 3px; font-size: 12px; background: #ffffff; }"
+                " QPushButton:checked { background: #2d70b3; color: white;"
+                " border-color: #2d70b3; }"
+                " QPushButton:hover { border-color: #2d70b3; }"
+            )
+            btn.clicked.connect(lambda checked, val=d: self._set_difficulty(val))
+            diff_layout.addWidget(btn)
+            self._diff_buttons.append(btn)
+        self._difficulty = initial_diff
+        gl.addWidget(diff_group)
+
+        # Hints
+        hints_group = QGroupBox("Hints (one per line)")
+        hints_layout = QVBoxLayout(hints_group)
+        self._hints_edit = QTextEdit()
+        self._hints_edit.setMaximumHeight(120)
+        self._hints_edit.setStyleSheet(
+            "QTextEdit { font-size: 12px; background: #ffffff;"
+            " border: 1px solid #e5e7eb; border-radius: 3px; padding: 4px; }"
+        )
+        initial_hints = meta.get("hints",
+                                 current_prop.hints if current_prop else [])
+        self._hints_edit.setPlainText("\n".join(initial_hints))
+        hints_layout.addWidget(self._hints_edit)
+        gl.addWidget(hints_group)
+
+        gl.addStretch()
+        tabs.addTab(general, "General")
+
+        # ── Advanced tab ───────────────────────────────────────────
+        advanced = QWidget()
+        advanced.setStyleSheet("background: #ffffff;")
+        al = QVBoxLayout(advanced)
+        al.setSpacing(10)
+        al.setContentsMargins(8, 8, 8, 8)
+
+        adv_info = QLabel(
+            "Export a locked copy of this file with selected features "
+            "restricted. A tamper-detection hash will be embedded so "
+            "modifications can be detected on load."
+        )
+        adv_info.setWordWrap(True)
+        adv_info.setStyleSheet(f"color: {COLORS['textSecondary']}; font-size: 12px;")
+        al.addWidget(adv_info)
+
+        locks_group = QGroupBox("Locked Features")
+        locks_layout = QVBoxLayout(locks_group)
+        self._lock_checks: dict[str, QCheckBox] = {}
+        current_locks = meta.get("locked_features", {})
+        for key, label in LOCKABLE_FEATURES.items():
+            cb = QCheckBox(label)
+            cb.setChecked(current_locks.get(key, False))
+            cb.setStyleSheet("font-size: 12px; background: transparent;")
+            locks_layout.addWidget(cb)
+            self._lock_checks[key] = cb
+        al.addWidget(locks_group)
+
+        btn_export = QPushButton("Export Locked File…")
+        btn_export.setStyleSheet(
+            "QPushButton { background: #2d70b3; color: white; padding: 8px 18px;"
+            " border-radius: 4px; font-size: 13px; font-weight: bold; }"
+            " QPushButton:hover { background: #1e5a9a; }"
+        )
+        btn_export.clicked.connect(self._export_locked)
+        al.addWidget(btn_export, alignment=Qt.AlignmentFlag.AlignRight)
+        al.addStretch()
+        tabs.addTab(advanced, "Advanced")
+
+        # ── Bottom buttons ─────────────────────────────────────────
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        btn_cancel = QPushButton("Cancel")
+        btn_cancel.setStyleSheet(
+            "QPushButton { padding: 6px 16px; border: 1px solid #d0d0d8;"
+            " border-radius: 4px; font-size: 12px; background: #ffffff; }"
+            " QPushButton:hover { border-color: #2d70b3; }"
+        )
+        btn_cancel.clicked.connect(self.reject)
+        btn_row.addWidget(btn_cancel)
+        btn_ok = QPushButton("Save")
+        btn_ok.setStyleSheet(
+            "QPushButton { background: #2d70b3; color: white; padding: 6px 20px;"
+            " border-radius: 4px; font-size: 12px; font-weight: bold; }"
+            " QPushButton:hover { background: #1e5a9a; }"
+        )
+        btn_ok.clicked.connect(self._apply)
+        btn_row.addWidget(btn_ok)
+        layout.addLayout(btn_row)
+
+    def _set_difficulty(self, val: int):
+        self._difficulty = val
+        for i, btn in enumerate(self._diff_buttons, start=1):
+            btn.setChecked(i == val)
+
+    def _apply(self):
+        hints_text = self._hints_edit.toPlainText().strip()
+        hints = [h.strip() for h in hints_text.split("\n") if h.strip()]
+        self._result_metadata = {
+            "difficulty": self._difficulty,
+            "hints": hints,
+        }
+        self.accept()
+
+    def _export_locked(self):
+        """Build metadata with locks and signal that a locked export is wanted."""
+        hints_text = self._hints_edit.toPlainText().strip()
+        hints = [h.strip() for h in hints_text.split("\n") if h.strip()]
+        locked = {k: cb.isChecked() for k, cb in self._lock_checks.items()}
+        self._result_metadata = {
+            "difficulty": self._difficulty,
+            "hints": hints,
+            "locked_features": locked,
+        }
+        self._export_requested = True
+        self.accept()
+
+    @property
+    def result_metadata(self) -> dict:
+        return self._result_metadata
+
+    @property
+    def export_requested(self) -> bool:
+        return self._export_requested
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DETAILS DIALOG (proposition info popup)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class _DetailsDialog(QDialog):
+    """Popup window with tabbed details: Overview and Notes."""
+
+    _DIFF_LABELS = {1: "Trivial", 2: "Easy", 3: "Moderate", 4: "Hard", 5: "Expert"}
+
+    def __init__(self, parent=None, prop: Proposition | None = None,
+                 file_data: dict | None = None):
+        super().__init__(parent)
+        self.setWindowTitle("Proposition Details")
+        self.setMinimumSize(520, 480)
+        self.setStyleSheet(
+            "QDialog { background: #ffffff; color: #1a1a2e; }"
+            " QWidget { background: #ffffff; color: #1a1a2e; }"
+            " QLabel { background: transparent; color: #1a1a2e; }"
+            " QTextEdit { background: #ffffff; color: #1a1a2e;"
+            "   border: 1px solid #e5e7eb; border-radius: 3px; padding: 4px; }"
+            " QPushButton { background: #ffffff; color: #1a1a2e;"
+            "   border: 1px solid #d0d0d8; border-radius: 4px; padding: 5px 14px; }"
+            " QPushButton:hover { border-color: #2d70b3; }"
+            " QTabWidget::pane { border: 1px solid #e5e7eb; background: #ffffff; }"
+            " QTabBar { background: #f5f6f8; }"
+            " QTabBar::tab { background: #f5f6f8; color: #1a1a2e; border: 1px solid #e5e7eb;"
+            "   border-bottom: none; padding: 6px 16px; margin-right: 2px;"
+            "   border-top-left-radius: 4px; border-top-right-radius: 4px; }"
+            " QTabBar::tab:selected { background: #ffffff; color: #1a1a2e;"
+            "   border-bottom: 1px solid #ffffff; }"
+            " QScrollArea { background: #ffffff; border: none; }"
+            " QScrollBar:vertical { background: #f5f6f8; width: 8px; }"
+            " QScrollBar::handle:vertical { background: #c0c8d4; border-radius: 4px; }"
+        )
+
+        self._prop = prop
+
+        difficulty = 0
+        hints: list[str] = []
+        locked: dict = {}
+        integrity_valid = True
+
+        if prop:
+            difficulty = prop.difficulty
+            hints = list(prop.hints)
+
+        if file_data:
+            difficulty = file_data.get("difficulty", difficulty) or difficulty
+            hints = file_data.get("hints", hints) or hints
+            locked = file_data.get("locked_features", {})
+            integrity_valid = file_data.get("integrity_valid", True)
+
+        if locked.get("hide_hints"):
+            hints = []
+        if locked.get("hide_difficulty"):
+            difficulty = 0
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+        layout.setContentsMargins(16, 14, 16, 12)
+
+        tabs = QTabWidget()
+        layout.addWidget(tabs)
+
+        # ── Tab 1: Overview ────────────────────────────────────────
+        overview_scroll = QScrollArea()
+        overview_scroll.setWidgetResizable(True)
+        overview_scroll.setStyleSheet("QScrollArea { border: none; background: #ffffff; }")
+        overview_inner = QWidget()
+        overview_inner.setStyleSheet("background: #ffffff;")
+        ov = QVBoxLayout(overview_inner)
+        ov.setSpacing(10)
+        ov.setContentsMargins(12, 12, 12, 12)
+        overview_scroll.setWidget(overview_inner)
+
+        def _sep():
+            line = QFrame()
+            line.setFrameShape(QFrame.Shape.HLine)
+            line.setStyleSheet("color: #e5e7eb; background: #e5e7eb;")
+            line.setFixedHeight(1)
+            return line
+
+        if prop:
+            # Title row
+            lbl_title = QLabel(f"{prop.name}  —  {prop.title}")
+            lbl_title.setFont(QFont("Segoe UI", 13, QFont.Weight.Bold))
+            lbl_title.setStyleSheet("color: #1a1a2e;")
+            lbl_title.setWordWrap(True)
+            ov.addWidget(lbl_title)
+            ov.addWidget(_sep())
+
+            # Statement
+            if prop.statement:
+                lbl_stmt = QLabel(prop.statement)
+                lbl_stmt.setWordWrap(True)
+                lbl_stmt.setFont(QFont("Segoe UI", 11))
+                lbl_stmt.setStyleSheet("color: #1a1a2e;")
+                ov.addWidget(lbl_stmt)
+
+            # Given / conclusion box
+            if prop.given or prop.conclusion:
+                gc_box = QFrame()
+                gc_box.setStyleSheet(
+                    "QFrame { background: #f5f6f8; border-radius: 4px;"
+                    " border: 1px solid #e5e7eb; }")
+                gc_layout = QVBoxLayout(gc_box)
+                gc_layout.setContentsMargins(10, 6, 10, 6)
+                gc_layout.setSpacing(4)
+                if prop.given:
+                    r = QLabel(f"<b>Given:</b>  {prop.given}")
+                    r.setWordWrap(True)
+                    r.setStyleSheet(
+                        "color: #374151; font-size: 12px;"
+                        " background: transparent; border: none;")
+                    gc_layout.addWidget(r)
+                if prop.conclusion:
+                    r = QLabel(f"<b>To prove:</b>  {prop.conclusion}")
+                    r.setWordWrap(True)
+                    r.setStyleSheet(
+                        "color: #374151; font-size: 12px;"
+                        " background: transparent; border: none;")
+                    gc_layout.addWidget(r)
+                ov.addWidget(gc_box)
+
+        # Difficulty row
+        if difficulty:
+            ov.addWidget(_sep())
+            diff_row = QHBoxLayout()
+            diff_row.setSpacing(6)
+            diff_lbl = QLabel("Difficulty:")
+            diff_lbl.setStyleSheet("color: #6b7280; font-size: 12px;")
+            diff_row.addWidget(diff_lbl)
+            stars = "★" * difficulty + "☆" * (5 - difficulty)
+            diff_val = QLabel(
+                f"{stars}  {self._DIFF_LABELS.get(difficulty, '')}  ({difficulty}/5)")
+            diff_val.setStyleSheet(
+                "color: #1a1a2e; font-size: 12px; font-weight: bold;")
+            diff_row.addWidget(diff_val)
+            diff_row.addStretch()
+            ov.addLayout(diff_row)
+
+        # Hints (click-to-reveal)
+        if hints:
+            ov.addWidget(_sep())
+            self._hints_text = "\n".join(f"  •  {h}" for h in hints)
+            self._hints_header = QLabel("Hints  (click to reveal)")
+            self._hints_header.setFont(QFont("Segoe UI", 11))
+            self._hints_header.setStyleSheet(
+                "color: #2d70b3; padding: 2px 0; text-decoration: underline;")
+            self._hints_header.setCursor(Qt.CursorShape.PointingHandCursor)
+            self._hints_header.mousePressEvent = self._toggle_hints
+            ov.addWidget(self._hints_header)
+
+            self._hints_label = QLabel(self._hints_text)
+            self._hints_label.setWordWrap(True)
+            self._hints_label.setVisible(False)
+            self._hints_label.setStyleSheet(
+                "color: #4b5563; font-size: 12px;"
+                " padding: 4px 0 4px 12px;")
+            ov.addWidget(self._hints_label)
+            self._hints_shown = False
+
+        # Active restrictions list
+        active_locks = [label for key, label in LOCKABLE_FEATURES.items()
+                        if locked.get(key)]
+        if active_locks:
+            ov.addWidget(_sep())
+            lock_hdr = QLabel("Restrictions active for this file:")
+            lock_hdr.setStyleSheet(
+                "color: #6b7280; font-size: 11px; font-weight: bold;")
+            ov.addWidget(lock_hdr)
+            for lbl in active_locks:
+                item = QLabel(f"  \u2022  {lbl}")
+                item.setStyleSheet("color: #6b7280; font-size: 11px;")
+                ov.addWidget(item)
+
+        # Integrity warning
+        if not integrity_valid:
+            ov.addWidget(_sep())
+            warn = QLabel(
+                "\u26a0  Integrity check failed — this file may have been"
+                " modified. Feature restrictions are not enforced."
+            )
+            warn.setWordWrap(True)
+            warn.setStyleSheet(
+                "color: #d32f2f; font-size: 12px;"
+                " font-weight: bold; padding: 4px;")
+            ov.addWidget(warn)
+
+        ov.addStretch()
+        tabs.addTab(overview_scroll, "Overview")
+
+        # ── Tab 2: Notes ───────────────────────────────────────────
+        notes_widget = QWidget()
+        nv = QVBoxLayout(notes_widget)
+        nv.setContentsMargins(8, 8, 8, 8)
+        nv.setSpacing(6)
+
+        notes_lbl = QLabel("Personal notes (saved with the file):")
+        notes_lbl.setStyleSheet("color: #6b7280; font-size: 11px;")
+        nv.addWidget(notes_lbl)
+
+        self._notes_edit = QTextEdit()
+        self._notes_edit.setPlainText(
+            prop.notes if prop and prop.notes else "")
+        self._notes_edit.setStyleSheet(
+            "QTextEdit { background: #ffffff; color: #1a1a2e; font-size: 12px;"
+            " border: 1px solid #e5e7eb; border-radius: 3px; padding: 4px; }"
+        )
+        nv.addWidget(self._notes_edit)
+        tabs.addTab(notes_widget, "Notes")
+
+        # ── Close / Save buttons ───────────────────────────────────
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        btn_close = QPushButton("Close")
+        btn_close.setStyleSheet(
+            "QPushButton { padding: 6px 20px; border: 1px solid #d0d0d8;"
+            " border-radius: 4px; font-size: 12px;"
+            " background: #ffffff; color: #1a1a2e; }"
+            " QPushButton:hover { border-color: #2d70b3; }"
+        )
+        btn_close.clicked.connect(self.reject)
+        btn_row.addWidget(btn_close)
+
+        btn_save = QPushButton("Save Notes")
+        btn_save.setStyleSheet(
+            "QPushButton { background: #2d70b3; color: white;"
+            " padding: 6px 20px; border-radius: 4px;"
+            " font-size: 12px; font-weight: bold; }"
+            " QPushButton:hover { background: #1e5a9a; }"
+        )
+        btn_save.clicked.connect(self.accept)
+        btn_row.addWidget(btn_save)
+        layout.addLayout(btn_row)
+
+    @property
+    def saved_notes(self) -> str:
+        return self._notes_edit.toPlainText() if hasattr(self, '_notes_edit') else ""
+
+    def _toggle_hints(self, _event=None):
+        if hasattr(self, '_hints_shown') and self._hints_shown:
+            self._hints_label.setVisible(False)
+            self._hints_shown = False
+            self._hints_header.setText("Hints  (click to reveal)")
+        else:
+            self._hints_label.setVisible(True)
+            self._hints_shown = True
+            self._hints_header.setText("Hints  (click to hide)")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # WORKSPACE SCREEN (canvas + proof panel)
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -2389,7 +2901,22 @@ class _WorkspaceScreen(QWidget):
         self._btn_ref.clicked.connect(self._toggle_reference)
         tl.addWidget(self._btn_ref)
 
+        btn_details = QPushButton("Details")
+        btn_details.setToolTip("View proposition details, difficulty, and hints")
+        btn_details.clicked.connect(self._open_details)
+        tl.addWidget(btn_details)
+
+        btn_settings = QPushButton("Settings")
+        btn_settings.setToolTip("Difficulty, hints, and advanced export options")
+        btn_settings.clicked.connect(self._open_settings)
+        tl.addWidget(btn_settings)
+
         layout.addWidget(toolbar)
+
+        # ── Lock state (from loaded files) ─────────────────────────────
+        self._file_metadata: dict = {}
+        self._locked_features: dict = {}
+        self._integrity_valid: bool = True
 
         # ── Main body: splitter with canvas-side vs proof panel ────────
         # The proof journal spans full height (below the top toolbar)
@@ -2576,6 +3103,7 @@ class _WorkspaceScreen(QWidget):
         self._canvas.scene.canvas_changed.connect(self._proof_panel.reset_evaluations)
         self._canvas.scene.canvas_changed.connect(self._mark_dirty)
         self._proof_panel.step_changed.connect(self._mark_dirty)
+        self._proof_panel.step_changed.connect(self._update_ref_panel_facts)
         canvas_vbox.addWidget(self._canvas)
         body_splitter.addWidget(canvas_container)
         body_splitter.addWidget(self._proof_panel)
@@ -2585,6 +3113,7 @@ class _WorkspaceScreen(QWidget):
         self._ref_panel.setMinimumWidth(300)
         self._ref_panel.setMaximumWidth(460)
         self._ref_panel.setVisible(False)
+        self._ref_panel.set_facts_provider(self._collect_proof_facts)
         body_splitter.addWidget(self._ref_panel)
 
         body_splitter.setStretchFactor(0, 3)
@@ -2716,42 +3245,46 @@ class _WorkspaceScreen(QWidget):
         self._current_prop = prop
         self._title_label.setText(f"{prop.name} — {prop.title}")
         self._canvas.clear()
-        self._proof_panel.clear()
-        # Set the proof name from the proposition
-        self._proof_panel.set_proof_name(
-            prop.e_library_name or prop.name)
-        # Block canvas_changed signals during batch load to avoid
-        # mid-rebuild calls into the proof panel.
-        self._canvas._scene.blockSignals(True)
+        self._proof_panel.begin_bulk_update()
         try:
-            self._load_given_objects(prop)
-        finally:
-            self._canvas._scene.blockSignals(False)
-        # Auto-populate declarations from given objects
-        if prop.given_objects:
-            pt_labels = [pt["label"] for pt in prop.given_objects.points]
-            self._proof_panel.set_declarations(pt_labels, [])
+            self._proof_panel.clear()
+            # Set the proof name from the proposition
+            self._proof_panel.set_proof_name(
+                prop.e_library_name or prop.name)
+            # Block canvas_changed signals during batch load to avoid
+            # mid-rebuild calls into the proof panel.
+            self._canvas._scene.blockSignals(True)
+            try:
+                self._load_given_objects(prop)
+            finally:
+                self._canvas._scene.blockSignals(False)
+            # Auto-populate declarations from given objects
+            if prop.given_objects:
+                pt_labels = [pt["label"] for pt in prop.given_objects.points]
+                self._proof_panel.set_declarations(pt_labels, [])
 
-        # Phase 9.1: Source premises and conclusion from E library when
-        # available, falling back to given-object heuristics for
-        # non-Euclid entries.
-        e_thm = prop.get_e_theorem()
-        if e_thm is not None:
-            for hyp in e_thm.sequent.hypotheses:
-                self._proof_panel.add_premise_text(str(hyp))
-            if e_thm.sequent.conclusions:
-                goal = ", ".join(str(c) for c in e_thm.sequent.conclusions)
-                self._proof_panel.set_conclusion(goal)
-            elif prop.conclusion_predicate:
-                self._proof_panel.set_conclusion(prop.conclusion_predicate)
-        else:
-            # Fallback: generate System E premises from given objects
-            formal_premises = self._build_formal_premises(prop)
-            for fp in formal_premises:
-                self._proof_panel.add_premise_text(fp)
-            goal_text = prop.conclusion_predicate or prop.conclusion
-            if goal_text:
-                self._proof_panel.set_conclusion(goal_text)
+            # Phase 9.1: Source premises and conclusion from E library when
+            # available, falling back to given-object heuristics for
+            # non-Euclid entries.
+            e_thm = prop.get_e_theorem()
+            if e_thm is not None:
+                for hyp in e_thm.sequent.hypotheses:
+                    self._proof_panel.add_premise_text(str(hyp))
+                if e_thm.sequent.conclusions:
+                    goal = ", ".join(str(c) for c in e_thm.sequent.conclusions)
+                    self._proof_panel.set_conclusion(goal)
+                elif prop.conclusion_predicate:
+                    self._proof_panel.set_conclusion(prop.conclusion_predicate)
+            else:
+                # Fallback: generate System E premises from given objects
+                formal_premises = self._build_formal_premises(prop)
+                for fp in formal_premises:
+                    self._proof_panel.add_premise_text(fp)
+                goal_text = prop.conclusion_predicate or prop.conclusion
+                if goal_text:
+                    self._proof_panel.set_conclusion(goal_text)
+        finally:
+            self._proof_panel.end_bulk_update()
 
         self._dirty = False
 
@@ -2792,6 +3325,109 @@ class _WorkspaceScreen(QWidget):
 
     def _mark_dirty(self):
         self._dirty = True
+
+    def _enforce_feature_locks(self):
+        """Apply locked-feature restrictions from a loaded file."""
+        locks = self._locked_features
+        if not self._integrity_valid:
+            return
+
+        # ── Rule reference panel ──────────────────────────────────
+        if locks.get("disable_rule_reference"):
+            self._ref_panel.setVisible(False)
+            self._btn_ref.setEnabled(False)
+            self._btn_ref.setToolTip("Rule reference is restricted for this file")
+        else:
+            self._btn_ref.setEnabled(True)
+            self._btn_ref.setToolTip("Toggle System E rule reference panel")
+
+        # ── Goal lock ─────────────────────────────────────────────
+        self._proof_panel.set_goal_locked(bool(locks.get("lock_goal")))
+
+        # ── Premises lock ─────────────────────────────────────────
+        self._proof_panel.set_premises_locked(bool(locks.get("lock_premises")))
+
+        # ── Lemma lock ────────────────────────────────────────────
+        self._proof_panel.set_lemma_locked(bool(locks.get("disable_lemma_change")))
+
+        # ── Construction tool lock ────────────────────────────────
+        construct_btn = self._tools.get("construct")
+        if construct_btn is not None:
+            if locks.get("disable_construction_tool"):
+                construct_btn.setEnabled(False)
+                construct_btn.setToolTip(
+                    "Construction tool is restricted for this file")
+                # Switch away from construct tool if currently active
+                if self._canvas.scene._tool == "construct":
+                    self._set_tool_btn("select")
+            else:
+                construct_btn.setEnabled(True)
+                construct_btn.setToolTip(
+                    "Proposition construction (guided construction rules)")
+
+    def _open_details(self):
+        """Show a Details dialog for the current proposition / loaded file."""
+        file_data = None
+        if self._file_metadata:
+            file_data = {
+                "difficulty": self._file_metadata.get("difficulty", 0),
+                "hints": self._file_metadata.get("hints", []),
+                "locked_features": self._locked_features,
+                "integrity_valid": self._integrity_valid,
+            }
+        dlg = _DetailsDialog(
+            self,
+            prop=self._current_prop,
+            file_data=file_data,
+        )
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            # Persist notes back onto the proposition object
+            if self._current_prop is not None:
+                self._current_prop.notes = dlg.saved_notes
+                self._dirty = True
+
+    def _open_settings(self):
+        """Open the settings dialog for difficulty, hints, and advanced export."""
+        dlg = _SettingsDialog(
+            self,
+            current_prop=self._current_prop,
+            current_metadata=self._file_metadata,
+        )
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            result = dlg.result_metadata
+            self._file_metadata.update(result)
+            self._locked_features = result.get("locked_features", self._locked_features)
+            if dlg.export_requested:
+                # Save a separate locked copy
+                self._save_locked_export(result)
+            self._enforce_feature_locks()
+            self._dirty = True
+            self._mw.statusBar().showMessage("Settings saved")
+
+    def _save_locked_export(self, metadata: dict):
+        """Export a locked .euclid file with integrity hash."""
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Export Locked File", "", "Euclid Files (*.euclid)")
+        if path:
+            canvas = self._canvas.get_state()
+            journal = self._proof_panel.get_journal_state()
+            save_proof(path, canvas, journal, metadata)
+            self._mw.statusBar().showMessage(f"Exported locked file to {path}")
+
+    def _collect_proof_facts(self) -> set[str]:
+        """Gather all predicate strings from premises and proof steps."""
+        facts: set[str] = set()
+        for prem in self._proof_panel._premises:
+            if prem and prem.strip():
+                facts.add(prem.strip())
+        for s in self._proof_panel._steps:
+            if s.text and s.text.strip():
+                facts.add(s.text.strip())
+        return facts
+
+    def _update_ref_panel_facts(self):
+        """Push current proof predicates to the rule reference panel."""
+        self._ref_panel.set_proof_facts(self._collect_proof_facts())
 
     def _new_blank_proof(self):
         """Start a blank proof, prompting to save if dirty."""
@@ -2887,7 +3523,8 @@ class _WorkspaceScreen(QWidget):
         if path:
             canvas = self._canvas.get_state()
             journal = self._proof_panel.get_journal_state() if include_journal else None
-            save_proof(path, canvas, journal)
+            metadata = dict(self._file_metadata) if self._file_metadata else None
+            save_proof(path, canvas, journal, metadata)
             self._dirty = False
             self._set_file_title(path)
             label = "canvas + proof" if include_journal else "canvas"
@@ -2917,29 +3554,43 @@ class _WorkspaceScreen(QWidget):
     def _import(self):
         dlg = _OpenFileDialog(self)
         if dlg.exec() == QDialog.DialogCode.Accepted and dlg.selected_path:
-            self._import_file(dlg.selected_path)
+            path = dlg.selected_path
+            dlg.deleteLater()
+            self._import_file(path)
 
     def _import_file(self, path: str):
         """Load a .euclid file by path."""
         fmt = detect_file_format(path)
         self._set_file_title(path)
-        if fmt == "euclid-journal":
-            journal = load_journal_json(path)
-            self._proof_panel.clear()
-            self._proof_panel.restore_journal_state(journal)
-            self._mw.statusBar().showMessage(f"Loaded proof from {path}")
-        else:
-            data = load_proof(path)
-            self._load_canvas_from_data(data)
-            if data.get("has_journal"):
-                journal = data.get("journal", {})
+        self._proof_panel.begin_bulk_update()
+        try:
+            if fmt == "euclid-journal":
+                journal = load_journal_json(path)
                 self._proof_panel.clear()
                 self._proof_panel.restore_journal_state(journal)
-                self._mw.statusBar().showMessage(
-                    f"Loaded canvas + proof from {path}")
+                self._mw.statusBar().showMessage(f"Loaded proof from {path}")
+                self._file_metadata = {}
+                self._locked_features = {}
+                self._integrity_valid = True
             else:
-                self._mw.statusBar().showMessage(
-                    f"Loaded canvas from {path} (proof journal unchanged)")
+                data = load_proof(path)
+                self._load_canvas_from_data(data)
+                if data.get("has_journal"):
+                    journal = data.get("journal", {})
+                    self._proof_panel.clear()
+                    self._proof_panel.restore_journal_state(journal)
+                    self._mw.statusBar().showMessage(
+                        f"Loaded canvas + proof from {path}")
+                else:
+                    self._mw.statusBar().showMessage(
+                        f"Loaded canvas from {path} (proof journal unchanged)")
+                # Feature lock state
+                self._file_metadata = data.get("metadata", {})
+                self._locked_features = data.get("locked_features", {})
+                self._integrity_valid = data.get("integrity_valid", True)
+                self._enforce_feature_locks()
+        finally:
+            self._proof_panel.end_bulk_update()
         self._dirty = False
         QTimer.singleShot(50, self._canvas.fit_to_contents)
 

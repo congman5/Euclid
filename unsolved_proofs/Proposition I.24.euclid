@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.24",
     "title": "Hinge Theorem",
-    "statement": "If two sides of one triangle equal two sides of another but the included angle is greater, the base is greater."
+    "statement": "If two sides of one triangle equal two sides of another but the included angle is greater, the base is greater.",
+    "difficulty": 4,
+    "hints": [
+      "Place the angle DEG equal to BAC on segment DE using Prop.I.23.",
+      "Show DG = DF by construction, then use Prop.I.4 (SAS)."
+    ]
   },
   "canvas": {
     "points": [

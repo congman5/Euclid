@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.13",
     "title": "Supplementary Angles",
-    "statement": "If a straight line stands on another, the adjacent angles sum to two right angles."
+    "statement": "If a straight line stands on another, the adjacent angles sum to two right angles.",
+    "difficulty": 1,
+    "hints": [
+      "This is directly Angle transfer 6 — supplementary angles from betweenness."
+    ]
   },
   "canvas": {
     "points": [

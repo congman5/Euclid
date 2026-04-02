@@ -2,7 +2,13 @@
   "format": "euclid-proof",
   "version": "1.0.0",
   "program": "Euclid Elements Simulator (Python)",
-  "metadata": {},
+  "metadata": {
+    "difficulty": 4,
+    "hints": [
+      "Use Prop.I.5 to show base angles of the isosceles sub-triangles are equal.",
+      "Apply proof by contradiction: assume C ≠ D and derive contradictory angle inequalities."
+    ]
+  },
   "canvas": {
     "points": [
       {
@@ -113,7 +119,9 @@
         "lineNumber": 7,
         "text": "¬(on(a, L))",
         "justification": "Same-side 3",
-        "dependencies": [4],
+        "dependencies": [
+          4
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -121,7 +129,10 @@
         "lineNumber": 8,
         "text": "¬(b = a)",
         "justification": "Generality 6",
-        "dependencies": [1, 7],
+        "dependencies": [
+          1,
+          7
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -129,7 +140,10 @@
         "lineNumber": 9,
         "text": "¬(c = a)",
         "justification": "Generality 6",
-        "dependencies": [2, 7],
+        "dependencies": [
+          2,
+          7
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -137,7 +151,9 @@
         "lineNumber": 10,
         "text": "center(b, α), on(a, α)",
         "justification": "let-circle",
-        "dependencies": [8],
+        "dependencies": [
+          8
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -145,7 +161,10 @@
         "lineNumber": 11,
         "text": "on(d, α)",
         "justification": "Segment transfer 3a",
-        "dependencies": [10, 5],
+        "dependencies": [
+          10,
+          5
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -153,7 +172,9 @@
         "lineNumber": 12,
         "text": "center(c, β), on(a, β)",
         "justification": "let-circle",
-        "dependencies": [9],
+        "dependencies": [
+          9
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -161,7 +182,10 @@
         "lineNumber": 13,
         "text": "on(d, β)",
         "justification": "Segment transfer 3a",
-        "dependencies": [12, 6],
+        "dependencies": [
+          12,
+          6
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -177,7 +201,11 @@
         "lineNumber": 15,
         "text": "¬(α = β)",
         "justification": "Generality 5d",
-        "dependencies": [10, 12, 3],
+        "dependencies": [
+          10,
+          12,
+          3
+        ],
         "depth": 1,
         "status": "?"
       },
@@ -185,7 +213,14 @@
         "lineNumber": 16,
         "text": "intersects(α, β)",
         "justification": "Intersection 6",
-        "dependencies": [15, 10, 11, 12, 13, 14],
+        "dependencies": [
+          15,
+          10,
+          11,
+          12,
+          13,
+          14
+        ],
         "depth": 1,
         "status": "?"
       },
@@ -193,7 +228,17 @@
         "lineNumber": 17,
         "text": "¬(same-side(a, d, L))",
         "justification": "Circle 4",
-        "dependencies": [15, 16, 10, 11, 12, 13, 14, 1, 2],
+        "dependencies": [
+          15,
+          16,
+          10,
+          11,
+          12,
+          13,
+          14,
+          1,
+          2
+        ],
         "depth": 1,
         "status": "?"
       },
@@ -201,7 +246,10 @@
         "lineNumber": 18,
         "text": "⊥",
         "justification": "Contradiction",
-        "dependencies": [4, 17],
+        "dependencies": [
+          4,
+          17
+        ],
         "depth": 1,
         "status": "?"
       },
@@ -209,7 +257,9 @@
         "lineNumber": 19,
         "text": "d = a",
         "justification": "⊥-elim",
-        "dependencies": [14],
+        "dependencies": [
+          14
+        ],
         "depth": 0,
         "status": "?"
       }

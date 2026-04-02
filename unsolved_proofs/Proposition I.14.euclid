@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.14",
     "title": "Converse of Supplementary",
-    "statement": "If adjacent angles on one side sum to two right angles, the lines form a straight line."
+    "statement": "If adjacent angles on one side sum to two right angles, the lines form a straight line.",
+    "difficulty": 1,
+    "hints": [
+      "This is directly Angle transfer 7 — betweenness from supplementary angles."
+    ]
   },
   "canvas": {
     "points": [

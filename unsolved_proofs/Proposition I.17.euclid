@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.17",
     "title": "Two Angles Less Than Two Right Angles",
-    "statement": "Any two angles of a triangle are together less than two right angles."
+    "statement": "Any two angles of a triangle are together less than two right angles.",
+    "difficulty": 2,
+    "hints": [
+      "This follows from Prop.I.16 applied to both remote interior angles."
+    ]
   },
   "canvas": {
     "points": [

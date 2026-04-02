@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.7",
     "title": "Unique Triangle on Segment",
-    "statement": "Given a segment, there cannot be two distinct triangles on the same side with equal corresponding sides."
+    "statement": "Given a segment, there cannot be two distinct triangles on the same side with equal corresponding sides.",
+    "difficulty": 4,
+    "hints": [
+      "Use Prop.I.5 to show base angles of the isosceles sub-triangles are equal.",
+      "Apply proof by contradiction: assume C ≠ D and derive contradictory angle inequalities."
+    ]
   },
   "canvas": {
     "points": [

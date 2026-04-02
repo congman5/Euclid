@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.9",
     "title": "Bisect an Angle",
-    "statement": "To bisect a given rectilineal angle."
+    "statement": "To bisect a given rectilineal angle.",
+    "difficulty": 4,
+    "hints": [
+      "Use Prop.I.10 to bisect a segment, then apply SSS to prove the angle equality.",
+      "The proof depends on I.10 (not I.10 on I.9) to break the historical circular dependency."
+    ]
   },
   "canvas": {
     "points": [

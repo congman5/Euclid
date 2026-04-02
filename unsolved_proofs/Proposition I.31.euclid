@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.31",
     "title": "Construct Parallel Through a Point",
-    "statement": "Through a given point, draw a line parallel to a given line."
+    "statement": "Through a given point, draw a line parallel to a given line.",
+    "difficulty": 2,
+    "hints": [
+      "Use Prop.I.23 to copy an angle and Prop.I.27 to establish parallelism."
+    ]
   },
   "canvas": {
     "points": [

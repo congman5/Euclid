@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.39",
     "title": "Equal Triangles on Same Base Are Between Parallels",
-    "statement": "Equal triangles on the same base and same side are between the same parallels."
+    "statement": "Equal triangles on the same base and same side are between the same parallels.",
+    "difficulty": 3,
+    "hints": [
+      "Prove by contradiction: assume not parallel, construct the parallel through A.",
+      "The triangle on the new parallel has the same area (I.37), contradicting uniqueness."
+    ]
   },
   "canvas": {
     "points": [

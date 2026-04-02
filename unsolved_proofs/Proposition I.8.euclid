@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.8",
     "title": "SSS Congruence",
-    "statement": "If two triangles have three sides pairwise equal, they are congruent."
+    "statement": "If two triangles have three sides pairwise equal, they are congruent.",
+    "difficulty": 1,
+    "hints": [
+      "This is directly the SSS superposition axiom."
+    ]
   },
   "canvas": {
     "points": [

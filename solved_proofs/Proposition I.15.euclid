@@ -2,7 +2,13 @@
   "format": "euclid-proof",
   "version": "1.0.0",
   "program": "Euclid Elements Simulator (Python)",
-  "metadata": {},
+  "metadata": {
+    "difficulty": 2,
+    "hints": [
+      "Apply Prop.I.13 twice to get two supplementary angle pairs.",
+      "Use CN3 (subtraction) to derive the equality of vertical angles."
+    ]
+  },
   "canvas": {
     "points": [
       {

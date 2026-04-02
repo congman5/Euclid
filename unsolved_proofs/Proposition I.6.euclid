@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.6",
     "title": "Converse of Isosceles Base Angles",
-    "statement": "If two angles of a triangle are equal, the sides subtending them are equal."
+    "statement": "If two angles of a triangle are equal, the sides subtending them are equal.",
+    "difficulty": 3,
+    "hints": [
+      "Assume AB ≠ AC and derive a contradiction.",
+      "Use Prop.I.3 to cut off a segment equal to the shorter side, then apply Prop.I.5."
+    ]
   },
   "canvas": {
     "points": [

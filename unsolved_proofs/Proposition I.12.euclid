@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.12",
     "title": "Perpendicular from Point off Line",
-    "statement": "To draw a perpendicular to a given line from a point not on it."
+    "statement": "To draw a perpendicular to a given line from a point not on it.",
+    "difficulty": 3,
+    "hints": [
+      "Draw a circle from the external point cutting the line in two places.",
+      "Use Prop.I.10 to bisect the chord, then SAS to establish the right angle."
+    ]
   },
   "canvas": {
     "points": [

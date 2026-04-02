@@ -10,6 +10,8 @@ import time
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 
+from euclid_py.engine.integrity import compute_integrity_hash
+
 
 FILE_FORMAT = {
     "VERSION": "1.0.0",
@@ -20,11 +22,12 @@ FILE_FORMAT = {
 
 def serialize_to_json(canvas_state: dict, journal_state: Optional[dict] = None,
                       metadata: Optional[dict] = None) -> str:
+    meta = dict(metadata or {})
     output = {
         "format": "euclid-proof",
         "version": FILE_FORMAT["VERSION"],
         "program": FILE_FORMAT["PROGRAM"],
-        "metadata": metadata or {},
+        "metadata": meta,
         "canvas": {
             "points": canvas_state.get("points", []),
             "segments": canvas_state.get("segments", []),
@@ -36,13 +39,17 @@ def serialize_to_json(canvas_state: dict, journal_state: Optional[dict] = None,
         "exportedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     if journal_state is not None:
-        output["proof"] = {
+        proof = {
             "name": journal_state.get("name", ""),
             "premises": journal_state.get("premises", []),
             "goal": journal_state.get("goal", ""),
             "declarations": journal_state.get("declarations", {}),
             "steps": journal_state.get("steps", []),
         }
+        output["proof"] = proof
+        # If professor locks are active, recompute integrity hash
+        if meta.get("locked_features"):
+            meta["integrity_hash"] = compute_integrity_hash(proof, meta)
     return json.dumps(output, indent=2, ensure_ascii=False)
 
 
@@ -50,8 +57,9 @@ def deserialize_from_json(text: str) -> dict:
     data = json.loads(text)
     canvas = data.get("canvas", {})
     proof = data.get("proof", None)
+    metadata = data.get("metadata", {})
     result = {
-        "metadata": data.get("metadata", {}),
+        "metadata": metadata,
         "points": canvas.get("points", []),
         "segments": canvas.get("segments", []),
         "rays": canvas.get("rays", []),
@@ -59,6 +67,11 @@ def deserialize_from_json(text: str) -> dict:
         "angle_marks": canvas.get("angleMarks", []),
         "equality_groups": canvas.get("equalityGroups", []),
         "has_journal": proof is not None,
+        # Professor lock fields
+        "difficulty": metadata.get("difficulty", 1),
+        "hints": metadata.get("hints", []),
+        "locked_features": metadata.get("locked_features", {}),
+        "integrity_hash": metadata.get("integrity_hash", ""),
     }
     if proof is not None:
         result["journal"] = {
@@ -68,6 +81,11 @@ def deserialize_from_json(text: str) -> dict:
             "declarations": proof.get("declarations", {}),
             "steps": proof.get("steps", []),
         }
+        # Verify integrity if hash present
+        from euclid_py.engine.integrity import verify_integrity_hash
+        result["integrity_valid"] = verify_integrity_hash(proof, metadata)
+    else:
+        result["integrity_valid"] = True
     return result
 
 

@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.21",
     "title": "Interior Triangle Sides and Angles",
-    "statement": "If from the ends of a side of a triangle two lines are drawn to a point within the triangle, their sum is less than the remaining two sides, but the angle they contain is greater."
+    "statement": "If from the ends of a side of a triangle two lines are drawn to a point within the triangle, their sum is less than the remaining two sides, but the angle they contain is greater.",
+    "difficulty": 4,
+    "hints": [
+      "Extend BD to meet AC and use the triangle inequality on sub-triangles.",
+      "Apply Prop.I.16 and Prop.I.20 to the sub-triangles formed."
+    ]
   },
   "canvas": {
     "points": [

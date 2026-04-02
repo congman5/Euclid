@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.28",
     "title": "Exterior Angle Equals Opposite Interior Implies Parallel",
-    "statement": "If exterior angle equals opposite interior, the lines are parallel."
+    "statement": "If exterior angle equals opposite interior, the lines are parallel.",
+    "difficulty": 3,
+    "hints": [
+      "Reduce to Prop.I.27 using Prop.I.13 (supplementary angles) or Prop.I.15 (vertical angles)."
+    ]
   },
   "canvas": {
     "points": [

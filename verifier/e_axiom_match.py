@@ -79,7 +79,7 @@ def _build_registry() -> None:
     _register_group("Same-side", SAME_SIDE_AXIOMS)
     _register_group("Pasch", PASCH_AXIOMS)
     _register_group("Triple incidence", TRIPLE_INCIDENCE_AXIOMS)
-    _CIRCLE_LABELS = ["1", "2a", "2b", "2c", "2d", "3a", "3b", "3c", "3d", "4", "5"]
+    _CIRCLE_LABELS = ["1", "2a", "2b", "2c", "2d", "3a", "3b", "3c", "3d", "4"]
     _register_group("Circle", CIRCLE_AXIOMS, _CIRCLE_LABELS)
     _INTER_LABELS = ["1", "2a", "2b", "2c", "2d", "3", "4a", "4b", "5", "6"]
     _register_group("Intersection", INTERSECTION_AXIOMS, _INTER_LABELS)
@@ -253,10 +253,12 @@ def _match_single(
     """
     schema_sorts = _infer_schema_sorts(clause)
 
-    # Partition concrete variables by sort
-    points = [v for v, s in variables.items() if s == Sort.POINT]
-    lines = [v for v, s in variables.items() if s == Sort.LINE]
-    circles = [v for v, s in variables.items() if s == Sort.CIRCLE]
+    # Partition concrete variables by sort (sorted for determinism —
+    # _dep_vars insertion order depends on set iteration which varies
+    # with PYTHONHASHSEED).
+    points = sorted(v for v, s in variables.items() if s == Sort.POINT)
+    lines = sorted(v for v, s in variables.items() if s == Sort.LINE)
+    circles = sorted(v for v, s in variables.items() if s == Sort.CIRCLE)
 
     # Also extract variables from the target and dep_facts that might
     # not be in the proof-level variables dict

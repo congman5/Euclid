@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.38",
     "title": "Triangles on Equal Bases Between Parallels",
-    "statement": "Triangles on equal bases and between the same parallels have equal area."
+    "statement": "Triangles on equal bases and between the same parallels have equal area.",
+    "difficulty": 2,
+    "hints": [
+      "Same approach as Prop.I.37 but with equal bases instead of the same base."
+    ]
   },
   "canvas": {
     "points": [

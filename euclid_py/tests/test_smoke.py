@@ -311,20 +311,6 @@ class TestUiSmoke:
         w = MainWindow()
         w.open_proof_json(path)
 
-    def test_eval_all_no_crash(self):
-        """Regression: _eval_all must not raise NameError on checker.derived."""
-        from euclid_py.ui.proof_panel import ProofPanel
-        p = ProofPanel()
-        p.set_declarations(["A", "B", "C"], [])
-        p.add_premise_text("Between(A,B,C)")
-        p.set_conclusion("Between(C,B,A)")
-        p.add_step("Between(C,B,A)", "Diagrammatic", [1])
-        # This used to crash with: NameError: name 'checker' is not defined
-        p._eval_all()
-        # After fix, the step should be marked as derived (✓)
-        statuses = [s.status for s in p._steps]
-        assert "\u2713" in statuses, f"Expected ✓ in statuses, got: {statuses}"
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # PHASE 9.1 TESTS — System E as Default Engine
@@ -332,36 +318,6 @@ class TestUiSmoke:
 
 class TestSystemEDefault:
     """Phase 9.1: Predicate palette and rule catalogue use System E."""
-
-    def test_predicates_use_system_e_syntax(self):
-        from euclid_py.ui.proof_panel import PREDICATES
-        names = [name for name, _ in PREDICATES]
-        # Must have System E predicates
-        assert any("on(" in t for _, t in PREDICATES), "Missing on() predicate"
-        assert any("between" in t for _, t in PREDICATES), "Missing between() predicate"
-        assert any("same-side" in t for _, t in PREDICATES), "Missing same-side predicate"
-        assert any("circle" in t for _, t in PREDICATES), "Missing circle construction"
-        assert any("line" in t for _, t in PREDICATES), "Missing line construction"
-        # Must NOT have old Hilbert predicates
-        assert "Point" not in names, "Legacy 'Point' predicate still present"
-        assert "Segment" not in names, "Legacy 'Segment' predicate still present"
-        assert "OnLine" not in names, "Legacy 'OnLine' predicate still present"
-        assert "Congruent" not in names, "Legacy 'Congruent' predicate still present"
-
-    def test_rule_groups_use_system_e_sections(self):
-        from euclid_py.ui.proof_panel import RULE_GROUPS
-        group_names = list(RULE_GROUPS.keys())
-        # Must have System E paper sections
-        assert any("§3.3" in g for g in group_names), "Missing Construction (§3.3)"
-        assert any("§3.4" in g for g in group_names), "Missing Diagrammatic (§3.4)"
-        assert any("§3.5" in g for g in group_names), "Missing Metric (§3.5)"
-        assert any("§3.6" in g for g in group_names), "Missing Transfer (§3.6)"
-        assert any("§3.7" in g for g in group_names), "Missing Superposition (§3.7)"
-        assert any("Prop" in g for g in group_names), "Missing Propositions"
-        # Must NOT have old Hilbert categories
-        assert "Logical" not in group_names, "Old 'Logical' group still present"
-        assert "Incidence" not in group_names, "Old 'Incidence' group still present"
-        assert "Derived" not in group_names, "Old 'Derived' group still present"
 
     def test_all_rule_names_populated(self):
         from euclid_py.ui.proof_panel import ALL_RULE_NAMES

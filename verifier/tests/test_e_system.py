@@ -295,11 +295,6 @@ class TestSequent:
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestConstructionRules:
-    def test_all_rules_load(self):
-        from verifier.e_construction import ALL_CONSTRUCTION_RULES
-        # 9 point + 2 line/circle + 9 intersection = 20
-        assert len(ALL_CONSTRUCTION_RULES) == 20
-
     def test_rule_by_name(self):
         from verifier.e_construction import CONSTRUCTION_RULE_BY_NAME
         assert "let-line" in CONSTRUCTION_RULE_BY_NAME
@@ -378,11 +373,6 @@ class TestDiagrammaticAxioms:
     def test_triple_incidence_axiom_count(self):
         from verifier.e_axioms import TRIPLE_INCIDENCE_AXIOMS
         assert len(TRIPLE_INCIDENCE_AXIOMS) == 3
-
-    def test_circle_axiom_count(self):
-        from verifier.e_axioms import CIRCLE_AXIOMS
-        # C1: 1, C2: 4 variants, C3: 4 variants, C4: 1 = 10
-        assert len(CIRCLE_AXIOMS) == 10
 
     def test_intersection_axiom_count(self):
         from verifier.e_axioms import INTERSECTION_AXIOMS

@@ -5,7 +5,13 @@
   "metadata": {
     "proposition": "Proposition I.2",
     "title": "Transfer a Length to a Point",
-    "statement": "To place at a given point a straight-line equal to a given straight-line."
+    "statement": "To place at a given point a straight-line equal to a given straight-line.",
+    "difficulty": 3,
+    "hints": [
+      "First construct an equilateral triangle on segment AB using Prop.I.1.",
+      "Extend sides of that triangle using circle constructions.",
+      "Use Segment transfer axioms to establish the equality."
+    ]
   },
   "canvas": {
     "points": [

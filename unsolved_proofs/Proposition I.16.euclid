@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.16",
     "title": "Exterior Angle Theorem",
-    "statement": "An exterior angle of a triangle is greater than either remote interior angle."
+    "statement": "An exterior angle of a triangle is greater than either remote interior angle.",
+    "difficulty": 3,
+    "hints": [
+      "Extend BC beyond C and bisect the extended segment.",
+      "Use SAS to show the exterior angle exceeds each remote interior angle."
+    ]
   },
   "canvas": {
     "points": [

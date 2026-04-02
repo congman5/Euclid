@@ -6,23 +6,6 @@ from verifier.unified_checker import verify_e_proof_json
 
 SOLVED = os.path.join(os.path.dirname(__file__), "..", "solved_proofs")
 
-def load_euclid(path):
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    proof = data["proof"]
-    premises = proof.get("premises", [])
-    lines = []
-    for i, prem in enumerate(premises, start=1):
-        lines.append({"id": i, "depth": 0, "statement": prem,
-                       "justification": "Given", "refs": []})
-    for step in proof.get("steps", []):
-        lines.append({"id": step["lineNumber"], "depth": step.get("depth", 0),
-                       "statement": step["text"],
-                       "justification": step["justification"],
-                       "refs": step.get("dependencies", [])})
-    return {"name": proof.get("name", ""), "declarations": proof.get("declarations", {}),
-            "premises": premises, "goal": proof.get("goal", ""), "lines": lines}
-
 ok = 0
 fail = 0
 results = []
@@ -30,9 +13,13 @@ for fn in sorted(os.listdir(SOLVED)):
     if not fn.endswith(".euclid"):
         continue
     path = os.path.join(SOLVED, fn)
-    pj = load_euclid(path)
-    r = verify_e_proof_json(pj)
-    n = len(pj["lines"])
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    r = verify_e_proof_json(data)
+    proof = data.get("proof", data)
+    steps = proof.get("steps", [])
+    premises = proof.get("premises", [])
+    n = len(premises) + len(steps)
     nok = sum(1 for lr in r.line_results.values() if lr.valid)
     status = "PASS" if r.accepted else "FAIL"
     if r.accepted:

@@ -5,7 +5,13 @@
   "metadata": {
     "proposition": "Proposition I.47",
     "title": "Pythagorean Theorem",
-    "statement": "In right-angled triangles, the square on the hypotenuse equals the sum of the squares on the other two sides."
+    "statement": "In right-angled triangles, the square on the hypotenuse equals the sum of the squares on the other two sides.",
+    "difficulty": 5,
+    "hints": [
+      "Construct squares on each side of the triangle.",
+      "Draw a perpendicular from the right angle vertex to the hypotenuse.",
+      "Use Prop.I.41 (parallelogram = 2×triangle) and Prop.I.14 (supplementary → collinear)."
+    ]
   },
   "canvas": {
     "points": [

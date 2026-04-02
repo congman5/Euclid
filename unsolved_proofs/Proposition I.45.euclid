@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.45",
     "title": "Construct Parallelogram Equal to Rectilineal Figure",
-    "statement": "To construct a parallelogram equal in area to a given rectilineal figure in a given angle."
+    "statement": "To construct a parallelogram equal in area to a given rectilineal figure in a given angle.",
+    "difficulty": 4,
+    "hints": [
+      "Divide the rectilineal figure into triangles.",
+      "Apply Prop.I.42 and Prop.I.44 iteratively to build up the parallelogram."
+    ]
   },
   "canvas": {
     "points": [

@@ -287,42 +287,6 @@ CIRCLE_AXIOMS: List[Clause] = [
             _neg(Center("a", "\u03b1")), _neg(Center("b", "\u03b2")),
             _neg(On("a", "L")), _neg(On("b", "L")),
             _neg(SameSide("c", "d", "L"))),
-
-    # C5. Circle-circle opposite-side same-side (Euclid I.9 interiority)
-    #
-    #     center(b,α) ∧ center(c,β) ∧ on(c,α) ∧ on(b,β)        [reciprocal]
-    #     ∧ on(e,α) ∧ on(e,β)                                    [e on both]
-    #     ∧ on(b,K) ∧ on(c,K)                                    [center-line]
-    #     ∧ ¬on(a,K) ∧ ¬same-side(e,a,K) ∧ ¬on(e,K)            [e opp a]
-    #     ∧ on(a,M) ∧ on(b,M) ∧ ¬on(c,M) ∧ ¬on(e,M)           [line M]
-    #     ∧ ab = ac                                               [equidistant]
-    #     → same-side(e,c,M)
-    #
-    #     When two circles of equal radius (each center on the other's
-    #     circle) intersect, and e is the intersection on the opposite
-    #     side of the center-line K from a point a equidistant from
-    #     both centers, then e lies on the same side of any line M
-    #     through a and one center as the other center.
-    #
-    #     This axiom fills the "interiority gap" identified by Beeson,
-    #     Narboux & Wiedijk (2018) in Euclid's proof of I.9.  It is a
-    #     theorem of Tarski's axiom system (provable via Pasch and the
-    #     circle axioms) but is not derivable from the diagrammatic
-    #     axiom set of Avigad, Dean & Mumma (2009) alone.
-    #     Verified by exhaustive numerical testing (>5 000 000 cases,
-    #     0 violations).
-    _clause(_neg(Center("b", "\u03b1")), _neg(Center("c", "\u03b2")),
-            _neg(On("c", "\u03b1")), _neg(On("b", "\u03b2")),
-            _neg(On("e", "\u03b1")), _neg(On("e", "\u03b2")),
-            _neg(On("b", "K")), _neg(On("c", "K")),
-            _pos(On("a", "K")),
-            _pos(SameSide("e", "a", "K")),
-            _pos(On("e", "K")),
-            _neg(On("a", "M")), _neg(On("b", "M")),
-            _pos(On("c", "M")),
-            _pos(On("e", "M")),
-            _neg(Equals(SegmentTerm("a", "b"), SegmentTerm("a", "c"))),
-            _pos(SameSide("e", "c", "M"))),
 ]
 
 # ── Intersection axioms ───────────────────────────────────────────────

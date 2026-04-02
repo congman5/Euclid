@@ -2,34 +2,133 @@
   "format": "euclid-proof",
   "version": "1.0.0",
   "program": "Euclid Elements Simulator (Python)",
-  "metadata": {},
+  "metadata": {
+    "difficulty": 1,
+    "hints": [
+      "This is directly the SAS superposition axiom."
+    ]
+  },
   "canvas": {
     "points": [
-      {"label": "A", "x": 150, "y": 300},
-      {"label": "B", "x": 50, "y": 450},
-      {"label": "C", "x": 300, "y": 450},
-      {"label": "D", "x": 500, "y": 300},
-      {"label": "E", "x": 400, "y": 450},
-      {"label": "F", "x": 650, "y": 450}
+      {
+        "label": "A",
+        "x": 150,
+        "y": 300
+      },
+      {
+        "label": "B",
+        "x": 50,
+        "y": 450
+      },
+      {
+        "label": "C",
+        "x": 300,
+        "y": 450
+      },
+      {
+        "label": "D",
+        "x": 500,
+        "y": 300
+      },
+      {
+        "label": "E",
+        "x": 400,
+        "y": 450
+      },
+      {
+        "label": "F",
+        "x": 650,
+        "y": 450
+      }
     ],
     "segments": [
-      {"from": "A", "to": "B", "color": "#2d70b3"},
-      {"from": "A", "to": "C", "color": "#2d70b3"},
-      {"from": "B", "to": "C", "color": "#2d70b3"},
-      {"from": "D", "to": "E", "color": "#cc3333"},
-      {"from": "D", "to": "F", "color": "#cc3333"},
-      {"from": "E", "to": "F", "color": "#cc3333"}
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "E",
+        "color": "#cc3333"
+      },
+      {
+        "from": "D",
+        "to": "F",
+        "color": "#cc3333"
+      },
+      {
+        "from": "E",
+        "to": "F",
+        "color": "#cc3333"
+      }
     ],
     "rays": [],
     "circles": [],
     "angleMarks": [
-      {"vertex": "A", "from": "B", "to": "C", "color": "#2d70b3"},
-      {"vertex": "D", "from": "E", "to": "F", "color": "#cc3333"}
+      {
+        "vertex": "A",
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "vertex": "D",
+        "from": "E",
+        "to": "F",
+        "color": "#cc3333"
+      }
     ],
     "equalityGroups": [
-      [1, [["A","B"], ["D","E"]]],
-      [1, [["A","C"], ["D","F"]]],
-      [2, [["B","C"], ["E","F"]]]
+      [
+        1,
+        [
+          [
+            "A",
+            "B"
+          ],
+          [
+            "D",
+            "E"
+          ]
+        ]
+      ],
+      [
+        1,
+        [
+          [
+            "A",
+            "C"
+          ],
+          [
+            "D",
+            "F"
+          ]
+        ]
+      ],
+      [
+        2,
+        [
+          [
+            "B",
+            "C"
+          ],
+          [
+            "E",
+            "F"
+          ]
+        ]
+      ]
     ]
   },
   "exportedAt": "2026-03-14T06:00:00Z",
@@ -48,7 +147,14 @@
     ],
     "goal": "bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
     "declarations": {
-      "points": ["A", "B", "C", "D", "E", "F"],
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
       "lines": []
     },
     "steps": [
@@ -56,7 +162,17 @@
         "lineNumber": 10,
         "text": "bc = ef, ∠abc = ∠def, ∠acb = ∠dfe, △abc = △def",
         "justification": "SAS",
-        "dependencies": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
         "depth": 0,
         "status": "?"
       }

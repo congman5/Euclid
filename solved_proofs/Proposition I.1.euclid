@@ -2,7 +2,14 @@
   "format": "euclid-proof",
   "version": "1.0.0",
   "program": "Euclid Elements Simulator (Python)",
-  "metadata": {},
+  "metadata": {
+    "difficulty": 2,
+    "hints": [
+      "Construct two circles, each centered at one endpoint passing through the other.",
+      "The intersection of the circles gives the third vertex.",
+      "Use Segment transfer to show all three sides are equal."
+    ]
+  },
   "canvas": {
     "points": [
       {

@@ -484,30 +484,40 @@ def _make_prop_i9():
     from .e_library import PROP_I_9
     seq = PROP_I_9.sequent
     return _proof_from_sequent("Prop.I.9", [
+        # 1. Circle α(a, ab) and intersect ray ac → g, d
         ProofStep(id=1, kind=StepKind.CONSTRUCTION,
-            description="let-point-on-line",
-            new_vars=[("d", Sort.POINT)],
-            assertions=[_pos(On("d", "M")), _neg(Equals("d", "a"))]),
+            description="circle α(a,ab), intersections → g, d on N",
+            new_vars=[("g", Sort.POINT), ("d", Sort.POINT)],
+            assertions=[
+                _pos(Equals(SegmentTerm("a", "g"), SegmentTerm("a", "b"))),
+                _pos(Equals(SegmentTerm("a", "d"), SegmentTerm("a", "b"))),
+                _pos(On("g", "N")), _pos(On("d", "N")),
+                _neg(Equals("d", "b"))],
+            theorem_name="Prop.I.9"),
+        # 2. Apply Prop.I.10 to segment bd → midpoint e
         ProofStep(id=2, kind=StepKind.CONSTRUCTION,
-            description="cut equal segment on ray ac (I.3)",
-            new_vars=[("f", Sort.POINT)],
-            assertions=[_pos(On("f", "N")),
-                        _pos(Equals(SegmentTerm("a", "d"),
-                                    SegmentTerm("a", "f")))],
-            theorem_name="Prop.I.3"),
-        ProofStep(id=3, kind=StepKind.CONSTRUCTION,
-            description="equilateral triangle on df (I.1)",
+            description="bisect bd (I.10) → midpoint e",
+            theorem_name="Prop.I.10",
             new_vars=[("e", Sort.POINT)],
-            assertions=[_pos(Equals(SegmentTerm("d", "f"),
-                                    SegmentTerm("d", "e"))),
-                        _pos(Equals(SegmentTerm("d", "f"),
-                                    SegmentTerm("f", "e")))],
-            theorem_name="Prop.I.1"),
-        ProofStep(id=4, kind=StepKind.METRIC,
-            description="by SSS (I.8): ∠bae = ∠cae",
-            assertions=[_pos(Equals(AngleTerm("b", "a", "e"),
-                                    AngleTerm("c", "a", "e")))],
-            theorem_name="Prop.I.8"),
+            assertions=[
+                _pos(Between("b", "e", "d")),
+                _pos(Equals(SegmentTerm("b", "e"),
+                            SegmentTerm("e", "d")))]),
+        # 3. SSS on △abe ≅ △ade → ∠bae = ∠dae
+        ProofStep(id=3, kind=StepKind.METRIC,
+            description="SSS on abe/ade → ∠bae = ∠dae",
+            assertions=[
+                _pos(Equals(AngleTerm("b", "a", "e"),
+                            AngleTerm("d", "a", "e")))],
+            theorem_name="Prop.I.9"),
+        # 4. DA6 supplementary angles → ∠eac = ∠ead, hence ∠bae = ∠cae
+        ProofStep(id=4, kind=StepKind.DIAGRAMMATIC,
+            description="DA6 supplementary + CN1 → ∠bae = ∠cae",
+            assertions=[
+                _pos(Equals(AngleTerm("b", "a", "e"),
+                            AngleTerm("c", "a", "e")))],
+            theorem_name="Prop.I.9"),
+        # 5. Same-side conclusions via Pasch
         ProofStep(id=5, kind=StepKind.DIAGRAMMATIC,
             description="same-side conclusions",
             assertions=[_pos(SameSide("e", "c", "M")),
@@ -516,30 +526,45 @@ def _make_prop_i9():
     ], extra_free_vars=[("M", Sort.LINE), ("N", Sort.LINE)])
 
 
-# ── Prop I.10: Bisect segment ───────────────────────────────────────
+# ── Prop I.10: Bisect segment (Gupta method) ────────────────────────
 
 def _make_prop_i10():
     from .e_library import PROP_I_10
     seq = PROP_I_10.sequent
     return _proof_from_sequent("Prop.I.10", [
-        # 1. Equilateral triangle on ab (I.1) → c
-        ProofStep(id=1, kind=StepKind.THEOREM_APP,
-            description="equilateral triangle on ab (I.1)",
-            theorem_name="Prop.I.1",
-            var_map={"a": "a", "b": "b", "c": "c"},
-            new_vars=[("c", Sort.POINT)],
+        # 1. Circles α(a, ab) and β(b, ba), circle-circle-two → c, e
+        ProofStep(id=1, kind=StepKind.CONSTRUCTION,
+            description="circle-circle-two → c, e (Gupta)",
+            new_vars=[("c", Sort.POINT), ("e", Sort.POINT)],
             assertions=[
-                _pos(Equals(SegmentTerm("a", "b"), SegmentTerm("a", "c"))),
-                _pos(Equals(SegmentTerm("a", "b"), SegmentTerm("b", "c"))),
-                _neg(Equals("c", "a")), _neg(Equals("c", "b"))]),
-        # 2. Bisect angle acb (I.9) → d on L between a and b
+                _pos(Equals(SegmentTerm("a", "c"), SegmentTerm("a", "b"))),
+                _pos(Equals(SegmentTerm("b", "c"), SegmentTerm("b", "a"))),
+                _pos(Equals(SegmentTerm("a", "e"), SegmentTerm("a", "b"))),
+                _pos(Equals(SegmentTerm("b", "e"), SegmentTerm("b", "a"))),
+                _neg(Equals("c", "e"))],
+            theorem_name="Prop.I.10"),
+        # 2. Line K(c,e), intersection d with L, between(a,d,b)
         ProofStep(id=2, kind=StepKind.CONSTRUCTION,
-            description="bisect angle acb (I.9)",
-            new_vars=[("d", Sort.POINT)],
-            assertions=[_pos(Between("a", "d", "b")),
-                        _pos(Equals(SegmentTerm("a", "d"),
-                                    SegmentTerm("d", "b")))],
-            theorem_name="Prop.I.4"),
+            description="line K(c,e), intersection d with L",
+            new_vars=[("d", Sort.POINT), ("K", Sort.LINE)],
+            assertions=[
+                _pos(On("d", "L")), _pos(On("d", "K")),
+                _pos(Between("a", "d", "b"))],
+            theorem_name="Prop.I.10"),
+        # 3. SSS on △ace ≅ △bce → ∠ace = ∠bce
+        ProofStep(id=3, kind=StepKind.METRIC,
+            description="SSS on ace/bce → ∠ace = ∠bce",
+            assertions=[
+                _pos(Equals(AngleTerm("a", "c", "e"),
+                            AngleTerm("b", "c", "e")))],
+            theorem_name="Prop.I.10"),
+        # 4. DA4 angle transfer + SAS on △acd ≅ △bcd → ad = db
+        ProofStep(id=4, kind=StepKind.METRIC,
+            description="SAS on acd/bcd → ad = db",
+            assertions=[
+                _pos(Equals(SegmentTerm("a", "d"),
+                            SegmentTerm("d", "b")))],
+            theorem_name="Prop.I.10"),
     ], extra_free_vars=[("L", Sort.LINE)])
 
 

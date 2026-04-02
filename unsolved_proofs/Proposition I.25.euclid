@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.25",
     "title": "Converse Hinge Theorem",
-    "statement": "If two sides equal two sides and the base is greater, the angle is greater."
+    "statement": "If two sides equal two sides and the base is greater, the angle is greater.",
+    "difficulty": 3,
+    "hints": [
+      "Prove by contradiction using Prop.I.24 (the forward direction)."
+    ]
   },
   "canvas": {
     "points": [

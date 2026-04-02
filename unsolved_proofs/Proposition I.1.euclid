@@ -5,7 +5,13 @@
   "metadata": {
     "proposition": "Proposition I.1",
     "title": "Equilateral Triangle Construction",
-    "statement": "To construct an equilateral triangle on a given finite straight-line."
+    "statement": "To construct an equilateral triangle on a given finite straight-line.",
+    "difficulty": 2,
+    "hints": [
+      "Construct two circles, each centered at one endpoint passing through the other.",
+      "The intersection of the circles gives the third vertex.",
+      "Use Segment transfer to show all three sides are equal."
+    ]
   },
   "canvas": {
     "points": [

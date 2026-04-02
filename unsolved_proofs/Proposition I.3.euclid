@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.3",
     "title": "Cut Off Equal Length",
-    "statement": "Given two unequal straight-lines, cut off from the greater a straight-line equal to the less."
+    "statement": "Given two unequal straight-lines, cut off from the greater a straight-line equal to the less.",
+    "difficulty": 2,
+    "hints": [
+      "Use Prop.I.2 to transfer the shorter segment to an endpoint of the longer.",
+      "Construct a circle centered at A with radius equal to the shorter segment."
+    ]
   },
   "canvas": {
     "points": [

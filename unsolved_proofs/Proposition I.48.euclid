@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.48",
     "title": "Converse of Pythagorean Theorem",
-    "statement": "If the square on one side equals the sum of squares on the other two, the angle opposite the first side is right."
+    "statement": "If the square on one side equals the sum of squares on the other two, the angle opposite the first side is right.",
+    "difficulty": 4,
+    "hints": [
+      "Construct a right triangle with the same two shorter sides using Props.I.11 and I.3.",
+      "Apply Prop.I.47 to the constructed triangle, then use SSS."
+    ]
   },
   "canvas": {
     "points": [

@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.15",
     "title": "Vertical Angles",
-    "statement": "Vertical angles are equal."
+    "statement": "Vertical angles are equal.",
+    "difficulty": 2,
+    "hints": [
+      "Apply Prop.I.13 twice to get two supplementary angle pairs.",
+      "Use CN3 (subtraction) to derive the equality of vertical angles."
+    ]
   },
   "canvas": {
     "points": [

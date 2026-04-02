@@ -5,7 +5,13 @@
   "metadata": {
     "proposition": "Proposition I.26",
     "title": "ASA and AAS Congruence",
-    "statement": "Triangles with two angles and a corresponding side equal are congruent."
+    "statement": "Triangles with two angles and a corresponding side equal are congruent.",
+    "difficulty": 4,
+    "hints": [
+      "Two cases: ASA and AAS. Both use proof by contradiction.",
+      "For ASA: assume a side is not equal, cut off an equal part, apply SAS, get contradictory angles.",
+      "For AAS: use Prop.I.4 after deriving the third angle."
+    ]
   },
   "canvas": {
     "points": [

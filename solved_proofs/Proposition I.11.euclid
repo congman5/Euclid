@@ -2,7 +2,13 @@
   "format": "euclid-proof",
   "version": "1.0.0",
   "program": "Euclid Elements Simulator (Python)",
-  "metadata": {},
+  "metadata": {
+    "difficulty": 3,
+    "hints": [
+      "Use Prop.I.3 to cut off equal segments on either side of the point.",
+      "Construct an equilateral triangle on that base, then use SAS."
+    ]
+  },
   "canvas": {
     "points": [
       {
@@ -139,7 +145,9 @@
         "lineNumber": 4,
         "text": "center(a, α), on(b, α)",
         "justification": "let-circle",
-        "dependencies": [3],
+        "dependencies": [
+          3
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -147,7 +155,9 @@
         "lineNumber": 5,
         "text": "inside(a, α)",
         "justification": "Generality 3",
-        "dependencies": [4],
+        "dependencies": [
+          4
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -155,7 +165,12 @@
         "lineNumber": 6,
         "text": "on(d, α), on(d, L), between(d, a, b)",
         "justification": "let-intersection-line-circle-extend",
-        "dependencies": [5, 1, 3, 2],
+        "dependencies": [
+          5,
+          1,
+          3,
+          2
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -163,7 +178,10 @@
         "lineNumber": 7,
         "text": "ad = ab",
         "justification": "Segment transfer 3b",
-        "dependencies": [4, 6],
+        "dependencies": [
+          4,
+          6
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -171,7 +189,9 @@
         "lineNumber": 8,
         "text": "¬(d = a)",
         "justification": "Betweenness 1b",
-        "dependencies": [6],
+        "dependencies": [
+          6
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -179,7 +199,9 @@
         "lineNumber": 9,
         "text": "¬(d = b)",
         "justification": "Betweenness 1c",
-        "dependencies": [6],
+        "dependencies": [
+          6
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -187,7 +209,9 @@
         "lineNumber": 10,
         "text": "db = df, db = bf, ¬(f = d), ¬(f = b)",
         "justification": "Prop.I.1",
-        "dependencies": [9],
+        "dependencies": [
+          9
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -195,7 +219,9 @@
         "lineNumber": 11,
         "text": "center(d, β), on(b, β)",
         "justification": "let-circle",
-        "dependencies": [9],
+        "dependencies": [
+          9
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -203,7 +229,9 @@
         "lineNumber": 12,
         "text": "inside(d, β)",
         "justification": "Generality 3",
-        "dependencies": [11],
+        "dependencies": [
+          11
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -211,7 +239,9 @@
         "lineNumber": 13,
         "text": "center(b, γ), on(d, γ)",
         "justification": "let-circle",
-        "dependencies": [9],
+        "dependencies": [
+          9
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -219,7 +249,9 @@
         "lineNumber": 14,
         "text": "inside(b, γ)",
         "justification": "Generality 3",
-        "dependencies": [13],
+        "dependencies": [
+          13
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -235,7 +267,10 @@
         "lineNumber": 16,
         "text": "on(f, β)",
         "justification": "Segment transfer 3a",
-        "dependencies": [11, 10],
+        "dependencies": [
+          11,
+          10
+        ],
         "depth": 1,
         "status": "?"
       },
@@ -243,7 +278,10 @@
         "lineNumber": 17,
         "text": "on(f, γ)",
         "justification": "Segment transfer 3a",
-        "dependencies": [13, 10],
+        "dependencies": [
+          13,
+          10
+        ],
         "depth": 1,
         "status": "?"
       },
@@ -251,7 +289,15 @@
         "lineNumber": 18,
         "text": "between(d, b, f)",
         "justification": "Circle 1",
-        "dependencies": [14, 6, 2, 15, 13, 17, 10],
+        "dependencies": [
+          14,
+          6,
+          2,
+          15,
+          13,
+          17,
+          10
+        ],
         "depth": 1,
         "status": "?"
       },
@@ -259,7 +305,15 @@
         "lineNumber": 19,
         "text": "between(b, d, f)",
         "justification": "Circle 1",
-        "dependencies": [12, 6, 2, 15, 11, 16, 10],
+        "dependencies": [
+          12,
+          6,
+          2,
+          15,
+          11,
+          16,
+          10
+        ],
         "depth": 1,
         "status": "?"
       },
@@ -267,7 +321,9 @@
         "lineNumber": 20,
         "text": "¬(between(d, b, f))",
         "justification": "Betweenness 1d",
-        "dependencies": [19],
+        "dependencies": [
+          19
+        ],
         "depth": 1,
         "status": "?"
       },
@@ -275,7 +331,11 @@
         "lineNumber": 21,
         "text": "⊥",
         "justification": "⊥-intro",
-        "dependencies": [15, 18, 20],
+        "dependencies": [
+          15,
+          18,
+          20
+        ],
         "depth": 1,
         "status": "?"
       },
@@ -283,7 +343,9 @@
         "lineNumber": 22,
         "text": "¬(on(f, L))",
         "justification": "⊥-elim",
-        "dependencies": [15],
+        "dependencies": [
+          15
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -291,7 +353,10 @@
         "lineNumber": 23,
         "text": "¬(a = f)",
         "justification": "Generality 6",
-        "dependencies": [1, 22],
+        "dependencies": [
+          1,
+          22
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -299,7 +364,9 @@
         "lineNumber": 24,
         "text": "df = bf",
         "justification": "CN1 — Transitivity",
-        "dependencies": [10],
+        "dependencies": [
+          10
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -315,7 +382,11 @@
         "lineNumber": 26,
         "text": "∠daf = ∠baf, ∠adf = ∠abf, ∠dfa = ∠bfa, △daf = △baf",
         "justification": "SSS",
-        "dependencies": [7, 24, 25],
+        "dependencies": [
+          7,
+          24,
+          25
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -323,7 +394,12 @@
         "lineNumber": 27,
         "text": "∠daf = ∟",
         "justification": "Angle transfer 3a",
-        "dependencies": [6, 2, 22, 26],
+        "dependencies": [
+          6,
+          2,
+          22,
+          26
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -331,7 +407,10 @@
         "lineNumber": 28,
         "text": "∠baf = ∟",
         "justification": "CN1 — Transitivity",
-        "dependencies": [26, 27],
+        "dependencies": [
+          26,
+          27
+        ],
         "depth": 0,
         "status": "?"
       }

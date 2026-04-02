@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.44",
     "title": "Apply Parallelogram to Line Segment",
-    "statement": "To apply a parallelogram equal to a given triangle to a given line in a given angle."
+    "statement": "To apply a parallelogram equal to a given triangle to a given line in a given angle.",
+    "difficulty": 5,
+    "hints": [
+      "This is one of the hardest constructions in Book I.",
+      "Use Prop.I.42 to build a parallelogram equal to the triangle, then apply Prop.I.43."
+    ]
   },
   "canvas": {
     "points": [

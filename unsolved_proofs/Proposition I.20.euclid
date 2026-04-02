@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.20",
     "title": "Triangle Inequality",
-    "statement": "In any triangle, the sum of any two sides is greater than the third."
+    "statement": "In any triangle, the sum of any two sides is greater than the third.",
+    "difficulty": 3,
+    "hints": [
+      "Extend BA beyond A to a point D with AD = AC.",
+      "Apply Prop.I.5 to the isosceles triangle and use Prop.I.19."
+    ]
   },
   "canvas": {
     "points": [

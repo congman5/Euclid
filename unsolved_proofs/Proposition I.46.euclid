@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.46",
     "title": "Construct a Square",
-    "statement": "To construct a square on a given straight-line."
+    "statement": "To construct a square on a given straight-line.",
+    "difficulty": 3,
+    "hints": [
+      "Construct a perpendicular at A using Prop.I.11.",
+      "Cut off the right length using Prop.I.3, then use Prop.I.34 to verify."
+    ]
   },
   "canvas": {
     "points": [

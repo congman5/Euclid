@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.40",
     "title": "Equal Triangles on Equal Bases Are Between Parallels",
-    "statement": "Equal triangles on equal bases and same side are between the same parallels."
+    "statement": "Equal triangles on equal bases and same side are between the same parallels.",
+    "difficulty": 3,
+    "hints": [
+      "Same as Prop.I.39 but with equal bases."
+    ]
   },
   "canvas": {
     "points": [

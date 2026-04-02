@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.33",
     "title": "Joining Equal Parallels",
-    "statement": "Lines joining equal and parallel segments on the same side are themselves equal and parallel."
+    "statement": "Lines joining equal and parallel segments on the same side are themselves equal and parallel.",
+    "difficulty": 2,
+    "hints": [
+      "Draw diagonal AC, apply Prop.I.29 for alternate angles, then SAS."
+    ]
   },
   "canvas": {
     "points": [

@@ -79,10 +79,10 @@ def _get_crash_logger() -> logging.Logger:
 # ===================================================================
 
 def _build_rule_groups():
-    """Build rule groups from System E axioms via unified_checker.
+    """Build rule groups and description lookup from System E axioms.
 
-    Filters out sub-axioms that proof authors never directly cite,
-    keeping the rule dropdown manageable.
+    Returns (groups, descriptions) where groups maps category label to
+    rule name lists, and descriptions maps rule name to formal axiom text.
     """
     from verifier.unified_checker import get_available_rules
     rules = get_available_rules()
@@ -102,15 +102,19 @@ def _build_rule_groups():
         ("proposition", "Propositions"),
     ])
     groups = OrderedDict()
+    descs = {}
     for cat, label in _CAT_LABELS.items():
-        names = [r.name for r in rules
-                 if r.category == cat and _visible(r.name)]
+        cat_rules = [r for r in rules
+                     if r.category == cat and _visible(r.name)]
+        names = [r.name for r in cat_rules]
         if names:
             groups[label] = names
-    return groups
+        for r in cat_rules:
+            descs[r.name] = r.description
+    return groups, descs
 
 
-RULE_GROUPS = _build_rule_groups()
+RULE_GROUPS, RULE_DESCRIPTIONS = _build_rule_groups()
 
 ALL_RULE_NAMES = []
 for _rules in RULE_GROUPS.values():
@@ -657,6 +661,7 @@ class FitchLineWidget(QFrame):
         )
         menu = QMenu(self)
         menu.setStyleSheet(_MENU_STYLE)
+        menu.setToolTipsVisible(True)
 
         # --- Search bar as a QWidgetAction at the top ---
         search_widget = QWidget()
@@ -675,16 +680,19 @@ class FitchLineWidget(QFrame):
         menu.addSeparator()
 
         # --- Build category submenus ---
-        all_entries: list[tuple[str, str, str]] = []
+        all_entries: list[tuple[str, str, str, str]] = []
         for grp, rules in RULE_GROUPS.items():
             for r in rules:
-                all_entries.append((r, r, grp))
+                desc = RULE_DESCRIPTIONS.get(r, "")
+                all_entries.append((r, r, grp, desc))
         # Add lemmas
         panel = self._find_proof_panel()
         if panel and panel._lemmas:
             for lem in panel._lemmas:
+                prem_str = ", ".join(lem.premises) if lem.premises else "\u2014"
+                lem_desc = f"{prem_str} \u21d2 {lem.goal}"
                 all_entries.append((
-                    lem.display_name(), lem.rule_name, "Lemmas"))
+                    lem.display_name(), lem.rule_name, "Lemmas", lem_desc))
 
         # Store references so we can rebuild on search
         self._rule_menu_ref = menu
@@ -701,20 +709,25 @@ class FitchLineWidget(QFrame):
             q = query.strip().lower()
             if q:
                 # Flat filtered list
-                for display, rule_name, cat in all_entries:
+                for display, rule_name, cat, desc in all_entries:
                     if q in display.lower() or q in cat.lower():
                         act = menu.addAction(f"{display}  ({cat})")
                         act.setData(rule_name)
+                        if desc:
+                            act.setToolTip(desc)
             else:
                 # Grouped submenus per category
                 seen_cats: dict[str, QMenu] = {}
-                for display, rule_name, cat in all_entries:
+                for display, rule_name, cat, desc in all_entries:
                     if cat not in seen_cats:
                         sub = menu.addMenu(cat)
                         sub.setStyleSheet(_MENU_STYLE)
+                        sub.setToolTipsVisible(True)
                         seen_cats[cat] = sub
                     act = seen_cats[cat].addAction(display)
                     act.setData(rule_name)
+                    if desc:
+                        act.setToolTip(desc)
 
         _rebuild_menu()
         search_edit.textChanged.connect(_rebuild_menu)
@@ -927,6 +940,11 @@ class ProofPanel(QWidget):
         self._verify_thread: Optional[QThread] = None
         self._verify_worker: Optional[_VerifyWorker] = None
         self._eval_buttons: List[QPushButton] = []
+        self._premises_locked: bool = False
+        self._goal_locked: bool = False
+        self._lemma_locked: bool = False
+        self._suppress_rebuild: bool = False
+        self._rebuild_needed: bool = False
         self.setMinimumWidth(380)
         self.setStyleSheet(
             "ProofPanel { background:" + _BG_PANEL + ";"
@@ -1002,13 +1020,13 @@ class ProofPanel(QWidget):
             b.clicked.connect(cb)
             row2.addWidget(b)
         row2.addStretch()
-        b = QPushButton("Lemma")
-        b.setFont(QFont("Segoe UI", 9))
-        b.setToolTip("Load a verified proof as a lemma")
-        b.setFixedHeight(22)
-        b.setStyleSheet(_btn_style)
-        b.clicked.connect(self._load_lemma)
-        row2.addWidget(b)
+        self._lemma_btn = QPushButton("Lemma")
+        self._lemma_btn.setFont(QFont("Segoe UI", 9))
+        self._lemma_btn.setToolTip("Load a verified proof as a lemma")
+        self._lemma_btn.setFixedHeight(22)
+        self._lemma_btn.setStyleSheet(_btn_style)
+        self._lemma_btn.clicked.connect(self._load_lemma)
+        row2.addWidget(self._lemma_btn)
         hvbox.addLayout(row2)
 
         root.addWidget(header)
@@ -1347,6 +1365,35 @@ class ProofPanel(QWidget):
         self._goal_status.setText("")
         self._goal_status.setStyleSheet("color:#999; background:transparent;")
 
+    def set_goal_locked(self, locked: bool):
+        """Prevent or allow editing of the goal field."""
+        self._goal_locked = locked
+        self._goal_edit.setReadOnly(locked)
+        self._goal_edit.setStyleSheet(
+            "QLineEdit { background: #e8e8ee; color: #5a5a72; border: none;"
+            " font-size: 13px; padding: 1px 2px; }"
+            if locked else
+            "QLineEdit { background: transparent; color: #1a1a2e; border: none;"
+            " font-size: 13px; padding: 1px 2px; }"
+        )
+
+    def set_premises_locked(self, locked: bool):
+        """Prevent or allow editing, adding, and removing premises."""
+        self._premises_locked = locked
+        if not self._suppress_rebuild:
+            self._rebuild_lines()
+        else:
+            self._rebuild_needed = True
+
+    def set_lemma_locked(self, locked: bool):
+        """Prevent or allow loading lemmas."""
+        self._lemma_locked = locked
+        self._lemma_btn.setEnabled(not locked)
+        if locked:
+            self._lemma_btn.setToolTip("Loading lemmas is restricted for this file")
+        else:
+            self._lemma_btn.setToolTip("Load a verified proof as a lemma")
+
     def set_declarations(self, points, lines):
         self._decl_points = list(points)
         self._decl_lines = list(lines)
@@ -1380,6 +1427,12 @@ class ProofPanel(QWidget):
         self._count_label.setText("")
         self._points_input.clear()
         self._lines_input.clear()
+        # Reset all feature locks (re-applied by _enforce_feature_locks on load)
+        self._premises_locked = False
+        self._goal_locked = False
+        self._lemma_locked = False
+        self.set_goal_locked(False)
+        self.set_lemma_locked(False)
         self._rebuild_lines()
 
     def _cancel_verification(self):
@@ -1495,32 +1548,52 @@ class ProofPanel(QWidget):
     # LINE REBUILD
     # ===============================================================
 
+    def begin_bulk_update(self):
+        """Suppress _rebuild_lines() calls until end_bulk_update()."""
+        self._suppress_rebuild = True
+        self._rebuild_needed = False
+
+    def end_bulk_update(self):
+        """End suppression and do a single rebuild if any were deferred."""
+        self._suppress_rebuild = False
+        if self._rebuild_needed:
+            self._rebuild_needed = False
+            self._rebuild_lines()
+
     def _rebuild_lines(self):
+        if self._suppress_rebuild:
+            self._rebuild_needed = True
+            return
         self._line_widgets = []
         self._prem_widgets = []
         while self._lines_layout.count():
             item = self._lines_layout.takeAt(0)
             if item.widget():
                 w = item.widget()
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()
 
         # -- Premise lines (depth 0, with InsertBars, above the Fitch bar) --
+        _parent = self._lines_container
         for i, prem_text in enumerate(self._premises):
-            # InsertBar before each premise
-            pbar = InsertBar(i, depth=0)
+            # InsertBar before each premise (hidden when premises locked)
+            pbar = InsertBar(i, depth=0, parent=_parent)
             pbar.insert_requested.connect(self._on_insert_premise_bar)
+            pbar.setVisible(not self._premises_locked)
             self._lines_layout.addWidget(pbar)
 
             prem_line_num = i + 1
             prem_step = ProofStep(prem_line_num, prem_text, "Given", [], 0)
             prem_step.status = "\u2713"  # premises are always true
-            pw = FitchLineWidget(prem_step)
+            pw = FitchLineWidget(prem_step, parent=_parent)
             pw._rule_label.setVisible(False)
             pw._rule_btn.setVisible(False)
             pw._colon_label.setVisible(False)
             pw._refs_edit.setVisible(False)
             pw._status_label.setVisible(False)
+            if self._premises_locked:
+                pw._text_edit.setReadOnly(True)
+                pw._del_btn.setVisible(False)
             # Track text changes for premise editing
             idx = i
 
@@ -1560,23 +1633,24 @@ class ProofPanel(QWidget):
             self._prem_widgets.append(pw)
             self._lines_layout.addWidget(pw)
 
-        # -- InsertBar at end of premises (to add new premise at the end) --
-        pbar_end = InsertBar(len(self._premises), depth=0)
+        # -- InsertBar at end of premises (hidden when premises locked) --
+        pbar_end = InsertBar(len(self._premises), depth=0, parent=_parent)
         pbar_end.insert_requested.connect(self._on_insert_premise_bar)
+        pbar_end.setVisible(not self._premises_locked)
         self._lines_layout.addWidget(pbar_end)
 
         # -- Fitch bar --
-        fbar = FitchBar()
+        fbar = FitchBar(parent=_parent)
         self._lines_layout.addWidget(fbar)
 
         # -- Proof lines --
         for i, step in enumerate(self._steps):
             # InsertBar inherits depth from the line below it
-            bar = InsertBar(i, depth=step.depth)
+            bar = InsertBar(i, depth=step.depth, parent=_parent)
             bar.insert_requested.connect(self._on_insert_bar)
             self._lines_layout.addWidget(bar)
 
-            lw = FitchLineWidget(step)
+            lw = FitchLineWidget(step, parent=_parent)
             lw.text_changed.connect(self._on_line_text_changed)
             lw.rule_changed.connect(self._on_line_rule_changed)
             lw.refs_changed.connect(self._on_line_refs_changed)
@@ -1598,7 +1672,7 @@ class ProofPanel(QWidget):
 
         # Final insert bar: depth = last step's depth or 0
         last_depth = self._steps[-1].depth if self._steps else 0
-        bar = InsertBar(len(self._steps), depth=last_depth)
+        bar = InsertBar(len(self._steps), depth=last_depth, parent=_parent)
         bar.insert_requested.connect(self._on_insert_bar)
         self._lines_layout.addWidget(bar)
 
@@ -2751,7 +2825,7 @@ class ProofPanel(QWidget):
         idx: dict = {}
         for group_name, axioms, labels in groups:
             for i, ax in enumerate(axioms):
-                label = labels[i] if labels else str(i + 1)
+                label = labels[i] if labels and i < len(labels) else str(i + 1)
                 canonical = f"{group_name} {label}"
                 idx[canonical] = ax
                 # Legacy alias: if the paper label differs from the

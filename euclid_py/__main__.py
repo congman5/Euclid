@@ -80,14 +80,20 @@ def main():
     window = MainWindow()
     window.show()
 
-    # If a proof file is passed on the command line, load it directly
+    # If a proof file is passed on the command line, load it after the
+    # event loop starts so the window is fully laid out first.
     args = app.arguments()
-    if len(args) > 1:
-        path = args[1]
-        if path.endswith(".json"):
-            window.open_proof_json(path)
-        elif path.endswith(".euclid"):
-            window._workspace._import_file(path)
+    file_to_load = args[1] if len(args) > 1 else None
+    if file_to_load:
+        from PyQt6.QtCore import QTimer
+        if file_to_load.endswith(".json"):
+            QTimer.singleShot(0, lambda: window.open_proof_json(file_to_load))
+        elif file_to_load.endswith(".euclid"):
+            QTimer.singleShot(0, lambda: window._workspace._import_file(file_to_load))
+    else:
+        # No file argument — start with a blank proof
+        from PyQt6.QtCore import QTimer
+        QTimer.singleShot(0, window.open_blank)
 
     # Mark event loop as running so the proof panel uses background
     # threads for verification instead of blocking the UI.

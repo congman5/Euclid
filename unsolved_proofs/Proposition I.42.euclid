@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.42",
     "title": "Construct Parallelogram Equal to Triangle",
-    "statement": "To construct a parallelogram equal in area to a given triangle in a given angle."
+    "statement": "To construct a parallelogram equal in area to a given triangle in a given angle.",
+    "difficulty": 3,
+    "hints": [
+      "Bisect BC at E, construct the angle at E using Prop.I.23, then apply Prop.I.41."
+    ]
   },
   "canvas": {
     "points": [

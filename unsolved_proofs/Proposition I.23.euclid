@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.23",
     "title": "Copy an Angle",
-    "statement": "To construct an angle equal to a given angle on a given line at a given point."
+    "statement": "To construct an angle equal to a given angle on a given line at a given point.",
+    "difficulty": 3,
+    "hints": [
+      "Construct a triangle with sides equal to the sides of the given angle using Prop.I.22.",
+      "Apply SSS to establish the angle equality."
+    ]
   },
   "canvas": {
     "points": [

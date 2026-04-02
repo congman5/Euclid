@@ -794,11 +794,41 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
                                 break
 
                 if not found_contra:
+                    # Check metric contradictions: X < Y and Y < X
+                    lt_keys: set = set()
+                    for ml in all_lits:
+                        if (ml.polarity and ml.is_metric
+                                and isinstance(ml.atom, _Lt)):
+                            lt_keys.add((ml.atom.left, ml.atom.right))
+                    for pair in lt_keys:
+                        if (pair[1], pair[0]) in lt_keys:
+                            found_contra = True
+                            break
+
+                if not found_contra:
+                    # Diagrammatic closure check: run the consequence
+                    # engine on all_lits (includes Leibniz E2
+                    # equality substitution).  If the closure
+                    # contains BOTTOM, a contradiction exists that
+                    # the simple literal checks above missed (e.g.
+                    # d=b assumed + inside(d,α) known → inside(b,α)
+                    # by E2, conflicting with on(b,α) via G4).
+                    diag_lits = {l for l in all_lits
+                                 if l.is_diagrammatic}
+                    if diag_lits:
+                        _closure = (
+                            checker.consequence_engine
+                            .direct_consequences(
+                                diag_lits, checker.variables))
+                        if BOTTOM in _closure:
+                            found_contra = True
+
+                if not found_contra:
                     lr.valid = False
                     lr.errors.append(
                         "⊥-intro: no contradiction found in the "
-                        "subproof scope (need ψ and ¬ψ, or X = Y "
-                        "and X < Y).")
+                        "subproof scope (need ψ and ¬ψ, "
+                        "X = Y and X < Y, or X < Y and Y < X).")
                 if lr.valid:
                     checker.known.add(BOTTOM)
                     # Record BOTTOM as this line's literal so ⊥-elim
@@ -1744,64 +1774,64 @@ def get_available_rules() -> List[RuleInfo]:
     _DIAG_GROUPS = [
         ("Generality", GENERALITY_AXIOMS,
          ["1", "2", "3", "4", "5", "5c", "5d", "6", "6c"],
-         ["Two points on two lines → points equal or lines equal",
-          "Center uniqueness: center(a,α) ∧ center(b,α) → a = b",
-          "Center is inside: center(a,α) → inside(a,α)",
-          "Inside excludes on: inside(a,α) → ¬on(a,α)",
-          "Line distinctness: on(a,L) ∧ ¬on(a,M) → L ≠ M",
-          "Circle distinctness (on): on(a,α) ∧ ¬on(a,β) → α ≠ β",
-          "Circle distinctness (center): center(a,α) ∧ ¬center(a,β) → α ≠ β",
-          "Point distinctness: on(a,L) ∧ ¬on(b,L) → a ≠ b",
-          "Point distinctness (circle): on(a,α) ∧ ¬on(b,α) → a ≠ b"]),
+         ["a ≠ b ∧ on(a,L) ∧ on(b,L) ∧ on(a,M) ∧ on(b,M) → L = M",
+          "center(a,α) ∧ center(b,α) → a = b",
+          "center(a,α) → inside(a,α)",
+          "inside(a,α) → ¬on(a,α)",
+          "on(a,L) ∧ ¬on(a,M) → L ≠ M  (Leibniz: if L = M then on(a,L) would give on(a,M))",
+           "on(a,α) ∧ ¬on(a,β) → α ≠ β  (Leibniz: if α = β then on(a,α) would give on(a,β))",
+           "center(a,α) ∧ ¬center(a,β) → α ≠ β  (Leibniz: if α = β then center(a,α) would give center(a,β))",
+           "on(a,L) ∧ ¬on(b,L) → a ≠ b  (Leibniz: if a = b then on(a,L) would give on(b,L))",
+           "on(a,α) ∧ ¬on(b,α) → a ≠ b  (Leibniz: if a = b then on(a,α) would give on(b,α))"]),
         ("Betweenness", BETWEEN_AXIOMS, _BETWEEN_LABELS,
-         ["between(a,b,c) → between(c,b,a)  (symmetry)",
+         ["between(a,b,c) → between(c,b,a)",
           "between(a,b,c) → a ≠ b",
           "between(a,b,c) → a ≠ c",
-          "between(a,b,c) → ¬between(b,a,c)  (strict ordering)",
+          "between(a,b,c) → ¬between(b,a,c)",
           "between(a,b,c) ∧ on(a,L) ∧ on(b,L) → on(c,L)",
           "between(a,b,c) ∧ on(a,L) ∧ on(c,L) → on(b,L)",
           "between(a,b,c) ∧ between(a,d,b) → between(a,d,c)",
           "between(a,b,c) ∧ between(b,c,d) → between(a,b,d)",
-          "Three collinear points: one is between the other two",
+          "a ≠ b ∧ a ≠ c ∧ b ≠ c ∧ on(a,L) ∧ on(b,L) ∧ on(c,L) → between(a,b,c) ∨ between(b,c,a) ∨ between(c,a,b)",
           "between(a,b,c) ∧ between(a,b,d) → ¬between(b,c,d)"]),
         ("Same-side", SAME_SIDE_AXIOMS, None,
-         ["same-side(a,a,L) ∨ on(a,L)  (reflexivity)",
-          "same-side(a,b,L) → same-side(b,a,L)  (symmetry)",
+         ["¬on(a,L) → same-side(a,a,L)",
+          "same-side(a,b,L) → same-side(b,a,L)",
           "same-side(a,b,L) → ¬on(a,L)",
-          "same-side(a,b,L) ∧ same-side(a,c,L) → same-side(b,c,L)  (transitivity)",
-          "Any two points off a line: same-side or one is on the line",
-          "Point distinctness: same-side(a,b,L) ∧ ¬same-side(a,c,L) → b ≠ c"]),
+          "same-side(a,b,L) ∧ same-side(a,c,L) → same-side(b,c,L)",
+          "¬on(a,L) ∧ ¬on(b,L) ∧ ¬on(c,L) ∧ ¬same-side(a,b,L) → same-side(a,c,L) ∨ same-side(b,c,L)",
+          "same-side(a,b,L) ∧ ¬same-side(a,c,L) → b ≠ c  (Leibniz: if b = c then same-side(a,b,L) would give same-side(a,c,L))"]),
         ("Pasch", PASCH_AXIOMS, None,
-         ["same-side(a,c,L) ∧ between(a,b,c) → same-side(a,b,L)",
-          "between(a,b,c) ∧ on(a,L) → same-side(b,c,L) ∨ on(b,L)",
+         ["between(a,b,c) ∧ same-side(a,c,L) → same-side(a,b,L)",
+          "between(a,b,c) ∧ on(a,L) ∧ ¬on(b,L) → same-side(b,c,L)",
           "between(a,b,c) ∧ on(b,L) → ¬same-side(a,c,L)",
-          "Pasch: line crossing one side of a triangle hits another side"]),
+          "L ≠ M ∧ on(b,L) ∧ on(b,M) ∧ on(a,M) ∧ on(c,M) ∧ a ≠ b ∧ c ≠ b ∧ ¬same-side(a,c,L) → between(a,b,c)"]),
         ("Triple incidence", TRIPLE_INCIDENCE_AXIOMS, None,
-         ["Three concurrent lines determine collinear or same-side",
-          "Concurrent lines: transitivity of same-side across lines",
-          "Five-line same-side transitivity"]),
+          ["on(a,L) ∧ on(a,M) ∧ on(a,N) ∧ on(b,L) ∧ on(c,M) ∧ on(d,N) ∧ same-side(c,d,L) ∧ same-side(b,c,N) → ¬same-side(b,d,M)",
+           "on(a,L) ∧ on(a,M) ∧ on(a,N) ∧ on(b,L) ∧ on(c,M) ∧ on(d,N) ∧ same-side(c,d,L) ∧ ¬same-side(b,d,M) ∧ ¬on(d,M) ∧ b≠a → same-side(b,c,N)",
+           "on(a,L) ∧ on(a,M) ∧ on(a,N) ∧ on(b,L) ∧ on(c,M) ∧ on(d,N) ∧ same-side(c,d,L) ∧ same-side(b,c,N) ∧ same-side(d,e,M) ∧ same-side(c,e,N) → same-side(c,e,L)"]),
         ("Circle", CIRCLE_AXIOMS, _CIRCLE_LABELS,
-         ["Chord intersects interior: on(b,α) ∧ on(c,α) ∧ inside(a,α) → between",
-          "inside ∧ between → inside (segment inside circle, variant 1)",
-          "inside ∧ between → inside (boundary to interior, variant 1)",
-          "inside ∧ between → inside (segment inside circle, variant 2)",
-          "on ∧ between → inside (boundary to interior, variant 2)",
-          "inside ∧ between → inside (variant 3)",
-          "on ∧ between → inside (variant 3)",
-          "inside ∧ between → inside (variant 4)",
-          "on ∧ between → inside (variant 4)",
-          "Two intersecting circles: intersection points on opposite sides"]),
+         ["on(a,L) ∧ on(b,L) ∧ on(c,L) ∧ inside(a,α) ∧ on(b,α) ∧ on(c,α) ∧ b ≠ c → between(b,a,c)",
+          "inside(a,α) ∧ inside(b,α) ∧ between(a,c,b) → inside(c,α)",
+          "inside(a,α) ∧ on(b,α) ∧ between(a,c,b) → inside(c,α)",
+          "on(a,α) ∧ inside(b,α) ∧ between(a,c,b) → inside(c,α)",
+          "on(a,α) ∧ on(b,α) ∧ between(a,c,b) → inside(c,α)",
+          "inside(a,α) ∧ ¬inside(c,α) ∧ between(a,c,b) → ¬inside(b,α)",
+          "inside(a,α) ∧ ¬inside(c,α) ∧ between(a,c,b) → ¬on(b,α)",
+          "on(a,α) ∧ ¬inside(c,α) ∧ between(a,c,b) → ¬inside(b,α)",
+          "on(a,α) ∧ ¬inside(c,α) ∧ between(a,c,b) → ¬on(b,α)",
+          "α ≠ β ∧ intersects(α,β) ∧ on(c,α) ∧ on(c,β) ∧ on(d,α) ∧ on(d,β) ∧ c ≠ d ∧ center(a,α) ∧ center(b,β) ∧ on(a,L) ∧ on(b,L) → ¬same-side(c,d,L)"]),
         ("Intersection", INTERSECTION_AXIOMS, _INTER_LABELS,
-         ["Opposite sides → lines intersect",
-           "on(a,α) ∧ on(b,α): opposite sides of L → L intersects α",
-           "on(a,α) ∧ inside(b,α): opposite sides of L → L intersects α",
-           "inside(a,α) ∧ on(b,α): opposite sides of L → L intersects α",
-           "inside(a,α) ∧ inside(b,α): opposite sides of L → L intersects α",
-           "inside(a,α) ∧ on(a,L) → L intersects α",
-           "Circles: on/inside combinations → intersects(α,β) (variant 1)",
-           "Circles: inside/inside → intersects(α,β) (variant 2)",
-           "Circles: on/inside mixed → intersects(α,β) (variant 3)",
-           "Two distinct common on-points → intersects(α,β)"]),
+         ["¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) ∧ on(a,M) ∧ on(b,M) → intersects(L,M)",
+           "on(a,α) ∧ on(b,α) ∧ ¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) → intersects(L,α)",
+           "on(a,α) ∧ inside(b,α) ∧ ¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) → intersects(L,α)",
+           "inside(a,α) ∧ on(b,α) ∧ ¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) → intersects(L,α)",
+           "inside(a,α) ∧ inside(b,α) ∧ ¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) → intersects(L,α)",
+           "inside(a,α) ∧ on(a,L) → intersects(L,α)",
+           "on(a,α) ∧ on(b,α) ∧ inside(a,β) ∧ ¬inside(b,β) ∧ ¬on(b,β) → intersects(α,β)",
+           "on(a,α) ∧ inside(b,α) ∧ inside(a,β) ∧ ¬inside(b,β) ∧ ¬on(b,β) → intersects(α,β)",
+           "on(a,α) ∧ inside(b,α) ∧ inside(a,β) ∧ on(b,β) → intersects(α,β)",
+           "α ≠ β ∧ on(c,α) ∧ on(c,β) ∧ on(d,α) ∧ on(d,β) ∧ c ≠ d → intersects(α,β)"]),
     ]
     for group_name, axioms, labels, descs in _DIAG_GROUPS:
         for i, ax in enumerate(axioms):
@@ -1816,27 +1846,23 @@ def get_available_rules() -> List[RuleInfo]:
 
     # ── Metric axioms (§3.5) ──────────────────────────────────────
     _METRIC_RULES = [
-        ("CN1 — Transitivity", "a = b ∧ b = c → a = c  (equalities chain; also derives a = c from c = a)"),
-        ("CN2 — Addition", "a = b ∧ c = d → a+c = b+d  (add equals to equals)"),
-        ("CN3 — Subtraction", "a+c = b+c → a = b  (cancel a common summand)"),
-        ("CN4 — Reflexivity", "a = a  (any magnitude equals itself)"),
-        ("CN5 — Whole > Part", "0 < b → a < a+b  (the whole is greater than the part)"),
-        ("M1 — Zero segment",
-         "ab = 0 ↔ a = b.  Forward: ab = 0 → a = b.  "
-         "Converse: a = b → ab = 0.  "
-         "Contrapositive: ¬(a = b) ∧ ac = ab → ¬(c = a) "
-         "(if ab ≠ 0 and ac = ab then ac ≠ 0 so c ≠ a)"),
-        ("M2 — Non-negative", "ab ≥ 0  (segments are never negative)"),
-        ("M3 — Symmetry", "ab = ba  (segment length is undirected)"),
-        ("M4 — Angle symmetry", "a≠b ∧ a≠c → ∠bac = ∠cab  (ray order does not matter)"),
-        ("M5 — Angle bounds", "0 ≤ ∠abc ≤ 2∟  (angles are between 0 and two right angles)"),
-        ("M6 — Degenerate area", "△aab = 0  (area with two equal vertices is zero)"),
-        ("M7 — Non-negative area", "△abc ≥ 0  (area is never negative)"),
-        ("M8 — Area symmetry", "△abc = △cab = △acb  (area invariant under vertex permutation)"),
-        ("M9 — Congruence → area", "Full triangle congruence (SAS/SSS) → equal areas"),
-        ("Trichotomy", "Exactly one of: a < b, a = b, b < a  (for any two magnitudes of the same sort)"),
+        ("CN1 — Transitivity", "a = b ∧ b = c → a = c"),
+        ("CN2 — Addition", "a = b ∧ c = d → a + c = b + d"),
+        ("CN3 — Subtraction", "a + c = b + c → a = b"),
+        ("CN4 — Reflexivity", "a = a"),
+        ("CN5 — Whole > Part", "0 < b → a < a + b"),
+        ("M1 — Zero segment", "ab = 0 ↔ a = b"),
+        ("M2 — Non-negative", "ab ≥ 0"),
+        ("M3 — Symmetry", "ab = ba"),
+        ("M4 — Angle symmetry", "a ≠ b ∧ a ≠ c → ∠bac = ∠cab"),
+        ("M5 — Angle bounds", "0 ≤ ∠abc ≤ ∟ + ∟"),
+        ("M6 — Degenerate area", "△aab = 0"),
+        ("M7 — Non-negative area", "△abc ≥ 0"),
+        ("M8 — Area symmetry", "△abc = △cab ∧ △abc = △acb"),
+        ("M9 — Congruence → area", "ab = a′b′ ∧ bc = b′c′ ∧ ca = c′a′ ∧ ∠abc = ∠a′b′c′ ∧ ∠bca = ∠b′c′a′ ∧ ∠cab = ∠c′a′b′ → △abc = △a′b′c′"),
+        ("Trichotomy", "a < b ∨ a = b ∨ b < a  (exactly one holds)"),
         ("Order transitivity", "a < b ∧ b < c → a < c"),
-        ("Addition preserves order", "a < b → a+c < b+c"),
+        ("Addition preserves order", "a < b → a + c < b + c"),
     ]
     for name, desc in _METRIC_RULES:
         rules.append(RuleInfo(
@@ -1857,33 +1883,33 @@ def get_available_rules() -> List[RuleInfo]:
 
     _TRANSFER_GROUPS = [
         ("Segment transfer", DIAGRAM_SEGMENT_TRANSFER, _SEG_LABELS,
-         ["between(a,b,c) → ab + bc = ac  (segment addition)",
-          "Equal radii → same circle: ab = ac ∧ center(a,α) ∧ center(a,β) ∧ on(b,α) ∧ on(c,β) → α = β",
-          "Segment → circle: center(a,α) ∧ on(b,α) ∧ ac = ab → on(c,α)",
-          "Radii equal: center(a,α) ∧ on(b,α) ∧ on(c,α) → ac = ab",
-          "Segment < radius → inside: center(a,α) ∧ on(b,α) ∧ ac < ab → inside(c,α)",
-          "Inside → segment < radius: center(a,α) ∧ on(b,α) ∧ inside(c,α) → ac < ab",
-          "Farther than radius → ¬inside: center(a,α) ∧ on(b,α) ∧ ab < ac → ¬inside(c,α)",
-          "Farther than radius → ¬on: center(a,α) ∧ on(b,α) ∧ ab < ac → ¬on(c,α)"]),
+         ["between(a,b,c) → ab + bc = ac",
+          "center(a,α) ∧ center(a,β) ∧ on(b,α) ∧ on(c,β) ∧ ab = ac → α = β",
+          "center(a,α) ∧ on(b,α) ∧ ac = ab → on(c,α)",
+          "center(a,α) ∧ on(b,α) ∧ on(c,α) → ac = ab",
+          "center(a,α) ∧ on(b,α) ∧ ac < ab → inside(c,α)",
+          "center(a,α) ∧ on(b,α) ∧ inside(c,α) → ac < ab",
+          "center(a,α) ∧ on(b,α) ∧ ab < ac → ¬inside(c,α)",
+          "center(a,α) ∧ on(b,α) ∧ ab < ac → ¬on(c,α)"]),
         ("Angle transfer", DIAGRAM_ANGLE_TRANSFER, _ANG_LABELS,
-         ["Collinear zero angle: on(a,L) ∧ on(b,L) ∧ on(c,L) → ∠bac = 0 ∨ between(b,a,c)",
-          "Zero angle → collinear: ∠bac = 0 → on(c,L)",
-          "Zero angle → not between: ∠bac = 0 → ¬between(b,a,c)",
-          "Angle addition: same-side decomposition → ∠bac = ∠bad + ∠dac",
-          "Angle addition converse: ∠bac = ∠bad + ∠dac → same-side(b,d,M)",
-          "Angle addition converse: ∠bac = ∠bad + ∠dac → same-side(c,d,L)",
-          "Right angle: between(a,c,b) ∧ ∠acd = ∠dcb → ∠acd = ∟",
-          "Right angle converse: ∠acd = ∟ → ∠acd = ∠dcb",
-          "Angle extension: supplementary ray → ∠bac = ∠b'ac'",
-          "Parallel postulate: ∠abc + ∠bcd < 2∟ → lines intersect",
-          "Parallel postulate: intersection point same-side",
-          "Supplementary angles: between(a,c,b) → ∠acd + ∠dcb = 2∟",
-          "Converse supplementary: ∠abc + ∠abd = 2∟ ∧ opposite sides → between(c,b,d)"]),
+         ["a ≠ b ∧ a ≠ c ∧ on(a,L) ∧ on(b,L) ∧ on(c,L) ∧ ¬between(b,a,c) → ∠bac = 0",
+          "a ≠ b ∧ a ≠ c ∧ on(a,L) ∧ on(b,L) ∧ ∠bac = 0 → on(c,L)",
+          "a ≠ b ∧ a ≠ c ∧ on(a,L) ∧ on(b,L) ∧ ∠bac = 0 → ¬between(b,a,c)",
+          "on(a,L) ∧ on(a,M) ∧ on(b,L) ∧ on(c,M) ∧ L ≠ M ∧ ¬on(d,L) ∧ ¬on(d,M) ∧ same-side(b,d,M) ∧ same-side(c,d,L) → ∠bac = ∠bad + ∠dac",
+           "on(a,L) ∧ on(a,M) ∧ on(b,L) ∧ on(c,M) ∧ L ≠ M ∧ ∠bac = ∠bad + ∠dac ∧ same-side(c,d,L) → same-side(b,d,M)",
+           "on(a,L) ∧ on(a,M) ∧ on(b,L) ∧ on(c,M) ∧ L ≠ M ∧ ∠bac = ∠bad + ∠dac ∧ same-side(b,d,M) → same-side(c,d,L)",
+          "on(a,L) ∧ on(b,L) ∧ between(a,c,b) ∧ ¬on(d,L) ∧ ∠acd = ∠dcb → ∠acd = ∟",
+          "on(a,L) ∧ on(b,L) ∧ between(a,c,b) ∧ ¬on(d,L) ∧ ∠acd = ∟ → ∠acd = ∠dcb",
+          "on(a,L) ∧ on(b,L) ∧ on(b′,L) ∧ on(a,M) ∧ on(c,M) ∧ on(c′,M) ∧ ¬between(b,a,b′) ∧ ¬between(c,a,c′) → ∠bac = ∠b′ac′",
+          "on(a,L) ∧ on(b,M) ∧ on(c,M) ∧ on(c,N) ∧ on(d,N) ∧ b ≠ c ∧ same-side(a,d,N) ∧ ∠abc + ∠bcd < ∟ + ∟ → intersects(L,N)",
+           "on(a,L) ∧ on(b,M) ∧ on(c,M) ∧ on(c,N) ∧ on(d,N) ∧ b ≠ c ∧ same-side(a,d,N) ∧ ∠abc + ∠bcd < ∟ + ∟ ∧ on(e,L) ∧ on(e,N) → same-side(e,a,M)",
+          "on(a,L) ∧ on(b,L) ∧ between(a,c,b) ∧ ¬on(d,L) ∧ c ≠ d → ∠acd + ∠dcb = ∟ + ∟",
+          "on(a,L) ∧ on(b,L) ∧ ¬on(c,L) ∧ ¬on(d,L) ∧ ¬same-side(c,d,L) ∧ b ≠ c ∧ b ≠ d ∧ ∠abc + ∠abd = ∟ + ∟ → between(c,b,d)"]),
         ("Area transfer", DIAGRAM_AREA_TRANSFER, _AREA_LABELS,
-         ["Zero area → collinear: △abc = 0 → on(c,L)",
-          "Collinear → zero area: on(a,L) ∧ on(b,L) ∧ on(c,L) → △abc = 0",
-          "Non-collinear → non-zero area: ¬on(c,L) → △abc ≠ 0",
-          "Triangle area addition: between(a,c,b) → △acd + △dcb = △adb"]),
+         ["on(a,L) ∧ on(b,L) ∧ a ≠ b ∧ △abc = 0 → on(c,L)",
+          "on(a,L) ∧ on(b,L) ∧ a ≠ b ∧ on(c,L) → △abc = 0",
+          "on(a,L) ∧ on(b,L) ∧ a ≠ b ∧ ¬on(c,L) → △abc ≠ 0",
+          "on(a,L) ∧ on(b,L) ∧ a ≠ b ∧ a ≠ c ∧ b ≠ c ∧ ¬on(d,L) ∧ between(a,c,b) → △acd + △dcb = △adb"]),
     ]
     for group_name, axioms, labels, descs in _TRANSFER_GROUPS:
         for i, ax in enumerate(axioms):
@@ -1900,13 +1926,13 @@ def get_available_rules() -> List[RuleInfo]:
     rules.append(RuleInfo(
         name="SAS Superposition",
         category="superposition",
-        description="Side-Angle-Side: ab=de, ac=df, ∠bac=∠edf ⇒ bc=ef, ∠abc=∠def, ∠acb=∠dfe",
+        description="ab = de ∧ ac = df ∧ ∠bac = ∠edf → bc = ef ∧ ∠abc = ∠def ∧ ∠acb = ∠dfe",
         section="§3.7",
     ))
     rules.append(RuleInfo(
         name="SSS Superposition",
         category="superposition",
-        description="Side-Side-Side: ab=de, bc=ef, ac=df ⇒ ∠bac=∠edf, ∠abc=∠def, ∠acb=∠dfe",
+        description="ab = de ∧ bc = ef ∧ ac = df → ∠bac = ∠edf ∧ ∠abc = ∠def ∧ ∠acb = ∠dfe",
         section="§3.7",
     ))
 
@@ -1914,43 +1940,43 @@ def get_available_rules() -> List[RuleInfo]:
     rules.append(RuleInfo(
         name="Reit",
         category="structural",
-        description="Reiteration: restate a previously established fact",
+        description="Γ ⊢ φ → Γ ⊢ φ  (reiterate a previously established fact)",
         section="§3.2",
     ))
     rules.append(RuleInfo(
         name="Assume",
         category="structural",
-        description="Assume: open a subproof by assuming ¬φ (or φ)",
+        description="Γ, ¬φ ⊢ …  (open a subproof by assuming ¬φ)",
         section="§3.2",
     ))
     rules.append(RuleInfo(
         name="Contradiction",
         category="structural",
-        description="⊥-introduction: derive ⊥ from ψ and ¬ψ on cited lines",
+        description="ψ ∧ ¬ψ → ⊥  (derive ⊥ from contradictory literals)",
         section="§3.2",
     ))
     rules.append(RuleInfo(
         name="⊥-intro",
         category="structural",
-        description="⊥-introduction (alias): derive ⊥ from ψ and ¬ψ on cited lines",
+        description="ψ ∧ ¬ψ → ⊥  (derive ⊥ from contradictory literals)",
         section="§3.2",
     ))
     rules.append(RuleInfo(
         name="⊥-elim",
         category="structural",
-        description="⊥-elimination: discharge an assumption by citing a ⊥ line",
+        description="Γ, ¬φ ⊢ ⊥ → Γ ⊢ φ  (discharge assumption via contradiction)",
         section="§3.2",
     ))
     rules.append(RuleInfo(
         name="Cases",
         category="structural",
-        description="Case-split elimination: both branches derived the same conclusion",
+        description="φ ∨ ψ, (φ → χ), (ψ → χ) → χ  (disjunction elimination)",
         section="§3.2",
     ))
     rules.append(RuleInfo(
         name="Given",
         category="structural",
-        description="Given: cite a premise or previously established fact",
+        description="Γ ⊢ φ where φ ∈ Γ  (cite a premise of the sequent)",
         section="§3.2",
     ))
 

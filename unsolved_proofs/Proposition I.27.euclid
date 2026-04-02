@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.27",
     "title": "Alternate Interior Angles Imply Parallel",
-    "statement": "If a transversal makes alternate interior angles equal, the lines are parallel."
+    "statement": "If a transversal makes alternate interior angles equal, the lines are parallel.",
+    "difficulty": 3,
+    "hints": [
+      "Assume the lines meet and derive a contradiction using Prop.I.16."
+    ]
   },
   "canvas": {
     "points": [

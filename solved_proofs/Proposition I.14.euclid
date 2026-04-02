@@ -2,7 +2,12 @@
   "format": "euclid-proof",
   "version": "1.0.0",
   "program": "Euclid Elements Simulator (Python)",
-  "metadata": {},
+  "metadata": {
+    "difficulty": 1,
+    "hints": [
+      "This is directly Angle transfer 7 — betweenness from supplementary angles."
+    ]
+  },
   "canvas": {
     "points": [
       {

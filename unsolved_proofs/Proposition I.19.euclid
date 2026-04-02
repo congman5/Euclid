@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.19",
     "title": "Greater Angle Opposite Greater Side",
-    "statement": "In any triangle, the greater angle is subtended by the greater side."
+    "statement": "In any triangle, the greater angle is subtended by the greater side.",
+    "difficulty": 3,
+    "hints": [
+      "Prove by contradiction: assume the opposite and apply Prop.I.18."
+    ]
   },
   "canvas": {
     "points": [

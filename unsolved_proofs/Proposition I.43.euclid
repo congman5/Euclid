@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.43",
     "title": "Complements of Parallelogram",
-    "statement": "In any parallelogram, the complements of the parallelograms about the diagonal are equal."
+    "statement": "In any parallelogram, the complements of the parallelograms about the diagonal are equal.",
+    "difficulty": 3,
+    "hints": [
+      "Use Prop.I.34 on the full parallelogram and each sub-parallelogram.",
+      "Apply area subtraction to show the complements are equal."
+    ]
   },
   "canvas": {
     "points": [

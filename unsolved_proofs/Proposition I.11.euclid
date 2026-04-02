@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.11",
     "title": "Perpendicular from Point on Line",
-    "statement": "To draw a perpendicular to a given line from a point on it."
+    "statement": "To draw a perpendicular to a given line from a point on it.",
+    "difficulty": 3,
+    "hints": [
+      "Use Prop.I.3 to cut off equal segments on either side of the point.",
+      "Construct an equilateral triangle on that base, then use SAS."
+    ]
   },
   "canvas": {
     "points": [

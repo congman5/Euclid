@@ -2,7 +2,13 @@
   "format": "euclid-proof",
   "version": "1.0.0",
   "program": "Euclid Elements Simulator (Python)",
-  "metadata": {},
+  "metadata": {
+    "difficulty": 3,
+    "hints": [
+      "Draw a circle from the external point cutting the line in two places.",
+      "Use Prop.I.10 to bisect the chord, then SAS to establish the right angle."
+    ]
+  },
   "canvas": {
     "points": [
       {

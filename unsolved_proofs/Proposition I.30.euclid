@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.30",
     "title": "Lines Parallel to the Same Line",
-    "statement": "Lines parallel to the same line are parallel to each other."
+    "statement": "Lines parallel to the same line are parallel to each other.",
+    "difficulty": 2,
+    "hints": [
+      "Apply Prop.I.29 twice and use CN1 (transitivity of equality)."
+    ]
   },
   "canvas": {
     "points": [

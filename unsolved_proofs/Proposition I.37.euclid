@@ -5,7 +5,12 @@
   "metadata": {
     "proposition": "Proposition I.37",
     "title": "Triangles on Same Base Between Parallels",
-    "statement": "Triangles on the same base and between the same parallels have equal area."
+    "statement": "Triangles on the same base and between the same parallels have equal area.",
+    "difficulty": 2,
+    "hints": [
+      "Complete each triangle to a parallelogram and apply Prop.I.35.",
+      "Each triangle is half its corresponding parallelogram (Prop.I.34)."
+    ]
   },
   "canvas": {
     "points": [

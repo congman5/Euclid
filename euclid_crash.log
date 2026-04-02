@@ -14,3 +14,243 @@ Traceback (most recent call last):
             ~~~~~~^^^
 IndexError: list index out of range
 
+2026-04-01 16:10:06 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3293, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2723, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:10:07 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3293, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2723, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:10:08 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3293, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2723, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:10:09 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3293, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2723, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:10:09 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3293, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2723, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:10:10 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3293, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2723, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:11:35 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3293, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2723, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:11:35 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3293, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2723, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:37:01 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:37:01 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:37:02 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:37:07 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:37:07 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:37:07 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:37:16 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:37:17 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:37:17 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:37:17 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:39:35 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:39:36 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 16:39:36 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 17:03:38 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 17:03:39 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+
+2026-04-01 17:03:39 [CRITICAL] Unhandled exception:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 3380, in _open_details
+    dlg = _DetailsDialog(
+          ^^^^^^^^^^^^^^^
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\main_window.py", line 2781, in __init__
+    self._notes_edit = QTextEdit()
+                       ^^^^^^^^^
+NameError: name 'QTextEdit' is not defined
+

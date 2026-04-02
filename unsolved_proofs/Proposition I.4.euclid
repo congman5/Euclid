@@ -5,7 +5,11 @@
   "metadata": {
     "proposition": "Proposition I.4",
     "title": "SAS Congruence",
-    "statement": "If two triangles have two sides equal and the included angle equal, the triangles are congruent."
+    "statement": "If two triangles have two sides equal and the included angle equal, the triangles are congruent.",
+    "difficulty": 1,
+    "hints": [
+      "This is directly the SAS superposition axiom."
+    ]
   },
   "canvas": {
     "points": [

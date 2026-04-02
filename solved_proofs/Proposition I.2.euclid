@@ -2,7 +2,14 @@
   "format": "euclid-proof",
   "version": "1.0.0",
   "program": "Euclid Elements Simulator (Python)",
-  "metadata": {},
+  "metadata": {
+    "difficulty": 3,
+    "hints": [
+      "First construct an equilateral triangle on segment AB using Prop.I.1.",
+      "Extend sides of that triangle using circle constructions.",
+      "Use Segment transfer axioms to establish the equality."
+    ]
+  },
   "canvas": {
     "points": [
       {
@@ -130,7 +137,9 @@
         "lineNumber": 6,
         "text": "ab = ad, ab = bd, ¬(d = a), ¬(d = b)",
         "justification": "Prop.I.1",
-        "dependencies": [4],
+        "dependencies": [
+          4
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -138,7 +147,9 @@
         "lineNumber": 7,
         "text": "on(d, M), on(b, M)",
         "justification": "let-line",
-        "dependencies": [6],
+        "dependencies": [
+          6
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -146,7 +157,9 @@
         "lineNumber": 8,
         "text": "center(b, α), on(c, α)",
         "justification": "let-circle",
-        "dependencies": [3],
+        "dependencies": [
+          3
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -154,7 +167,9 @@
         "lineNumber": 9,
         "text": "inside(b, α)",
         "justification": "Generality 3",
-        "dependencies": [8],
+        "dependencies": [
+          8
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -162,7 +177,11 @@
         "lineNumber": 10,
         "text": "on(e, α), on(e, M), between(e, b, d)",
         "justification": "let-intersection-line-circle-extend",
-        "dependencies": [9, 7, 6],
+        "dependencies": [
+          9,
+          7,
+          6
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -170,7 +189,10 @@
         "lineNumber": 11,
         "text": "be = bc",
         "justification": "Segment transfer 3b",
-        "dependencies": [8, 10],
+        "dependencies": [
+          8,
+          10
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -178,7 +200,9 @@
         "lineNumber": 12,
         "text": "¬(e = d)",
         "justification": "Betweenness 1c",
-        "dependencies": [10],
+        "dependencies": [
+          10
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -186,7 +210,9 @@
         "lineNumber": 13,
         "text": "center(d, β), on(e, β)",
         "justification": "let-circle",
-        "dependencies": [12],
+        "dependencies": [
+          12
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -194,7 +220,9 @@
         "lineNumber": 14,
         "text": "on(d, N), on(a, N)",
         "justification": "let-line",
-        "dependencies": [6],
+        "dependencies": [
+          6
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -202,7 +230,9 @@
         "lineNumber": 15,
         "text": "inside(d, β)",
         "justification": "Generality 3",
-        "dependencies": [13],
+        "dependencies": [
+          13
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -210,7 +240,11 @@
         "lineNumber": 16,
         "text": "inside(b, β)",
         "justification": "Circle 2c",
-        "dependencies": [13, 15, 10],
+        "dependencies": [
+          13,
+          15,
+          10
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -218,7 +252,11 @@
         "lineNumber": 17,
         "text": "db < de",
         "justification": "Segment transfer 4b",
-        "dependencies": [13, 16, 10],
+        "dependencies": [
+          13,
+          16,
+          10
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -226,7 +264,9 @@
         "lineNumber": 18,
         "text": "da = db",
         "justification": "CN1 — Transitivity",
-        "dependencies": [6],
+        "dependencies": [
+          6
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -234,7 +274,10 @@
         "lineNumber": 19,
         "text": "da < de",
         "justification": "CN1 — Transitivity",
-        "dependencies": [18, 17],
+        "dependencies": [
+          18,
+          17
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -242,7 +285,11 @@
         "lineNumber": 20,
         "text": "inside(a, β)",
         "justification": "Segment transfer 4a",
-        "dependencies": [13, 19, 10],
+        "dependencies": [
+          13,
+          19,
+          10
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -250,7 +297,11 @@
         "lineNumber": 21,
         "text": "on(f, β), on(f, N), between(f, a, d)",
         "justification": "let-intersection-line-circle-extend",
-        "dependencies": [20, 14, 6],
+        "dependencies": [
+          20,
+          14,
+          6
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -258,7 +309,10 @@
         "lineNumber": 22,
         "text": "df = de",
         "justification": "Segment transfer 3b",
-        "dependencies": [13, 21],
+        "dependencies": [
+          13,
+          21
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -266,7 +320,9 @@
         "lineNumber": 23,
         "text": "fa + ad = fd",
         "justification": "Segment transfer 1",
-        "dependencies": [21],
+        "dependencies": [
+          21
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -274,7 +330,9 @@
         "lineNumber": 24,
         "text": "eb + bd = ed",
         "justification": "Segment transfer 1",
-        "dependencies": [10],
+        "dependencies": [
+          10
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -282,7 +340,12 @@
         "lineNumber": 25,
         "text": "af = be",
         "justification": "CN3 — Subtraction",
-        "dependencies": [22, 23, 24, 18],
+        "dependencies": [
+          22,
+          23,
+          24,
+          18
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -290,7 +353,10 @@
         "lineNumber": 26,
         "text": "af = bc",
         "justification": "CN1 — Transitivity",
-        "dependencies": [25, 11],
+        "dependencies": [
+          25,
+          11
+        ],
         "depth": 0,
         "status": "?"
       }

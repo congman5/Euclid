@@ -1917,7 +1917,7 @@ def get_theorems_up_to(prop_name: str) -> Dict[str, ETheorem]:
     ordered_names = [
         "Prop.I.1", "Prop.I.2", "Prop.I.3", "Prop.I.4",
         "Prop.I.5", "Prop.I.6", "Prop.I.7", "Prop.I.8",
-        "Prop.I.9", "Prop.I.10",
+        "Prop.I.10", "Prop.I.9",
         "Prop.I.11", "Prop.I.12", "Prop.I.13", "Prop.I.14",
         "Prop.I.15", "Prop.I.16", "Prop.I.17", "Prop.I.18",
         "Prop.I.19", "Prop.I.20",

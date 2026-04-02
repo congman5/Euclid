@@ -5,7 +5,13 @@
   "metadata": {
     "proposition": "Proposition I.10",
     "title": "Bisect a Segment",
-    "statement": "To bisect a given finite straight-line."
+    "statement": "To bisect a given finite straight-line.",
+    "difficulty": 5,
+    "hints": [
+      "This is the hardest early proposition — uses the Gupta (1965) method.",
+      "Construct two equidistant points via circle-circle intersection, then draw a line through them.",
+      "Apply SSS and SAS to show the midpoint lies on the bisecting line."
+    ]
   },
   "canvas": {
     "points": [
