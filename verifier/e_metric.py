@@ -184,8 +184,17 @@ class MetricEngine:
         self.process_literals(known)
         # Pre-load query terms so M3/M4/M8 can apply
         self._preload_query_terms(query)
-        # Re-run rules after introducing query terms
-        self._apply_rules()
+        # Re-run rules in a fixpoint loop so that newly derived facts
+        # (e.g. from + Monotonicity) feed back into subsequent passes
+        # (e.g. transitivity, CN5).  A single pass can miss derivations
+        # when set iteration order varies.  Cap at 8 iterations to
+        # bound runtime on large fact sets.
+        for _round in range(8):
+            new = self._apply_rules()
+            if not new:
+                break
+            for lit in new:
+                self._load_literal(lit)
         return self._check_literal(query)
 
     def _preload_query_terms(self, lit: Literal) -> None:

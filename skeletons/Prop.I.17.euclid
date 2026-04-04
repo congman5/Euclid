@@ -1,0 +1,174 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python) -- Lean Translator",
+  "metadata": {
+    "proposition": "Proposition I.17",
+    "title": "Two Angles Less Than Two Right Angles",
+    "difficulty": 2,
+    "hints": [
+      "Translated from LeanEuclid proposition_17"
+    ],
+    "source": "lean_translator"
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 250,
+        "y": 150
+      },
+      {
+        "label": "B",
+        "x": 150,
+        "y": 380
+      },
+      {
+        "label": "C",
+        "x": 450,
+        "y": 380
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-04-04T04:55:39Z",
+  "proof": {
+    "name": "Prop.I.17",
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "on(a, L)",
+      "on(b, L)",
+      "¬(on(c, L))"
+    ],
+    "goal": "(∠abc + ∠bca) < (∟ + ∟)",
+    "declarations": {
+      "points": [
+        "a",
+        "b",
+        "c"
+      ],
+      "lines": [
+        "L",
+        "M",
+        "N"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 7,
+        "text": "on(b, M), on(c, M)",
+        "justification": "let-line",
+        "dependencies": [
+          3
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 8,
+        "text": "on(a, N), on(c, N)",
+        "justification": "let-line",
+        "dependencies": [
+          2
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 9,
+        "text": "on(d, M), between(b, c, d)",
+        "justification": "let-point-on-line-extend",
+        "dependencies": [
+          1,
+          2,
+          3,
+          5,
+          6,
+          7,
+          8
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 10,
+        "text": "∠cba < ∠dca, ∠cab < ∠dca",
+        "justification": "Prop.I.16",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "(∠bca + ∠acd) = (∟ + ∟)",
+        "justification": "Prop.I.13",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "(∠abc + ∠bca) < (∟ + ∟)",
+        "justification": "CN5 — Whole > Part",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

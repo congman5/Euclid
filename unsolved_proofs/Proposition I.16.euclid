@@ -5,84 +5,40 @@
   "metadata": {
     "proposition": "Proposition I.16",
     "title": "Exterior Angle Theorem",
-    "statement": "An exterior angle of a triangle is greater than either remote interior angle.",
     "difficulty": 3,
-    "hints": [
-      "Extend BC beyond C and bisect the extended segment.",
-      "Use SAS to show the exterior angle exceeds each remote interior angle."
-    ]
+    "hints": ["Bisect BC at E, extend AE to F with AE = EF, then use SAS."]
   },
   "canvas": {
     "points": [
-      {
-        "label": "A",
-        "x": 250,
-        "y": 150
-      },
-      {
-        "label": "B",
-        "x": 150,
-        "y": 350
-      },
-      {
-        "label": "C",
-        "x": 400,
-        "y": 350
-      },
-      {
-        "label": "D",
-        "x": 550,
-        "y": 350
-      }
+      {"label":"A","x":250,"y":150},
+      {"label":"B","x":150,"y":350},
+      {"label":"C","x":400,"y":350},
+      {"label":"D","x":550,"y":350}
     ],
     "segments": [
-      {
-        "from": "A",
-        "to": "B",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "A",
-        "to": "C",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "B",
-        "to": "C",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "C",
-        "to": "D",
-        "color": "#2d70b3"
-      }
+      {"from":"A","to":"B","color":"#2d70b3"},
+      {"from":"A","to":"C","color":"#2d70b3"},
+      {"from":"B","to":"C","color":"#2d70b3"},
+      {"from":"C","to":"D","color":"#2d70b3"}
     ],
-    "rays": [],
-    "circles": [],
-    "angleMarks": [],
-    "equalityGroups": []
+    "rays":[],"circles":[],"angleMarks":[],"equalityGroups":[]
   },
+  "exportedAt": "2026-06-01T00:00:00Z",
   "proof": {
     "name": "Prop.I.16",
     "premises": [
-      "on(a, L)",
-      "on(b, L)",
-      "between(a, b, d)",
-      "¬(on(c, L))",
-      "¬(a = b)",
-      "¬(a = c)",
-      "¬(b = c)"
+      "on(a, L)","on(b, L)","between(a, b, d)",
+      "\u00ac(on(c, L))","\u00ac(a = b)","\u00ac(a = c)","\u00ac(b = c)"
     ],
-    "goal": "∠bac < ∠dbc, ∠bca < ∠dbc",
-    "declarations": {
-      "points": [
-        "A",
-        "B",
-        "C",
-        "D"
-      ],
-      "lines": []
-    },
-    "steps": []
+    "goal": "\u2220bac < \u2220dbc, \u2220bca < \u2220dbc",
+    "declarations": {"points":["a","b","c","d"],"lines":["L"]},
+    "steps": [
+      {"lineNumber":8,"text":"between(b, e, c), be = ec","justification":"Prop.I.10","dependencies":[5,6,7],"depth":0,"status":"?"},
+      {"lineNumber":9,"text":"between(a, e, f), ae = ef","justification":"Prop.I.3","dependencies":[5,6,8],"depth":0,"status":"?"},
+      {"lineNumber":10,"text":"on(b, P), on(f, P)","justification":"let-line","dependencies":[8,9],"depth":0,"status":"?"},
+      {"lineNumber":11,"text":"\u00ac(e = f), \u00ac(e = a)","justification":"Prop.I.16","dependencies":[5,6,7,8,9],"depth":0,"status":"?"},
+      {"lineNumber":12,"text":"\u2220bae = \u2220fce","justification":"Prop.I.4","dependencies":[1,2,3,4,5,6,7,8,9,10,11],"depth":0,"status":"?"},
+      {"lineNumber":13,"text":"\u2220bac < \u2220dbc, \u2220bca < \u2220dbc","justification":"Prop.I.4","dependencies":[1,2,3,4,5,6,7,8,9,10,11,12],"depth":0,"status":"?"}
+    ]
   }
 }

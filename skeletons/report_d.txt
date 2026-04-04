@@ -1,0 +1,102 @@
+I.33: acc=False f=3
+  ERR: Goal not established. Missing: ac = bd, ¬(intersects(M, P))
+  L17: Theorem 'Prop.I.29' hypothesis not met: on(b, M)
+  L18: Theorem 'Prop.I.4' hypothesis not met: ¬(a = c)
+  L18: Theorem 'Prop.I.4' hypothesis not met: ¬(d = e)
+  L18: Theorem 'Prop.I.4' hypothesis not met: ¬(d = f)
+  L18: Theorem 'Prop.I.4' hypothesis not met: ¬(e = f)
+  L18: Theorem 'Prop.I.4' hypothesis not met: ab = de
+  L18: Theorem 'Prop.I.4' hypothesis not met: ac = df
+  L18: Theorem 'Prop.I.4' hypothesis not met: ∠bac = ∠edf
+  L19: Theorem 'Prop.I.27' hypothesis not met: ¬(a = c)
+  L19: Theorem 'Prop.I.27' hypothesis not met: ¬(same-side(b, d, M))
+  L19: Theorem 'Prop.I.27' hypothesis not met: ∠bac = ∠acd
+I.34: acc=False f=5
+  ERR: Goal not established. Missing: ab = cd, ad = bc, ∠dab = ∠bcd, ∠abc = ∠cda, △abc = △acd
+  L15: Construction prerequisite not met: ¬(a = c)
+  L16: Construction prerequisite not met: ¬(b = d)
+  L17: Theorem 'Prop.I.29' hypothesis not met: on(b, M)
+  L17: Theorem 'Prop.I.29' hypothesis not met: on(c, M)
+  L17: Theorem 'Prop.I.29' hypothesis not met: ¬(L = N)
+  L18: Theorem 'Prop.I.29' hypothesis not met: on(b, M)
+  L18: Theorem 'Prop.I.29' hypothesis not met: on(c, M)
+  L18: Theorem 'Prop.I.29' hypothesis not met: ¬(L = N)
+  L19: Theorem 'Prop.I.26' hypothesis not met: ∠abc = ∠def
+  L19: Theorem 'Prop.I.26' hypothesis not met: ∠bca = ∠efd
+  L19: Theorem 'Prop.I.26' hypothesis not met: bc = ef
+  L19: Theorem 'Prop.I.26' hypothesis not met: ¬(a = c)
+  L19: Theorem 'Prop.I.26' hypothesis not met: ¬(d = e)
+  L19: Theorem 'Prop.I.26' hypothesis not met: ¬(d = f)
+  L19: Theorem 'Prop.I.26' hypothesis not met: ¬(e = f)
+I.35: acc=False f=13
+  ERR: Goal not established. Missing: (△abc + △acd) = (△ebc + △ecf)
+  L11: Construction prerequisite not met: ¬(a = f)
+  L12: Construction prerequisite not met: ¬(a = b)
+  L13: Construction prerequisite not met: ¬(c = d)
+  L14: Construction prerequisite not met: ¬(b = e)
+  L15: Construction prerequisite not met: ¬(c = f)
+  L16: Theorem 'Prop.I.34' hypothesis not met: on(b, L)
+  L16: Theorem 'Prop.I.34' hypothesis not met: on(d, N)
+  L16: Theorem 'Prop.I.34' hypothesis not met: on(a, M)
+  L16: Theorem 'Prop.I.34' hypothesis not met: on(d, M)
+  L16: Theorem 'Prop.I.34' hypothesis not met: on(b, P)
+  L16: Theorem 'Prop.I.34' hypothesis not met: on(c, P)
+  L16: Theorem 'Prop.I.34' hypothesis not met: ¬(intersects(M, P))
+  L16: Theorem 'Prop.I.34' hypothesis not met: ¬(a = b)
+  L16: Theorem 'Prop.I.34' hypothesis not met: ¬(c = d)
+  L17: Theorem 'Prop.I.34' hypothesis not met: on(b, L)
+  L17: Theorem 'Prop.I.34' hypothesis not met: on(d, N)
+  L17: Theorem 'Prop.I.34' hypothesis not met: on(a, M)
+  L17: Theorem 'Prop.I.34' hypothesis not met: on(d, M)
+  L17: Theorem 'Prop.I.34' hypothesis not met: on(b, P)
+  L17: Theorem 'Prop.I.34' hypothesis not met: on(c, P)
+  L17: Theorem 'Prop.I.34' hypothesis not met: ¬(intersects(M, P))
+  L17: Theorem 'Prop.I.34' hypothesis not met: ¬(a = b)
+  L17: Theorem 'Prop.I.34' hypothesis not met: ¬(c = d)
+  L18: Theorem 'Prop.I.29' hypothesis not met: on(b, L)
+  L18: Theorem 'Prop.I.29' hypothesis not met: on(b, M)
+  L18: Theorem 'Prop.I.29' hypothesis not met: on(c, M)
+  L18: Theorem 'Prop.I.29' hypothesis not met: on(d, N)
+  L18: Theorem 'Prop.I.29' hypothesis not met: ¬(a = b)
+  L18: Theorem 'Prop.I.29' hypothesis not met: ¬(c = d)
+  L18: Theorem 'Prop.I.29' hypothesis not met: ¬(L = N)
+  L18: Theorem 'Prop.I.29' hypothesis not met: ¬(same-side(a, d, M))
+  L19: Theorem 'Prop.I.4' hypothesis not met: ¬(a = b)
+  L19: Theorem 'Prop.I.4' hypothesis not met: ¬(a = c)
+  L19: Theorem 'Prop.I.4' hypothesis not met: ¬(d = e)
+  L19: Theorem 'Prop.I.4' hypothesis not met: ¬(d = f)
+  L19: Theorem 'Prop.I.4' hypothesis not met: ab = de
+  L19: Theorem 'Prop.I.4' hypothesis not met: ac = df
+  L19: Theorem 'Prop.I.4' hypothesis not met: ∠bac = ∠edf
+  L20: Theorem 'Prop.I.34' hypothesis not met: on(b, L)
+  L20: Theorem 'Prop.I.34' hypothesis not met: on(d, N)
+  L20: Theorem 'Prop.I.34' hypothesis not met: on(a, M)
+  L20: Theorem 'Prop.I.34' hypothesis not met: on(d, M)
+  L20: Theorem 'Prop.I.34' hypothesis not met: on(b, P)
+  L20: Theorem 'Prop.I.34' hypothesis not met: on(c, P)
+  L20: Theorem 'Prop.I.34' hypothesis not met: ¬(intersects(M, P))
+  L20: Theorem 'Prop.I.34' hypothesis not met: ¬(a = b)
+  L20: Theorem 'Prop.I.34' hypothesis not met: ¬(c = d)
+  L21: Theorem 'Prop.I.34' hypothesis not met: on(b, L)
+  L21: Theorem 'Prop.I.34' hypothesis not met: on(d, N)
+  L21: Theorem 'Prop.I.34' hypothesis not met: on(a, M)
+  L21: Theorem 'Prop.I.34' hypothesis not met: on(d, M)
+  L21: Theorem 'Prop.I.34' hypothesis not met: on(b, P)
+  L21: Theorem 'Prop.I.34' hypothesis not met: on(c, P)
+  L21: Theorem 'Prop.I.34' hypothesis not met: ¬(intersects(M, P))
+  L21: Theorem 'Prop.I.34' hypothesis not met: ¬(a = b)
+  L21: Theorem 'Prop.I.34' hypothesis not met: ¬(c = d)
+  L22: Theorem 'Prop.I.4' hypothesis not met: ¬(a = b)
+  L22: Theorem 'Prop.I.4' hypothesis not met: ¬(a = c)
+  L22: Theorem 'Prop.I.4' hypothesis not met: ¬(d = e)
+  L22: Theorem 'Prop.I.4' hypothesis not met: ¬(d = f)
+  L22: Theorem 'Prop.I.4' hypothesis not met: ab = de
+  L22: Theorem 'Prop.I.4' hypothesis not met: ac = df
+  L22: Theorem 'Prop.I.4' hypothesis not met: ∠bac = ∠edf
+  L23: Theorem 'Prop.I.4' hypothesis not met: ¬(a = b)
+  L23: Theorem 'Prop.I.4' hypothesis not met: ¬(a = c)
+  L23: Theorem 'Prop.I.4' hypothesis not met: ¬(d = e)
+  L23: Theorem 'Prop.I.4' hypothesis not met: ¬(d = f)
+  L23: Theorem 'Prop.I.4' hypothesis not met: ab = de
+  L23: Theorem 'Prop.I.4' hypothesis not met: ac = df
+  L23: Theorem 'Prop.I.4' hypothesis not met: ∠bac = ∠edf

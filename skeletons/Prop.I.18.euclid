@@ -1,0 +1,237 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python) -- Lean Translator",
+  "metadata": {
+    "proposition": "Proposition I.18",
+    "title": "Greater Side Opposite Greater Angle",
+    "difficulty": 3,
+    "hints": [
+      "Translated from LeanEuclid proposition_18"
+    ],
+    "source": "lean_translator"
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 200,
+        "y": 150
+      },
+      {
+        "label": "B",
+        "x": 150,
+        "y": 380
+      },
+      {
+        "label": "C",
+        "x": 500,
+        "y": 380
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-04-04T04:56:38Z",
+  "proof": {
+    "name": "Prop.I.18",
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "on(a, L)",
+      "on(b, L)",
+      "¬(on(c, L))",
+      "ab < ac"
+    ],
+    "goal": "∠acb < ∠abc",
+    "declarations": {
+      "points": [
+        "a",
+        "b",
+        "c"
+      ],
+      "lines": [
+        "L",
+        "M",
+        "N"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 8,
+        "text": "on(b, M), on(c, M)",
+        "justification": "let-line",
+        "dependencies": [
+          3
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 9,
+        "text": "on(a, N), on(c, N)",
+        "justification": "let-line",
+        "dependencies": [
+          2
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 10,
+        "text": "between(c, d, a), cd = ab",
+        "justification": "Prop.I.3",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "¬(b = d)",
+        "justification": "Generality 6",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "on(b, bd), on(d, bd)",
+        "justification": "let-line",
+        "dependencies": [
+          1,
+          3,
+          5,
+          7,
+          8,
+          10,
+          11
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "¬(c = d)",
+        "justification": "M1 — Zero segment",
+        "dependencies": [
+          2,
+          3,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "∠dcb < ∠adb, ∠dbc < ∠adb",
+        "justification": "Prop.I.16",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 15,
+        "text": "¬(a = d)",
+        "justification": "M1 — Zero segment",
+        "dependencies": [
+          1,
+          2,
+          4,
+          7,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "∠abd = ∠adb",
+        "justification": "Prop.I.5",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

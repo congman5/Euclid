@@ -13,74 +13,27 @@
   },
   "canvas": {
     "points": [
-      {
-        "label": "A",
-        "x": 150,
-        "y": 180
-      },
-      {
-        "label": "B",
-        "x": 100,
-        "y": 380
-      },
-      {
-        "label": "C",
-        "x": 300,
-        "y": 380
-      },
-      {
-        "label": "D",
-        "x": 400,
-        "y": 180
-      },
-      {
-        "label": "E",
-        "x": 350,
-        "y": 380
-      },
-      {
-        "label": "F",
-        "x": 580,
-        "y": 380
-      }
+      { "label": "A", "x": 150, "y": 180 },
+      { "label": "B", "x": 100, "y": 380 },
+      { "label": "C", "x": 300, "y": 380 },
+      { "label": "D", "x": 400, "y": 180 },
+      { "label": "E", "x": 350, "y": 380 },
+      { "label": "F", "x": 580, "y": 380 }
     ],
     "segments": [
-      {
-        "from": "A",
-        "to": "B",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "A",
-        "to": "C",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "B",
-        "to": "C",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "D",
-        "to": "E",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "D",
-        "to": "F",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "E",
-        "to": "F",
-        "color": "#2d70b3"
-      }
+      { "from": "A", "to": "B", "color": "#2d70b3" },
+      { "from": "A", "to": "C", "color": "#2d70b3" },
+      { "from": "B", "to": "C", "color": "#2d70b3" },
+      { "from": "D", "to": "E", "color": "#cc3333" },
+      { "from": "D", "to": "F", "color": "#cc3333" },
+      { "from": "E", "to": "F", "color": "#cc3333" }
     ],
     "rays": [],
     "circles": [],
     "angleMarks": [],
     "equalityGroups": []
   },
+  "exportedAt": "2026-06-01T00:00:00Z",
   "proof": {
     "name": "Prop.I.25",
     "premises": [
@@ -96,16 +49,34 @@
     ],
     "goal": "∠edf < ∠bac",
     "declarations": {
-      "points": [
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F"
-      ],
+      "points": ["A", "B", "C", "D", "E", "F"],
       "lines": []
     },
-    "steps": []
+    "steps": [
+      {
+        "lineNumber": 10,
+        "text": "¬(∠bac = ∠edf): if equal then I.4 gives bc = ef, contradicting ef < bc",
+        "justification": "Prop.I.4 (contradiction)",
+        "dependencies": [1, 2, 3],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "¬(∠bac < ∠edf): if so then I.24 gives bc < ef, contradicting ef < bc",
+        "justification": "Prop.I.24 (contradiction)",
+        "dependencies": [1, 2, 3],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "∠edf < ∠bac (trichotomy: only remaining possibility)",
+        "justification": "Trichotomy",
+        "dependencies": [10, 11],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
   }
 }

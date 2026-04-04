@@ -1,0 +1,150 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python) -- Lean Translator",
+  "metadata": {
+    "proposition": "Proposition I.31",
+    "title": "Construct Parallel Through Point",
+    "difficulty": 3,
+    "hints": [
+      "Translated from LeanEuclid proposition_31"
+    ],
+    "source": "lean_translator"
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 325,
+        "y": 180
+      },
+      {
+        "label": "B",
+        "x": 150,
+        "y": 350
+      },
+      {
+        "label": "C",
+        "x": 500,
+        "y": 350
+      }
+    ],
+    "segments": [
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-04-04T05:22:55Z",
+  "proof": {
+    "name": "Prop.I.31",
+    "premises": [
+      "on(b, L)",
+      "on(c, L)",
+      "¬(b = c)",
+      "¬(on(a, L))"
+    ],
+    "goal": "on(a, M), ¬(intersects(L, M))",
+    "declarations": {
+      "points": [
+        "a",
+        "b",
+        "c"
+      ],
+      "lines": [
+        "L",
+        "M"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 5,
+        "text": "on(d, c), between(L, d, b)",
+        "justification": "let-point-on-line-between",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 6,
+        "text": "on(a, ad), on(d, ad)",
+        "justification": "let-line",
+        "dependencies": [
+          4,
+          5
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 7,
+        "text": "¬(a = b)",
+        "justification": "Generality 6",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 8,
+        "text": "∠bag = ∠edf, ¬(on(g, L))",
+        "justification": "Prop.I.23",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 9,
+        "text": "on(e, ef), on(a, ef)",
+        "justification": "let-line",
+        "dependencies": [
+          4,
+          6,
+          7,
+          8
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 10,
+        "text": "on(f, ef), between(e, a, f)",
+        "justification": "let-point-on-line-extend",
+        "dependencies": [
+          4,
+          6,
+          7,
+          8,
+          9
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

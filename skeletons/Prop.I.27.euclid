@@ -1,0 +1,168 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python) -- Lean Translator",
+  "metadata": {
+    "proposition": "Proposition I.27",
+    "title": "Alternate Interior Angles Imply Parallel",
+    "difficulty": 3,
+    "hints": [
+      "Translated from LeanEuclid proposition_27"
+    ],
+    "source": "lean_translator"
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 100,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 550,
+        "y": 200
+      },
+      {
+        "label": "C",
+        "x": 100,
+        "y": 380
+      },
+      {
+        "label": "D",
+        "x": 550,
+        "y": 380
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-04-04T05:09:40Z",
+  "proof": {
+    "name": "Prop.I.27",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(b, M)",
+      "on(c, M)",
+      "on(c, N)",
+      "on(d, N)",
+      "¬(a = b)",
+      "¬(b = c)",
+      "¬(c = d)",
+      "¬(L = N)",
+      "¬(same-side(a, d, M))",
+      "∠abc = ∠bcd"
+    ],
+    "goal": "¬(intersects(L, N))",
+    "declarations": {
+      "points": [
+        "L",
+        "N",
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "lines": [
+        "L",
+        "M",
+        "N",
+        "P",
+        "Q",
+        "R"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 13,
+        "text": "on(a, P), on(e, P)",
+        "justification": "let-line",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "on(d, Q), on(f, Q)",
+        "justification": "let-line",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 15,
+        "text": "on(e, R), on(f, R)",
+        "justification": "let-line",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "on(b, P), between(a, e, b)",
+        "justification": "let-point-on-line-extend",
+        "dependencies": [
+          1,
+          7,
+          11,
+          12,
+          13,
+          15
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
+        "text": "on(g, P), on(g, Q)",
+        "justification": "let-intersection-line-line",
+        "dependencies": [
+          13,
+          14,
+          16
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 18,
+        "text": "∠bac < ∠dbc, ∠bca < ∠dbc",
+        "justification": "Prop.I.16",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          16
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

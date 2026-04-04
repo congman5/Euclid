@@ -1,0 +1,31 @@
+I.16: acc=False f=11
+  ERR: Goal not established. Missing: ∠bac < ∠dbc, ∠bca < ∠dbc
+  L11: Axiom 'Betweenness 1b' does not derive ¬(a = e) from the cited dependencies.
+  L14: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L15: Axiom 'Betweenness 1b' does not derive ¬(f = c) from the cited dependencies.
+  L16: Construction prerequisite not met: ¬(f = c)
+  L18: Theorem 'Prop.I.4' hypothesis not met: ab = de
+  L18: Theorem 'Prop.I.4' hypothesis not met: ac = df
+  L18: Theorem 'Prop.I.4' hypothesis not met: ∠bac = ∠edf
+  L21: Axiom 'Generality 1' does not derive ∠bac < ∠dbc from the cited dependencies.
+  L22: Axiom 'Generality 1' does not derive ∠bca < ∠dbc from the cited dependencies.
+  L23: Axiom 'Betweenness 1b' does not derive ¬(b = e) from the cited dependencies.
+  L26: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L27: Construction prerequisite not met: ¬(f = c)
+  L29: Theorem 'Prop.I.4' hypothesis not met: ab = de
+  L29: Theorem 'Prop.I.4' hypothesis not met: ac = df
+  L29: Theorem 'Prop.I.4' hypothesis not met: ∠bac = ∠edf
+I.17: acc=False f=1
+  ERR: Goal not established. Missing: (∠abc + ∠bca) < (∟ + ∟)
+  L12: Metric assertion (∠abc + ∠bca) < (∟ + ∟) is not a consequence of known facts under 'CN5 -- Whole > Part'.
+I.18: acc=False f=1
+  ERR: Goal not established. Missing: ∠acb < ∠abc
+  L14: Theorem 'Prop.I.5' hypothesis not met: ab = ad
+I.19: acc=False f=0
+  ERR: Goal not established. Missing: ac < ab
+I.20: acc=False f=4
+  ERR: Goal not established. Missing: bc < (ab + ac)
+  L10: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L13: Theorem 'Prop.I.5' hypothesis not met: ac = ad
+  L14: Theorem 'Prop.I.19' hypothesis not met: ∠abc < ∠acb
+  L15: Axiom 'Generality 1' does not derive bc < (ab + ac) from the cited dependencies.

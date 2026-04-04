@@ -1,0 +1,557 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python) -- Lean Translator",
+  "metadata": {
+    "proposition": "Proposition I.26",
+    "title": "ASA and AAS Congruence",
+    "difficulty": 4,
+    "hints": [
+      "Translated from LeanEuclid proposition_26"
+    ],
+    "source": "lean_translator"
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 100,
+        "y": 380
+      },
+      {
+        "label": "C",
+        "x": 300,
+        "y": 380
+      },
+      {
+        "label": "D",
+        "x": 400,
+        "y": 200
+      },
+      {
+        "label": "E",
+        "x": 350,
+        "y": 380
+      },
+      {
+        "label": "F",
+        "x": 550,
+        "y": 380
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "E",
+        "color": "#cc3333"
+      },
+      {
+        "from": "D",
+        "to": "F",
+        "color": "#cc3333"
+      },
+      {
+        "from": "E",
+        "to": "F",
+        "color": "#cc3333"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-04-04T05:07:12Z",
+  "proof": {
+    "name": "Prop.I.26",
+    "premises": [
+      "∠abc = ∠def",
+      "∠bca = ∠efd",
+      "bc = ef",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "¬(d = e)",
+      "¬(d = f)",
+      "¬(e = f)"
+    ],
+    "goal": "ab = de, ac = df, ∠bac = ∠edf, △abc = △def",
+    "declarations": {
+      "points": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
+      ],
+      "lines": [
+        "L",
+        "M",
+        "N",
+        "P",
+        "Q",
+        "R"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 10,
+        "text": "on(a, L), on(b, L)",
+        "justification": "let-line",
+        "dependencies": [
+          4
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "on(b, M), on(c, M)",
+        "justification": "let-line",
+        "dependencies": [
+          6
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "on(a, N), on(c, N)",
+        "justification": "let-line",
+        "dependencies": [
+          5
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "on(d, P), on(e, P)",
+        "justification": "let-line",
+        "dependencies": [
+          7
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "on(e, Q), on(f, Q)",
+        "justification": "let-line",
+        "dependencies": [
+          9
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 15,
+        "text": "on(d, R), on(f, R)",
+        "justification": "let-line",
+        "dependencies": [
+          8
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "on(g, gc), on(c, gc)",
+        "justification": "let-line",
+        "dependencies": [
+          1,
+          2,
+          3,
+          5,
+          6,
+          11,
+          12
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
+        "text": "bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
+        "justification": "Prop.I.4",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 18,
+        "text": "between(a, e, b), ae = cd",
+        "justification": "Prop.I.3",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          10,
+          11,
+          12,
+          13,
+          15,
+          16,
+          17
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 19,
+        "text": "on(g, gf), on(f, gf)",
+        "justification": "let-line",
+        "dependencies": [
+          1,
+          2,
+          3,
+          8,
+          9,
+          14,
+          15,
+          16,
+          17
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 20,
+        "text": "bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
+        "justification": "Prop.I.4",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 21,
+        "text": "bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
+        "justification": "Prop.I.4",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 22,
+        "text": "on(a, ah), on(h, ah)",
+        "justification": "let-line",
+        "dependencies": [
+          1,
+          2,
+          4,
+          5,
+          10,
+          12,
+          17,
+          18,
+          20,
+          21
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 23,
+        "text": "bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
+        "justification": "Prop.I.4",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 24,
+        "text": "∠bac < ∠dbc, ∠bca < ∠dbc",
+        "justification": "Prop.I.16",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          10,
+          11,
+          12,
+          13,
+          15,
+          16,
+          17,
+          18,
+          20,
+          21,
+          22,
+          23
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 25,
+        "text": "between(a, e, b), ae = cd",
+        "justification": "Prop.I.3",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          10,
+          11,
+          12,
+          13,
+          15,
+          16,
+          17,
+          18,
+          20,
+          21,
+          22,
+          23,
+          24
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 26,
+        "text": "on(d, dh), on(h, dh)",
+        "justification": "let-line",
+        "dependencies": [
+          1,
+          2,
+          7,
+          8,
+          13,
+          15,
+          17,
+          18,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 27,
+        "text": "bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
+        "justification": "Prop.I.4",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 28,
+        "text": "∠bac < ∠dbc, ∠bca < ∠dbc",
+        "justification": "Prop.I.16",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          10,
+          11,
+          12,
+          13,
+          15,
+          16,
+          17,
+          18,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 29,
+        "text": "bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
+        "justification": "Prop.I.4",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

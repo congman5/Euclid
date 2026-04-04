@@ -1,0 +1,180 @@
+I.26: acc=False f=14
+  ERR: Goal not established. Missing: ab = de, ac = df, ∠bac = ∠edf, △abc = △def
+  L16: Construction prerequisite not met: ¬(g = c)
+  L17: Theorem 'Prop.I.4' hypothesis not met: ab = de
+  L17: Theorem 'Prop.I.4' hypothesis not met: ac = df
+  L17: Theorem 'Prop.I.4' hypothesis not met: ∠bac = ∠edf
+  L18: Theorem 'Prop.I.3' hypothesis not met: ¬(c = d)
+  L18: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L18: Theorem 'Prop.I.3' hypothesis not met: ¬(a = d)
+  L19: Construction prerequisite not met: ¬(g = f)
+  L20: Theorem 'Prop.I.4' hypothesis not met: ab = de
+  L20: Theorem 'Prop.I.4' hypothesis not met: ac = df
+  L20: Theorem 'Prop.I.4' hypothesis not met: ∠bac = ∠edf
+  L21: Theorem 'Prop.I.4' hypothesis not met: ab = de
+  L21: Theorem 'Prop.I.4' hypothesis not met: ac = df
+  L21: Theorem 'Prop.I.4' hypothesis not met: ∠bac = ∠edf
+  L22: Construction prerequisite not met: ¬(a = h)
+  L23: Theorem 'Prop.I.4' hypothesis not met: ab = de
+  L23: Theorem 'Prop.I.4' hypothesis not met: ac = df
+  L23: Theorem 'Prop.I.4' hypothesis not met: ∠bac = ∠edf
+  L24: Theorem 'Prop.I.16' hypothesis not met: between(a, b, d)
+  L24: Theorem 'Prop.I.16' hypothesis not met: ¬(on(c, L))
+  L25: Theorem 'Prop.I.3' hypothesis not met: ¬(c = d)
+  L25: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L25: Theorem 'Prop.I.3' hypothesis not met: ¬(a = d)
+  L26: Construction prerequisite not met: ¬(d = h)
+  L27: Theorem 'Prop.I.4' hypothesis not met: ab = de
+  L27: Theorem 'Prop.I.4' hypothesis not met: ac = df
+  L27: Theorem 'Prop.I.4' hypothesis not met: ∠bac = ∠edf
+  L28: Theorem 'Prop.I.16' hypothesis not met: between(a, b, d)
+  L28: Theorem 'Prop.I.16' hypothesis not met: ¬(on(c, L))
+  L29: Theorem 'Prop.I.4' hypothesis not met: ab = de
+  L29: Theorem 'Prop.I.4' hypothesis not met: ac = df
+  L29: Theorem 'Prop.I.4' hypothesis not met: ∠bac = ∠edf
+I.27: acc=False f=6
+  ERR: Goal not established. Missing: ¬(intersects(L, N))
+  L13: Construction prerequisite not met: ¬(a = e)
+  L14: Construction prerequisite not met: ¬(d = f)
+  L15: Construction prerequisite not met: ¬(e = f)
+  L16: Construction prerequisite not met: on(a, P)
+  L17: Construction prerequisite not met: intersects(P, Q)
+  L18: Theorem 'Prop.I.16' hypothesis not met: between(a, b, d)
+  L18: Theorem 'Prop.I.16' hypothesis not met: ¬(on(c, L))
+  L18: Theorem 'Prop.I.16' hypothesis not met: ¬(a = c)
+I.28: acc=False f=3
+  ERR: Goal not established. Missing: ¬(intersects(L, N))
+  L13: Construction prerequisite not met: ¬(e = f)
+  L14: Theorem 'Prop.I.27' hypothesis not met: on(c, L)
+  L14: Theorem 'Prop.I.27' hypothesis not met: ∠bac = ∠acd
+  L15: Theorem 'Prop.I.27' hypothesis not met: on(c, L)
+  L15: Theorem 'Prop.I.27' hypothesis not met: ∠bac = ∠acd
+I.29: acc=False f=22
+  ERR: Goal not established. Missing: ∠abc = ∠bcd
+  L13: Construction prerequisite not met: ¬(e = f)
+  L14: Theorem 'Prop.I.13' hypothesis not met: on(c, L)
+  L14: Theorem 'Prop.I.13' hypothesis not met: between(a, b, c)
+  L14: Theorem 'Prop.I.13' hypothesis not met: ¬(on(d, L))
+  L14: Theorem 'Prop.I.13' hypothesis not met: ¬(b = d)
+  L15: Theorem 'Prop.I.13' hypothesis not met: on(c, L)
+  L15: Theorem 'Prop.I.13' hypothesis not met: between(a, b, c)
+  L15: Theorem 'Prop.I.13' hypothesis not met: ¬(on(d, L))
+  L15: Theorem 'Prop.I.13' hypothesis not met: ¬(b = d)
+  L16: Theorem 'Prop.I.15' hypothesis not met: on(d, M)
+  L16: Theorem 'Prop.I.15' hypothesis not met: on(e, L)
+  L16: Theorem 'Prop.I.15' hypothesis not met: on(e, M)
+  L16: Theorem 'Prop.I.15' hypothesis not met: between(a, e, b)
+  L16: Theorem 'Prop.I.15' hypothesis not met: between(c, e, d)
+  L16: Theorem 'Prop.I.15' hypothesis not met: ¬(L = M)
+  L17: Theorem 'Prop.I.13' hypothesis not met: on(c, L)
+  L17: Theorem 'Prop.I.13' hypothesis not met: between(a, b, c)
+  L17: Theorem 'Prop.I.13' hypothesis not met: ¬(on(d, L))
+  L17: Theorem 'Prop.I.13' hypothesis not met: ¬(b = d)
+  L18: Construction prerequisite not met: on(g, P)
+  L19: Axiom 'Betweenness 1b' does not derive ¬(g = h) from the cited dependencies.
+  L20: Construction prerequisite not met: on(g, gh)
+  L21: Construction prerequisite not met: on(h, gh)
+  L22: Axiom 'Betweenness 1b' does not derive ¬(d = h) from the cited dependencies.
+  L23: Construction prerequisite not met: on(h, N)
+  L24: Axiom 'Generality 1' does not derive ∠abc = ∠bcd from the cited dependencies.
+  L25: Axiom 'Betweenness 1b' does not derive ¬(a = g) from the cited dependencies.
+  L26: Construction prerequisite not met: on(g, L)
+  L27: Axiom 'Betweenness 1b' does not derive ¬(b = g) from the cited dependencies.
+  L28: Construction prerequisite not met: on(g, L)
+  L29: Construction prerequisite not met: on(h, N)
+  L30: Construction prerequisite not met: on(g, P)
+  L31: Construction prerequisite not met: on(g, L)
+  L32: Construction prerequisite not met: on(h, N)
+  L33: Construction prerequisite not met: on(g, P)
+  L34: Construction prerequisite not met: on(h, P)
+I.30: acc=False f=16
+  ERR: Goal not established. Missing: ¬(intersects(L, N))
+  L6: Parse error: Unexpected identifier 'line_nonempty' — expected a relation or equation
+  L7: Parse error: Unexpected identifier 'exists_distincts_points_on_line' — expected a relation or equation
+  L8: Construction prerequisite not met: ¬(g = k)
+  L9: Construction prerequisite not met: intersects(N, gk)
+  L10: Parse error: Unexpected identifier 'exists_distincts_points_on_line' — expected a relation or equation
+  L11: Construction prerequisite not met: on(a, L)
+  L12: Parse error: Unexpected identifier 'point_on_line_same_side' — expected a relation or equation
+  L13: Construction prerequisite not met: on(e, N)
+  L14: Parse error: Unexpected identifier 'point_on_line_same_side' — expected a relation or equation
+  L15: Construction prerequisite not met: on(c, M)
+  L16: Theorem 'Prop.I.29' hypothesis not met: on(a, L)
+  L16: Theorem 'Prop.I.29' hypothesis not met: on(b, L)
+  L16: Theorem 'Prop.I.29' hypothesis not met: on(b, M)
+  L16: Theorem 'Prop.I.29' hypothesis not met: on(c, M)
+  L16: Theorem 'Prop.I.29' hypothesis not met: on(c, N)
+  L16: Theorem 'Prop.I.29' hypothesis not met: on(d, N)
+  L16: Theorem 'Prop.I.29' hypothesis not met: ¬(a = b)
+  L16: Theorem 'Prop.I.29' hypothesis not met: ¬(b = c)
+  L16: Theorem 'Prop.I.29' hypothesis not met: ¬(c = d)
+  L16: Theorem 'Prop.I.29' hypothesis not met: ¬(same-side(a, d, M))
+  L16: Theorem 'Prop.I.29' hypothesis not met: ¬(intersects(L, N))
+  L17: Theorem 'Prop.I.27' hypothesis not met: on(a, L)
+  L17: Theorem 'Prop.I.27' hypothesis not met: on(b, L)
+  L17: Theorem 'Prop.I.27' hypothesis not met: on(b, M)
+  L17: Theorem 'Prop.I.27' hypothesis not met: on(c, M)
+  L17: Theorem 'Prop.I.27' hypothesis not met: on(c, N)
+  L17: Theorem 'Prop.I.27' hypothesis not met: on(d, N)
+  L17: Theorem 'Prop.I.27' hypothesis not met: ¬(a = b)
+  L17: Theorem 'Prop.I.27' hypothesis not met: ¬(b = c)
+  L17: Theorem 'Prop.I.27' hypothesis not met: ¬(c = d)
+  L17: Theorem 'Prop.I.27' hypothesis not met: ¬(same-side(a, d, M))
+  L17: Theorem 'Prop.I.27' hypothesis not met: ∠abc = ∠bcd
+  L18: Theorem 'Prop.I.29' hypothesis not met: on(a, L)
+  L18: Theorem 'Prop.I.29' hypothesis not met: on(b, L)
+  L18: Theorem 'Prop.I.29' hypothesis not met: on(b, M)
+  L18: Theorem 'Prop.I.29' hypothesis not met: on(c, M)
+  L18: Theorem 'Prop.I.29' hypothesis not met: on(c, N)
+  L18: Theorem 'Prop.I.29' hypothesis not met: on(d, N)
+  L18: Theorem 'Prop.I.29' hypothesis not met: ¬(a = b)
+  L18: Theorem 'Prop.I.29' hypothesis not met: ¬(b = c)
+  L18: Theorem 'Prop.I.29' hypothesis not met: ¬(c = d)
+  L18: Theorem 'Prop.I.29' hypothesis not met: ¬(same-side(a, d, M))
+  L18: Theorem 'Prop.I.29' hypothesis not met: ¬(intersects(L, N))
+  L19: Theorem 'Prop.I.27' hypothesis not met: on(a, L)
+  L19: Theorem 'Prop.I.27' hypothesis not met: on(b, L)
+  L19: Theorem 'Prop.I.27' hypothesis not met: on(b, M)
+  L19: Theorem 'Prop.I.27' hypothesis not met: on(c, M)
+  L19: Theorem 'Prop.I.27' hypothesis not met: on(c, N)
+  L19: Theorem 'Prop.I.27' hypothesis not met: on(d, N)
+  L19: Theorem 'Prop.I.27' hypothesis not met: ¬(a = b)
+  L19: Theorem 'Prop.I.27' hypothesis not met: ¬(b = c)
+  L19: Theorem 'Prop.I.27' hypothesis not met: ¬(c = d)
+  L19: Theorem 'Prop.I.27' hypothesis not met: ¬(same-side(a, d, M))
+  L19: Theorem 'Prop.I.27' hypothesis not met: ∠abc = ∠bcd
+  L20: Theorem 'Prop.I.29' hypothesis not met: on(a, L)
+  L20: Theorem 'Prop.I.29' hypothesis not met: on(b, L)
+  L20: Theorem 'Prop.I.29' hypothesis not met: on(b, M)
+  L20: Theorem 'Prop.I.29' hypothesis not met: on(c, M)
+  L20: Theorem 'Prop.I.29' hypothesis not met: on(c, N)
+  L20: Theorem 'Prop.I.29' hypothesis not met: on(d, N)
+  L20: Theorem 'Prop.I.29' hypothesis not met: ¬(a = b)
+  L20: Theorem 'Prop.I.29' hypothesis not met: ¬(b = c)
+  L20: Theorem 'Prop.I.29' hypothesis not met: ¬(c = d)
+  L20: Theorem 'Prop.I.29' hypothesis not met: ¬(same-side(a, d, M))
+  L20: Theorem 'Prop.I.29' hypothesis not met: ¬(intersects(L, N))
+  L21: Theorem 'Prop.I.27' hypothesis not met: on(a, L)
+  L21: Theorem 'Prop.I.27' hypothesis not met: on(b, L)
+  L21: Theorem 'Prop.I.27' hypothesis not met: on(b, M)
+  L21: Theorem 'Prop.I.27' hypothesis not met: on(c, M)
+  L21: Theorem 'Prop.I.27' hypothesis not met: on(c, N)
+  L21: Theorem 'Prop.I.27' hypothesis not met: on(d, N)
+  L21: Theorem 'Prop.I.27' hypothesis not met: ¬(a = b)
+  L21: Theorem 'Prop.I.27' hypothesis not met: ¬(b = c)
+  L21: Theorem 'Prop.I.27' hypothesis not met: ¬(c = d)
+  L21: Theorem 'Prop.I.27' hypothesis not met: ¬(same-side(a, d, M))
+  L21: Theorem 'Prop.I.27' hypothesis not met: ∠abc = ∠bcd
+I.31: acc=False f=5
+  ERR: Goal not established. Missing: on(a, M), ¬(intersects(L, M))
+  L5: Construction prerequisite not met: on(L, c)
+  L6: Construction prerequisite not met: ¬(a = d)
+  L7: Theorem 'Prop.I.23' hypothesis not met: ¬(d = e)
+  L7: Theorem 'Prop.I.23' hypothesis not met: ¬(d = f)
+  L7: Theorem 'Prop.I.23' hypothesis not met: ¬(e = f)
+  L7: Theorem 'Prop.I.23' hypothesis not met: on(a, L)
+  L8: Construction prerequisite not met: ¬(e = a)
+  L9: Construction prerequisite not met: on(e, ef)
+I.32: acc=False f=1
+  ERR: Goal not established. Missing: ∠acd = (∠cab + ∠abc), (∠abc + (∠bca + ∠cab)) = (∟ + ∟)
+  L12: Parse error: Unexpected identifier 'point_on_line_same_side' — expected a relation or equation

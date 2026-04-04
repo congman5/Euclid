@@ -1,0 +1,102 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python) -- Lean Translator",
+  "metadata": {
+    "proposition": "Proposition I.19",
+    "title": "Greater Angle Opposite Greater Side",
+    "difficulty": 3,
+    "hints": [
+      "Translated from LeanEuclid proposition_19"
+    ],
+    "source": "lean_translator"
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 200,
+        "y": 150
+      },
+      {
+        "label": "B",
+        "x": 150,
+        "y": 380
+      },
+      {
+        "label": "C",
+        "x": 500,
+        "y": 380
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-04-04T04:57:15Z",
+  "proof": {
+    "name": "Prop.I.19",
+    "premises": [
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "on(a, L)",
+      "on(b, L)",
+      "¬(on(c, L))",
+      "∠abc < ∠acb"
+    ],
+    "goal": "ac < ab",
+    "declarations": {
+      "points": [
+        "a",
+        "b",
+        "c"
+      ],
+      "lines": [
+        "L",
+        "M",
+        "N"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 8,
+        "text": "on(b, M), on(c, M)",
+        "justification": "let-line",
+        "dependencies": [
+          3
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 9,
+        "text": "on(a, N), on(c, N)",
+        "justification": "let-line",
+        "dependencies": [
+          2
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

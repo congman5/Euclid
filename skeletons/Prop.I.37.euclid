@@ -1,0 +1,394 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python) -- Lean Translator",
+  "metadata": {
+    "proposition": "Proposition I.37",
+    "title": "Triangles on Same Base",
+    "difficulty": 3,
+    "hints": [
+      "Translated from LeanEuclid proposition_37"
+    ],
+    "source": "lean_translator"
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 200,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 150,
+        "y": 400
+      },
+      {
+        "label": "C",
+        "x": 450,
+        "y": 400
+      },
+      {
+        "label": "D",
+        "x": 400,
+        "y": 200
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-04-04T05:47:28Z",
+  "proof": {
+    "name": "Prop.I.37",
+    "premises": [
+      "on(b, N)",
+      "on(c, N)",
+      "on(a, L)",
+      "on(d, L)",
+      "¬(intersects(L, N))",
+      "¬(b = c)",
+      "¬(a = d)",
+      "¬(on(a, N))",
+      "¬(on(d, N))"
+    ],
+    "goal": "△abc = △dbc",
+    "declarations": {
+      "points": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "lines": [
+        "L",
+        "M",
+        "N",
+        "P",
+        "Q",
+        "R"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 10,
+        "text": "¬(a = b)",
+        "justification": "Generality 6",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "on(a, M), on(b, M)",
+        "justification": "let-line",
+        "dependencies": [
+          10
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "¬(a = c)",
+        "justification": "Generality 6",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "on(a, P), on(c, P)",
+        "justification": "let-line",
+        "dependencies": [
+          12
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "¬(b = d)",
+        "justification": "Generality 6",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 15,
+        "text": "on(b, Q), on(d, Q)",
+        "justification": "let-line",
+        "dependencies": [
+          14
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "¬(c = d)",
+        "justification": "Generality 6",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
+        "text": "on(c, R), on(d, R)",
+        "justification": "let-line",
+        "dependencies": [
+          16
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 18,
+        "text": "on(b, be), ¬(intersects(P, be))",
+        "justification": "Prop.I.31",
+        "dependencies": [
+          1,
+          2,
+          3,
+          6,
+          7,
+          8,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 19,
+        "text": "on(e, L), on(e, be)",
+        "justification": "let-intersection-line-line",
+        "dependencies": [
+          3,
+          4,
+          5,
+          18
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 20,
+        "text": "on(c, cf), ¬(intersects(Q, cf))",
+        "justification": "Prop.I.31",
+        "dependencies": [
+          1,
+          2,
+          4,
+          6,
+          7,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 21,
+        "text": "on(f, L), on(f, cf)",
+        "justification": "let-intersection-line-line",
+        "dependencies": [
+          3,
+          4,
+          5,
+          19,
+          20
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 22,
+        "text": "(△abc + △acd) = (△ebc + △ecf)",
+        "justification": "Prop.I.35",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 23,
+        "text": "ab = cd, ad = bc, ∠dab = ∠bcd, ∠abc = ∠cda, △abc = △acd",
+        "justification": "Prop.I.34",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 24,
+        "text": "ab = cd, ad = bc, ∠dab = ∠bcd, ∠abc = ∠cda, △abc = △acd",
+        "justification": "Prop.I.34",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

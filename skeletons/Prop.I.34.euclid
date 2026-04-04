@@ -1,0 +1,216 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python) -- Lean Translator",
+  "metadata": {
+    "proposition": "Proposition I.34",
+    "title": "Properties of Parallelograms",
+    "difficulty": 3,
+    "hints": [
+      "Translated from LeanEuclid proposition_34"
+    ],
+    "source": "lean_translator"
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 400,
+        "y": 200
+      },
+      {
+        "label": "C",
+        "x": 450,
+        "y": 400
+      },
+      {
+        "label": "D",
+        "x": 200,
+        "y": 400
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "A",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-04-04T05:26:54Z",
+  "proof": {
+    "name": "Prop.I.34",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(c, N)",
+      "on(d, N)",
+      "¬(intersects(L, N))",
+      "on(a, M)",
+      "on(d, M)",
+      "on(b, P)",
+      "on(c, P)",
+      "¬(intersects(M, P))",
+      "¬(a = b)",
+      "¬(c = d)",
+      "¬(a = d)",
+      "¬(b = c)"
+    ],
+    "goal": "ab = cd, ad = bc, ∠dab = ∠bcd, ∠abc = ∠cda, △abc = △acd",
+    "declarations": {
+      "points": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "lines": [
+        "L",
+        "M",
+        "N",
+        "P",
+        "Q",
+        "R"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 15,
+        "text": "on(a, Q), on(c, Q)",
+        "justification": "let-line",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "on(b, R), on(d, R)",
+        "justification": "let-line",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
+        "text": "∠abc = ∠bcd",
+        "justification": "Prop.I.29",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 18,
+        "text": "∠abc = ∠bcd",
+        "justification": "Prop.I.29",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 19,
+        "text": "ab = de, ac = df, ∠bac = ∠edf, △abc = △def",
+        "justification": "Prop.I.26",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 20,
+        "text": "on(b, P), on(c, P)",
+        "justification": "let-line",
+        "dependencies": [
+          2,
+          3,
+          8,
+          9,
+          11,
+          12,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

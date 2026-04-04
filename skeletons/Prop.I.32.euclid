@@ -1,0 +1,216 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python) -- Lean Translator",
+  "metadata": {
+    "proposition": "Proposition I.32",
+    "title": "Angle Sum of Triangle",
+    "difficulty": 3,
+    "hints": [
+      "Translated from LeanEuclid proposition_32"
+    ],
+    "source": "lean_translator"
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 250,
+        "y": 150
+      },
+      {
+        "label": "B",
+        "x": 150,
+        "y": 350
+      },
+      {
+        "label": "C",
+        "x": 400,
+        "y": 350
+      },
+      {
+        "label": "D",
+        "x": 550,
+        "y": 350
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-04-04T05:23:37Z",
+  "proof": {
+    "name": "Prop.I.32",
+    "premises": [
+      "on(b, L)",
+      "on(c, L)",
+      "¬(on(a, L))",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)",
+      "between(b, c, d)",
+      "¬(c = d)"
+    ],
+    "goal": "∠acd = (∠cab + ∠abc), (∠abc + (∠bca + ∠cab)) = (∟ + ∟)",
+    "declarations": {
+      "points": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "lines": [
+        "L",
+        "M",
+        "N"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 9,
+        "text": "on(a, M), on(b, M)",
+        "justification": "let-line",
+        "dependencies": [
+          4
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 10,
+        "text": "on(a, N), on(c, N)",
+        "justification": "let-line",
+        "dependencies": [
+          5
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "on(a, M), ¬(intersects(L, M))",
+        "justification": "Prop.I.31",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "on(e, ce), same-side(e, a, L)",
+        "justification": "let-point-same-side",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          9,
+          10,
+          11
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "¬(L = N)",
+        "justification": "Betweenness 1b",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "∠abc = ∠bcd",
+        "justification": "Prop.I.29",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 15,
+        "text": "∠abc = ∠bcd",
+        "justification": "Prop.I.29",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

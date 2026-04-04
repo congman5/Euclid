@@ -1,0 +1,137 @@
+I.21: acc=False f=4
+  ERR: Goal not established. Missing: (bd + dc) < (ba + ac), ∠bac < ∠bdc
+  L21: Construction prerequisite not met: intersects(P, M)
+  L22: Theorem 'Prop.I.20' hypothesis not met: ¬(a = e)
+  L22: Theorem 'Prop.I.20' hypothesis not met: ¬(b = e)
+  L22: Theorem 'Prop.I.20' hypothesis not met: on(a, L)
+  L22: Theorem 'Prop.I.20' hypothesis not met: ¬(on(e, L))
+  L23: Theorem 'Prop.I.20' hypothesis not met: ¬(e = d)
+  L23: Theorem 'Prop.I.20' hypothesis not met: ¬(e = c)
+  L23: Theorem 'Prop.I.20' hypothesis not met: on(e, L)
+  L23: Theorem 'Prop.I.20' hypothesis not met: on(d, L)
+  L23: Theorem 'Prop.I.20' hypothesis not met: ¬(on(c, L))
+  L24: Theorem 'Prop.I.16' hypothesis not met: on(a, L)
+  L24: Theorem 'Prop.I.16' hypothesis not met: between(a, b, d)
+  L24: Theorem 'Prop.I.16' hypothesis not met: ¬(on(c, L))
+I.22: acc=False f=37
+  ERR: Goal not established. Missing: pq = ab, pr = cd, qr = ef
+  L7: Parse error: Unknown hyphenated relation: let-point
+  L8: Parse error: Unknown hyphenated relation: let-point
+  L9: Construction prerequisite not met: ¬(d = e)
+  L10: Construction prerequisite not met: on(d, de)
+  L11: Axiom 'Betweenness 1c' does not derive ¬(d = e) from the cited dependencies.
+  L12: Construction prerequisite not met: on(d, de)
+  L13: Axiom 'Betweenness 1c' does not derive ¬(d = e) from the cited dependencies.
+  L14: Construction prerequisite not met: on(d, de)
+  L15: Theorem 'Prop.I.3' hypothesis not met: on(a, L)
+  L15: Theorem 'Prop.I.3' hypothesis not met: on(b, L)
+  L15: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L15: Theorem 'Prop.I.3' hypothesis not met: ¬(a = c)
+  L15: Theorem 'Prop.I.3' hypothesis not met: ¬(a = d)
+  L16: Theorem 'Prop.I.3' hypothesis not met: on(a, L)
+  L16: Theorem 'Prop.I.3' hypothesis not met: on(b, L)
+  L16: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L16: Theorem 'Prop.I.3' hypothesis not met: ¬(a = c)
+  L16: Theorem 'Prop.I.3' hypothesis not met: ¬(a = d)
+  L17: Theorem 'Prop.I.3' hypothesis not met: on(a, L)
+  L17: Theorem 'Prop.I.3' hypothesis not met: on(b, L)
+  L17: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L17: Theorem 'Prop.I.3' hypothesis not met: ¬(a = c)
+  L17: Theorem 'Prop.I.3' hypothesis not met: ¬(a = d)
+  L18: Construction prerequisite not met: ¬(f = d)
+  L19: Construction prerequisite not met: ¬(g = h)
+  L20: Statement does not match 'let-intersection-line-circle-between' conclusion pattern. Expected literals matching: on(a, α), on(a, L), between(b, a, c)
+  L21: Construction prerequisite not met: intersects(klh, dkl)
+  L22: Construction prerequisite not met: on(f, fe)
+  L23: Axiom 'Betweenness 1c' does not derive ¬(f = e) from the cited dependencies.
+  L24: Construction prerequisite not met: on(f, fe)
+  L25: Theorem 'Prop.I.3' hypothesis not met: on(a, L)
+  L25: Theorem 'Prop.I.3' hypothesis not met: on(b, L)
+  L25: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L25: Theorem 'Prop.I.3' hypothesis not met: ¬(a = c)
+  L25: Theorem 'Prop.I.3' hypothesis not met: ¬(a = d)
+  L26: Theorem 'Prop.I.3' hypothesis not met: on(a, L)
+  L26: Theorem 'Prop.I.3' hypothesis not met: on(b, L)
+  L26: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L26: Theorem 'Prop.I.3' hypothesis not met: ¬(a = c)
+  L26: Theorem 'Prop.I.3' hypothesis not met: ¬(a = d)
+  L27: Theorem 'Prop.I.3' hypothesis not met: on(a, L)
+  L27: Theorem 'Prop.I.3' hypothesis not met: on(b, L)
+  L27: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L27: Theorem 'Prop.I.3' hypothesis not met: ¬(a = c)
+  L27: Theorem 'Prop.I.3' hypothesis not met: ¬(a = d)
+  L28: Construction prerequisite not met: ¬(f = d)
+  L29: Construction prerequisite not met: ¬(g = h)
+  L30: Statement does not match 'let-intersection-line-circle-between' conclusion pattern. Expected literals matching: on(a, α), on(a, L), between(b, a, c)
+  L31: Construction prerequisite not met: intersects(klh, dkl)
+  L32: Axiom 'Generality 1' does not derive pq = ab from the cited dependencies.
+  L33: Axiom 'Generality 1' does not derive pr = cd from the cited dependencies.
+  L34: Axiom 'Generality 1' does not derive qr = ef from the cited dependencies.
+  L35: Construction prerequisite not met: on(f, fe)
+  L36: Construction prerequisite not met: on(f, fe)
+  L37: Theorem 'Prop.I.3' hypothesis not met: on(a, L)
+  L37: Theorem 'Prop.I.3' hypothesis not met: on(b, L)
+  L37: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L37: Theorem 'Prop.I.3' hypothesis not met: ¬(a = c)
+  L37: Theorem 'Prop.I.3' hypothesis not met: ¬(a = d)
+  L38: Theorem 'Prop.I.3' hypothesis not met: on(a, L)
+  L38: Theorem 'Prop.I.3' hypothesis not met: on(b, L)
+  L38: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L38: Theorem 'Prop.I.3' hypothesis not met: ¬(a = c)
+  L38: Theorem 'Prop.I.3' hypothesis not met: ¬(a = d)
+  L39: Theorem 'Prop.I.3' hypothesis not met: on(a, L)
+  L39: Theorem 'Prop.I.3' hypothesis not met: on(b, L)
+  L39: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L39: Theorem 'Prop.I.3' hypothesis not met: ¬(a = c)
+  L39: Theorem 'Prop.I.3' hypothesis not met: ¬(a = d)
+  L40: Construction prerequisite not met: ¬(f = d)
+  L41: Construction prerequisite not met: ¬(g = h)
+  L42: Statement does not match 'let-intersection-line-circle-between' conclusion pattern. Expected literals matching: on(a, α), on(a, L), between(b, a, c)
+  L43: Parse error: Unexpected identifier 'intersection_same_side' — expected a relation or equation
+I.23: acc=False f=8
+  ERR: Goal not established. Missing: ∠bag = ∠edf, ¬(on(g, L))
+  L7: Construction prerequisite not met: ¬(c = d)
+  L8: Construction prerequisite not met: ¬(c = e)
+  L14: Theorem 'Prop.I.22' hypothesis not met: ab < (cd + ef)
+  L14: Theorem 'Prop.I.22' hypothesis not met: cd < (ab + ef)
+  L14: Theorem 'Prop.I.22' hypothesis not met: ef < (ab + cd)
+  L16: Construction prerequisite not met: ¬(f = g)
+  L17: Theorem 'Prop.I.8' hypothesis not met: ab = de
+  L17: Theorem 'Prop.I.8' hypothesis not met: bc = ef
+  L17: Theorem 'Prop.I.8' hypothesis not met: ca = fd
+  L23: Theorem 'Prop.I.22' hypothesis not met: ab < (cd + ef)
+  L23: Theorem 'Prop.I.22' hypothesis not met: cd < (ab + ef)
+  L23: Theorem 'Prop.I.22' hypothesis not met: ef < (ab + cd)
+  L25: Construction prerequisite not met: ¬(f = g)
+  L26: Theorem 'Prop.I.8' hypothesis not met: ab = de
+  L26: Theorem 'Prop.I.8' hypothesis not met: bc = ef
+  L26: Theorem 'Prop.I.8' hypothesis not met: ca = fd
+I.24: acc=False f=14
+  ERR: Goal not established. Missing: ef < bc
+  L17: Construction prerequisite not met: ¬(d = g)
+  L18: Construction prerequisite not met: on(d, dg)
+  L19: Theorem 'Prop.I.3' hypothesis not met: ¬(c = d)
+  L19: Theorem 'Prop.I.3' hypothesis not met: cd < ab
+  L19: Theorem 'Prop.I.3' hypothesis not met: ¬(a = d)
+  L20: Axiom 'Generality 6' does not derive ¬(e = g) from the cited dependencies.
+  L21: Construction prerequisite not met: ¬(e = g)
+  L22: Construction prerequisite not met: ¬(f = g)
+  L23: Theorem 'Prop.I.4' hypothesis not met: ∠bac = ∠edf
+  L24: Theorem 'Prop.I.5' hypothesis not met: ab = ac
+  L25: Theorem 'Prop.I.19' hypothesis not met: ¬(on(c, L))
+  L25: Theorem 'Prop.I.19' hypothesis not met: ∠abc < ∠acb
+  L26: Theorem 'Prop.I.13' hypothesis not met: on(c, L)
+  L26: Theorem 'Prop.I.13' hypothesis not met: between(a, b, c)
+  L26: Theorem 'Prop.I.13' hypothesis not met: ¬(on(d, L))
+  L26: Theorem 'Prop.I.13' hypothesis not met: ¬(b = d)
+  L27: Theorem 'Prop.I.13' hypothesis not met: on(c, L)
+  L27: Theorem 'Prop.I.13' hypothesis not met: between(a, b, c)
+  L27: Theorem 'Prop.I.13' hypothesis not met: ¬(on(d, L))
+  L27: Theorem 'Prop.I.13' hypothesis not met: ¬(b = d)
+  L28: Theorem 'Prop.I.17' hypothesis not met: ¬(on(c, L))
+  L29: Theorem 'Prop.I.17' hypothesis not met: ¬(on(c, L))
+  L30: Theorem 'Prop.I.19' hypothesis not met: ¬(on(c, L))
+  L30: Theorem 'Prop.I.19' hypothesis not met: ∠abc < ∠acb
+I.25: acc=False f=1
+  ERR: Goal not established. Missing: ∠edf < ∠bac
+  L16: Theorem 'Prop.I.24' hypothesis not met: ∠edf < ∠bac

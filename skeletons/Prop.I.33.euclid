@@ -1,0 +1,220 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python) -- Lean Translator",
+  "metadata": {
+    "proposition": "Proposition I.33",
+    "title": "Joining Ends of Equal Parallel Segments",
+    "difficulty": 3,
+    "hints": [
+      "Translated from LeanEuclid proposition_33"
+    ],
+    "source": "lean_translator"
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 400,
+        "y": 200
+      },
+      {
+        "label": "C",
+        "x": 200,
+        "y": 400
+      },
+      {
+        "label": "D",
+        "x": 450,
+        "y": 400
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "D",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-04-04T05:25:26Z",
+  "proof": {
+    "name": "Prop.I.33",
+    "premises": [
+      "on(a, L)",
+      "on(b, L)",
+      "on(c, N)",
+      "on(d, N)",
+      "¬(intersects(L, N))",
+      "¬(a = b)",
+      "¬(c = d)",
+      "ab = cd",
+      "on(a, M)",
+      "on(c, M)",
+      "on(b, P)",
+      "on(d, P)",
+      "¬(L = N)",
+      "same-side(b, d, M)"
+    ],
+    "goal": "ac = bd, ¬(intersects(M, P))",
+    "declarations": {
+      "points": [
+        "L",
+        "N",
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "lines": [
+        "L",
+        "M",
+        "N",
+        "P"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 15,
+        "text": "¬(b = c)",
+        "justification": "Generality 6",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "on(b, bc), on(c, bc)",
+        "justification": "let-line",
+        "dependencies": [
+          2,
+          3,
+          6,
+          7,
+          8,
+          10,
+          11,
+          14,
+          15
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
+        "text": "∠abc = ∠bcd",
+        "justification": "Prop.I.29",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 18,
+        "text": "bc = ef, ∠abc = ∠def, ∠bca = ∠efd, △abc = △def",
+        "justification": "Prop.I.4",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          14,
+          15,
+          16,
+          17
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 19,
+        "text": "¬(intersects(L, N))",
+        "justification": "Prop.I.27",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}

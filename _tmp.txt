@@ -1,0 +1,2 @@
+48
+['Prop.I.1', 'Prop.I.2', 'Prop.I.3', 'Prop.I.4', 'Prop.I.5']

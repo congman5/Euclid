@@ -13,44 +13,21 @@
   },
   "canvas": {
     "points": [
-      {
-        "label": "A",
-        "x": 250,
-        "y": 150
-      },
-      {
-        "label": "B",
-        "x": 150,
-        "y": 380
-      },
-      {
-        "label": "C",
-        "x": 450,
-        "y": 380
-      }
+      { "label": "A", "x": 250, "y": 150 },
+      { "label": "B", "x": 150, "y": 380 },
+      { "label": "C", "x": 450, "y": 380 }
     ],
     "segments": [
-      {
-        "from": "A",
-        "to": "B",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "A",
-        "to": "C",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "B",
-        "to": "C",
-        "color": "#2d70b3"
-      }
+      { "from": "A", "to": "B", "color": "#2d70b3" },
+      { "from": "A", "to": "C", "color": "#2d70b3" },
+      { "from": "B", "to": "C", "color": "#2d70b3" }
     ],
     "rays": [],
     "circles": [],
     "angleMarks": [],
     "equalityGroups": []
   },
+  "exportedAt": "2026-06-01T00:00:00Z",
   "proof": {
     "name": "Prop.I.17",
     "premises": [
@@ -63,13 +40,42 @@
     ],
     "goal": "(∠abc + ∠bca) < (∟ + ∟)",
     "declarations": {
-      "points": [
-        "A",
-        "B",
-        "C"
-      ],
-      "lines": []
+      "points": ["A", "B", "C"],
+      "lines": ["L"]
     },
-    "steps": []
+    "steps": [
+      {
+        "lineNumber": 7,
+        "text": "extend bc to d with between(b, c, d)",
+        "justification": "Construction (extend segment)",
+        "dependencies": [1, 2, 3, 4, 5, 6],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 8,
+        "text": "∠bac < ∠acd (I.16: exterior angle > remote interior)",
+        "justification": "Prop.I.16",
+        "dependencies": [7],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 9,
+        "text": "∠acb + ∠acd = ∟ + ∟ (I.13: supplementary angles)",
+        "justification": "Prop.I.13",
+        "dependencies": [7],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 10,
+        "text": "(∠abc + ∠bca) < (∟ + ∟)",
+        "justification": "Metric (conclusion from I.16 + I.13)",
+        "dependencies": [8, 9],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
   }
 }

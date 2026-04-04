@@ -1,5 +1,12 @@
 {
-  "bookmarks": [],
+  "bookmarks": [
+    {
+      "path": "C:\\Users\\Connor Gorman\\source\\repos\\congman5\\Euclid\\Skeletons",
+      "name": "Skeletons",
+      "icon": "\u25b8",
+      "type": "folder"
+    }
+  ],
   "dialog_geometry": {
     "x": 24,
     "y": 38,

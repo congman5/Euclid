@@ -14,74 +14,27 @@
   },
   "canvas": {
     "points": [
-      {
-        "label": "A",
-        "x": 150,
-        "y": 180
-      },
-      {
-        "label": "B",
-        "x": 100,
-        "y": 380
-      },
-      {
-        "label": "C",
-        "x": 300,
-        "y": 380
-      },
-      {
-        "label": "D",
-        "x": 400,
-        "y": 180
-      },
-      {
-        "label": "E",
-        "x": 350,
-        "y": 380
-      },
-      {
-        "label": "F",
-        "x": 580,
-        "y": 380
-      }
+      { "label": "A", "x": 150, "y": 180 },
+      { "label": "B", "x": 100, "y": 380 },
+      { "label": "C", "x": 300, "y": 380 },
+      { "label": "D", "x": 400, "y": 180 },
+      { "label": "E", "x": 350, "y": 380 },
+      { "label": "F", "x": 580, "y": 380 }
     ],
     "segments": [
-      {
-        "from": "A",
-        "to": "B",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "A",
-        "to": "C",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "B",
-        "to": "C",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "D",
-        "to": "E",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "D",
-        "to": "F",
-        "color": "#2d70b3"
-      },
-      {
-        "from": "E",
-        "to": "F",
-        "color": "#2d70b3"
-      }
+      { "from": "A", "to": "B", "color": "#2d70b3" },
+      { "from": "A", "to": "C", "color": "#2d70b3" },
+      { "from": "B", "to": "C", "color": "#2d70b3" },
+      { "from": "D", "to": "E", "color": "#cc3333" },
+      { "from": "D", "to": "F", "color": "#cc3333" },
+      { "from": "E", "to": "F", "color": "#cc3333" }
     ],
     "rays": [],
     "circles": [],
     "angleMarks": [],
     "equalityGroups": []
   },
+  "exportedAt": "2026-06-01T00:00:00Z",
   "proof": {
     "name": "Prop.I.24",
     "premises": [
@@ -97,16 +50,50 @@
     ],
     "goal": "ef < bc",
     "declarations": {
-      "points": [
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F"
-      ],
+      "points": ["A", "B", "C", "D", "E", "F"],
       "lines": []
     },
-    "steps": []
+    "steps": [
+      {
+        "lineNumber": 10,
+        "text": "I.23: construct g with ∠bag = ∠edf and ag = ac, inside ∠bac",
+        "justification": "Prop.I.23",
+        "dependencies": [1, 2, 3],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "let-line: on(b, M), on(g, M)",
+        "justification": "Construction",
+        "dependencies": [10],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "I.4 SAS: △abg ≅ △def (ab = de, ag = df, ∠bag = ∠edf) → bg = ef",
+        "justification": "Prop.I.4",
+        "dependencies": [1, 2, 10, 11],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "I.5: ag = ac → ∠agc = ∠acg (isosceles)",
+        "justification": "Prop.I.5",
+        "dependencies": [10],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "I.19: ∠bcg < ∠bgc in △bgc → bc > bg = ef",
+        "justification": "Prop.I.19",
+        "dependencies": [12, 13],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
   }
 }

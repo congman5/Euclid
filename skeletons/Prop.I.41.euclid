@@ -1,0 +1,274 @@
+{
+  "format": "euclid-proof",
+  "version": "1.0.0",
+  "program": "Euclid Elements Simulator (Python) -- Lean Translator",
+  "metadata": {
+    "proposition": "Proposition I.41",
+    "title": "Parallelogram = 2× Triangle",
+    "difficulty": 3,
+    "hints": [
+      "Translated from LeanEuclid proposition_41"
+    ],
+    "source": "lean_translator"
+  },
+  "canvas": {
+    "points": [
+      {
+        "label": "A",
+        "x": 150,
+        "y": 200
+      },
+      {
+        "label": "B",
+        "x": 200,
+        "y": 400
+      },
+      {
+        "label": "C",
+        "x": 450,
+        "y": 400
+      },
+      {
+        "label": "D",
+        "x": 400,
+        "y": 200
+      },
+      {
+        "label": "E",
+        "x": 300,
+        "y": 200
+      }
+    ],
+    "segments": [
+      {
+        "from": "A",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "C",
+        "to": "D",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "D",
+        "to": "A",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "E",
+        "to": "B",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "E",
+        "to": "C",
+        "color": "#2d70b3"
+      }
+    ],
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
+  },
+  "exportedAt": "2026-04-03T19:12:51Z",
+  "proof": {
+    "name": "Prop.I.41",
+    "premises": [
+      "on(b, N)",
+      "on(c, N)",
+      "on(a, L)",
+      "on(d, L)",
+      "¬(intersects(L, N))",
+      "¬(b = c)",
+      "¬(a = d)",
+      "on(e, L)",
+      "¬(on(e, N))"
+    ],
+    "goal": "(△abc + △acd) = (△ebc + △ebc)",
+    "declarations": {
+      "points": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ],
+      "lines": [
+        "L",
+        "M",
+        "N",
+        "P",
+        "Q",
+        "R",
+        "S"
+      ]
+    },
+    "steps": [
+      {
+        "lineNumber": 10,
+        "text": "on(a, M), on(e, M)",
+        "justification": "let-line",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "on(a, P), on(b, P)",
+        "justification": "let-line",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "on(c, Q), on(d, Q)",
+        "justification": "let-line",
+        "dependencies": [],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "¬(b = e)",
+        "justification": "Generality 6",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 14,
+        "text": "on(b, R), on(e, R)",
+        "justification": "let-line",
+        "dependencies": [
+          13
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 15,
+        "text": "¬(c = e)",
+        "justification": "Generality 6",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 16,
+        "text": "on(c, S), on(e, S)",
+        "justification": "let-line",
+        "dependencies": [
+          15
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
+        "text": "on(a, ac), on(c, ac)",
+        "justification": "let-line",
+        "dependencies": [
+          2,
+          3,
+          6,
+          7,
+          10,
+          11,
+          12,
+          15,
+          16
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 18,
+        "text": "ab = cd, ad = bc, ∠dab = ∠bcd, ∠abc = ∠cda, △abc = △acd",
+        "justification": "Prop.I.34",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 19,
+        "text": "ab = cd, ad = bc, ∠dab = ∠bcd, ∠abc = ∠cda, △abc = △acd",
+        "justification": "Prop.I.34",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ],
+        "depth": 0,
+        "status": "?"
+      }
+    ]
+  }
+}
