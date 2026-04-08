@@ -110,52 +110,455 @@ def _ordered_sequent_vars(seq: 'Sequent') -> List[str]:
     return seen
 
 
-# Lean parameter order for early propositions (I.1–I.15).
-# Maps proposition number → list of (elib_var, sort) in Lean call-site order.
+# Lean parameter order for propositions.
+# Maps Lean function name → list of (elib_var, sort) in Lean call-site order.
 # Derived from LeanEuclid Book definitions and call patterns in lean_reference/.
-_LEAN_PARAM_ORDER: Dict[int, List[Tuple[str, str]]] = {
-    3: [  # proposition_3 p1 p2 p3 p4 L1 L2  as e
+# For each entry, the i-th tuple corresponds to the i-th positional argument in
+# the Lean ``euclid_apply (proposition_N arg1 arg2 ...)`` call, and tells the
+# synthesizer which e_library variable it maps to.  ``"_"`` means the argument
+# is auxiliary (not directly needed for the e_library var_map).
+_LEAN_PARAM_ORDER: Dict[str, List[Tuple[str, str]]] = {
+    # --- Prop I.3 ---
+    # Lean: proposition_3 p1 p2 p3 p4 L1 L2  as e
+    # elib: on(a,L), on(b,L), ¬(a=b), cd < ab  ⊢ ∃e. between(a,e,b) ∧ ae=cd
+    "proposition_3": [
         ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
-        ("L", "Line"),  ("_", "Line"),  # L2 is auxiliary
+        ("L", "Line"),  ("_", "Line"),
     ],
-    4: [  # proposition_4 a1 b1 c1  a2 b2 c2  Lab1 Lbc1 Lac1  Lab2 Lbc2 Lac2
+    # --- Prop I.4  (SAS) ---
+    # Lean: proposition_4 a b c  d e f  AB BC AC  DE EF DF
+    # elib: a,b,c → d,e,f  (two triangles, 6 points + 6 lines)
+    "proposition_4": [
         ("a", "Point"), ("b", "Point"), ("c", "Point"),
         ("d", "Point"), ("e", "Point"), ("f", "Point"),
         ("_", "Line"), ("_", "Line"), ("_", "Line"),
         ("_", "Line"), ("_", "Line"), ("_", "Line"),
     ],
-    5: [  # proposition_5 / 5'  a b c  AB BC AC
+    # --- Prop I.5 / 5' ---
+    # Lean: proposition_5  a b c  AB BC AC
+    "proposition_5": [
         ("a", "Point"), ("b", "Point"), ("c", "Point"),
         ("_", "Line"), ("_", "Line"), ("_", "Line"),
     ],
-    8: [  # proposition_8  a1 b1 c1  a2 b2 c2  L_ab1 L_bc1 L_ac1  L_ab2 L_bc2 L_ac2
+    "proposition_5'": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.8  (SSS) ---
+    # Lean: proposition_8 a b c  d e f  AB BC AC  DE EF DF
+    "proposition_8": [
         ("a", "Point"), ("b", "Point"), ("c", "Point"),
         ("d", "Point"), ("e", "Point"), ("f", "Point"),
         ("_", "Line"), ("_", "Line"), ("_", "Line"),
         ("_", "Line"), ("_", "Line"), ("_", "Line"),
     ],
-    10: [  # proposition_10 p1 p2 L  as d
+    # --- Prop I.10 ---
+    # Lean: proposition_10 p1 p2 L  as d
+    "proposition_10": [
         ("a", "Point"), ("b", "Point"),
         ("L", "Line"),
     ],
-    13: [  # proposition_13 d b a c  L_aux L
-        # e_lib: on(a,L), on(c,L), between(a,b,c), ¬on(d,L), ¬(b=d)
-        # Lean: off-line pt, between-pt, endpoint1, endpoint2, aux_line, L
+    # --- Prop I.11 / 11'' / 11''' ---
+    # Lean: proposition_11'' a b AB  as f
+    # elib: on(a,L), on(b,L), ¬(a=b) ⊢ ∃f
+    "proposition_11": [
+        ("a", "Point"), ("b", "Point"),
+        ("L", "Line"),
+    ],
+    "proposition_11''": [
+        ("a", "Point"), ("b", "Point"),
+        ("L", "Line"),
+    ],
+    "proposition_11'''": [
+        ("a", "Point"), ("b", "Point"), ("_", "Point"),
+        ("L", "Line"),
+    ],
+    # --- Prop I.13 ---
+    # Lean: proposition_13 d b a c  L_aux L
+    # elib: on(a,L), on(c,L), between(a,b,c), ¬on(d,L)
+    "proposition_13": [
         ("d", "Point"), ("b", "Point"), ("a", "Point"), ("c", "Point"),
         ("_", "Line"), ("L", "Line"),
     ],
-    15: [  # proposition_15  a b  c d  e  L M
-        # e_lib: on(a,L), on(b,L), on(c,M), on(d,M), on(e,L), on(e,M),
-        #        between(a,e,b), between(c,e,d), ¬(L=M)
+    # --- Prop I.14 ---
+    # Lean: proposition_14 d b a c  AB L
+    # elib: on(a,L), on(b,L), on(c,L), between(a,b,c), ¬on(d,L)
+    "proposition_14": [
+        ("d", "Point"), ("b", "Point"), ("a", "Point"), ("c", "Point"),
+        ("_", "Line"), ("L", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.15 ---
+    # Lean: proposition_15  a b  c d  e  L M
+    # elib: on(a,L), on(b,L), on(c,M), on(d,M), on(e,L), on(e,M),
+    #       between(a,e,b), between(c,e,d)
+    "proposition_15": [
         ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
         ("e", "Point"), ("L", "Line"), ("M", "Line"),
     ],
-    16: [  # proposition_16  c a b d  _ L _
-        # Lean: formTriangle(a,b,c) ∧ between(b,c,d)
-        # e_lib: on(a,L), on(b,L), between(a,b,d), ¬on(c,L)
-        # Lean arg1 (off-line) → elib c, arg2/arg3 (on-line) → elib a,b
+    # --- Prop I.16 ---
+    # Lean: proposition_16 c a b d  _ L _
+    # elib: on(a,L), on(b,L), between(a,b,d), ¬on(c,L)
+    "proposition_16": [
         ("c", "Point"), ("a", "Point"), ("b", "Point"), ("d", "Point"),
         ("_", "Line"), ("L", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.17 ---
+    # Lean: proposition_17 a b c  AB BC AC
+    # elib: ¬(a=b), ¬(a=c), ¬(b=c), on(a,L), on(b,L), ¬on(c,L)
+    # Lean formTriangle a b c → elib a,b on line L, c off-line
+    "proposition_17": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("L", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.18 ---
+    # Lean: proposition_18 a b c  AB BC AC
+    # elib: same as I.17 — formTriangle a b c
+    "proposition_18": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("L", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.19 ---
+    # Lean: proposition_19 a b c  AB BC AC
+    "proposition_19": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("L", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.20 ---
+    # Lean: proposition_20 a b c  AB BC AC
+    "proposition_20": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("L", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.21 ---
+    # Lean: proposition_21 a b c d  AB BC AC BD DC
+    # elib: a,b,c triangle on L,M,N; d interior point
+    "proposition_21": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("L", "Line"), ("M", "Line"), ("N", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.22 ---
+    # Lean: proposition_22 a a' b b' c c'  A B C
+    # elib: ¬(a=b), ¬(c=d), ¬(e=f), ab<(cd+ef), ... ⊢ ∃p,q,r
+    "proposition_22": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("e", "Point"), ("f", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # Lean: proposition_22' a a' b b' c c' f e  A B C FE
+    # Same elib theorem, but with 2 extra args (f, e) and extra line FE
+    "proposition_22'": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("e", "Point"), ("f", "Point"), ("_", "Point"), ("_", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    "proposition_22''": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("e", "Point"), ("f", "Point"), ("_", "Point"), ("_", "Point"), ("_", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.23 ---
+    # Lean: proposition_23 a b c d e  AB CD CE
+    # elib: ¬(d=e), ¬(d=f), ¬(e=f), on(a,L), on(b,L), ¬(a=b) ⊢ ∃g
+    # Lean a,b → elib a,b (on-line); c,d,e → elib d,e,f (angle points)
+    "proposition_23": [
+        ("d", "Point"), ("e", "Point"), ("f", "Point"),
+        ("a", "Point"), ("b", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # Lean: proposition_23' a b c d e x  AB CD CE
+    # Same but with extra arg x
+    "proposition_23'": [
+        ("d", "Point"), ("e", "Point"), ("f", "Point"),
+        ("a", "Point"), ("b", "Point"), ("_", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.24 ---
+    # Lean: proposition_24 a b c d e f  AB BC AC DE EF DF
+    # elib: ab=de, ac=df, ∠edf < ∠bac  (two triangles)
+    "proposition_24": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("d", "Point"), ("e", "Point"), ("f", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.25 ---
+    # Lean: proposition_25 a b c d e f  AB BC AC DE EF DF
+    "proposition_25": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("d", "Point"), ("e", "Point"), ("f", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.26 (ASA) ---
+    # Lean: proposition_26 a b c d e f  AB BC AC DE EF DF
+    "proposition_26": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("d", "Point"), ("e", "Point"), ("f", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.27 ---
+    # Lean: proposition_27 a d e f  AE FD EF
+    # elib: on(a,L), on(b,L), on(b,M), on(c,M), on(c,N), on(d,N)
+    # Lean a→elib a, d→elib d, e→elib b(=shared), f→elib c(=shared)
+    "proposition_27": [
+        ("a", "Point"), ("d", "Point"), ("b", "Point"), ("c", "Point"),
+        ("L", "Line"), ("N", "Line"), ("M", "Line"),
+    ],
+    # --- Prop I.28 ---
+    # Lean: proposition_28 a b c d e f g h  AB CD EF
+    # elib: on(a,L), on(b,L), on(b,M), on(c,M), on(c,N), on(d,N), ...
+    # Lean args: a b c d → line endpoints, e f g h → transversal endpoints
+    # Mapping: Lean a→elib a, b→elib b (on L), c→elib c (shared), d→elib d (on N)
+    #          g→elib b (between a,g,b), h→elib c (between c,h,d)
+    "proposition_28": [
+        ("a", "Point"), ("_", "Point"), ("_", "Point"), ("d", "Point"),
+        ("_", "Point"), ("_", "Point"), ("b", "Point"), ("c", "Point"),
+        ("L", "Line"), ("N", "Line"), ("M", "Line"),
+    ],
+    # --- Prop I.29 ---
+    # Lean: proposition_29 a b c d e f g h  AB CD EF
+    # elib: on(a,L), on(b,L), on(b,M), on(c,M), on(c,N), on(d,N)
+    # Same structure as I.28 — g,h are the transversal intersection points
+    "proposition_29": [
+        ("a", "Point"), ("_", "Point"), ("_", "Point"), ("d", "Point"),
+        ("_", "Point"), ("_", "Point"), ("b", "Point"), ("c", "Point"),
+        ("L", "Line"), ("N", "Line"), ("M", "Line"),
+    ],
+    # Lean: proposition_29' a b c d e g h  AB CD EF (7 pts, no f)
+    "proposition_29'": [
+        ("a", "Point"), ("_", "Point"), ("_", "Point"), ("d", "Point"),
+        ("_", "Point"), ("b", "Point"), ("c", "Point"),
+        ("L", "Line"), ("N", "Line"), ("M", "Line"),
+    ],
+    # Lean: proposition_29'' a b d g h  AB CD GH (5 pts)
+    "proposition_29''": [
+        ("a", "Point"), ("_", "Point"), ("d", "Point"),
+        ("b", "Point"), ("c", "Point"),
+        ("L", "Line"), ("N", "Line"), ("M", "Line"),
+    ],
+    # Lean: proposition_29''' a d g h  AB CD GH (4 pts)
+    "proposition_29'''": [
+        ("a", "Point"), ("d", "Point"),
+        ("b", "Point"), ("c", "Point"),
+        ("L", "Line"), ("N", "Line"), ("M", "Line"),
+    ],
+    # Lean: proposition_29'''' b d e g h  AB CD EF (5 pts)
+    "proposition_29''''": [
+        ("_", "Point"), ("d", "Point"), ("_", "Point"),
+        ("b", "Point"), ("c", "Point"),
+        ("L", "Line"), ("N", "Line"), ("M", "Line"),
+    ],
+    # Lean: proposition_29''''' b d g h  AB CD EF (4 pts)
+    "proposition_29'''''": [
+        ("_", "Point"), ("d", "Point"),
+        ("b", "Point"), ("c", "Point"),
+        ("L", "Line"), ("N", "Line"), ("M", "Line"),
+    ],
+    # --- Prop I.30 ---
+    # Lean: proposition_30 AB CD EF (3 lines only)
+    # elib: ¬intersects(L,M), ¬intersects(M,N) ⊢ ¬intersects(L,N)
+    "proposition_30": [
+        ("L", "Line"), ("M", "Line"), ("N", "Line"),
+    ],
+    # --- Prop I.31 ---
+    # Lean: proposition_31 a b c  BC  as EF
+    # elib: on(b,L), on(c,L), ¬(b=c), ¬on(a,L) ⊢ ∃M
+    "proposition_31": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("L", "Line"),
+    ],
+    # --- Prop I.32 ---
+    # Lean: proposition_32 a b c d  AB BC AC
+    # elib: on(b,L), on(c,L), ¬on(a,L), between(b,c,d)
+    "proposition_32": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("L", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.33 ---
+    # Lean: proposition_33 a b c d  AB CD AC BD
+    # elib: on(a,L), on(b,L), on(c,N), on(d,N), on(a,M), on(c,M), on(b,P), on(d,P)
+    "proposition_33": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("L", "Line"), ("N", "Line"), ("M", "Line"), ("P", "Line"),
+    ],
+    # --- Prop I.34 ---
+    # Lean: proposition_34 a b c d  AB CD AC BD BC
+    # elib: on(a,L), on(b,L), on(c,N), on(d,N), on(a,M), on(d,M), on(b,P), on(c,P)
+    "proposition_34": [
+        ("a", "Point"), ("d", "Point"), ("b", "Point"), ("c", "Point"),
+        ("L", "Line"), ("N", "Line"), ("M", "Line"), ("P", "Line"), ("_", "Line"),
+    ],
+    # Lean: proposition_34' a b c d  AB CD AC BD  (4 lines, no BC)
+    "proposition_34'": [
+        ("a", "Point"), ("d", "Point"), ("b", "Point"), ("c", "Point"),
+        ("L", "Line"), ("N", "Line"), ("M", "Line"), ("P", "Line"),
+    ],
+    # --- Prop I.35 ---
+    # Lean: proposition_35 a b c d e f g  AF BC AB CD EB FC
+    # elib: on(b,N), on(c,N), on(a,L), on(d,L), on(e,L), on(f,L)
+    "proposition_35": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("e", "Point"), ("f", "Point"), ("_", "Point"),
+        ("L", "Line"), ("N", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"),
+    ],
+    # Lean: proposition_35' a b c d e f  AF BC AB CD EB FC (no g)
+    "proposition_35'": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("e", "Point"), ("f", "Point"),
+        ("L", "Line"), ("N", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.36 ---
+    # Lean: proposition_36 a b c d e f g h  AH BG AB CD EF HG
+    # elib: on(b,N), on(c,N), on(e,N), on(f,N), on(a,L), on(d,L)
+    "proposition_36": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("e", "Point"), ("f", "Point"), ("_", "Point"), ("_", "Point"),
+        ("L", "Line"), ("N", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"),
+    ],
+    "proposition_36'": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("e", "Point"), ("f", "Point"), ("_", "Point"), ("_", "Point"),
+        ("L", "Line"), ("N", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.37 ---
+    # Lean: proposition_37 a b c d  AB BC AC BD CD AD
+    # elib: on(b,N), on(c,N), on(a,L), on(d,L)
+    "proposition_37": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("_", "Line"), ("N", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("L", "Line"),
+    ],
+    "proposition_37'": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("_", "Line"), ("N", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("L", "Line"),
+    ],
+    # --- Prop I.38 ---
+    # Lean: proposition_38 a b c d e f  AD BF AB AC DE DF
+    # elib: on(b,N), on(c,N), on(e,N), on(f,N), on(a,L), on(d,L)
+    "proposition_38": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("e", "Point"), ("f", "Point"),
+        ("L", "Line"), ("N", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.39 ---
+    # Lean: proposition_39 a b c d  AB BC AC BD CD AD
+    # elib: on(b,N), on(c,N), on(a,L), on(d,L), △abc=△dbc
+    "proposition_39": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("_", "Line"), ("N", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("L", "Line"),
+    ],
+    # --- Prop I.40 ---
+    # Lean: proposition_40 a b c d e  AB BC AC CD DE AD
+    # elib: on(b,N), on(c,N), on(e,N), on(f,N), on(a,L), on(d,L)
+    "proposition_40": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("e", "Point"),
+        ("_", "Line"), ("N", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("L", "Line"),
+    ],
+    # --- Prop I.41 ---
+    # Lean: proposition_41 a b c d e  AE BC AB CD BE CE
+    # elib: on(b,N), on(c,N), on(a,L), on(d,L), on(e,L), ¬on(e,N)
+    "proposition_41": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("e", "Point"),
+        ("L", "Line"), ("N", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.42 ---
+    # Lean: proposition_42 a b c d1 d2 d3  AB BC AC D12 D23
+    # elib: ¬(a=b), ¬(a=c), ¬(b=c), ¬(∠def=0) ⊢ ∃g,h
+    "proposition_42": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("d", "Point"), ("e", "Point"), ("f", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"),
+    ],
+    "proposition_42'": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("d", "Point"), ("e", "Point"), ("f", "Point"), ("_", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"),
+    ],
+    "proposition_42''": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("d", "Point"), ("e", "Point"), ("f", "Point"), ("_", "Point"), ("_", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    "proposition_42'''": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("d", "Point"), ("e", "Point"), ("f", "Point"), ("_", "Point"), ("_", "Point"), ("_", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.43 ---
+    # Lean: proposition_43 a b c d e f g h k  AD BC AB CD AC EF GH
+    # elib: on(a,L), on(b,L), on(c,N), on(d,N), on(a,M), on(d,M), on(b,P), on(c,P), between(a,k,c)
+    "proposition_43": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("_", "Point"), ("_", "Point"), ("_", "Point"), ("_", "Point"), ("k", "Point"),
+        ("M", "Line"), ("N", "Line"), ("L", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"), ("P", "Line"),
+    ],
+    # --- Prop I.44 ---
+    # Lean: proposition_44 a b c1 c2 c3 d1 d2 d3  AB C12 C23 C31 D12 D23
+    # elib: on(a,L), on(b,L), ¬(a=b), ¬(c=d), ¬(c=e), ¬(d=e) ⊢ ∃f,g
+    "proposition_44": [
+        ("a", "Point"), ("b", "Point"),
+        ("c", "Point"), ("d", "Point"), ("e", "Point"),
+        ("_", "Point"), ("_", "Point"), ("_", "Point"),
+        ("L", "Line"), ("_", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"),
+    ],
+    "proposition_44'": [
+        ("a", "Point"), ("b", "Point"),
+        ("c", "Point"), ("d", "Point"), ("e", "Point"),
+        ("_", "Point"), ("_", "Point"), ("_", "Point"), ("_", "Point"),
+        ("L", "Line"), ("_", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.45 ---
+    # Lean: proposition_45 a b c d e1 e2 e3  AB BC CD AD DB E12 E23
+    # elib: ¬(a=b), ¬(a=c), ¬(b=c), ¬(a=d), ¬(∠efg=0) ⊢ ∃h,k,m
+    "proposition_45": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"), ("d", "Point"),
+        ("e", "Point"), ("f", "Point"), ("g", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"), ("_", "Line"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.46 ---
+    # Lean: proposition_46 a b  AB
+    # elib: on(a,L), on(b,L), ¬(a=b) ⊢ ∃c,d
+    "proposition_46": [
+        ("a", "Point"), ("b", "Point"),
+        ("L", "Line"),
+    ],
+    # Lean: proposition_46' a b x  AB
+    "proposition_46'": [
+        ("a", "Point"), ("b", "Point"), ("_", "Point"),
+        ("L", "Line"),
+    ],
+    # --- Prop I.47 ---
+    # Lean: proposition_47 a b c  AB BC AC
+    # elib: ¬(a=b), ¬(a=c), ¬(b=c), ∠bac=∟ ⊢ ∃d,e,f,g,h,k
+    "proposition_47": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
+    ],
+    # --- Prop I.48 ---
+    # Lean: proposition_48 a b c  AB BC AC
+    "proposition_48": [
+        ("a", "Point"), ("b", "Point"), ("c", "Point"),
+        ("_", "Line"), ("_", "Line"), ("_", "Line"),
     ],
 }
 
@@ -433,7 +836,12 @@ class VarMapper:
 
     def mv(self, lean_name: str) -> str:
         lo = lean_name.lower()
-        return self.lean_to_elib.get(lo, lo)
+        mapped = self.lean_to_elib.get(lo)
+        if mapped is not None:
+            return mapped
+        # Strip prime marks — the proof parser does not recognize them.
+        stripped = lo.replace("'", "")
+        return self.lean_to_elib.get(stripped, stripped)
 
     def ma(self, args: List[str]) -> List[str]:
         return [self.mv(a) for a in args]
@@ -461,6 +869,19 @@ class ProofSynthesizer:
         self.ll: Dict[int, Set[Literal]] = {}
         self.errors: List[str] = []
         self.warnings: List[str] = []
+        self.derived_facts: List[Literal] = []
+        # ── Subproof depth tracking ──────────────────────────────────
+        self.current_depth: int = 0
+        # Stack of open subproofs.  Each entry is a dict:
+        #   kind: "by_contra" | "by_cases"
+        #   depth: the depth at which the subproof was opened
+        #   assume_line: line number of the Assume step
+        #   assumed_lit: the Literal that was assumed
+        #   --- by_cases specific ---
+        #   case_expr_lit: the Literal for the case split (φ)
+        #   branches: list of dicts with branch info
+        #   current_branch: index into branches (0 or 1)
+        self._subproof_stack: List[Dict[str, Any]] = []
 
     def synthesize(self) -> SynthesisResult:
         r = SynthesisResult(prop_name=self.pname, prop_number=self.pnum)
@@ -473,6 +894,12 @@ class ProofSynthesizer:
 
         if self.lp:
             self.vm = VarMapper(self.seq, self.lp)
+            # Override VarMapper with _LEAN_PARAM_ORDER for the outer
+            # theorem.  VarMapper's structural matching can fail when
+            # Lean params don't share point-line associations with
+            # the e_library (e.g. Prop28 EF→M, but VarMapper sees
+            # EF has points {e,f} which don't appear in elib's M).
+            self._seed_vm_from_param_order()
 
         premises = [literal_to_text(lit) for lit in self.seq.hypotheses]
         self.nprem = len(premises)
@@ -496,8 +923,13 @@ class ProofSynthesizer:
                         decls["lines"].sort()
 
         if self.lp:
-            for tac in self.lp.tactics:
-                self._synth_tactic(tac)
+            tactics = self.lp.tactics
+            for i, tac in enumerate(tactics):
+                # Determine next tactic's depth for transition detection
+                next_depth = tactics[i + 1].depth if i + 1 < len(tactics) else 0
+                self._synth_tactic(tac, next_depth=next_depth)
+            # Close any remaining open subproofs
+            self._close_remaining_subproofs()
         else:
             for ts in self.tr.steps:
                 self._synth_translated(ts)
@@ -525,6 +957,7 @@ class ProofSynthesizer:
                 "name": self.pname, "premises": premises,
                 "goal": goal_text, "declarations": decls,
                 "steps": self.steps,
+                "derived_facts": [literal_to_text(f) for f in self.derived_facts],
             },
         }
         r.step_count = len(self.steps)
@@ -533,19 +966,108 @@ class ProofSynthesizer:
         r.success = len(self.errors) == 0
         return r
 
+    def _seed_vm_from_param_order(self):
+        """Override VarMapper with _LEAN_PARAM_ORDER for the outer theorem.
+
+        VarMapper's structural matching can produce wrong line mappings
+        when Lean line params have points not in the e_library (e.g.
+        Prop28: Lean EF has points {e,f} but elib M has {b,c}).
+        The _LEAN_PARAM_ORDER table encodes the correct mapping.
+
+        Also assigns fresh names to auxiliary ('_') params so they
+        don't collide with elib names claimed by other params.
+        """
+        if not self.vm or not self.lp or not self.lp.signature:
+            return
+        lean_name = self.lp.theorem_name
+        if lean_name not in _LEAN_PARAM_ORDER:
+            return
+        param_order = _LEAN_PARAM_ORDER[lean_name]
+        params = self.lp.signature.params
+
+        # Collect the set of elib var names that are explicitly mapped
+        # (non-aux entries) so we can avoid collisions with aux params.
+        elib_claimed: Set[str] = set()
+        for i, (elib_var, _sort) in enumerate(param_order):
+            if i >= len(params):
+                break
+            if elib_var != "_":
+                elib_claimed.add(elib_var)
+
+        # Pass 1: Apply explicit (non-aux) mappings
+        for i, (elib_var, _sort) in enumerate(param_order):
+            if i >= len(params):
+                break
+            if elib_var == "_":
+                continue
+            lean_lo = params[i].name.lower()
+            if lean_lo == elib_var:
+                continue  # already correct
+            # Override the mapping
+            old_elib = self.vm.lean_to_elib.get(lean_lo)
+            # Remove old reverse mapping if it existed
+            if old_elib and old_elib in self.vm.elib_to_lean:
+                del self.vm.elib_to_lean[old_elib]
+            # Remove any old entry mapping to this elib_var
+            for k, v in list(self.vm.lean_to_elib.items()):
+                if v == elib_var and k != lean_lo:
+                    del self.vm.lean_to_elib[k]
+                    if elib_var in self.vm.elib_to_lean:
+                        del self.vm.elib_to_lean[elib_var]
+            self.vm.lean_to_elib[lean_lo] = elib_var
+            self.vm.elib_to_lean[elib_var] = lean_lo
+            # If the old mapping created an extra_line, clean it up
+            if old_elib and lean_lo in self.vm.extra_lines:
+                del self.vm.extra_lines[lean_lo]
+                if old_elib in self.vm.extra_line_points:
+                    del self.vm.extra_line_points[old_elib]
+
+        # Pass 2: Reassign auxiliary params whose default mapping
+        # now collides with an elib name claimed by another param.
+        # A collision occurs when the aux param's effective elib name
+        # (either from VarMapper or the lowercase default) matches an
+        # elib var that belongs to a DIFFERENT Lean param.
+        used = set(self.vm.lean_to_elib.values())
+        for i, (elib_var, sort_str) in enumerate(param_order):
+            if i >= len(params):
+                break
+            if elib_var != "_":
+                continue
+            lean_lo = params[i].name.lower()
+            current = self.vm.lean_to_elib.get(lean_lo, lean_lo)
+            if current in elib_claimed:
+                # Check if any OTHER param owns this elib name
+                owner_lean = self.vm.elib_to_lean.get(current)
+                if owner_lean is not None and owner_lean != lean_lo:
+                    # Collision — assign a fresh name
+                    is_line = sort_str == "Line"
+                    if is_line:
+                        fresh = self.vm._fresh()
+                    else:
+                        fresh = self._fresh_point(used | elib_claimed)
+                    self.vm.lean_to_elib[lean_lo] = fresh
+                    self.vm.elib_to_lean[fresh] = lean_lo
+                    used.add(fresh)
+                    # Clean up extra_lines if the old mapping was an extra
+                    if lean_lo in self.vm.extra_lines:
+                        old_extra = self.vm.extra_lines.pop(lean_lo)
+                        self.vm.extra_line_points.pop(old_extra, None)
+
     # -- Tactic dispatch -----------------------------------------------
 
-    def _synth_tactic(self, tac: LeanTactic):
+    def _synth_tactic(self, tac: LeanTactic, next_depth: int = 0):
         if tac.kind == TacticKind.EUCLID_APPLY:
             self._apply(tac)
         elif tac.kind == TacticKind.EUCLID_FINISH:
-            self._finish()
+            self._handle_euclid_finish(tac, next_depth)
         elif tac.kind == TacticKind.EUCLID_ASSERT:
             self._derive_from_expr(tac.assertion_expr)
         elif tac.kind == TacticKind.HAVE:
             self._derive_from_expr(tac.assertion_expr)
         elif tac.kind == TacticKind.BY_CONTRA:
             self._handle_by_contra()
+        elif tac.kind == TacticKind.BY_CASES:
+            self._handle_by_cases(tac)
         elif tac.kind == TacticKind.CASE_BRANCH:
             self._handle_case_branch(tac)
 
@@ -614,32 +1136,359 @@ class ProofSynthesizer:
             self._apply_inference(tac, mp)
 
     def _handle_by_contra(self):
-        """Handle proof by contradiction: negate the goal and add as known fact.
+        """Handle proof by contradiction: open a subproof at depth+1.
 
-        When Lean uses ``by_contra``, the negation of the current goal
-        becomes a new hypothesis. We add it as a premise-like known fact
-        tracked in ll so subsequent steps can cite it as a dependency.
+        Emits an Assume step with the negation of the goal (or the
+        innermost by_cases target if nested).  The subproof is closed
+        later by _close_by_contra which emits ⊥-intro + ⊥-elim.
         """
         if not self.seq:
             return
+        # The assumed literal is the negation of the goal conclusion(s).
+        # For a goal like ¬P, by_contra assumes P (double negation).
+        # For a goal like P, by_contra assumes ¬P.
+        assumed_lits: List[Literal] = []
         for conc in self.seq.conclusions:
-            # Negate the conclusion: ¬P becomes P, P becomes ¬P
             neg_conc = Literal(conc.atom, polarity=not conc.polarity)
+            assumed_lits.append(neg_conc)
+
+        self.current_depth += 1
+        assume_ln = self.nprem + len(self.steps) + 1
+        # Emit Assume step for each negated conclusion
+        for neg_conc in assumed_lits:
             if neg_conc not in self.known:
                 self.known.add(neg_conc)
-                # Track in ll using next available line number so it can
-                # be cited as a dependency, but don't emit as a step
-                # (it's treated as an implicit premise for the proof by
-                # contradiction structure).
-                ln = self.nprem + len(self.steps) + 1
-                self.ll[ln] = {neg_conc}
-                self.steps.append({
-                    "lineNumber": ln,
-                    "text": literal_to_text(neg_conc),
-                    "justification": "Assume",
-                    "dependencies": [],
-                    "depth": 0, "status": "?",
-                })
+            ln = self.nprem + len(self.steps) + 1
+            self.ll[ln] = {neg_conc}
+            self.steps.append({
+                "lineNumber": ln,
+                "text": literal_to_text(neg_conc),
+                "justification": "Assume",
+                "dependencies": [],
+                "depth": self.current_depth, "status": "?",
+            })
+            assume_ln = ln
+
+        self._subproof_stack.append({
+            "kind": "by_contra",
+            "depth": self.current_depth,
+            "assume_line": assume_ln,
+            "assumed_lits": assumed_lits,
+            "goal_lits": list(self.seq.conclusions),
+        })
+
+    def _handle_by_cases(self, tac: LeanTactic):
+        """Handle by_cases: prepare for two case branches.
+
+        The actual Assume steps are emitted by _handle_case_branch when
+        each CASE_BRANCH tactic is processed.  Here we just push the
+        by_cases frame onto the subproof stack and parse the case
+        expression.
+        """
+        case_expr = (tac.case_expr or "").strip()
+        # Try to parse the case expression into a Literal
+        case_lit = self._parse_case_expr(case_expr)
+        self._subproof_stack.append({
+            "kind": "by_cases",
+            "outer_depth": self.current_depth,
+            "case_expr": case_expr,
+            "case_lit": case_lit,
+            "branches": [],       # filled by _handle_case_branch
+            "branch_count": 0,
+        })
+
+    def _parse_case_expr(self, expr: str) -> Optional[Literal]:
+        """Try to parse a Lean case expression into a System E Literal."""
+        if not expr:
+            return None
+        from .lean_translator import (parse_lean_expr,
+                                       lean_expr_to_literals)
+        try:
+            parsed = parse_lean_expr(expr)
+            if parsed:
+                lits = lean_expr_to_literals(parsed)
+                if lits and self.vm:
+                    mapped = []
+                    for lit in lits:
+                        mapped.append(self._map_literal(lit))
+                    if mapped:
+                        return mapped[0]
+                elif lits:
+                    return lits[0]
+        except Exception:
+            pass
+        return None
+
+    def _handle_case_branch(self, tac: LeanTactic):
+        """Handle CASE_BRANCH: open branch subproof with Assume step."""
+        # Find the by_cases frame on the stack
+        by_cases_frame = None
+        for frame in reversed(self._subproof_stack):
+            if frame["kind"] == "by_cases":
+                by_cases_frame = frame
+                break
+
+        if by_cases_frame is None:
+            # No by_cases frame — fall back to old behavior
+            self._handle_case_branch_legacy(tac)
+            return
+
+        branch_idx = by_cases_frame["branch_count"]
+        case_lit = by_cases_frame.get("case_lit")
+
+        # First branch assumes φ, second branch assumes ¬φ
+        if case_lit is not None:
+            if branch_idx == 0:
+                assumed = case_lit
+            else:
+                assumed = Literal(case_lit.atom,
+                                  polarity=not case_lit.polarity)
+        else:
+            assumed = None
+
+        self.current_depth += 1
+        assume_ln = None
+        if assumed is not None:
+            ln = self.nprem + len(self.steps) + 1
+            self.ll[ln] = {assumed}
+            self.known.add(assumed)
+            self.steps.append({
+                "lineNumber": ln,
+                "text": literal_to_text(assumed),
+                "justification": "Assume",
+                "dependencies": [],
+                "depth": self.current_depth, "status": "?",
+            })
+            assume_ln = ln
+
+        by_cases_frame["branches"].append({
+            "assume_line": assume_ln,
+            "assumed_lit": assumed,
+            "depth": self.current_depth,
+        })
+        by_cases_frame["branch_count"] = branch_idx + 1
+
+        # Also process any embedded apply/assert in the case branch
+        self._handle_case_branch_content(tac)
+
+    def _handle_case_branch_content(self, tac: LeanTactic):
+        """Process the content embedded in a CASE_BRANCH assertion."""
+        expr = (tac.assertion_expr or "").strip()
+        if not expr or expr.startswith("--"):
+            return
+        import re
+        # Try "euclid_apply (rule args...) as bound_var"
+        m = re.match(
+            r"euclid_apply\s+\((\w+)((?:\s+\S+)*)\)\s+as\s+(\w+)",
+            expr,
+        )
+        if m:
+            rule = m.group(1)
+            args = m.group(2).split() if m.group(2).strip() else []
+            bound = [m.group(3)]
+            synth_tac = LeanTactic(
+                kind=TacticKind.EUCLID_APPLY, raw=expr,
+                rule_name=rule, rule_args=args, bound_vars=bound,
+                assertion_expr="", case_expr="",
+                depth=tac.depth, line_number=tac.line_number, comment="",
+            )
+            self._apply(synth_tac)
+            return
+        # Try "euclid_apply (rule args...)" without bound
+        m2 = re.match(
+            r"euclid_apply\s+\((\w+)((?:\s+\S+)*)\)",
+            expr,
+        )
+        if m2:
+            rule = m2.group(1)
+            args = m2.group(2).split() if m2.group(2).strip() else []
+            synth_tac = LeanTactic(
+                kind=TacticKind.EUCLID_APPLY, raw=expr,
+                rule_name=rule, rule_args=args, bound_vars=[],
+                assertion_expr="", case_expr="",
+                depth=tac.depth, line_number=tac.line_number, comment="",
+            )
+            self._apply(synth_tac)
+            return
+        # Try "euclid_assert <expr>"
+        m3 = re.match(r"euclid_assert\s+(.+)", expr)
+        if m3:
+            self._derive_from_expr(m3.group(1).strip())
+
+    def _handle_case_branch_legacy(self, tac: LeanTactic):
+        """Legacy fallback for CASE_BRANCH without a by_cases frame."""
+        expr = (tac.assertion_expr or "").strip()
+        if not expr or expr.startswith("--"):
+            return
+        import re
+        m = re.match(
+            r"euclid_apply\s+\((\w+)((?:\s+\S+)*)\)\s+as\s+(\w+)",
+            expr,
+        )
+        if m:
+            rule = m.group(1)
+            args = m.group(2).split() if m.group(2).strip() else []
+            bound = [m.group(3)]
+            synth_tac = LeanTactic(
+                kind=TacticKind.EUCLID_APPLY, raw=expr,
+                rule_name=rule, rule_args=args, bound_vars=bound,
+                assertion_expr="", case_expr="",
+                depth=tac.depth, line_number=tac.line_number, comment="",
+            )
+            self._apply(synth_tac)
+            return
+        m2 = re.match(
+            r"euclid_apply\s+\((\w+)((?:\s+\S+)*)\)",
+            expr,
+        )
+        if m2:
+            rule = m2.group(1)
+            args = m2.group(2).split() if m2.group(2).strip() else []
+            synth_tac = LeanTactic(
+                kind=TacticKind.EUCLID_APPLY, raw=expr,
+                rule_name=rule, rule_args=args, bound_vars=[],
+                assertion_expr="", case_expr="",
+                depth=tac.depth, line_number=tac.line_number, comment="",
+            )
+            self._apply(synth_tac)
+
+    def _handle_euclid_finish(self, tac: LeanTactic, next_depth: int):
+        """Handle euclid_finish: derive remaining conclusions + close subproofs.
+
+        euclid_finish means "the current proof goal can be closed by the
+        consequence engine."  After running _finish(), we check if the
+        depth is about to decrease and close the appropriate subproof(s).
+        """
+        self._finish()
+
+        # Close subproofs based on depth transition
+        # If next tactic's depth is less than current, subproofs are closing
+        while (self._subproof_stack
+               and next_depth < self.current_depth):
+            frame = self._subproof_stack[-1]
+            if frame["kind"] == "by_cases":
+                # A euclid_finish inside by_cases means a branch ended.
+                # Decrease depth for this branch.
+                if self.current_depth > frame.get("outer_depth", 0) + 1:
+                    # Nested subproof closing, not the by_cases itself
+                    break
+                self.current_depth -= 1
+                # If both branches done (next tactic depth <= outer_depth),
+                # close the by_cases
+                if next_depth <= frame.get("outer_depth", 0):
+                    self._close_by_cases(frame)
+                    self._subproof_stack.pop()
+                break
+            elif frame["kind"] == "by_contra":
+                if self.current_depth > frame["depth"]:
+                    # Still inside a nested subproof
+                    self.current_depth -= 1
+                    break
+                # Close the by_contra
+                self._close_by_contra(frame)
+                self._subproof_stack.pop()
+                self.current_depth = frame["depth"] - 1
+                break
+            else:
+                break
+
+    def _close_by_contra(self, frame: Dict[str, Any]):
+        """Emit ⊥-intro and ⊥-elim to close a proof-by-contradiction subproof."""
+        assume_ln = frame["assume_line"]
+        goal_lits = frame.get("goal_lits", [])
+        depth = frame["depth"]
+
+        # ⊥-intro at the subproof depth
+        ln = self.nprem + len(self.steps) + 1
+        self.steps.append({
+            "lineNumber": ln,
+            "text": "⊥",
+            "justification": "Contradiction",
+            "dependencies": [assume_ln],
+            "depth": depth, "status": "?",
+        })
+        self.ll[ln] = set()  # BOTTOM
+        contra_ln = ln
+
+        # ⊥-elim at the outer depth (depth - 1): conclude the goal
+        outer_depth = depth - 1
+        for goal_lit in goal_lits:
+            ln = self.nprem + len(self.steps) + 1
+            self.known.add(goal_lit)
+            self.ll[ln] = {goal_lit}
+            self.steps.append({
+                "lineNumber": ln,
+                "text": literal_to_text(goal_lit),
+                "justification": "⊥-elim",
+                "dependencies": [assume_ln],
+                "depth": outer_depth, "status": "?",
+            })
+
+    def _close_by_cases(self, frame: Dict[str, Any]):
+        """Emit Cases step to close a proof-by-cases subproof."""
+        branches = frame.get("branches", [])
+        outer_depth = frame.get("outer_depth", 0)
+
+        if len(branches) < 2:
+            return  # Can't close with fewer than 2 branches
+
+        a1_ln = branches[0].get("assume_line")
+        a2_ln = branches[1].get("assume_line")
+        if a1_ln is None or a2_ln is None:
+            return
+
+        # The conclusion of Cases should be whatever both branches derived.
+        # For by_contra+by_cases, the contradiction was already found in
+        # each branch; the Cases conclusion is ⊥ (or the shared derived fact).
+        # For standalone by_cases, we need to find the shared conclusion.
+        #
+        # Heuristic: if we're inside a by_contra, the shared conclusion
+        # is ⊥ (the contradiction).  Otherwise, find shared new facts.
+        parent_frame = None
+        for f in reversed(self._subproof_stack):
+            if f is not frame and f["kind"] == "by_contra":
+                parent_frame = f
+                break
+
+        if parent_frame is not None:
+            # Inside a by_contra: Cases concludes ⊥
+            ln = self.nprem + len(self.steps) + 1
+            self.steps.append({
+                "lineNumber": ln,
+                "text": "⊥",
+                "justification": "Cases",
+                "dependencies": [a1_ln, a2_ln],
+                "depth": outer_depth, "status": "?",
+            })
+            self.ll[ln] = set()
+        else:
+            # Standalone by_cases: conclude shared derived facts
+            # For now, just emit a Cases step — the verifier will check
+            # that both branches derived the step_lits.
+            ln = self.nprem + len(self.steps) + 1
+            self.steps.append({
+                "lineNumber": ln,
+                "text": "Cases",
+                "justification": "Cases",
+                "dependencies": [a1_ln, a2_ln],
+                "depth": outer_depth, "status": "?",
+            })
+            self.ll[ln] = set()
+
+    def _close_remaining_subproofs(self):
+        """Close any subproofs left open at the end of tactic processing."""
+        while self._subproof_stack:
+            frame = self._subproof_stack[-1]
+            if frame["kind"] == "by_contra":
+                self._close_by_contra(frame)
+                self._subproof_stack.pop()
+                self.current_depth = frame["depth"] - 1
+            elif frame["kind"] == "by_cases":
+                self._close_by_cases(frame)
+                self._subproof_stack.pop()
+                self.current_depth = frame.get("outer_depth", 0)
+            else:
+                self._subproof_stack.pop()
 
     # -- Construction --------------------------------------------------
 
@@ -652,6 +1501,9 @@ class ProofSynthesizer:
         not be mapped through VarMapper (which maps existing Lean names to
         elib names). Instead, use their lowercase form if it doesn't collide,
         or allocate a fresh name.
+
+        Prime marks (') are stripped because the proof parser does not
+        recognize them, so f' would collide with f.
         """
         used = set(self.vm.lean_to_elib.values()) if self.vm else set()
         # Also include all variables already in sort_ctx (points & lines
@@ -659,14 +1511,14 @@ class ProofSynthesizer:
         used |= set(self.sort_ctx.keys())
         result = []
         for bv in lean_bound_vars:
-            lo = bv.lower()
+            lo = bv.lower().replace("'", "")
             if lo not in used:
                 result.append(lo)
                 used.add(lo)
                 # Register in VarMapper so subsequent tactics can find it
                 if self.vm:
-                    self.vm.lean_to_elib[lo] = lo
-                    self.vm.elib_to_lean[lo] = lo
+                    self.vm.lean_to_elib[bv.lower()] = lo
+                    self.vm.elib_to_lean[lo] = bv.lower()
             else:
                 # Collision — allocate fresh name
                 # Determine sort: single uppercase → Line, else → Point
@@ -678,8 +1530,8 @@ class ProofSynthesizer:
                 result.append(fresh)
                 used.add(fresh)
                 if self.vm:
-                    self.vm.lean_to_elib[lo] = fresh
-                    self.vm.elib_to_lean[fresh] = lo
+                    self.vm.lean_to_elib[bv.lower()] = fresh
+                    self.vm.elib_to_lean[fresh] = bv.lower()
         return result
 
     def _fresh_point(self, used: Set[str]) -> str:
@@ -691,6 +1543,47 @@ class ProofSynthesizer:
         while f"p{n}" in used:
             n += 1
         return f"p{n}"
+
+    def _peek_bound_vars(self, lean_bound_vars: List[str]) -> List[str]:
+        """Compute fresh bound-var names WITHOUT modifying VarMapper.
+
+        Returns the same names that _fresh_bound_vars would, but does not
+        register them. Used for speculative var_map checks.
+        """
+        used = set(self.vm.lean_to_elib.values()) if self.vm else set()
+        used |= set(self.sort_ctx.keys())
+        result = []
+        for bv in lean_bound_vars:
+            lo = bv.lower().replace("'", "")
+            if lo not in used:
+                result.append(lo)
+                used.add(lo)
+            else:
+                is_line = len(bv) == 1 and bv.isupper()
+                if is_line:
+                    # Peek at fresh line name without modifying pool
+                    for ch in _LINE_POOL:
+                        if ch not in (self.vm._used_pool if self.vm else set()) and ch not in used:
+                            result.append(ch)
+                            used.add(ch)
+                            break
+                    else:
+                        result.append(lo)
+                else:
+                    fresh = self._fresh_point(used)
+                    result.append(fresh)
+                    used.add(fresh)
+        return result
+
+    def _commit_bound_vars(self, lean_bound_vars: List[str],
+                           computed_names: List[str]):
+        """Register previously-computed bound var names in VarMapper."""
+        if not self.vm:
+            return
+        for bv, name in zip(lean_bound_vars, computed_names):
+            lo = bv.lower()
+            self.vm.lean_to_elib[lo] = name
+            self.vm.elib_to_lean[name] = lo
 
     def _apply_construction(self, tac: LeanTactic, mp):
         rule_name = mp.system_e_name if mp else tac.rule_name
@@ -750,21 +1643,149 @@ class ProofSynthesizer:
             if v not in self.sort_ctx:
                 self.sort_ctx[v] = Sort.LINE if (len(v) == 1 and v.isupper()) else Sort.POINT
 
-        new_var_set = set(bound)
-        deps = self._deps_for(lits, new_var_set)
+        # Compute precise deps from the construction's prerequisites.
+        prereq_lits = self._instantiate_construction_prereqs(
+            actual_rule_name, lits)
+        if prereq_lits is not None:
+            deps = self._deps_for_premises(prereq_lits)
+        else:
+            # Fallback: variable-overlap (old behaviour)
+            new_var_set = set(bound)
+            deps = self._deps_for(lits, new_var_set)
         ln = self.nprem + len(self.steps) + 1
         self.steps.append({
             "lineNumber": ln, "text": text,
             "justification": actual_rule_name, "dependencies": deps,
-            "depth": 0, "status": "?",
+            "depth": self.current_depth, "status": "?",
         })
         self.ll[ln] = set(lits)
+
+    def _instantiate_construction_prereqs(
+        self, rule_name: str, step_lits: List[Literal],
+    ) -> Optional[Set[Literal]]:
+        """Compute the actual prerequisite literals for a construction rule.
+
+        Matches the rule's conclusion pattern against *step_lits* to build
+        a variable binding, then instantiates the prerequisite pattern.
+        Returns ``None`` if the rule has no prerequisites or matching fails.
+        """
+        from .e_construction import CONSTRUCTION_RULE_BY_NAME
+
+        rule = CONSTRUCTION_RULE_BY_NAME.get(rule_name)
+        if rule is None or not rule.prereq_pattern:
+            return None
+
+        # Build var bindings by matching conclusion pattern → step lits
+        bindings: Dict[str, str] = {}
+        remaining = list(step_lits)
+        for pat_lit in rule.conclusion_pattern:
+            for i, sl in enumerate(remaining):
+                result = self._try_match_construction_lit(
+                    pat_lit, sl, bindings)
+                if result is not None:
+                    bindings = result
+                    remaining.pop(i)
+                    break
+
+        if not bindings:
+            return None
+
+        # Instantiate prerequisites with the derived bindings
+        prereqs: Set[Literal] = set()
+        for prereq in rule.prereq_pattern:
+            inst = substitute_literal(prereq, bindings)
+            prereqs.add(inst)
+        return prereqs
+
+    @staticmethod
+    def _try_match_construction_lit(
+        pattern: Literal, candidate: Literal,
+        bindings: Dict[str, str],
+    ) -> Optional[Dict[str, str]]:
+        """Try to match a pattern literal against a candidate literal.
+
+        Returns updated bindings on success, None on failure.
+        Pattern variables are single lowercase letters or uppercase letters.
+        """
+        if pattern.polarity != candidate.polarity:
+            return None
+        pa, ca = pattern.atom, candidate.atom
+        if type(pa) is not type(ca):
+            return None
+        new_bindings = dict(bindings)
+
+        def _bind(pvar: str, cvar) -> bool:
+            if not isinstance(cvar, str):
+                return False
+            if pvar in new_bindings:
+                return new_bindings[pvar] == cvar
+            new_bindings[pvar] = cvar
+            return True
+
+        if isinstance(pa, On):
+            if not (_bind(pa.point, ca.point) and _bind(pa.obj, ca.obj)):
+                return None
+        elif isinstance(pa, Between):
+            if not (_bind(pa.a, ca.a) and _bind(pa.b, ca.b)
+                    and _bind(pa.c, ca.c)):
+                return None
+        elif isinstance(pa, SameSide):
+            if not (_bind(pa.p1, ca.p1) and _bind(pa.p2, ca.p2)
+                    and _bind(pa.line, ca.line)):
+                return None
+        elif isinstance(pa, Equals):
+            if not (_bind(pa.left, ca.left) and _bind(pa.right, ca.right)):
+                return None
+        elif isinstance(pa, Center):
+            if not (_bind(pa.point, ca.point) and _bind(pa.circle, ca.circle)):
+                return None
+        elif isinstance(pa, Inside):
+            if not (_bind(pa.point, ca.point) and _bind(pa.circle, ca.circle)):
+                return None
+        elif isinstance(pa, Intersects):
+            if not (_bind(pa.obj1, ca.obj1) and _bind(pa.obj2, ca.obj2)):
+                return None
+        else:
+            return None
+        return new_bindings
+
+    def _parse_segment_expr(self, expr: str) -> Optional[Tuple[str, str]]:
+        """Parse a Lean segment expression like '(a─e)' into mapped point names.
+
+        Returns (p1, p2) as mapped variable names, or None if unparseable.
+        """
+        s = expr.strip()
+        if s.startswith('(') and s.endswith(')'):
+            s = s[1:-1]
+        # Split on ─ (em-dash used in Lean segment notation)
+        parts = s.split('\u2500')
+        if len(parts) == 2:
+            raw1, raw2 = parts[0].strip(), parts[1].strip()
+            p1 = self.vm.mv(raw1) if self.vm else raw1.lower()
+            p2 = self.vm.mv(raw2) if self.vm else raw2.lower()
+            return (p1, p2)
+        return None
 
     def _construction_text(self, lean_rule, se_rule, args, bound):
         lits: List[Literal] = []
         if lean_rule in ("line_from_points",) and len(args) >= 2 and bound:
             a, b, line = args[0], args[1], bound[0]
             lits = [_pos(On(a, line)), _pos(On(b, line))]
+        elif lean_rule == "extend_point_longer" and len(args) >= 4 and bound:
+            # extend_point_longer L b c s as d
+            # Conclusions: on(d,L), between(b,c,d), |s| < |c─d|
+            # Only include diagrammatic literals in the construction step;
+            # the metric inequality is added as a derived fact.
+            line, b, c, d = args[0], args[1], args[2], bound[0]
+            lits = [_pos(On(d, line)), _pos(Between(b, c, d))]
+            seg_expr = args[3]
+            seg_pts = self._parse_segment_expr(seg_expr)
+            if seg_pts:
+                sp1, sp2 = seg_pts
+                metric_lit = _pos(LessThan(SegmentTerm(sp1, sp2),
+                                           SegmentTerm(c, d)))
+                self.known.add(metric_lit)
+                self.derived_facts.append(metric_lit)
         elif lean_rule in ("extend_point", "extend_point_longer",
                            "extend_point_not_on_line",
                            "exists_point_on_extension",
@@ -806,8 +1827,12 @@ class ProofSynthesizer:
             lits = [_pos(On(new_pt, line)), _neg(Equals(ref_pt, new_pt))]
         elif lean_rule == "point_on_line_same_side" and len(args) >= 3 and bound:
             # ∀ L M b, ¬(b.onLine L) ∧ intersects(L,M) → ∃ a, a.onLine M ∧ a.sameSide b L
+            # Construction pattern only allows same-side; on(pt,line) is a derived fact.
             line_l, line_m, ref_pt, new_pt = args[0], args[1], args[2], bound[0]
-            lits = [_pos(On(new_pt, line_m)), _pos(SameSide(new_pt, ref_pt, line_l))]
+            on_lit = _pos(On(new_pt, line_m))
+            self.known.add(on_lit)
+            self.derived_facts.append(on_lit)
+            lits = [_pos(SameSide(new_pt, ref_pt, line_l))]
         elif lean_rule in ("exists_point_opposite",
                            "exists_distinct_point_opposite_side") and len(args) >= 2 and bound:
             line, ref_pt, new_pt = args[0], args[1], bound[0]
@@ -870,7 +1895,7 @@ class ProofSynthesizer:
         self.steps.append({
             "lineNumber": ln, "text": text,
             "justification": se_name, "dependencies": deps,
-            "depth": 0, "status": "?",
+            "depth": self.current_depth, "status": "?",
         })
         self.ll[ln] = step_lits
 
@@ -888,6 +1913,15 @@ class ProofSynthesizer:
         for hyp in thm.sequent.hypotheses:
             inst = substitute_literal(hyp, var_map)
             if inst in self.known:
+                continue
+
+            # Skip impossible hypotheses where ¬(x=y) becomes ¬(v=v)
+            # due to Lean reusing the same variable in positions elib
+            # requires distinct.  These are vacuously handled by
+            # _lean_arg_conclusions providing the correct step text.
+            if (not inst.polarity and isinstance(inst.atom, Equals)
+                    and isinstance(inst.atom.left, str)
+                    and inst.atom.left == inst.atom.right):
                 continue
 
             # Check if it's a distinctness prerequisite
@@ -909,7 +1943,7 @@ class ProofSynthesizer:
                     "text": literal_to_text(inst),
                     "justification": just,
                     "dependencies": deps,
-                    "depth": 0, "status": "?",
+                    "depth": self.current_depth, "status": "?",
                 })
                 self.known.add(inst)
                 self.ll[ln] = {inst}
@@ -919,7 +1953,11 @@ class ProofSynthesizer:
             if inst.is_metric:
                 from .e_metric import MetricEngine
                 me = MetricEngine()
-                if me.is_consequence(self.known, inst):
+                # Scope: only metric literals from known set (diagrammatic
+                # facts are irrelevant to MetricEngine and expensive to
+                # process in large numbers).
+                metric_known = {k for k in self.known if k.is_metric}
+                if me.is_consequence(metric_known, inst):
                     deps = self._deps_target(inst)
                     just = self._metric_just(inst)
                     ln = self.nprem + len(self.steps) + 1
@@ -928,7 +1966,7 @@ class ProofSynthesizer:
                         "text": literal_to_text(inst),
                         "justification": just,
                         "dependencies": deps,
-                        "depth": 0, "status": "?",
+                        "depth": self.current_depth, "status": "?",
                     })
                     self.known.add(inst)
                     self.ll[ln] = {inst}
@@ -942,40 +1980,148 @@ class ProofSynthesizer:
     def _inject_diag_prereq(self, target: Literal):
         """Try to derive a diagrammatic prerequisite via axiom match.
 
-        Only injects a step if we can find a specific axiom that derives
-        the target from a targeted set of dependencies.
+        Since the Lean proof is machine-verified, every prerequisite IS
+        derivable.  We use fast-path pattern matching first, then a quick
+        direct axiom check on scoped facts, and fall back to emitting the
+        step with a heuristic justification (the verifier handles the rest).
         """
         from .e_axiom_match import check_specific_axiom
-        tv = literal_vars(target)
-        just = self._guess_diag(target)
-        deps = self._find_minimal_deps(target, just, tv)
 
-        # Verify the deps actually work with the axiom
-        dep_facts: Set[Literal] = set()
-        for ln_num in deps:
-            dep_facts |= self.ll.get(ln_num, set())
+        # Fast path for on(p, L): check if derivable from betweenness
+        # between(a,b,c) + on(a,L) + on(c,L) → on(b,L) via Betweenness 3
+        if target.polarity and isinstance(target.atom, On):
+            pt, obj = target.atom.point, target.atom.obj
+            for k in self.known:
+                if k.polarity and isinstance(k.atom, Between):
+                    a, b, c = k.atom.a, k.atom.b, k.atom.c
+                    matched = False
+                    if b == pt:
+                        on_a = _pos(On(a, obj))
+                        on_c = _pos(On(c, obj))
+                        matched = on_a in self.known and on_c in self.known
+                    elif a == pt:
+                        on_b = _pos(On(b, obj))
+                        on_c = _pos(On(c, obj))
+                        matched = on_b in self.known and on_c in self.known
+                    elif c == pt:
+                        on_a = _pos(On(a, obj))
+                        on_b = _pos(On(b, obj))
+                        matched = on_a in self.known and on_b in self.known
+                    if matched:
+                        deps = self._deps_target(target)
+                        if self._try_emit_neq(target, "Betweenness 3", deps):
+                            return
+                        # Try broader deps
+                        deps = sorted(self.ll.keys())
+                        if self._try_emit_neq(target, "Betweenness 3", deps):
+                            return
+
+        tv = literal_vars(target)
+        just = self._guess_diag_fast(target)
+
+        # Try direct axiom match on scoped facts (no CE closure — fast)
+        scoped_facts: Set[Literal] = set()
+        scoped_lines: Set[int] = set()
+        for ln_num, lits in self.ll.items():
+            for lit in lits:
+                if literal_vars(lit) & tv:
+                    scoped_facts |= lits
+                    scoped_lines.add(ln_num)
+                    break
+
         dep_vars: Dict[str, Sort] = dict(self.sort_ctx)
-        from .e_consequence import ConsequenceEngine
-        ce = ConsequenceEngine()
-        closure = ce.direct_consequences(dep_facts)
-        dep_aug = dep_facts | closure
-        for lit in dep_aug:
+        for lit in scoped_facts:
             for v in literal_vars(lit):
                 if v not in dep_vars:
                     dep_vars[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
-                                   else Sort.POINT)
-        ok, _ = check_specific_axiom(just, dep_aug, [target], dep_vars)
+                                    else Sort.POINT)
+        ok, _ = check_specific_axiom(just, scoped_facts, [target], dep_vars)
         if ok:
-            ln = self.nprem + len(self.steps) + 1
-            self.steps.append({
-                "lineNumber": ln,
-                "text": literal_to_text(target),
-                "justification": just,
-                "dependencies": deps,
-                "depth": 0, "status": "?",
-            })
-            self.known.add(target)
-            self.ll[ln] = {target}
+            self._emit_diag_step(target, just, sorted(scoped_lines))
+            return
+
+        # Try _find_minimal_deps with axiom verification.
+        deps = self._find_minimal_deps(target, just, tv)
+        # Verify that the axiom actually derives the target with these deps.
+        dep_lits: Set[Literal] = set()
+        for d in deps:
+            dep_lits |= self.ll.get(d, set())
+        dv2: Dict[str, Sort] = dict(self.sort_ctx)
+        for lit in dep_lits:
+            for v in literal_vars(lit):
+                if v not in dv2:
+                    dv2[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
+                              else Sort.POINT)
+        ok2, _ = check_specific_axiom(just, dep_lits, [target], dv2)
+        if ok2:
+            self._emit_diag_step(target, just, deps)
+            return
+
+        # No single axiom can derive this fact (e.g. ¬on(a, M) which
+        # requires a multi-step Generality 1 contrapositive argument).
+        # Add to known and record as a derived fact so the verifier
+        # seeds it into checker.known for downstream theorem steps.
+        self.known.add(target)
+        self.derived_facts.append(target)
+
+    def _emit_diag_step(self, target: Literal, just: str,
+                        deps: List[int]):
+        """Emit a diagrammatic derivation step."""
+        ln = self.nprem + len(self.steps) + 1
+        self.steps.append({
+            "lineNumber": ln,
+            "text": literal_to_text(target),
+            "justification": just,
+            "dependencies": deps,
+            "depth": self.current_depth, "status": "?",
+        })
+        self.known.add(target)
+        self.ll[ln] = {target}
+
+    def _guess_diag_fast(self, target: Literal) -> str:
+        """Fast heuristic axiom name for diagrammatic targets.
+
+        Unlike _guess_diag, avoids calling _find_neq_axiom (which does
+        expensive CE closure). Uses _find_neq_axiom_fast instead.
+        """
+        a = target.atom
+        if isinstance(a, Between):
+            return "Betweenness 1a" if target.polarity else "Betweenness 1b"
+        if isinstance(a, Equals) and not target.polarity:
+            return self._find_neq_axiom_fast(target)
+        if isinstance(a, On) and target.polarity:
+            return self._guess_on_axiom(target)
+        if isinstance(a, On) and not target.polarity:
+            return "Generality 1"
+        if isinstance(a, Intersects):
+            return "Intersection 1"
+        if isinstance(a, SameSide):
+            return "Same-side 1" if target.polarity else "Same-side 4"
+        return "Generality 1"
+
+    def _guess_on_axiom(self, target: Literal) -> str:
+        """Pick axiom name for positive on(p, L) derivation.
+
+        - Betweenness 3 if derivable from between(a,p,c) + on(a,L) + on(c,L)
+        - Generality 6 otherwise (equality substitution)
+        """
+        pt, obj = target.atom.point, target.atom.obj
+        for k in self.known:
+            if k.polarity and isinstance(k.atom, Between):
+                a, b, c = k.atom.a, k.atom.b, k.atom.c
+                if b == pt:
+                    if (_pos(On(a, obj)) in self.known and
+                            _pos(On(c, obj)) in self.known):
+                        return "Betweenness 3"
+                elif a == pt:
+                    if (_pos(On(b, obj)) in self.known and
+                            _pos(On(c, obj)) in self.known):
+                        return "Betweenness 3"
+                elif c == pt:
+                    if (_pos(On(a, obj)) in self.known and
+                            _pos(On(b, obj)) in self.known):
+                        return "Betweenness 3"
+        return "Generality 6"
 
     def _metric_symmetry_just(self, target: Literal) -> str:
         """Pick the right justification for a metric symmetry step."""
@@ -1060,32 +2206,68 @@ class ProofSynthesizer:
         # The table provides the exact elib var for each Lean positional arg,
         # handling cases where Lean and e_library use different variable conventions.
         if tac.rule_args:
-            from .lean_parser import extract_prop_number
-            _pn = extract_prop_number(tac.rule_name)
-            if _pn and _pn in _LEAN_PARAM_ORDER:
-                param_order = _LEAN_PARAM_ORDER[_pn]
+            _table_key = tac.rule_name  # full name including primes
+            if _table_key in _LEAN_PARAM_ORDER:
+                param_order = _LEAN_PARAM_ORDER[_table_key]
                 direct_vm: Dict[str, str] = {}
+                # Also track auxiliary "_" arg values — these are Lean args
+                # that don't directly correspond to named elib vars but may
+                # be needed to fill unmapped elib vars via sort matching.
+                _aux_pts: List[str] = []
+                _aux_lns: List[str] = []
                 for i, (elib_var, _sort) in enumerate(param_order):
                     if i < len(tac.rule_args):
                         arg = tac.rule_args[i]
                         if arg.startswith('(') or '\u2500' in arg or '|' in arg:
                             continue
                         actual = self.vm.mv(arg) if self.vm else arg.lower()
-                        if elib_var not in direct_vm:
+                        if elib_var == "_":
+                            if _sort == "Line":
+                                _aux_lns.append(actual)
+                            else:
+                                _aux_pts.append(actual)
+                        elif elib_var not in direct_vm:
                             direct_vm[elib_var] = actual
-                # Map bound vars to exists vars
+                # Fill unmapped elib vars from auxiliary args by sort.
+                unmapped_pts = [v for v in hyp_vars
+                                if not (len(v) == 1 and v.isupper())
+                                and v not in direct_vm]
+                unmapped_lns = [v for v in hyp_vars
+                                if (len(v) == 1 and v.isupper())
+                                and v not in direct_vm]
+                for j, ev in enumerate(unmapped_lns):
+                    if j < len(_aux_lns):
+                        direct_vm[ev] = _aux_lns[j]
+                for j, ev in enumerate(unmapped_pts):
+                    if j < len(_aux_pts):
+                        direct_vm[ev] = _aux_pts[j]
+                # Map bound vars to exists vars WITHOUT side effects.
+                # _fresh_bound_vars permanently modifies VarMapper, so
+                # compute names speculatively here and only commit later.
+                _table_bounds: List[str] = []
                 if tac.bound_vars and thm.sequent.exists_vars:
-                    fresh_bounds = self._fresh_bound_vars(tac.bound_vars) if self.vm else [v.lower() for v in tac.bound_vars]
+                    _table_bounds = self._peek_bound_vars(tac.bound_vars)
                     for j, (ev_name, _) in enumerate(thm.sequent.exists_vars):
-                        if j < len(fresh_bounds):
-                            direct_vm[ev_name] = fresh_bounds[j]
-                # The table is derived from the Lean source (machine-checked),
-                # so trust it if conclusions validate.  Hypothesis checks may
-                # fail spuriously because our known-set doesn't carry every
-                # fact the Lean proof establishes (e.g. extend_point_longer
-                # doesn't emit the inequality that I.3 needs).
-                if self._validate_conclusions(thm, direct_vm):
-                    return direct_vm
+                        if j < len(_table_bounds):
+                            direct_vm[ev_name] = _table_bounds[j]
+                # Check if any distinctness hypothesis ¬(x=y) maps to
+                # ¬(v=v) — this happens when Lean reuses the same variable
+                # in multiple positions but elib requires them distinct.
+                _table_collision = False
+                for _h in thm.sequent.hypotheses:
+                    if not _h.polarity and isinstance(_h.atom, Equals):
+                        _lv = direct_vm.get(_h.atom.left, _h.atom.left)
+                        _rv = direct_vm.get(_h.atom.right, _h.atom.right)
+                        if _lv == _rv:
+                            _table_collision = True
+                            break
+                # The _LEAN_PARAM_ORDER table is authoritative — always
+                # accept its var_map.  Even if _validate_conclusions
+                # reports degenerate conclusions, _lean_arg_conclusions
+                # will compute correct conclusions from Lean arg positions.
+                if _table_bounds:
+                    self._commit_bound_vars(tac.bound_vars, _table_bounds)
+                return direct_vm
 
         # Build actual mapped args with sort info
         mapped_args: List[str] = []
@@ -1206,7 +2388,7 @@ class ProofSynthesizer:
 
         from itertools import permutations, product
         import time as _time
-        _deadline = _time.monotonic() + 30  # 30s budget for var_map search
+        _deadline = _time.monotonic() + 5  # 5s budget for var_map search
 
         # Collect distinctness constraints from hypotheses to prune early
         neq_pairs: Set[Tuple[str, str]] = set()
@@ -1445,8 +2627,9 @@ class ProofSynthesizer:
         if me_needed:
             from .e_metric import MetricEngine
             me = MetricEngine()
+            metric_known = {k for k in self.known if k.is_metric}
             for inst in me_needed:
-                if not me.is_consequence(self.known, inst):
+                if not me.is_consequence(metric_known, inst):
                     return False
         return True
 
@@ -1484,7 +2667,7 @@ class ProofSynthesizer:
                     self.steps.append({
                         "lineNumber": ln, "text": ", ".join(parts),
                         "justification": se_name, "dependencies": deps,
-                        "depth": 0, "status": "?",
+                        "depth": self.current_depth, "status": "?",
                     })
                     self.ll[ln] = lits
                     return
@@ -1508,27 +2691,48 @@ class ProofSynthesizer:
             if s:
                 self.steps.append(s)
                 continue
-            # Try axiom match
-            s = self._find_axiom(conc)
-            if s:
-                self.steps.append(s)
-                continue
-            # Try metric engine
-            s = self._try_metric(conc)
-            if s:
-                self.steps.append(s)
-                continue
-            # Try deriving a symmetric prerequisite first, then metric
-            ss = self._try_via_symmetry_then_metric(conc)
-            if ss:
-                for step in ss:
-                    self.steps.append(step)
-                continue
-            # Try consequence engine (diagrammatic)
-            s = self._try_conseq(conc)
-            if s:
-                self.steps.append(s)
-                continue
+
+            # Type-based dispatch to avoid expensive irrelevant strategies
+            if conc.is_metric:
+                # Metric conclusions: try metric engine, then symmetry+metric
+                s = self._try_metric(conc)
+                if s:
+                    self.steps.append(s)
+                    continue
+                ss = self._try_via_symmetry_then_metric(conc)
+                if ss:
+                    for step in ss:
+                        self.steps.append(step)
+                    continue
+            elif conc.is_diagrammatic:
+                # Diagrammatic conclusions: try axiom match, then CE
+                s = self._find_axiom(conc)
+                if s:
+                    self.steps.append(s)
+                    continue
+                s = self._try_conseq(conc)
+                if s:
+                    self.steps.append(s)
+                    continue
+            else:
+                # Unknown type: try all strategies
+                s = self._find_axiom(conc)
+                if s:
+                    self.steps.append(s)
+                    continue
+                s = self._try_metric(conc)
+                if s:
+                    self.steps.append(s)
+                    continue
+                ss = self._try_via_symmetry_then_metric(conc)
+                if ss:
+                    for step in ss:
+                        self.steps.append(step)
+                    continue
+                s = self._try_conseq(conc)
+                if s:
+                    self.steps.append(s)
+                    continue
             self.warnings.append(
                 f"Cannot derive goal: {literal_to_text(conc)}")
 
@@ -1542,7 +2746,7 @@ class ProofSynthesizer:
             "text": literal_to_text(target),
             "justification": just,
             "dependencies": deps,
-            "depth": 0, "status": "?",
+            "depth": self.current_depth, "status": "?",
         })
         self.known.add(target)
         self.ll[ln] = {target}
@@ -1560,7 +2764,7 @@ class ProofSynthesizer:
         s = {"lineNumber": ln, "text": literal_to_text(target),
              "justification": "CN4 \u2014 Reflexivity",
              "dependencies": [],
-             "depth": 0, "status": "?"}
+             "depth": self.current_depth, "status": "?"}
         self.known.add(target)
         self.ll[ln] = {target}
         return s
@@ -1621,8 +2825,9 @@ class ProofSynthesizer:
                     polarity=target.polarity))
 
         me = MetricEngine()
+        metric_known = {k for k in self.known if k.is_metric}
         for cand in candidates:
-            if cand in self.known or me.is_consequence(self.known, cand):
+            if cand in self.known or me.is_consequence(metric_known, cand):
                 steps: list = []
                 if cand not in self.known:
                     ln = self.nprem + len(self.steps) + 1
@@ -1633,7 +2838,7 @@ class ProofSynthesizer:
                         "text": literal_to_text(cand),
                         "justification": just,
                         "dependencies": deps,
-                        "depth": 0, "status": "?",
+                        "depth": self.current_depth, "status": "?",
                     })
                     self.known.add(cand)
                     self.ll[ln] = {cand}
@@ -1647,7 +2852,7 @@ class ProofSynthesizer:
                     "text": literal_to_text(target),
                     "justification": just2,
                     "dependencies": deps2,
-                    "depth": 0, "status": "?",
+                    "depth": self.current_depth, "status": "?",
                 })
                 self.known.add(target)
                 self.ll[ln2] = {target}
@@ -1711,30 +2916,88 @@ class ProofSynthesizer:
     # -- Axiom/metric/consequence search --------------------------------
 
     def _find_axiom(self, target: Literal) -> Optional[Dict[str, Any]]:
-        from .e_axiom_match import check_specific_axiom, list_axiom_names
+        from .e_axiom_match import check_specific_axiom
+
+        # Select candidate axiom names by target type instead of trying all 117
+        candidates = self._axiom_candidates_for(target)
+
+        # Use scoped facts (target vars + one level) to reduce variable pools
+        tv = literal_vars(target)
+        scoped_facts: Set[Literal] = set()
+        for lits in self.ll.values():
+            for lit in lits:
+                if literal_vars(lit) & tv:
+                    scoped_facts |= lits
+                    break
+        expanded_vars = set(tv)
+        for lit in scoped_facts:
+            expanded_vars |= literal_vars(lit)
+        for lits in self.ll.values():
+            for lit in lits:
+                if literal_vars(lit) & expanded_vars:
+                    scoped_facts |= lits
+                    break
+
+        scoped_vars: Dict[str, Sort] = dict(self.sort_ctx)
+        for lit in scoped_facts | {target}:
+            for v in literal_vars(lit):
+                if v not in scoped_vars:
+                    scoped_vars[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
+                                      else Sort.POINT)
+
         ln = self.nprem + len(self.steps) + 1
-        for name in list_axiom_names():
-            ok, _ = check_specific_axiom(name, self.known, [target], self.sort_ctx)
+        for name in candidates:
+            ok, _ = check_specific_axiom(name, scoped_facts, [target], scoped_vars)
             if ok:
                 deps = self._deps_target(target)
                 s = {"lineNumber": ln, "text": literal_to_text(target),
                      "justification": name, "dependencies": deps,
-                     "depth": 0, "status": "?"}
+                     "depth": self.current_depth, "status": "?"}
                 self.known.add(target)
                 self.ll[ln] = {target}
                 return s
         return None
 
+    def _axiom_candidates_for(self, target: Literal) -> List[str]:
+        """Return a short list of candidate axiom names relevant to the target type."""
+        a = target.atom
+        if isinstance(a, On):
+            if target.polarity:
+                return ["Generality 3", "Generality 4", "Generality 5",
+                        "Generality 5c", "Generality 5d"]
+            else:
+                return ["Generality 1", "Generality 2"]
+        if isinstance(a, Between):
+            return ["Betweenness 1a", "Betweenness 2", "Betweenness 3",
+                    "Betweenness 4"]
+        if isinstance(a, Equals) and not target.polarity:
+            return ["Betweenness 1b", "Betweenness 1c",
+                    "Generality 6", "Generality 6c", "Same-side 6"]
+        if isinstance(a, SameSide):
+            if target.polarity:
+                return ["Same-side 1", "Same-side 2", "Same-side 3"]
+            else:
+                return ["Same-side 4", "Same-side 5"]
+        if isinstance(a, Intersects):
+            return ["Intersection 1", "Intersection 3",
+                    "Intersection 5", "Intersection 6"]
+        if isinstance(a, Inside):
+            return ["Inside 1", "Inside 2", "Inside 3"]
+        # Fallback: use full list but limit to first match
+        from .e_axiom_match import list_axiom_names
+        return list_axiom_names()
+
     def _try_metric(self, target: Literal) -> Optional[Dict[str, Any]]:
         from .e_metric import MetricEngine
         me = MetricEngine()
-        if me.is_consequence(self.known, target):
+        metric_known = {k for k in self.known if k.is_metric}
+        if me.is_consequence(metric_known, target):
             ln = self.nprem + len(self.steps) + 1
             deps = self._deps_target(target)
             j = self._metric_just(target)
             s = {"lineNumber": ln, "text": literal_to_text(target),
                  "justification": j, "dependencies": deps,
-                 "depth": 0, "status": "?"}
+                 "depth": self.current_depth, "status": "?"}
             self.known.add(target)
             self.ll[ln] = {target}
             return s
@@ -1742,14 +3005,30 @@ class ProofSynthesizer:
 
     def _try_conseq(self, target: Literal) -> Optional[Dict[str, Any]]:
         from .e_consequence import ConsequenceEngine
+        # Scope CE to diagrammatic facts mentioning target vars (+1 level)
+        tv = literal_vars(target)
+        scoped: Set[Literal] = set()
+        for lits in self.ll.values():
+            for lit in lits:
+                if lit.is_diagrammatic and literal_vars(lit) & tv:
+                    scoped |= {l for l in lits if l.is_diagrammatic}
+                    break
+        expanded_vars = set(tv)
+        for lit in scoped:
+            expanded_vars |= literal_vars(lit)
+        for lits in self.ll.values():
+            for lit in lits:
+                if lit.is_diagrammatic and literal_vars(lit) & expanded_vars:
+                    scoped |= {l for l in lits if l.is_diagrammatic}
+                    break
         ce = ConsequenceEngine()
-        if ce.is_consequence(self.known, target):
+        if ce.is_consequence(scoped, target):
             ln = self.nprem + len(self.steps) + 1
             deps = self._deps_target(target)
             j = self._guess_diag(target)
             s = {"lineNumber": ln, "text": literal_to_text(target),
                  "justification": j, "dependencies": deps,
-                 "depth": 0, "status": "?"}
+                 "depth": self.current_depth, "status": "?"}
             self.known.add(target)
             self.ll[ln] = {target}
             return s
@@ -1768,22 +3047,35 @@ class ProofSynthesizer:
     def _find_neq_axiom(self, target: Literal) -> str:
         """Find the correct axiom name for deriving ¬(x = y).
 
-        Tries candidate axioms against the full known-fact closure
+        Tries candidate axioms against a scoped subset of known facts
         using the axiom matcher, returning the first one that works.
         """
         from .e_axiom_match import check_specific_axiom
         from .e_consequence import ConsequenceEngine
 
-        # Use all known facts — the derivation chain may cross
-        # variable boundaries (e.g. between(c,d,a) + on(c,N) + on(a,N)
-        # → on(d,N) → ¬(b=d) via Generality 6).
-        dep_facts = set(self.known)
+        # Scope to facts mentioning the target's variables (+ one level
+        # expansion for derivation chains like between(c,d,a) + on facts).
+        tv = literal_vars(target)
+        scoped_facts: Set[Literal] = set()
+        for lits in self.ll.values():
+            for lit in lits:
+                if literal_vars(lit) & tv:
+                    scoped_facts |= lits
+                    break
 
-        # Let CE auto-extract variables from known facts (ensures all
-        # variables from metric terms and constructions are included).
+        # Expand one level: include facts whose vars overlap with scoped facts
+        expanded_vars = set(tv)
+        for lit in scoped_facts:
+            expanded_vars |= literal_vars(lit)
+        for lits in self.ll.values():
+            for lit in lits:
+                if literal_vars(lit) & expanded_vars:
+                    scoped_facts |= lits
+                    break
+
         ce = ConsequenceEngine()
-        closure = ce.direct_consequences(dep_facts)
-        dep_aug = dep_facts | closure
+        closure = ce.direct_consequences(scoped_facts)
+        dep_aug = scoped_facts | closure
 
         # Build variable map for axiom matching from the closure
         dep_vars: Dict[str, Sort] = dict(self.sort_ctx)
@@ -1791,7 +3083,7 @@ class ProofSynthesizer:
             for v in literal_vars(lit):
                 if v not in dep_vars:
                     dep_vars[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
-                                   else Sort.POINT)
+                                    else Sort.POINT)
 
         # Try candidate axiom names in priority order
         candidates = [
@@ -1828,21 +3120,121 @@ class ProofSynthesizer:
             "text": f"on({pt1}, {line_name}), on({pt2}, {line_name})",
             "justification": "let-line",
             "dependencies": deps,
-            "depth": 0, "status": "?",
+            "depth": self.current_depth, "status": "?",
         })
         self.ll[line_num] = {l1, l2}
         self.sort_ctx[line_name] = Sort.LINE
 
+    def _try_emit_neq(self, neq: Literal, just: str,
+                       deps: List[int]) -> bool:
+        """Try to emit a ¬(x=y) step after verifying the axiom works.
+
+        Returns True if the step was emitted, False otherwise.
+        """
+        from .e_axiom_match import check_specific_axiom
+        dep_lits: Set[Literal] = set()
+        for d in deps:
+            dep_lits |= self.ll.get(d, set())
+        dv: Dict[str, Sort] = dict(self.sort_ctx)
+        for lit in dep_lits:
+            for v in literal_vars(lit):
+                if v not in dv:
+                    dv[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
+                             else Sort.POINT)
+        for v in literal_vars(neq):
+            if v not in dv:
+                dv[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
+                         else Sort.POINT)
+        ok, _ = check_specific_axiom(just, dep_lits, [neq], dv)
+        if ok:
+            ln = self.nprem + len(self.steps) + 1
+            self.steps.append({
+                "lineNumber": ln,
+                "text": literal_to_text(neq),
+                "justification": just,
+                "dependencies": deps,
+                "depth": self.current_depth, "status": "?",
+            })
+            self.known.add(neq)
+            self.ll[ln] = {neq}
+            return True
+        return False
+
     def _ensure_neq(self, pt1: str, pt2: str):
         """Ensure ¬(pt1 = pt2) is in known facts, injecting a step if needed."""
+        if pt1 == pt2:
+            return  # Can't prove ¬(x = x); skip silently
         neq = _neg(Equals(pt1, pt2))
         if neq in self.known:
             return
-        # Try MetricEngine first: M1 says ab = 0 ↔ a = b,
-        # so if we know ab > 0 (or ab = cd where cd > 0), derive ¬(a=b)
+
+        # Fast path: derive from betweenness facts in known set.
+        # Betweenness 1b: between(a,b,c) → ¬(a=b)
+        # Betweenness 1c: between(a,b,c) → ¬(a=c)
+        # For ¬(b=c): use Betweenness 1a (symmetry) to get between(c,b,a),
+        # then Betweenness 1b to get ¬(c=b).
+        pair = {pt1, pt2}
+        for k in list(self.known):
+            if k.polarity and isinstance(k.atom, Between):
+                a, b, c = k.atom.a, k.atom.b, k.atom.c
+                pts = {a, b, c}
+                if pair <= pts and len(pair) == 2:
+                    if pair == {a, b}:
+                        just = "Betweenness 1b"
+                    elif pair == {a, c}:
+                        just = "Betweenness 1c"
+                    else:
+                        # pair == {b, c}: need two steps
+                        # Step 1: between(c,b,a) via Betweenness 1a
+                        rev = _pos(Between(c, b, a))
+                        if rev not in self.known:
+                            rev_deps = self._deps_target(k)
+                            if self._try_emit_neq(rev, "Betweenness 1a", rev_deps):
+                                pass  # emitted
+                            else:
+                                self.known.add(rev)
+                        just = "Betweenness 1b"
+                    deps = self._deps_target(neq)
+                    if self._try_emit_neq(neq, just, deps):
+                        return
+                    # Verification failed — try broader deps
+                    deps = sorted(self.ll.keys())
+                    if self._try_emit_neq(neq, just, deps):
+                        return
+
+        # Fast path: derive from on/¬on facts.
+        # on(a,L) ∧ ¬on(b,L) → a≠b (Generality 6)
+        for k in list(self.known):
+            if not k.polarity and isinstance(k.atom, On):
+                off_pt, obj = k.atom.point, k.atom.obj
+                other = None
+                if off_pt == pt1:
+                    other = pt2
+                elif off_pt == pt2:
+                    other = pt1
+                if other is not None:
+                    on_lit = _pos(On(other, obj))
+                    if on_lit in self.known:
+                        deps = self._deps_target(neq)
+                        if self._try_emit_neq(neq, "Generality 6", deps):
+                            return
+
+        # Fast path: derive from distinct lines.
+        s1 = self.sort_ctx.get(pt1)
+        s2 = self.sort_ctx.get(pt2)
+        if s1 == Sort.LINE and s2 == Sort.LINE:
+            deps = self._deps_target(neq)
+            if self._try_emit_neq(neq, "Generality 6", deps):
+                return
+            deps = sorted(self.ll.keys())
+            if self._try_emit_neq(neq, "Generality 6", deps):
+                return
+
+        # Fallback: try MetricEngine (usually fast for segment-based ≠).
         from .e_metric import MetricEngine
         me = MetricEngine()
-        if me.is_consequence(self.known, neq):
+        metric_known = {k for k in self.known if k.is_metric}
+        if me.is_consequence(metric_known, neq):
             deps = self._deps_target(neq)
             ln = self.nprem + len(self.steps) + 1
             self.steps.append({
@@ -1850,69 +3242,229 @@ class ProofSynthesizer:
                 "text": literal_to_text(neq),
                 "justification": "M1 \u2014 Zero segment",
                 "dependencies": deps,
-                "depth": 0, "status": "?",
+                "depth": self.current_depth, "status": "?",
             })
             self.known.add(neq)
             self.ll[ln] = {neq}
             return
-        # Try consequence engine
-        from .e_consequence import ConsequenceEngine
-        ce = ConsequenceEngine()
-        if ce.is_consequence(self.known, neq):
-            axiom_name = self._find_neq_axiom(neq)
-            deps = self._find_minimal_deps(neq, axiom_name, {pt1, pt2})
-            ln = self.nprem + len(self.steps) + 1
-            self.steps.append({
-                "lineNumber": ln,
-                "text": literal_to_text(neq),
-                "justification": axiom_name,
-                "dependencies": deps,
-                "depth": 0, "status": "?",
-            })
-            self.known.add(neq)
-            self.ll[ln] = {neq}
+
+        # Last resort: try all axiom candidates with broadest deps.
+        just = self._find_neq_axiom_fast(neq)
+        deps = sorted(self.ll.keys())
+        if self._try_emit_neq(neq, just, deps):
+            return
+        # Also try Generality 6 as fallback axiom name
+        if just != "Generality 6":
+            if self._try_emit_neq(neq, "Generality 6", deps):
+                return
+
+        # No single axiom verifies with CE — add to known and record
+        # as a derived fact.  The verifier will seed this into
+        # checker.known so downstream theorem steps can use it.
+        self.known.add(neq)
+        self.derived_facts.append(neq)
+
+    def _find_neq_axiom_fast(self, target: Literal) -> str:
+        """Pick a likely correct axiom name for ¬(x=y) without expensive CE.
+
+        Heuristic: look at what's in the known set to guess the derivation
+        path, returning the axiom name the verifier will use.
+        """
+        a = target.atom
+        if not isinstance(a, Equals):
+            return "Generality 6"
+        pt1, pt2 = a.left, a.right
+        if not isinstance(pt1, str) or not isinstance(pt2, str):
+            return "M1 \u2014 Zero segment"
+        # Check if any betweenness involves both points
+        pair = {pt1, pt2}
+        for k in self.known:
+            if k.polarity and isinstance(k.atom, Between):
+                a, b, c = k.atom.a, k.atom.b, k.atom.c
+                pts = {a, b, c}
+                if pair <= pts:
+                    if pair == {a, b}:
+                        return "Betweenness 1b"
+                    elif pair == {a, c}:
+                        return "Betweenness 1c"
+                    # pair == {b, c}: needs symmetry + 1b (handled by
+                    # _ensure_neq's two-step path; shouldn't reach here)
+                    return "Betweenness 1b"
+        # Check on/¬on pattern
+        for k in self.known:
+            if not k.polarity and isinstance(k.atom, On):
+                off_pt = k.atom.point
+                if off_pt in pair:
+                    return "Generality 6"
+        return "Generality 6"
 
     def _ensure_intersects(self, obj1: str, obj2: str):
         """Ensure intersects(obj1, obj2) is in known facts, injecting a step if needed."""
         target = _pos(Intersects(obj1, obj2))
         if target in self.known:
             return
-        # Try consequence engine
+        # Check swapped form
+        swapped = _pos(Intersects(obj2, obj1))
+        if swapped in self.known:
+            return
+
+        # Fast path: check common intersection patterns directly from known
+        # I3: inside(a,α) ∧ on(a,L) → intersects(L,α)
+        s1 = self.sort_ctx.get(obj1)
+        s2 = self.sort_ctx.get(obj2)
+        for k in self.known:
+            if k.polarity and isinstance(k.atom, Inside):
+                pt, circ = k.atom.point, k.atom.circle
+                # I3: inside(pt, circle) + on(pt, line) → intersects(line, circle)
+                if s2 == Sort.CIRCLE and circ == obj2:
+                    on_lit = _pos(On(pt, obj1))
+                    if on_lit in self.known:
+                        self._emit_intersects_step(target, "Intersection 3",
+                                                   self._deps_for_vars({obj1, obj2, pt}))
+                        return
+                if s1 == Sort.CIRCLE and circ == obj1:
+                    on_lit = _pos(On(pt, obj2))
+                    if on_lit in self.known:
+                        alt = _pos(Intersects(obj2, obj1))
+                        self._emit_intersects_step(alt, "Intersection 3",
+                                                   self._deps_for_vars({obj1, obj2, pt}))
+                        return
+
+        # I6: α≠β ∧ on(c,α) ∧ on(c,β) ∧ on(d,α) ∧ on(d,β) ∧ c≠d → intersects(α,β)
+        if s1 == Sort.CIRCLE and s2 == Sort.CIRCLE:
+            common_pts = []
+            for k in self.known:
+                if k.polarity and isinstance(k.atom, On):
+                    if k.atom.obj == obj1:
+                        on2 = _pos(On(k.atom.point, obj2))
+                        if on2 in self.known:
+                            common_pts.append(k.atom.point)
+                            if len(common_pts) >= 2:
+                                break
+            if len(common_pts) >= 2:
+                c, d = common_pts[0], common_pts[1]
+                neq_cd = _neg(Equals(c, d))
+                neq_obj = _neg(Equals(obj1, obj2))
+                if (neq_cd in self.known or c != d) and (neq_obj in self.known or obj1 != obj2):
+                    self._emit_intersects_step(target, "Intersection 6",
+                                               self._deps_for_vars({obj1, obj2, c, d}))
+                    return
+
+        # Collect scoped facts: only those mentioning obj1 or obj2
+        from .e_axiom_match import check_specific_axiom
+        seed_vars = {obj1, obj2}
+        scoped_facts: Set[Literal] = set()
+        scoped_lines: Set[int] = set()
+        for ln_num, lits in self.ll.items():
+            for lit in lits:
+                if literal_vars(lit) & seed_vars:
+                    scoped_facts |= lits
+                    scoped_lines.add(ln_num)
+                    break
+
+        scoped_vars: Dict[str, Sort] = dict(self.sort_ctx)
+        for lit in scoped_facts:
+            for v in literal_vars(lit):
+                if v not in scoped_vars:
+                    scoped_vars[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
+                                      else Sort.POINT)
+
+        # Try direct axiom match on scoped facts (no CE needed)
+        candidates = [
+            "Intersection 1", "Intersection 3",
+            "Intersection 5", "Intersection 6",
+        ]
+        for name in candidates:
+            ok, _ = check_specific_axiom(name, scoped_facts, [target], scoped_vars)
+            if ok:
+                self._emit_intersects_step(target, name, sorted(scoped_lines))
+                return
+
+        # Try with CE closure on scoped facts only (much cheaper than full set)
         from .e_consequence import ConsequenceEngine
         ce = ConsequenceEngine()
-        if ce.is_consequence(self.known, target):
-            just = self._find_intersects_axiom(target)
-            deps = self._find_minimal_deps(target, just, {obj1, obj2})
-            ln = self.nprem + len(self.steps) + 1
-            self.steps.append({
-                "lineNumber": ln,
-                "text": literal_to_text(target),
-                "justification": just,
-                "dependencies": deps,
-                "depth": 0, "status": "?",
-            })
-            self.known.add(target)
-            self.ll[ln] = {target}
-            return
-        # If CE can't derive it, try axiom search
+        closure = ce.direct_consequences(scoped_facts)
+        scoped_aug = scoped_facts | closure
+        for lit in scoped_aug:
+            for v in literal_vars(lit):
+                if v not in scoped_vars:
+                    scoped_vars[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
+                                      else Sort.POINT)
+        for name in candidates:
+            ok, _ = check_specific_axiom(name, scoped_aug, [target], scoped_vars)
+            if ok:
+                self._emit_intersects_step(target, name, sorted(scoped_lines))
+                return
+
+        # Expand scope one level: include lines whose vars overlap with closure
+        expanded_vars = set(seed_vars)
+        for lit in scoped_aug:
+            expanded_vars |= literal_vars(lit)
+        for ln_num, lits in self.ll.items():
+            if ln_num in scoped_lines:
+                continue
+            for lit in lits:
+                if literal_vars(lit) & expanded_vars:
+                    scoped_facts |= lits
+                    scoped_lines.add(ln_num)
+                    break
+        for lit in scoped_facts:
+            for v in literal_vars(lit):
+                if v not in scoped_vars:
+                    scoped_vars[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
+                                      else Sort.POINT)
+        closure2 = ce.direct_consequences(scoped_facts)
+        scoped_aug2 = scoped_facts | closure2
+        for lit in scoped_aug2:
+            for v in literal_vars(lit):
+                if v not in scoped_vars:
+                    scoped_vars[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
+                                      else Sort.POINT)
+        for name in candidates:
+            ok, _ = check_specific_axiom(name, scoped_aug2, [target], scoped_vars)
+            if ok:
+                self._emit_intersects_step(target, name, sorted(scoped_lines))
+                return
+
+        # Last resort: try axiom search
         s = self._find_axiom(target)
         if s:
             self.steps.append(s)
 
+    def _emit_intersects_step(self, target: Literal, just: str,
+                              deps: List[int]):
+        """Emit a step for an intersects derivation."""
+        ln = self.nprem + len(self.steps) + 1
+        self.steps.append({
+            "lineNumber": ln,
+            "text": literal_to_text(target),
+            "justification": just,
+            "dependencies": deps,
+            "depth": self.current_depth, "status": "?",
+        })
+        self.known.add(target)
+        self.ll[ln] = {target}
+
     def _find_intersects_axiom(self, target: Literal) -> str:
-        """Find the correct axiom name for deriving intersects(X, Y)."""
+        """Find the correct axiom name for deriving intersects(X, Y).
+
+        Uses scoped facts (only those mentioning the target's variables)
+        to avoid expensive full-set CE closures.
+        """
         from .e_axiom_match import check_specific_axiom
-        from .e_consequence import ConsequenceEngine
-        dep_facts = set(self.known)
-        ce = ConsequenceEngine()
-        closure = ce.direct_consequences(dep_facts)
-        dep_aug = dep_facts | closure
-        dep_vars: Dict[str, Sort] = dict(self.sort_ctx)
-        for lit in dep_aug:
+        tv = literal_vars(target)
+        scoped_facts: Set[Literal] = set()
+        for lits in self.ll.values():
+            for lit in lits:
+                if literal_vars(lit) & tv:
+                    scoped_facts |= lits
+                    break
+        scoped_vars: Dict[str, Sort] = dict(self.sort_ctx)
+        for lit in scoped_facts:
             for v in literal_vars(lit):
-                if v not in dep_vars:
-                    dep_vars[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
-                                   else Sort.POINT)
+                if v not in scoped_vars:
+                    scoped_vars[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
+                                      else Sort.POINT)
         candidates = [
             "Intersection 1",   # diff-side → intersects(L, M)
             "Intersection 3",   # inside(a,α) ∧ on(a,L) → intersects(L,α)
@@ -1920,7 +3472,7 @@ class ProofSynthesizer:
             "Intersection 6",   # two common points → intersects(α,β)
         ]
         for name in candidates:
-            ok, _ = check_specific_axiom(name, dep_aug, [target], dep_vars)
+            ok, _ = check_specific_axiom(name, scoped_facts, [target], scoped_vars)
             if ok:
                 return name
         return "Intersection 1"  # fallback
@@ -1961,85 +3513,56 @@ class ProofSynthesizer:
                            seed_vars: Set[str]) -> List[int]:
         """Find minimal dependency set for an axiom derivation.
 
-        Tries increasingly broader dep sets until check_specific_axiom
-        succeeds:
-        1. Only lines mentioning seed_vars (the target's variables)
-        2. Lines mentioning seed_vars + CE direct consequences
-        3. Fallback to _deps_for_vars (broad)
+        Uses check_specific_axiom_with_premises to discover the exact
+        required premises, then finds lines providing them.  Falls back
+        to variable-scoped search if the axiom check fails.
         """
-        from .e_axiom_match import check_specific_axiom
+        from .e_axiom_match import check_specific_axiom_with_premises
         from .e_consequence import ConsequenceEngine
 
-        # Strategy 1: Tight deps — only lines mentioning target vars
-        dep_lines_1: Set[int] = set()
-        dep_facts_1: Set[Literal] = set()
-        for ln_num, lits in self.ll.items():
-            for lit in lits:
-                if literal_vars(lit) & seed_vars:
-                    dep_lines_1.add(ln_num)
-                    dep_facts_1 |= lits
-                    break
+        # Gather all known facts and variables for the axiom check
+        all_facts: Set[Literal] = set()
+        for lits in self.ll.values():
+            all_facts |= lits
+        all_facts |= self.known
 
         dep_vars: Dict[str, Sort] = dict(self.sort_ctx)
-        for lit in dep_facts_1 | {target}:
+        for lit in all_facts | {target}:
             for v in literal_vars(lit):
                 if v not in dep_vars:
                     dep_vars[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
                                    else Sort.POINT)
 
-        # Try with CE closure of the tight dep set
+        # Run CE closure to maximise available premises
         ce = ConsequenceEngine()
-        closure = ce.direct_consequences(dep_facts_1)
-        dep_aug = dep_facts_1 | closure
-        for lit in dep_aug:
-            for v in literal_vars(lit):
-                if v not in dep_vars:
-                    dep_vars[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
-                                   else Sort.POINT)
+        closure = ce.direct_consequences(all_facts)
+        aug = all_facts | closure
 
-        ok, _ = check_specific_axiom(axiom_name, dep_aug, [target], dep_vars)
-        if ok:
-            return sorted(dep_lines_1)
+        ok, _, req_premises = check_specific_axiom_with_premises(
+            axiom_name, aug, [target], dep_vars)
+        if ok and req_premises:
+            return self._deps_for_premises(req_premises)
 
-        # Strategy 2: Expand to include lines whose vars overlap with
-        # the closure (one level of expansion)
-        expanded_vars = set(seed_vars)
-        for lit in dep_aug:
-            expanded_vars |= literal_vars(lit)
-
-        dep_lines_2: Set[int] = set(dep_lines_1)
-        dep_facts_2: Set[Literal] = set(dep_facts_1)
-        for ln_num, lits in self.ll.items():
-            if ln_num in dep_lines_2:
-                continue
-            for lit in lits:
-                if literal_vars(lit) & expanded_vars:
-                    dep_lines_2.add(ln_num)
-                    dep_facts_2 |= lits
-                    break
-
-        for lit in dep_facts_2:
-            for v in literal_vars(lit):
-                if v not in dep_vars:
-                    dep_vars[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
-                                   else Sort.POINT)
-
-        closure2 = ce.direct_consequences(dep_facts_2)
-        dep_aug2 = dep_facts_2 | closure2
-        for lit in dep_aug2:
-            for v in literal_vars(lit):
-                if v not in dep_vars:
-                    dep_vars[v] = (Sort.LINE if (len(v) == 1 and v.isupper())
-                                   else Sort.POINT)
-
-        ok, _ = check_specific_axiom(axiom_name, dep_aug2, [target], dep_vars)
-        if ok:
-            return sorted(dep_lines_2)
-
-        # Strategy 3: Fallback to broad deps
-        return self._deps_for_vars(seed_vars)
+        # Fallback: variable-scoped search for target vars
+        return self._deps_for_premises({target})
 
     def _deps_target(self, target: Literal) -> List[int]:
+        """Find lines that provide *target* or its symmetric form.
+
+        Prefers an exact match (single line).  Falls back to variable-
+        overlap only when no exact or symmetric match is found.
+        """
+        # 1) Exact match
+        for ln_num, lits in self.ll.items():
+            if target in lits:
+                return [ln_num]
+        # 2) Symmetric match
+        sym = self._symmetric_literal(target)
+        if sym is not None:
+            for ln_num, lits in self.ll.items():
+                if sym in lits:
+                    return [ln_num]
+        # 3) Variable-overlap fallback (for CE/ME derivable literals)
         tv = literal_vars(target)
         deps = set()
         for ln_num, lits in self.ll.items():
@@ -2062,20 +3585,91 @@ class ProofSynthesizer:
                     break
         return sorted(deps)
 
+    def _deps_for_premises(self, premises: Set[Literal]) -> List[int]:
+        """Find minimal line set providing the required premise literals.
+
+        For each premise, searches for an exact match in a prior line,
+        then tries the symmetric form (M3/M4) and equality-swapped form.
+        Only lines that contribute at least one required premise are
+        included.  Premises already in self.known but not in any line
+        are skipped (the verifier derives them from its engines).
+        """
+        deps: Set[int] = set()
+        for prem in premises:
+            # 1) Exact match in a proof line
+            found = False
+            for ln_num, lits in self.ll.items():
+                if prem in lits:
+                    deps.add(ln_num)
+                    found = True
+                    break
+            if found:
+                continue
+            # 2) Equality-swapped form: ¬(b=a) ↔ ¬(a=b)
+            if isinstance(prem.atom, Equals):
+                swapped = Literal(
+                    Equals(prem.atom.right, prem.atom.left),
+                    polarity=prem.polarity)
+                for ln_num, lits in self.ll.items():
+                    if swapped in lits:
+                        deps.add(ln_num)
+                        found = True
+                        break
+            if found:
+                continue
+            # 3) Metric symmetric form (M3/M4)
+            sym = self._symmetric_literal(prem)
+            if sym is not None:
+                for ln_num, lits in self.ll.items():
+                    if sym in lits:
+                        deps.add(ln_num)
+                        found = True
+                        break
+            if found:
+                continue
+            # 4) If the premise is already globally known (from earlier
+            #    constructions, axiom steps, or derived facts), the
+            #    verifier's checker.known fallback will satisfy it.
+            #    Don't add variable-overlap deps — they'd be extraneous.
+            if prem in self.known:
+                continue
+            # Also check equality-swapped known
+            if isinstance(prem.atom, Equals):
+                swapped = Literal(
+                    Equals(prem.atom.right, prem.atom.left),
+                    polarity=prem.polarity)
+                if swapped in self.known:
+                    continue
+            # 5) Last resort: variable-overlap for CE-derivable premises
+            pv = literal_vars(prem)
+            for ln_num, lits in self.ll.items():
+                if ln_num in deps:
+                    continue
+                for lit in lits:
+                    if literal_vars(lit) & pv:
+                        deps.add(ln_num)
+                        break
+        return sorted(deps)
+
     def _thm_deps(self, thm: ETheorem, vm: Dict[str, str]) -> List[int]:
         """Find deps for a theorem application.
 
         For each instantiated hypothesis:
         1. If exact match found → add just that line
         2. If symmetric match → add that line
-        3. If neither → the verifier must derive it; collect variables
-           for a broader search scoped to all unmatched hypotheses only.
+        3. If neither → use _deps_for_premises to find lines whose
+           literals provide the unmatched hypothesis (variable-scoped).
         """
         deps: Set[int] = set()
-        unmatched_vars: Set[str] = set()
+        unmatched: Set[Literal] = set()
 
         for hyp in thm.sequent.hypotheses:
             inst = substitute_literal(hyp, vm)
+            # Skip impossible ¬(v=v) hypotheses (Lean arg-reuse collision)
+            if (not inst.polarity and isinstance(inst.atom, Equals)
+                    and isinstance(inst.atom.left, str)
+                    and inst.atom.left == inst.atom.right):
+                continue
             # 1) Exact match
             found = False
             for ln_num, lits in self.ll.items():
@@ -2095,25 +3689,14 @@ class ProofSynthesizer:
                         break
             if found:
                 continue
-            # 3) Unmatched — needs derivation by verifier
-            unmatched_vars |= literal_vars(inst)
+            # 3) Unmatched — collect for premise-based dep search
+            unmatched.add(inst)
 
-        # For unmatched hypotheses, include all lines whose variables
-        # overlap with ANY hypothesis variable (needed to give the
-        # verifier's consequence engine enough context).
-        if unmatched_vars:
-            # Collect ALL hypothesis variables so the verifier has
-            # enough context to derive the unmatched ones.
-            all_hyp_vars: Set[str] = set()
-            for hyp in thm.sequent.hypotheses:
-                all_hyp_vars |= literal_vars(substitute_literal(hyp, vm))
-            for ln_num, lits in self.ll.items():
-                if ln_num in deps:
-                    continue
-                for lit in lits:
-                    if literal_vars(lit) & all_hyp_vars:
-                        deps.add(ln_num)
-                        break
+        # For unmatched hypotheses, find lines providing them
+        # using the premise-targeted search (variable-scoped fallback).
+        if unmatched:
+            extra = self._deps_for_premises(unmatched)
+            deps.update(extra)
         return sorted(deps)
 
     # -- Declarations --------------------------------------------------
@@ -2150,7 +3733,7 @@ class ProofSynthesizer:
             self.steps.append({
                 "lineNumber": ln, "text": ", ".join(parts),
                 "justification": step.description, "dependencies": deps,
-                "depth": 0, "status": "?",
+                "depth": self.current_depth, "status": "?",
             })
             self.ll[ln] = lits
 

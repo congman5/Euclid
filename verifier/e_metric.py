@@ -587,7 +587,9 @@ class MetricEngine:
 
         # ── + Monotonicity ────────────────────────────────────────
         # If a < b then a + c < b + c (for every known term c).
-        for a_rep, b_rep in list(self.state._less):
+        for a_raw, b_raw in list(self.state._less):
+            a_rep = self.state.find(a_raw)
+            b_rep = self.state.find(b_raw)
             for t in mag_adds:
                 # Check if t = a + c  and  b + c exists
                 a_t = t.left if self.state.find(t.left) == a_rep else (

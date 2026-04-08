@@ -1,0 +1,10 @@
+Synthesizing Prop I.36...
+  [SLOW 33.6s] _inject_metric_prereqs
+  [SLOW 33.6s] _apply_theorem rule=proposition_34'
+  [SLOW 14.2s] _inject_metric_prereqs
+  [SLOW 14.2s] _apply_theorem rule=proposition_33
+  [SLOW 5.5s] _inject_metric_prereqs
+  [SLOW 5.5s] _apply_theorem rule=proposition_35'
+  [SLOW 6.5s] _inject_metric_prereqs
+  [SLOW 6.5s] _apply_theorem rule=proposition_35'
+  [SLOW 4.1s] _finish

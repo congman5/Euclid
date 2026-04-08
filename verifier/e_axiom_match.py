@@ -217,26 +217,43 @@ def check_specific_axiom(
         success=True if all targets are derivable; error_message explains
         any failure.
     """
+    ok, err, _premises = check_specific_axiom_with_premises(
+        axiom_name, dep_facts, target_literals, variables)
+    return ok, err
+
+
+def check_specific_axiom_with_premises(
+    axiom_name: str,
+    dep_facts: Set[Literal],
+    target_literals: List[Literal],
+    variables: Dict[str, Sort],
+) -> Tuple[bool, Optional[str], Set[Literal]]:
+    """Like check_specific_axiom but also returns the required premises.
+
+    Returns
+    -------
+    (success, error_message, required_premises)
+        required_premises is the set of instantiated premise literals
+        that the axiom actually needed from dep_facts.  Empty on failure.
+    """
     clause = get_axiom_clause(axiom_name)
     if clause is None:
-        return False, f"Unknown axiom '{axiom_name}'."
+        return False, f"Unknown axiom '{axiom_name}'.", set()
 
-    # Collect all known facts: dep_facts + their trivial consequences
-    # (e.g. if we know between(a,b,c), that's a positive literal)
     known = set(dep_facts)
+    all_premises: Set[Literal] = set()
 
-    # For each target, try to match the axiom
     for target in target_literals:
-        ok = _match_single(clause, known, target, variables)
+        ok, premises = _match_single(clause, known, target, variables)
         if not ok:
             return False, (
                 f"Axiom '{axiom_name}' does not derive {target} "
                 f"from the cited dependencies."
-            )
-        # Add derived literal to known for subsequent targets
+            ), set()
+        all_premises |= premises
         known.add(target)
 
-    return True, None
+    return True, None, all_premises
 
 
 def _match_single(
@@ -244,12 +261,15 @@ def _match_single(
     known: Set[Literal],
     target: Literal,
     variables: Dict[str, Sort],
-) -> bool:
+) -> Tuple[bool, Set[Literal]]:
     """Check if one specific clause derives `target` from `known`.
 
     Uses constraint-guided matching: unify the target with each
     candidate literal in the clause, then verify that ALL remaining
     literals are resolved (their negation is in `known`).
+
+    Returns (success, required_premises) where required_premises is the
+    set of instantiated premise literals needed from known.
     """
     schema_sorts = _infer_schema_sorts(clause)
 
@@ -287,13 +307,15 @@ def _match_constrained(
     points: List[str],
     lines: List[str],
     circles: List[str],
-) -> bool:
+) -> Tuple[bool, Set[Literal]]:
     """Constraint-guided axiom matching.
 
     For each literal in the clause, try to unify it with the target.
     If unification succeeds, extend the substitution for any remaining
     schema variables and verify that ALL other literals are resolved
     (their negation is in ``known``).
+
+    Returns (success, required_premises).
     """
     clause_lits = list(clause.literals)
 
@@ -311,8 +333,10 @@ def _match_constrained(
 
             if not remaining_vars:
                 # Fully bound — check if all other literals are resolved
-                if _check_remaining(clause_lits, i, sub, known):
-                    return True
+                premises = _collect_premises(
+                    clause_lits, i, sub, known)
+                if premises is not None:
+                    return True, premises
                 continue
 
             # Build pools for remaining vars
@@ -338,10 +362,12 @@ def _match_constrained(
             for combo in product(*rem_pools):
                 full_sub = dict(sub)
                 full_sub.update(zip(rem_names, combo))
-                if _check_remaining(clause_lits, i, full_sub, known):
-                    return True
+                premises = _collect_premises(
+                    clause_lits, i, full_sub, known)
+                if premises is not None:
+                    return True, premises
 
-    return False
+    return False, set()
 
 
 def _check_remaining(
@@ -356,14 +382,58 @@ def _check_remaining(
     - Negative literal ¬C: its positive counterpart C must be in known.
     - Positive literal B: its negation ¬B must be in known.
     """
+    return _collect_premises(clause_lits, conclusion_idx, sub, known) is not None
+
+
+def _is_tautological(lit: Literal) -> bool:
+    """Return True if *lit* is a logical tautology of System E.
+
+    Recognised tautologies (no proof step required):
+      • ¬between(x,y,z) when any two of x,y,z are the same concrete
+        name — follows from Betweenness axioms B1b/B1c and symmetry
+        (between with duplicate arguments implies a≠a).
+      • x = x  (reflexivity of equality for any sort).
+    """
+    atom = lit.atom
+    if isinstance(atom, Between) and not lit.polarity:
+        a, b, c = atom.a, atom.b, atom.c
+        if a == b or a == c or b == c:
+            return True
+    if isinstance(atom, Equals) and lit.polarity:
+        if atom.left == atom.right:
+            return True
+    return False
+
+
+def _collect_premises(
+    clause_lits: list,
+    conclusion_idx: int,
+    sub: Dict[str, str],
+    known: Set[Literal],
+) -> Optional[Set[Literal]]:
+    """Collect the required premises if all are satisfied.
+
+    Returns the set of instantiated premise literals (the negations of
+    the non-conclusion clause literals) that must be in known, or None
+    if any premise is not satisfied.
+
+    Premises that are logical tautologies of the formal system (e.g.
+    ¬between(x,y,x) from Betweenness 1c) are automatically satisfied
+    and excluded from the returned set — they do not need to appear in
+    any dependency line.
+    """
+    premises: Set[Literal] = set()
     for j, lit in enumerate(clause_lits):
         if j == conclusion_idx:
             continue
         glit = substitute_literal(lit, sub)
         neg = glit.negated()
+        if _is_tautological(neg):
+            continue
         if neg not in known:
-            return False
-    return True
+            return None
+        premises.add(neg)
+    return premises
 
 
 def _unify_literal_all(

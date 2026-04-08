@@ -1,0 +1,49 @@
+Synthesizing Prop I.35...
+  _inject_metric_prereqs for Prop.I.34 (14 hyps, known=25)
+    hyp not in known: diag: on(b, M)
+    hyp not in known: diag: on(d, N)
+    hyp not in known: diag: ¬(intersects(M, N))
+    hyp not in known: diag: on(d, P)
+    hyp not in known: diag: on(b, Q)
+    hyp not in known: diag: ¬(intersects(P, Q))
+      [6.6s] _inject_diag_prereq args=(on(b, M),)
+      [5.9s] _inject_diag_prereq args=(on(d, N),)
+      [5.4s] _inject_diag_prereq args=(¬(intersects(M, N)),)
+      [3.9s] _inject_diag_prereq args=(on(d, P),)
+      [5.8s] _inject_diag_prereq args=(on(b, Q),)
+      [1.8s] _inject_diag_prereq args=(¬(intersects(P, Q)),)
+    TOTAL: 29.2s
+  _inject_metric_prereqs for Prop.I.34 (14 hyps, known=36)
+    hyp not in known: diag: on(e, M)
+    hyp not in known: diag: on(f, N)
+    hyp not in known: diag: on(f, R)
+    hyp not in known: diag: on(b, S)
+    hyp not in known: diag: ¬(intersects(R, S))
+      [3.5s] _inject_diag_prereq args=(on(e, M),)
+      [6.0s] _inject_diag_prereq args=(on(f, N),)
+      [5.8s] _inject_diag_prereq args=(on(f, R),)
+      [5.9s] _inject_diag_prereq args=(on(b, S),)
+      [1.7s] _inject_diag_prereq args=(¬(intersects(R, S)),)
+    TOTAL: 22.8s
+  _inject_metric_prereqs for Prop.I.29 (12 hyps, known=46)
+    hyp not in known: diag: on(a, Q)
+    hyp not in known: diag: on(d, M)
+    hyp not in known: neq: ¬(Q = P)
+    hyp not in known: diag: ¬(same-side(a, b, M))
+      [6.5s] _inject_diag_prereq args=(on(a, Q),)
+      [3.5s] _inject_diag_prereq args=(on(d, M),)
+      [1.8s] _inject_diag_prereq args=(¬(same-side(a, b, M)),)
+    TOTAL: 11.8s
+  _inject_metric_prereqs for Prop.I.4 (9 hyps, known=51)
+    hyp not in known: neq: ¬(a = e)
+    hyp not in known: neq: ¬(d = f)
+    hyp not in known: metric: ae = df
+    hyp not in known: metric: ∠eab = ∠fdc
+  [SLOW 0.9s] _finish known=56
+  _inject_metric_prereqs for Prop.I.34 (14 hyps, known=56)
+  _inject_metric_prereqs for Prop.I.34 (14 hyps, known=56)
+  [SLOW 1.7s] _finish known=58
+  _inject_metric_prereqs for Prop.I.4 (9 hyps, known=58)
+    hyp not in known: metric: ae = df
+    hyp not in known: metric: ∠eab = ∠fdc
+  [SLOW 1.6s] _finish known=58

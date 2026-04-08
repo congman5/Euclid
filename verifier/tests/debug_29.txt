@@ -1,0 +1,20 @@
+Synthesizing Prop I.29...
+  [SLOW 5.6s] _inject_metric_prereqs
+  [SLOW 5.6s] _apply_theorem rule=proposition_13
+  [SLOW 2.6s] _finish
+  [SLOW 9.8s] _inject_metric_prereqs
+  [SLOW 9.8s] _apply_theorem rule=proposition_13
+  [SLOW 2.3s] _finish
+  [SLOW 4.6s] _inject_metric_prereqs
+  [SLOW 4.6s] _apply_theorem rule=proposition_15
+  [SLOW 3.1s] _inject_metric_prereqs
+  [SLOW 3.1s] _apply_theorem rule=proposition_13
+  [SLOW 0.9s] _finish
+  [SLOW 3.2s] _finish
+
+Done: 51.5s  success=True  steps=30
+  warn: Cannot derive: ∠agh = ∠ghd
+  warn: Cannot derive: (∠bgh + ∠ghd) < (∟ + ∟)
+  warn: Cannot derive goal: ∠abc = ∠bcd
+  warn: Cannot derive: ∠agh < ∠ghd
+  warn: Cannot derive: (∠agh + ∠chg) < (∠ghd + ∠chg)

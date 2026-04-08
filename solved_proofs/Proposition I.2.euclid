@@ -254,8 +254,7 @@
         "justification": "Segment transfer 4b",
         "dependencies": [
           13,
-          16,
-          10
+          16
         ],
         "depth": 0,
         "status": "?"
@@ -287,8 +286,7 @@
         "justification": "Segment transfer 4a",
         "dependencies": [
           13,
-          19,
-          10
+          19
         ],
         "depth": 0,
         "status": "?"

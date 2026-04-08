@@ -199,10 +199,9 @@
       },
       {
         "lineNumber": 15,
-        "text": "¬(α = β)",
-        "justification": "Generality 5d",
+        "text": "¬(center(b, β))",
+        "justification": "Generality 2",
         "dependencies": [
-          10,
           12,
           3
         ],
@@ -211,10 +210,21 @@
       },
       {
         "lineNumber": 16,
+        "text": "¬(α = β)",
+        "justification": "Generality 5d",
+        "dependencies": [
+          10,
+          15
+        ],
+        "depth": 1,
+        "status": "?"
+      },
+      {
+        "lineNumber": 17,
         "text": "intersects(α, β)",
         "justification": "Intersection 6",
         "dependencies": [
-          15,
+          16,
           10,
           11,
           12,
@@ -225,12 +235,12 @@
         "status": "?"
       },
       {
-        "lineNumber": 17,
+        "lineNumber": 18,
         "text": "¬(same-side(a, d, L))",
         "justification": "Circle 4",
         "dependencies": [
-          15,
           16,
+          17,
           10,
           11,
           12,
@@ -243,18 +253,18 @@
         "status": "?"
       },
       {
-        "lineNumber": 18,
+        "lineNumber": 19,
         "text": "⊥",
         "justification": "Contradiction",
         "dependencies": [
           4,
-          17
+          18
         ],
         "depth": 1,
         "status": "?"
       },
       {
-        "lineNumber": 19,
+        "lineNumber": 20,
         "text": "d = a",
         "justification": "⊥-elim",
         "dependencies": [
