@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "euclid"
-version = "0.9.0"
+version = "0.9.6.34"
 description = "A formal proof verifier & interactive geometry workbench for Euclid's Elements Book I"
 readme = "README.md"
 license = {text = "MIT"}
