@@ -14,21 +14,58 @@
   },
   "canvas": {
     "points": [
-      { "label": "A", "x": 150, "y": 350 },
-      { "label": "B", "x": 450, "y": 350 },
-      { "label": "D", "x": 350, "y": 100 },
-      { "label": "E", "x": 500, "y": 200 },
-      { "label": "F", "x": 550, "y": 100 }
+      {
+        "label": "a",
+        "x": 150,
+        "y": 350
+      },
+      {
+        "label": "b",
+        "x": 450,
+        "y": 350
+      },
+      {
+        "label": "d",
+        "x": 350,
+        "y": 100
+      },
+      {
+        "label": "e",
+        "x": 500,
+        "y": 200
+      },
+      {
+        "label": "f",
+        "x": 550,
+        "y": 100
+      }
     ],
     "segments": [
-      { "from": "A", "to": "B", "color": "#2d70b3" },
-      { "from": "D", "to": "E", "color": "#2d70b3" },
-      { "from": "E", "to": "F", "color": "#2d70b3" }
+      {
+        "from": "a",
+        "to": "b",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "d",
+        "to": "e",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "e",
+        "to": "f",
+        "color": "#2d70b3"
+      }
     ],
     "rays": [],
     "circles": [],
     "angleMarks": [
-      { "from": "D", "vertex": "E", "to": "F", "isRight": false }
+      {
+        "from": "D",
+        "vertex": "E",
+        "to": "F",
+        "isRight": false
+      }
     ],
     "equalityGroups": []
   },
@@ -45,15 +82,30 @@
     ],
     "goal": "∠bag = ∠edf, ¬(on(g, L))",
     "declarations": {
-      "points": ["A", "B", "D", "E", "F"],
-      "lines": ["L"]
+      "points": [
+        "A",
+        "B",
+        "D",
+        "E",
+        "F"
+      ],
+      "lines": [
+        "L"
+      ]
     },
     "steps": [
       {
         "lineNumber": 7,
         "text": "I.22: construct triangle at a on L with sides = de, ef, df → point g off L",
         "justification": "Prop.I.22",
-        "dependencies": [1, 2, 3, 4, 5, 6],
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -61,7 +113,9 @@
         "lineNumber": 8,
         "text": "I.8 (SSS): △abg has matching sides to △def → ∠bag = ∠edf",
         "justification": "Prop.I.8",
-        "dependencies": [7],
+        "dependencies": [
+          7
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -69,7 +123,10 @@
         "lineNumber": 9,
         "text": "∠bag = ∠edf, ¬(on(g, L))",
         "justification": "Metric (conclusion)",
-        "dependencies": [7, 8],
+        "dependencies": [
+          7,
+          8
+        ],
         "depth": 0,
         "status": "?"
       }

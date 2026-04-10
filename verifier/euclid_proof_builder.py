@@ -334,8 +334,8 @@ class EuclidProofBuilder:
         return self._add_step(text, "Assume", [], depth)
 
     def contradiction(self, refs: List[int], depth: int = 1) -> int:
-        """Add a ⊥-intro (Contradiction) step. Returns line number."""
-        return self._add_step("⊥", "Contradiction", refs, depth)
+        """Add a ⊥-intro step. Returns line number."""
+        return self._add_step("⊥", "⊥-intro", refs, depth)
 
     def bot_elim(self, text: str, assume_ref: int,
                  depth: int = 0) -> int:

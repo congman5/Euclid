@@ -16,25 +16,25 @@
   "canvas": {
     "points": [
       {
-        "label": "A",
+        "label": "a",
         "x": 200,
         "y": 250
       },
       {
-        "label": "B",
+        "label": "b",
         "x": 350,
         "y": 350
       },
       {
-        "label": "C",
+        "label": "c",
         "x": 480,
         "y": 350
       }
     ],
     "segments": [
       {
-        "from": "B",
-        "to": "C",
+        "from": "b",
+        "to": "c",
         "color": "#2d70b3"
       }
     ],

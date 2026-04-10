@@ -152,15 +152,18 @@ class TestUiInteraction:
         assert p._conclusion == "ab = ac, ab = bc"
 
     def test_clear_resets_everything(self):
-        """clear() removes all premises, steps, and conclusion."""
+        """clear() resets the panel: conclusion cleared, user premises removed.
+        One blank premise and one blank step are seeded for UX after clear."""
         from euclid_py.ui.proof_panel import ProofPanel
         p = ProofPanel()
         p.add_premise_text("¬(a = b)")
         p.add_step("Between(A,B,C)", "Given", [])
         p.set_conclusion("ab = cd")
         p.clear()
-        assert len(p._premises) == 0
-        assert len(p._steps) == 0
+        # clear() seeds one blank premise and one blank step for UX
+        assert p._premises == [""], "clear() should leave exactly one blank premise"
+        assert len(p._steps) == 1 and p._steps[0].text == "", (
+            "clear() should leave exactly one blank step")
         assert p._conclusion == ""
 
     def test_insert_step_at_position(self):

@@ -411,12 +411,16 @@ class ConsequenceEngine:
                         break
                 if skip:
                     continue
-                # Use dict.fromkeys for dedup while preserving first-seen order
-                # (avoids frozenset hashing overhead — ground clauses are
-                # only iterated in _compiled_clauses, never hashed)
+                # Sort literals before substituting so that the resulting
+                # tuple order is deterministic regardless of PYTHONHASHSEED.
+                # FrozenSet iteration order varies across Python restarts,
+                # which would otherwise make the sat_index / res_index
+                # assignments non-deterministic and cause the satisfied[]
+                # optimisation to skip clauses inconsistently.
                 new_lits = tuple(dict.fromkeys(
                     substitute_literal(lit, sub)
-                    for lit in axiom.literals))
+                    for lit in sorted(axiom.literals,
+                                      key=lambda l: repr(l))))
                 ground.append(new_lits)
 
         self._ground_cache_key = cache_key
@@ -426,7 +430,7 @@ class ConsequenceEngine:
     def _clause_schema_vars(self, clause: Clause) -> List[Tuple[str, Sort]]:
         """Extract schema variable names and their inferred sorts."""
         vars_seen: Dict[str, Sort] = {}
-        for lit in clause.literals:
+        for lit in sorted(clause.literals, key=lambda l: repr(l)):
             self._collect_atom_var_sorts(lit.atom, vars_seen)
         return list(vars_seen.items())
 

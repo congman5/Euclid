@@ -136,7 +136,7 @@ HILBERT_RULES: List[Rule] = [
 
 FITCH_LOGIC_RULES: List[Rule] = [
     Rule("Assume", "Open temporary assumption for subproof", "Fitch Logic", None),
-    Rule("Contradiction", "⊥-intro: derive ⊥ from φ and ¬φ", "Fitch Logic", ["⊥"]),
+    Rule("⊥-intro", "⊥-intro: derive ⊥ from φ and ¬φ (exactly 2 cited deps)", "Fitch Logic", ["⊥"]),
     Rule("⊥-elim", "Discharge assumption by ⊥ (reductio ad absurdum)", "Fitch Logic", None),
 ]
 

@@ -104,17 +104,17 @@ def _extract_pred_names_from_fact(fact: str) -> set[str]:
 def _rule_is_applicable(description: str, proof_facts: set[str]) -> bool:
     """Return True if a rule's hypotheses overlap with known proof facts.
 
-    Extracts predicate functors from the hypothesis side (left of →) of
+    Extracts predicate functors from the hypothesis side (left of ⇒) of
     the rule description and checks if any match functors found in the
     proof's known facts.  Construction rules (which introduce new objects)
     and structural rules are always shown.
     """
     # Construction and structural rules are always applicable
-    if "⇒" in description or "⊢" in description or "Γ" in description:
+    if "⊢" in description or "Γ" in description:
         return True
 
-    # Split on → to get hypotheses only
-    parts = description.split("→")
+    # Split on ⇒ to get hypotheses only
+    parts = description.split("⇒")
     if len(parts) < 2:
         # No implication arrow — show it (e.g. construction rules)
         return True

@@ -187,7 +187,7 @@ class TestUiSmoke:
         c.add_point("A", 100, 200)
         state = c.get_state()
         assert len(state["points"]) == 1
-        assert state["points"][0]["label"] == "A"
+        assert state["points"][0]["label"] == "a"
 
     def test_canvas_add_segment(self):
         from euclid_py.ui.canvas_widget import CanvasWidget
@@ -390,10 +390,10 @@ class TestSystemEPremisesConclusions:
             prop_number=None, max_proposition=0,
             title="Test", statement="Test",
             given_objects=GivenObjects(
-                points=[{"label": "A", "x": 0, "y": 0},
-                        {"label": "B", "x": 1, "y": 1}],
-                segments=[{"from": "A", "to": "B"}],
-                circles=[{"center": "O", "radius": "P"}],
+                points=[{"label": "a", "x": 0, "y": 0},
+                        {"label": "b", "x": 1, "y": 1}],
+                segments=[{"from": "a", "to": "b"}],
+                circles=[{"center": "o", "radius": "p"}],
             ),
         )
         prems = _WorkspaceScreen._build_formal_premises(prop)
@@ -401,7 +401,7 @@ class TestSystemEPremisesConclusions:
             assert "Point(" not in prem, f"Old Point() in fallback: {prem}"
             assert "Segment(" not in prem, f"Old Segment() in fallback: {prem}"
             assert "Circle(" not in prem, f"Old Circle() in fallback: {prem}"
-        # Should have ¬(A = B) for segment and ¬(O = P) for circle
+        # Should have ¬(a = b) for segment and ¬(o = p) for circle
         assert any("¬" in p for p in prems), \
             f"Expected ¬(x = y) style, got: {prems}"
 

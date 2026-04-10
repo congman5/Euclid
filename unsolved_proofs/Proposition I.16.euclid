@@ -6,39 +6,175 @@
     "proposition": "Proposition I.16",
     "title": "Exterior Angle Theorem",
     "difficulty": 3,
-    "hints": ["Bisect BC at E, extend AE to F with AE = EF, then use SAS."]
+    "hints": [
+      "Bisect BC at E, extend AE to F with AE = EF, then use SAS."
+    ]
   },
   "canvas": {
     "points": [
-      {"label":"A","x":250,"y":150},
-      {"label":"B","x":150,"y":350},
-      {"label":"C","x":400,"y":350},
-      {"label":"D","x":550,"y":350}
+      {
+        "label": "a",
+        "x": 250,
+        "y": 150
+      },
+      {
+        "label": "b",
+        "x": 150,
+        "y": 350
+      },
+      {
+        "label": "c",
+        "x": 400,
+        "y": 350
+      },
+      {
+        "label": "d",
+        "x": 550,
+        "y": 350
+      }
     ],
     "segments": [
-      {"from":"A","to":"B","color":"#2d70b3"},
-      {"from":"A","to":"C","color":"#2d70b3"},
-      {"from":"B","to":"C","color":"#2d70b3"},
-      {"from":"C","to":"D","color":"#2d70b3"}
+      {
+        "from": "a",
+        "to": "b",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "a",
+        "to": "c",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "c",
+        "to": "d",
+        "color": "#2d70b3"
+      }
     ],
-    "rays":[],"circles":[],"angleMarks":[],"equalityGroups":[]
+    "rays": [],
+    "circles": [],
+    "angleMarks": [],
+    "equalityGroups": []
   },
   "exportedAt": "2026-06-01T00:00:00Z",
   "proof": {
     "name": "Prop.I.16",
     "premises": [
-      "on(a, L)","on(b, L)","between(a, b, d)",
-      "\u00ac(on(c, L))","\u00ac(a = b)","\u00ac(a = c)","\u00ac(b = c)"
+      "on(a, L)",
+      "on(b, L)",
+      "between(a, b, d)",
+      "¬(on(c, L))",
+      "¬(a = b)",
+      "¬(a = c)",
+      "¬(b = c)"
     ],
-    "goal": "\u2220bac < \u2220dbc, \u2220bca < \u2220dbc",
-    "declarations": {"points":["a","b","c","d"],"lines":["L"]},
+    "goal": "∠bac < ∠dbc, ∠bca < ∠dbc",
+    "declarations": {
+      "points": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "lines": [
+        "L"
+      ]
+    },
     "steps": [
-      {"lineNumber":8,"text":"between(b, e, c), be = ec","justification":"Prop.I.10","dependencies":[5,6,7],"depth":0,"status":"?"},
-      {"lineNumber":9,"text":"between(a, e, f), ae = ef","justification":"Prop.I.3","dependencies":[5,6,8],"depth":0,"status":"?"},
-      {"lineNumber":10,"text":"on(b, P), on(f, P)","justification":"let-line","dependencies":[8,9],"depth":0,"status":"?"},
-      {"lineNumber":11,"text":"\u00ac(e = f), \u00ac(e = a)","justification":"Prop.I.16","dependencies":[5,6,7,8,9],"depth":0,"status":"?"},
-      {"lineNumber":12,"text":"\u2220bae = \u2220fce","justification":"Prop.I.4","dependencies":[1,2,3,4,5,6,7,8,9,10,11],"depth":0,"status":"?"},
-      {"lineNumber":13,"text":"\u2220bac < \u2220dbc, \u2220bca < \u2220dbc","justification":"Prop.I.4","dependencies":[1,2,3,4,5,6,7,8,9,10,11,12],"depth":0,"status":"?"}
+      {
+        "lineNumber": 8,
+        "text": "between(b, e, c), be = ec",
+        "justification": "Prop.I.10",
+        "dependencies": [
+          5,
+          6,
+          7
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 9,
+        "text": "between(a, e, f), ae = ef",
+        "justification": "Prop.I.3",
+        "dependencies": [
+          5,
+          6,
+          8
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 10,
+        "text": "on(b, P), on(f, P)",
+        "justification": "let-line",
+        "dependencies": [
+          8,
+          9
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 11,
+        "text": "¬(e = f), ¬(e = a)",
+        "justification": "Prop.I.16",
+        "dependencies": [
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 12,
+        "text": "∠bae = ∠fce",
+        "justification": "Prop.I.4",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "depth": 0,
+        "status": "?"
+      },
+      {
+        "lineNumber": 13,
+        "text": "∠bac < ∠dbc, ∠bca < ∠dbc",
+        "justification": "Prop.I.4",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "depth": 0,
+        "status": "?"
+      }
     ]
   }
 }

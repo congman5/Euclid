@@ -1114,7 +1114,7 @@ class TestCasesBotElimSoundness:
                 _line(1, "on(a, L)", "Given"),
                 _line(2, "\u00ac(on(a, L))", "Assume", depth=1),
                 _line(3, "on(a, L)", "Reit", refs=[1], depth=1),
-                _line(4, "\u22a5", "Contradiction", refs=[2], depth=1),
+                _line(4, "\u22a5", "\u22a5-intro", refs=[2, 3], depth=1),
                 _line(5, "on(a, L)", "\u22a5-elim", refs=[2]),
             ],
         )
@@ -1139,7 +1139,7 @@ class TestCasesBotElimSoundness:
                 _line(5, "\u00ac(on(b, L))", "Assume", depth=2),
                 _line(6, "on(a, L)", "Reit", refs=[1], depth=2),
                 _line(7, "on(a, L)", "Cases", refs=[3, 5], depth=1),
-                _line(8, "\u22a5", "Contradiction", refs=[2], depth=1),
+                _line(8, "\u22a5", "\u22a5-intro", refs=[2, 7], depth=1),
                 _line(9, "on(a, L)", "\u22a5-elim", refs=[2]),
             ],
         )
@@ -1172,8 +1172,8 @@ class TestCasesBotElimSoundness:
                 _line(10, "\u00ac(on(c, L))", "Assume", depth=2),
                 _line(11, "on(a, L)", "Reit", refs=[7], depth=2),
                 _line(12, "on(a, L)", "Cases", refs=[8, 10], depth=1),
-                # Contradiction + ⊥-elim
-                _line(13, "\u22a5", "Contradiction", refs=[2], depth=1),
+                # ⊥-intro + ⊥-elim
+                _line(13, "\u22a5", "\u22a5-intro", refs=[2, 12], depth=1),
                 _line(14, "on(a, L)", "\u22a5-elim", refs=[2]),
             ],
         )

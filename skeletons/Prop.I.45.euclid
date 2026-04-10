@@ -14,70 +14,70 @@
   "canvas": {
     "points": [
       {
-        "label": "A",
+        "label": "a",
         "x": 120,
         "y": 200
       },
       {
-        "label": "B",
+        "label": "b",
         "x": 100,
         "y": 380
       },
       {
-        "label": "C",
+        "label": "c",
         "x": 300,
         "y": 380
       },
       {
-        "label": "D",
+        "label": "d",
         "x": 280,
         "y": 200
       },
       {
-        "label": "E",
+        "label": "e",
         "x": 400,
         "y": 280
       },
       {
-        "label": "F",
+        "label": "f",
         "x": 460,
         "y": 380
       },
       {
-        "label": "G",
+        "label": "g",
         "x": 500,
         "y": 280
       }
     ],
     "segments": [
       {
-        "from": "A",
-        "to": "B",
+        "from": "a",
+        "to": "b",
         "color": "#2d70b3"
       },
       {
-        "from": "B",
-        "to": "C",
+        "from": "b",
+        "to": "c",
         "color": "#2d70b3"
       },
       {
-        "from": "C",
-        "to": "D",
+        "from": "c",
+        "to": "d",
         "color": "#2d70b3"
       },
       {
-        "from": "D",
-        "to": "A",
+        "from": "d",
+        "to": "a",
         "color": "#2d70b3"
       },
       {
-        "from": "E",
-        "to": "F",
+        "from": "e",
+        "to": "f",
         "color": "#2d70b3"
       },
       {
-        "from": "E",
-        "to": "G",
+        "from": "e",
+        "to": "g",
         "color": "#2d70b3"
       }
     ],

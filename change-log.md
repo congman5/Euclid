@@ -4,6 +4,349 @@ All notable changes to the Euclid project.
 
 > **v1.0** will be released when all 48 propositions of Book I are correctly implemented and verified, until them numerate the first digit after each new implimentation, and on smaller updates enumerate the number furthest to the right.
 
+## [0.9.6.34] - 2025-06-10
+
+### Changed — Remove Sync Canvas toggle, fix proof header button layout
+
+- **Sync Canvas toggle removed**: Removed the Sync Canvas label and toggle switch entirely from the proof panel header row. The underlying sync infrastructure (`canvas_sync_requested` signal, `set_canvas_sync` method) remains in code for future use but is unreachable from the UI.
+- **ToggleSwitch disabled-state support**: The `ToggleSwitch` widget now respects `setEnabled(False)` — it ignores clicks and renders with greyed-out colours when disabled.
+- **Proof header buttons no longer squish**: Moved Lemma button into the same loop as Undo/Redo/Begin Subproof/End Subproof with `sizePolicy.Minimum` so Qt never compresses button text below its natural width. Removed the stretch + separate Lemma construction that was fighting for space with the (now-removed) sync toggle.
+
+## [0.9.6.33] - 2025-06-10
+
+### Fixed — Canvas Sync: Complete Rewrite of `_sync_proof_to_canvas`
+
+- **Root cause — status filter**: The old sync method filtered construction steps with `status == "✓"`, but saved `.euclid` files store all steps with `status: "?"`. This meant **zero** construction steps were ever processed when loading from file, so no geometry was drawn for any proposition.
+- **New step classification**: Replaced status-based filtering with justification-based `_is_construction(jus)` helper that identifies construction steps by type: `let-*`, `prop.*`, `theorem-app`, `equilateral`.
+- **Fixed `let-circle` edge-point lookup**: The old code used `_re_on.search()` which returns the first `on()` match — often the center's own `on()` call, not the edge point. Now iterates all `on()` matches and selects the one whose object matches the circle name and whose point differs from the center point.
+- **Unified line–circle intersection handler**: Merged the separate `let-intersection-line-circle-*`, `let-intersection-circle-line-*`, and `let-point-on-line-extend` branches into a single handler that looks up the circle and line from `on()` matches and delegates to `_pick_line_circ()`.
+- **Improved `_pick_line_circ()` picker**: Now handles all three `between(X,Y,Z)` positions where the new point can appear — `between(NEW, Y, Z)` (betweenness score), `between(X, NEW, Z)` (pick between X and Z), and `between(X, Y, NEW)` (extend beyond Y from X). Falls back to `¬(X=Y)` exclusion, then midpoint heuristic, then prefer-above.
+- **Removed duplicate branch**: Eliminated the separate `let-point-on-line-extend` branch that duplicated line-circle logic.
+- **Fallback `let-*` handler**: Added catch-all for unknown `let-*` patterns that attempts line-circle intersection from `on()` matches.
+- **Diagnostic results**: 11/16 propositions produce all expected construction points. The 5 "failures" are accounted for: I.8 and I.13 are non-construction proofs (no `let-*`/`prop.*` steps); I.2 (`g`), I.9 (`f`), and I.11 (`e`) have canvas-only points that were manually placed but have no corresponding construction step in the proof.
+- **Prop.I.2 direction fix**: When a `Prop.*` step (e.g. `Prop.I.2` segment transfer) creates a new point without a `between()` cue, the fallback direction now checks if the anchor point sits on a known line and places the new point perpendicular to that line (preferring above), instead of always placing straight up. Falls back to straight up if no line context is available.
+- All 14 canvas sync tests and 915 project tests pass.
+
+## [0.9.6.32] - 2025-06-09
+
+### Fixed — Canvas Sync: Proposition I.3 Geometry and General Theorem-App Handler
+
+- **General Prop.I.X theorem-app handler**: Added a catch-all branch for `theorem-app` steps referencing propositions other than I.1 (e.g. Prop.I.2, Prop.I.3, Prop.I.10). Parses segment equality terms (`XY = ZW`) from step text to identify the new (unplaced) point, anchor point, and reference distance. Places the new point at the correct distance from its anchor using `between()` direction cues when available, with a midpoint fallback.
+- **Declared-line seeding from premises**: Expanded the `canvas_sync_requested` signal from `pyqtSignal(list, list, list)` to `pyqtSignal(list, list, list, list)`, adding the premises list as a fourth argument. `_sync_proof_to_canvas` now scans premise texts for `on(X, LINE)` patterns to pre-seed the `lines` dictionary with declared lines (e.g. line `L` from `on(a, L), on(b, L)`). This ensures that later steps referencing these lines (e.g. `on(e, L)`) can resolve them correctly.
+- **`let-intersection-line-circle-between` fallback**: When the `between()` arguments include the new (unplaced) point, the picker now falls back to choosing the intersection closest to the midpoint of the line's two endpoints, rather than failing silently.
+- **Between-direction fix in Prop.I.X handler**: Corrected the direction logic so the anchor point moves *toward* the other outer point in the `between()` triple, not away from it.
+- **All 16 solved propositions verified**: Ran comprehensive diagnostics — all 16 propositions (I.1 through I.17) sync without crashes and produce geometrically reasonable canvas output. I.1, I.2, and I.3 produce exact coordinate matches with their saved canvas data. All 160 tests pass.
+
+## [0.9.6.31] - 2025-06-09
+
+### Changed — Canvas Sync: Segments Instead of Rays, Draw Equilateral Triangle Edges
+
+- **`let-line` now draws segments**: The `_sync_proof_to_canvas` let-line branch now calls `add_segment` instead of `add_ray`. Lines constructed during a proof are rendered as finite segments between their two defining points rather than infinite rays.
+- **Equilateral triangle edges drawn**: Removed `"theorem-app"`, `"prop.i.1"`, and `"equilateral"` from `_skip_seg_jus`, so the second-pass segment scanner now processes Prop.I.1 step text (e.g. `"ab = ad, ab = bd"`) and draws the triangle sides — including the `ab` base segment that was previously missing.
+- **Saved I.2 `.euclid` file**: Removed ray definitions from `solved_proofs/Proposition I.2.euclid` (rays array now empty).
+- **Tests updated**: `test_let_line_draws_segment` and `test_prop_i2_partial` now assert segments instead of rays. All 160 tests pass.
+
+## [0.9.6.30] - 2025-06-09
+
+### Fixed — Canvas Sync: Proposition I.2 Geometry (Line-Circle Extension & Between Picking)
+
+- **Root cause 1 — segment-only intersections**: `line_circle_intersections()` in `constraints.py` clips the parametric `t` to `[0, 1]`, computing intersections only within the segment between two endpoints. I.2's construction requires intersections on the **infinite line** (ray extension past an endpoint), so valid intersection points with `t > 1` were discarded.
+- **Root cause 2 — inverted between-picking**: `between(X, Y, Z)` means **Y is between X and Z** (middle argument is the middle point). The original picking logic incorrectly looked for the candidate point lying *between* the two outer endpoints, when it should pick the candidate where the middle point Y lies between the candidate and Z: `dist(candidate, Z) ≈ dist(candidate, Y) + dist(Y, Z)`.
+- **`constraints.py`**: Added `line_circle_intersections_full()` — same quadratic math but without `t ∈ [0,1]` clamping, returning intersections on the full infinite line.
+- **`main_window.py` — `_sync_proof_to_canvas`**: Switched import to `line_circle_intersections_full`. Added `_re_between3` regex to capture all three arguments of `between(X, Y, Z)`. Both `let-intersection-line-circle-extend` and `let-point-on-line-extend` branches now use a betweenness score (`|dist(cand,Z) − (dist(cand,Y) + dist(Y,Z))|`) to pick the geometrically correct intersection point.
+- **Result**: I.2 canvas sync now places points matching the saved canvas — `e` on the extension of ray d→b past b, circle β with correct radius (~310), and `f` on the extension of ray d→a past a. All 160 tests pass.
+
+## [0.9.6.29] - 2025-06-09
+
+### Changed — Canvas: Enforced Lowercase Label Convention
+
+- **`LABEL_CHARS`** in `canvas_widget.py` changed from `"ABCDEFGHIJKLMNOPQRSTUVWXYZ"` to `"abcdefghijklmnopqrstuvwxyz"`. The canvas point tool now auto-assigns lowercase labels (`a`, `b`, `c`, …) matching the proof journal's naming convention.
+- **Uppercase input coerced to lowercase**: The label popover `accept()` now applies `.lower()` so typing `"A"` produces `"a"`. All canvas API methods (`add_point`, `add_segment`, `add_circle_by_radius_pt`, `add_ray`, `add_circle`, `add_angle_mark`) coerce incoming labels to lowercase at the API boundary.
+- **Proposition data (`proposition_data.py`)**: All 48 Euclid propositions and textbook theorems updated — `given_objects` point labels, segment `from`/`to`, circle `center`, and angle mark `vertex`/`from`/`to` values converted from uppercase to lowercase.
+- **All `.euclid` files** (solved_proofs, unsolved_proofs, skeletons, Canvas): canvas point labels and segment/circle/angle references converted to lowercase.
+- **`_label()` helper** in `_sync_proof_to_canvas` (`main_window.py`) updated with `.lower()` fallback for backward-compatible resolution of any remaining uppercase labels.
+- All 160 tests pass.
+
+## [0.9.6.28] - 2025-06-09
+
+### Fixed — Verifier: Goal Not Sent to Verifier (Vacuous Acceptance)
+
+- **Root cause**: `_build_proof_json_up_to` in `proof_panel.py` hardcoded `"goal": ""` instead of using `self._conclusion`. The verifier's goal check (`all(lit in checker.known for lit in goal_lits)`) evaluates to `True` when `goal_lits` is empty (vacuous truth), so every proof was accepted regardless of whether the goal was actually established.
+- **Symptom**: The I.1 proof showed a green `✓` on the goal bar even when the `¬(c = a)` and `¬(c = b)` steps (lines 13–14) were missing. The verifier never checked those goal literals because it received an empty goal string.
+- **`euclid_py/ui/proof_panel.py` — `_build_proof_json_up_to`**: Changed `"goal": ""` to `"goal": self._conclusion or ""`. Now the actual conclusion text (e.g. `"ab = ac, ab = bc, ¬(c = a), ¬(c = b)"`) is sent to the verifier, which correctly rejects proofs that don't derive all goal literals.
+- **Verification**: Incomplete I.1 proof (steps 1–12 only) now correctly rejected with `"Missing: ¬(c = a), ¬(c = b)"`. Complete proof (steps 1–14) still accepted. All 160 tests pass.
+
+## [0.9.6.27] - 2025-06-09
+
+### Fixed — Canvas Sync: Verification Status Wiped After Sync; Spurious Goal Pass; Test Alignment
+
+- **Root cause**: `_sync_proof_to_canvas` was emitting `scene.canvas_changed` at the end of the sync (after `blockSignals(False)`). This signal is connected to `proof_panel.reset_evaluations`, which resets all step statuses from `✓`/`✗` back to `?`. It is also connected to `_mark_dirty`. Both were being triggered every time the canvas sync ran (i.e. after every successful `Eval`), causing the verified state to vanish immediately.
+- **Secondary symptom**: Because only step statuses were reset (not `_goal_status`), the goal bar continued to show `✓` while individual lines showed `?` — making it appear that the proof "validated correctly" with wrong step states. This was entirely a display artifact of the premature `canvas_changed` emission.
+- **`euclid_py/ui/main_window.py` — `_sync_proof_to_canvas`**: Removed the `scene.canvas_changed.emit()` call from the `finally` block. `scene.blockSignals(False)` is retained so that subsequent user interactions on the canvas work normally. The sync is a programmatic rebuild triggered *after* verification is already complete — it does not need to notify the proof panel of a canvas change.
+- **Also fixed**: `_skip_seg_jus` in the second-pass segment scanner had incorrectly included `"segment-transfer-3b"`, `"metric"`, and related transfer justifications. These step texts (e.g. `"ac = ab"`) are the mechanism by which triangle sides get drawn; removing them from the skip set restores segment drawing for I.1 and related proofs.
+- **`euclid_py/tests/test_system_e_integration.py`**: Updated `test_clear_resets_everything` to match the actual `clear()` contract — `clear()` seeds one blank premise and one blank step for UX after resetting, so the post-clear assertion now checks for `[""]` and one blank step rather than empty collections. All 160 tests pass.
+
+## [0.9.6.26] - 2025-06-09
+
+### Fixed — Canvas Sync: Correct I.2 Geometry (Equilateral Apex, Rays for Lines, Preserve Canvas Points)
+
+- **Root cause**: The sync was calling `clear_all()` which wiped the given points (A, B, C) already placed by `_load_given_objects`, and was placing the theorem-app new point (D) collinearly instead of as the true equilateral apex. Additionally, proof step lowercase names (a, b, c, d) were not being mapped to canvas uppercase labels (A, B, C, D).
+- **`euclid_py/ui/main_window.py` — `_sync_proof_to_canvas`** (full rewrite):
+  - Removed `scene.clear_all()` — existing canvas points (A, B, C from `_load_given_objects`) are preserved.
+  - Seeds `placed` from `scene.get_state()["points"]` at entry, keeping all existing positions.
+  - Added `_label(name)` helper: resolves a proof variable name to its canvas label (`name` if in `placed`, else `name.upper()` if in `placed`, else `name` as-is). Enables transparent lowercase→uppercase mapping.
+  - Added `_is_placed(name)` helper using `_label()` for case-insensitive lookup.
+  - **`let-line`**: Now calls `scene.add_ray()` instead of `add_segment()`, matching the `.euclid` canvas file which uses dashed rays for constructed lines.
+  - **`theorem-app` branch**: Fixed new-point detection — uses a `Counter` over `¬(X=Y)` pairs to identify the new (exists-quantified) point as the name with the highest frequency (d appears in both `¬(d=a)` and `¬(d=b)`), while anchors (a, b) appear only once. Restores the true **equilateral triangle apex** placement: computes perpendicular bisector height h = side·√3/2 and forces the apex visually upward (negative Qt y direction).
+- **`euclid_py/tests/test_canvas_sync.py`**:
+  - Added `_ray_pairs()` helper: returns `{frozenset((r["from"], r["through"])) for r in state["rays"]}`.
+  - `test_let_line_draws_segment` renamed intent to check `_ray_pairs()` instead of `_seg_pairs()`.
+  - `test_prop_i2_partial` updated to check ray pairs for the da/db lines drawn by let-line steps.
+  - All 14 tests pass.
+
+## [0.9.6.25] - 2025-06-09
+
+### Fixed — Canvas Sync: Theorem-App Self-Seeds Anchors; Removes Canvas Label Pollution
+
+- **Root cause**: `decl_points` contained uppercase canvas labels (`A`, `B`, `C`) rather than the lowercase proof variable names (`a`, `b`, `c`), causing stray unlabelled points to appear on canvas and failing to seed the anchors that the theorem-app branch needed.
+- **`euclid_py/ui/main_window.py` — `_sync_proof_to_canvas`**: Removed the `decl_points` pre-seeding loop entirely. Instead, the `theorem-app` branch now self-seeds: it scans all point names from `¬(X=Y)` inequalities and segment terms (e.g. `ab`, `ad`) in the step text, grid-places any that are not yet in `placed` (the free-variable anchors), then computes the collinear reflection for the new point. This works without any external declaration data.
+- **`euclid_py/tests/test_canvas_sync.py`**: Removed dummy `let-circle` pre-seed steps from `test_theorem_app_i1_places_apex` and `test_theorem_app_i1_equilateral_distances`. Updated `test_prop_i2_partial` to no longer pass `decl_points`. All 14 tests pass.
+
+## [0.9.6.24] - 2025-06-09
+
+### Fixed — Canvas Sync: Seed Declared Free Variables Before Construction
+
+- **Root cause**: In proofs like I.2, points `a`, `b`, `c` are declared free variables (not introduced by any construction step). The theorem-app step (step 1) that places `d` relative to `a` and `b` was running when `placed` was empty, so `d` was grid-placed at a random position instead of collinearly left of `a`.
+- **`euclid_py/ui/proof_panel.py`**: Changed `canvas_sync_requested` signal from `pyqtSignal(list)` to `pyqtSignal(list, list, list)`. Updated emit to pass `list(self._steps), list(self._decl_points), list(self._decl_lines)`.
+- **`euclid_py/ui/main_window.py` — `_sync_proof_to_canvas`**: Added `decl_points=None, decl_lines=None` parameters. Before the main construction loop, seeds all declared point names into `placed` via `_grid_place`, placing them on a horizontal baseline so theorem-app and other steps find their anchors correctly.
+- **`euclid_py/tests/test_canvas_sync.py`**: Updated `_sync()` helper to accept `decl_points`/`decl_lines`. Updated `test_prop_i2_partial` to pass `decl_points=["a","b","c"]` (matching the real I.2 proof) and remove the dummy `let-circle` seed step. All 14 tests pass.
+
+## [0.9.6.23] - 2025-06-09
+
+### Fixed — Canvas Sync I.2 Collinear Layout
+
+- **`euclid_py/ui/main_window.py` — `_sync_proof_to_canvas` theorem-app branch**: Changed the placement of the new point introduced by a `theorem-app` step from the equilateral triangle apex (above the baseline) to a **collinear reflection**: `d = 2·a − b`, placing `d` on the opposite side of `a` from `b` at the same distance. This matches the traditional Euclid Book I.2 figure where `d`, `a`, `b`, `c` appear collinear, and ensures that circle δ (centered at `d`) and circle γ (centered at `b`) are rendered at the correct positions relative to the constructed points `f` and `g`.
+- **`euclid_py/tests/test_canvas_sync.py`**: Updated `test_theorem_app_i1_places_apex`, `test_theorem_app_i1_equilateral_distances`, and `test_prop_i2_partial` to assert the new collinear reflection placement (`d.x ≈ 2·a.x − b.x`, `d.y ≈ 2·a.y − b.y`) and that `da = ab`. All 14 tests pass.
+
+## [0.9.6.22] - 2025-06-09
+
+### Fixed — Canvas Sync Geometry for theorem-app and I.2
+
+- **`euclid_py/ui/main_window.py` — `_sync_proof_to_canvas`**: Added `theorem-app` branch:
+  - Extracts new point names from `¬(X = Y)` assertions in the step text.
+  - When exactly one new point and two anchor points are found, places the new point as the geometric equilateral triangle apex above the baseline (correct for I.1 applications introducing point `d`).
+  - Qt y-axis correction: the perpendicular is forced upward (lower y = visually above) by negating the direction when `dy > 0`.
+  - Falls back to grid-placement for other theorem applications.
+- **`euclid_py/tests/test_canvas_sync.py`**: Added 2 new tests (`test_theorem_app_i1_places_apex`, `test_theorem_app_i1_equilateral_distances`) and updated `test_prop_i2_partial` to verify `d` is geometrically placed above `a`-`b`. Fixed all "above baseline" assertions to use Qt coordinate convention (lower y = visually higher). Total: 14 tests, all passing.
+
+## [0.9.6.21] - 2025-06-09
+
+### Fixed — Canvas Sync Geometry and Predicate Palette
+
+- **`euclid_py/ui/main_window.py` — `_sync_proof_to_canvas`**: Rewrote sync logic with proper geometric placement:
+  - `let-intersection-circle-circle-*`: uses `circle_intersections()` to place intersection point at the correct position on both circles, not the grid.
+  - `let-point-on-line-extend` and any point rule where the new point lies on both a known line and a known circle: uses `line_circle_intersections()` to place it at the actual intersection, picking the farther result for "extend" rules.
+  - `let-line` / `let-circle`: deduplicates `on()` matches; edge point of circle reuses existing position when the point is already placed (so `center(b,β), on(a,β)` correctly computes radius from existing `a`).
+  - Second pass now scans **all** steps (not just verified `✓` ones) for segment references (`ab`, `ac`, etc.) in metric/transfer step texts.
+- **`euclid_py/ui/proof_panel.py` — `canvas_sync_requested` emit**: Changed to emit all steps (`list(self._steps)`) instead of pre-filtering to verified-only, so the segment-scanning second pass in `_sync_proof_to_canvas` can see metric steps.
+- **`euclid_py/ui/proof_panel.py` — predicate palette**: Removed duplicate `on(a,α)` button (identical insert to `on(a,L)`), and removed `let-line` and `let-circle` buttons (these are justification rule names, not connectives).
+
+### Added — Canvas Sync Unit Tests
+
+- **`euclid_py/tests/test_canvas_sync.py`**: 12 new tests covering:
+  - `let-circle` placement, radius, and shared-edge-point scenarios
+  - Circle-circle intersection geometry (point lies on both circles within tolerance)
+  - Segment inference from metric/transfer step texts
+  - Full I.1 scenario: two circles, intersection point above baseline, all three triangle sides
+  - `let-line` segment drawing and no-duplicate-points check
+  - `let-point-on-line-extend` placed at actual line-circle intersection
+  - Partial I.2 scenario: lines, circle γ, and intersection point `g` on circle
+
+## [0.9.6.20] - 2025-06-09
+
+### Added — Proof → Canvas Sync Toggle
+
+- **`euclid_py/ui/fitch_theme.py` — `ToggleSwitch`**: New iOS-style animated toggle switch widget (`QAbstractButton` subclass). 36×18 px pill shape with a smooth 120 ms thumb animation driven by a `pyqtProperty`. Uses `C.valid` (green) as the on-colour.
+- **`euclid_py/ui/proof_panel.py` — Sync Canvas toggle**: A `ToggleSwitch` labelled **Sync Canvas** is now shown in the ProofPanel header (row 2, after the Lemma button). When the toggle is **on**, evaluating the proof emits `canvas_sync_requested(verified_steps)` after verification completes.
+- **`euclid_py/ui/main_window.py` — `_sync_proof_to_canvas`**: New method on `_WorkspaceScreen`. Rebuilds the canvas from verified construction steps after each evaluation:
+  - `let-line` steps → `add_segment` between the two named endpoints.
+  - `let-circle` steps → `add_circle_by_radius_pt` from center to edge point.
+  - All point-introducing rules (`let-point`, `let-point-on-line`, `let-point-on-line-between`, `let-intersection-*`, etc.) → `add_point` with auto-grid layout.
+  - `canvas_changed` is blocked with `blockSignals(True/False)` during the sync to prevent the re-evaluation loop that would otherwise be triggered by `reset_evaluations`.
+
+## [0.9.6.19] - 2025-06-08
+
+### Improved — Arrow Notation and Biconditional Indicators in Rule Reference
+
+- **`verifier/unified_checker.py` — `get_available_rules()`**: Replaced all uses of the material conditional `→` with `⇒` and the biconditional `↔` with `⟺` in rule description strings displayed in the reference tab. This is a display-only change; formal axiom definitions in `e_axioms.py` are unchanged.
+- **Biconditional annotations**: Axioms that go both ways now use the `⟺` symbol:
+  - **Mutual exclusions** (single axiom, both directions): Generality 4 (`on(a,α) ⟺ ¬inside(a,α)`), Betweenness 1b/1c/1d, Same-side 3 — displayed with `⟺` since both directions hold.
+  - **Converse pairs** (two axioms forming a biconditional): Same-side 1⟺3, Segment transfer 3a⟺3b, 4a⟺4b, Angle transfer 3a⟺3b, Area transfer 1a⟺1b — shared hypotheses shown once with `⟺` between the swapped parts, plus `(⟺ with Xn)` cross-reference.
+  - M1 (Zero segment) already displayed as `ab = 0 ⟺ a = b`.
+- **`euclid_py/ui/rule_reference.py` — `_rule_is_applicable()`**: Updated to split on `⇒` instead of `→` to match the new description format.
+- **`euclid_py/ui/fitch_theme.py` — `Sym`**: Updated `impl` and `iff` symbol definitions to `⇒` and `⟺`.
+
+## [0.9.6.18] - 2025-06-08
+
+### Fixed — Autofill for All-Negative Axiom Clauses (Contrapositive Inference)
+
+- **`euclid_py/ui/proof_panel.py` — `_autofill_contrapositive`**: Named axioms whose clause contains only negative literals (no positive conclusion) are now autofilled via contrapositive inference. If all but one of the negated prerequisites are satisfied by known facts, the remaining literal is produced as the negated conclusion. Previously these axioms returned no autofill. Affected rules include: Generality 4, Same-side 3, Betweenness 1b/1c/1d/10, Betweenness 7, Pasch 3, Segment transfer 4c/4d/7/8, and Triple incidence 1.
+- **`euclid_py/ui/proof_panel.py` — `_pattern_priority`**: Extracted the hypothesis sorting priority function into a shared `@staticmethod` method, reused by both `_autofill_named_axiom` and `_autofill_contrapositive` for deterministic binding order.
+
+## [0.9.6.17] - 2025-06-08
+
+### Improved — Select-Before-Edit for Proof Lines
+
+- **`euclid_py/ui/proof_panel.py` — `FitchLineWidget`**: Proof lines and premise lines must now be highlighted (selected) before their contents can be edited. Clicking an unselected line selects it (shown with the purple highlight and red arrow); a second click or Tab then enters edit mode. This prevents accidental edits when scrolling or clicking through the proof.
+  - Text field, refs field, rule dropdown button, and delete button are all locked (read-only / disabled) until the line is selected.
+  - `focus_text()` (used when inserting new lines) automatically selects the target line so the user can type immediately.
+  - Premise lines respect the same behavior; when premises are locked (e.g. in proposition mode), they remain read-only even when selected.
+
+## [0.9.6.16] - 2025-06-08
+
+### Added — Autofill Engine for All Rule Categories
+
+- **`euclid_py/ui/proof_panel.py` — Autofill engine**: When a proof step has a justification but no statement text, the autofill engine automatically populates the statement by pattern-matching the rule's hypotheses against known facts (premises and prior accepted steps) and substituting into the conclusion. Supported rule categories:
+  - **Construction rules** (§3.3): `let-line`, `let-circle`, `let-point-on-line`, `let-point-on-circle`, `let-point-between`, `let-point-same-side`, `let-point-inside`, `intersection-line-line`, `intersection-line-circle`, `intersection-circle-circle`. Fresh names are generated automatically (Greek letters for circles, uppercase for lines, lowercase for points) and avoid collisions with names already in use.
+  - **Diagrammatic axioms** (§3.4) and **Transfer axioms** (§3.6): All named axioms (e.g. Generality 3, Betweenness 1a, Intersection 5, Segment-addition, etc.) are autofilled by matching the axiom clause's negative literals against known facts and producing the single positive conclusion.
+  - **Theorems** (Prop.I.1–48): Theorem applications look up the `ETheorem` from the library, match sequent hypotheses against known facts, and produce all conclusion literals.
+  - **Superposition** (§3.7): SAS and SSS superposition rules are autofilled by trying all permutations of referenced segments/angles and invoking the verifier's `apply_sas_superposition` / `apply_sss_superposition`.
+  - **Lemma references**: Lemma steps (`Lemma:Name`) look up previously proved lemmas and match their hypotheses.
+  - **⊥-elim**: Contradiction discharge is autofilled when ⊥ is among the known facts.
+  - Multi-conclusion (disjunctive) axioms return no autofill, requiring manual entry.
+
+### Fixed — Premise ID Numbering in Proof JSON
+
+- **`euclid_py/ui/proof_panel.py` — `_build_proof_json_up_to`**: Premise IDs were off by one (`id: i+1` with `i` starting at 1, giving first premise `id=2`). Fixed to `id: i` so premise IDs correctly start at 1, matching the line numbering used by step references and the verifier.
+
+### Fixed — Pre-existing Bugs
+
+- **`euclid_py/ui/proof_panel.py` — `_on_verify_finished_inner`**: Fixed three occurrences where `idx` (an `int`) was incorrectly called as a function (`idx()`), causing `TypeError` during verification result processing.
+
+## [0.9.6.15] - 2025-06-07
+
+### Fixed — Undo Now Reverts Point Creation
+
+
+- **`euclid_py/ui/canvas_widget.py` — `mousePressEvent` (segment/ray/circle tools)**: Undo snapshot is now pushed before the first click of multi-click drawing tools, so a single undo reverts the entire operation — the shape **and** any points created during the interaction. Previously, `push_undo` was only called when the final click completed the shape, meaning intermediate points created on the first click were never captured and could not be undone.
+- **`euclid_py/ui/canvas_widget.py` — `execute_construction`**: Construction tool actions now push an undo snapshot before building, so constructed objects (points, segments, circles) can be undone.
+- **`euclid_py/ui/canvas_widget.py` — `_cancel_pending`**: Pressing Escape while mid-draw (e.g. after the first click of a segment) now calls `undo()` to revert any points created during the cancelled operation, instead of leaving orphaned points on the canvas.
+
+## [0.9.6.14] - 2025-06-07
+
+### Improved — Trichotomy Rule Fully Fleshed Out
+
+- **`verifier/unified_checker.py` — `StepKind.TRICHOTOMY` handler**: Trichotomy now supports all three formally sound inference forms:
+  - **(a) 0 deps → full 3-way disjunction**: Assert `x < y ∨ x = y ∨ y < x` from nothing (the axiom itself).
+  - **(b) 1 dep → 2-way disjunction**: Cite a negated case to eliminate it (e.g. `¬(x = y) → x < y ∨ y < x`).
+  - **(c) 2 deps → single literal**: Cite two negated cases to conclude the remaining one (e.g. `¬(x < y) ∧ ¬(y < x) → x = y`).
+  Previously only forms (b) and (c) were allowed and the full 3-way disjunction was rejected.
+- **`verifier/unified_checker.py` — `_classify_justification`**: Moved the Trichotomy check before prefix matching so `"< trichotomy"` correctly routes to `StepKind.TRICHOTOMY` instead of being intercepted by the `"< "` metric prefix.
+- **`verifier/unified_checker.py` — `get_available_rules()`**: Removed duplicate structural-category Trichotomy and `< trichotomy` RuleInfo entries. Trichotomy now appears only in the metric section (§3.5) with an updated description documenting all three forms.
+
+## [0.9.6.13] - 2025-06-07
+
+### Improved — Easier Line Adding UX
+
+- **`euclid_py/ui/proof_panel.py` — `InsertBar`**: Resting height increased from 2 px to 8 px and hover height from 14 px to 20 px, making the insert bars between proof lines much easier to discover and click.
+- **`euclid_py/ui/proof_panel.py` — `FitchBar`**: Thickness increased from 4 px to 8 px for a clearer visual separation between premises and proof steps.
+- **`euclid_py/ui/proof_panel.py` — `clear()`**: A blank proof now starts with one empty premise line and one empty proof step pre-loaded so the user can begin typing immediately instead of having to click "Add Premise" / hover on an insert bar first. The blank premise seed is automatically removed when real premise data is loaded via `add_premise_text()`.
+
+## [0.9.6.12] - 2025-06-07
+
+### Fixed — Hourglass Stuck When No Goal Set
+
+- **`euclid_py/ui/proof_panel.py` — `_on_verify_finished_inner`**: When no goal is set, the `else` branch now always clears the goal status symbol. Previously, if verification completed with `accepted=False` and no `result.errors` (e.g. some lines failed but there was no goal-level error), no branch would match and the ⏳ hourglass remained forever.
+
+## [0.9.6.11] - 2025-06-07
+
+### Fixed — Scroll Position, Verification Status Display, and Status Reset on Edit
+
+- **`euclid_py/ui/proof_panel.py` — `_rebuild_lines`**: Scroll restoration now uses a 60 ms delay so it fires after the 50 ms `focus_text()` call that `insert_step_at` schedules. Previously the 0 ms restore was overridden by `ensureWidgetVisible` triggered by the later focus call, causing the proof journal to jump to the top after adding a line.
+- **`euclid_py/ui/proof_panel.py` — `_should_skip_status`**: New helper that identifies lines with nothing to verify: `Assume` steps, `Given` (premise) steps, and empty lines (no text and no justification). These lines now display no verification symbol instead of `?` or `✗`.
+- **`euclid_py/ui/proof_panel.py` — status reset on edit**: When a line's text, justification, or dependencies are changed, its verification status is immediately cleared (blank) via the new `_reset_line_status` helper. The user must re-run Eval to see updated results. Previously stale `✓`/`✗` symbols persisted after edits.
+- **`euclid_py/ui/proof_panel.py` — `ProofStep` default status**: New steps now default to `""` (blank) instead of `"?"`, so freshly created lines show no status symbol until verified.
+- **`euclid_py/ui/proof_panel.py` — `_update_status_style`**: Now handles empty status by clearing the label entirely instead of always showing a `?` in grey.
+
+### Results
+
+- All 246 soundness tests pass (2 pre-existing unrelated failures in `TestMatchConstructionPrereqs`).
+- Proof panel imports cleanly with no syntax errors.
+
+## [0.9.6.10] - 2025-06-07
+
+### Fixed — End Subproof Button
+
+- **`euclid_py/ui/proof_panel.py` — `_end_subproof`**: The "End Subproof" button no longer automatically creates a `⊥-elim` step with pre-filled dependencies. It now inserts a blank line at depth−1 with no justification and no deps, letting the user fill in the rule and references themselves. The button is also a no-op if the current position is not inside a subproof (depth 0).
+
+## [0.9.6.6] - 2025-06-07
+
+### Fixed — Non-Deterministic Proof Verification (PYTHONHASHSEED)
+
+- **Root cause**: Python randomises `set`/`frozenset` iteration order across process restarts via `PYTHONHASHSEED`. Three places in the verifier iterated `FrozenSet[Literal]` without sorting, producing different tuple orderings between runs. This caused the `satisfied[]` optimisation in the consequence engine to prematurely mark clauses (especially the 9-literal B6 / Betweenness 6 and 12-literal C4 / Circle 4 clauses) as satisfied in some orderings, silently skipping unit-propagation steps that were needed to reach the proof goal — resulting in I.10 (and potentially other proofs) passing on one run and failing on another.
+- **`verifier/e_consequence.py` — `_ground_clauses`**: Literals are now sorted by `repr()` before substitution, ensuring the compiled clause tuple order (and therefore `sat_index` / `res_index` bucket assignments) is identical across all Python restarts.
+- **`verifier/e_consequence.py` — `_clause_schema_vars`**: Literals are now sorted by `repr()` before sort-inference so that schema variable sort assignments are stable across runs.
+- **`verifier/e_axiom_match.py` — `_infer_schema_sorts`**: Literals are now sorted by `repr()` before iterating so that sort inference for axiom schema variables is deterministic, preventing wrong pool assignments in `_match_constrained` under different hash seeds.
+
+### Results
+
+- I.10 verification is now fully deterministic: all proof lines derive consistently across repeated runs regardless of `PYTHONHASHSEED`.
+
+## [0.9.6.9] - 2025-06-07
+
+### Fixed — Subproof Line Creation and Scroll Position
+
+- **`euclid_py/ui/proof_panel.py` — `_on_insert_bar`**: New lines inserted via the insert bar now inherit the depth of the surrounding step. Previously the depth was hardcoded to 0 and the justification defaulted to "Given", so inserting a line inside a subproof would create a depth-0 line that broke the subproof structure.
+- **`euclid_py/ui/proof_panel.py` — `_on_add_line_bar`**: The "add line" button at the bottom now inherits the last step's depth instead of hardcoding 0, so appending lines inside a subproof works correctly.
+- **`euclid_py/ui/proof_panel.py` — `_rebuild_lines`**: The scroll position of the proof journal is now saved before rebuilding widgets and restored via `QTimer.singleShot(0)` after the rebuild completes. Previously every line add/edit/delete would reset the scroll to the top of the panel.
+
+### Results
+
+- All 140 UI/integration tests pass.
+- All 246 soundness tests pass (2 pre-existing unrelated failures).
+
+## [0.9.6.8] - 2025-06-07
+
+### Fixed — Trichotomy Now Requires Cited Dependencies
+
+- **`verifier/unified_checker.py` — `StepKind.TRICHOTOMY` handler rewrite**: Trichotomy is now strictly an **elimination rule**. Previously the handler accepted any metric literal or disjunction with no validation — you could derive `x = y` or `x < y` from nothing. Now every trichotomy step must cite deps containing the negations of the eliminated cases:
+  - **2-way disjunction** (1 dep): e.g. from `¬(x = y)` conclude `x < y ∨ y < x`
+  - **Single literal** (2 deps): e.g. from `¬(x < y)` and `¬(y < x)` conclude `x = y`
+  - The full 3-way disjunction `x < y ∨ x = y ∨ y < x` can no longer be asserted — at least one case must be eliminated.
+- **Rule descriptions updated**: The `Trichotomy`, `< trichotomy`, `⊥-intro`, and `Contradiction` rule entries in `get_available_rules()` now describe the strict requirements (elimination-only for trichotomy, exactly 2 deps for ⊥-intro) so the proof-writing UI shows accurate usage instructions.
+- **Test fixes**: Updated 3 tests in `TestCasesBotElimSoundness` to use `⊥-intro` with exactly 2 deps (P/¬P pair) instead of `Contradiction` with 1 dep, matching the strict ⊥-intro rule from v0.9.6.7.
+
+### Results
+
+- I.6 (the only proof using trichotomy): 49/49 derived, 0 failures — its `< trichotomy` step correctly cites `¬(ac < ab)` and `¬(ab < ac)` to conclude `ab = ac`.
+- All other solved proofs unaffected — no regressions.
+
+## [0.9.6.7] - 2025-06-07
+
+### Fixed — Strict ⊥-intro (Proof by Cases) Rule
+
+- **`verifier/unified_checker.py` — `StepKind.CONTRADICTION` handler rewrite**: ⊥-intro now requires **exactly 2 cited dependencies** that form a direct contradiction: `P` and `¬P`, `X = Y` and `X < Y`, or `X < Y` and `Y < X`. Previously the handler scanned the entire subproof scope for any contradictory pair, which was unsound — it allowed ⊥-intro to succeed without the prover explicitly citing the contradicting lines. Diagrammatic closure fallback removed.
+- **`verifier/unified_checker.py` — `dep_aug` fallback for named axiom matching**: When `check_specific_axiom_with_premises` fails on raw `dep_facts` (direct dependencies only), the handler now retries with `dep_aug` (consequence-closure-augmented facts including Leibniz E2 equality substitution). A `used_closure` flag switches the strict dependency check from literal-match mode to transitive variable-overlap mode when closure was needed. This allows intermediate steps that depend on E2 substitution (which is built into the consequence engine, not a named axiom) to verify correctly.
+
+### Proof Updates
+
+- **I.10** (`Proposition I.10.euclid`): Added 4 intermediate derivation steps to make implicit Leibniz E2 substitutions explicit:
+  - Line 45: `¬on(b, α)` via Generality 4 (needed for ⊥-intro at line 46)
+  - Line 49: `¬on(a, β)` via Generality 4 (needed for ⊥-intro at line 50)
+  - Line 69: `a = d` via Generality 1 (needed for ⊥-intro at line 70)
+  - Line 73: `b = d` via Generality 1 (needed for ⊥-intro at line 74)
+  - All 8 ⊥-intro steps updated to cite exactly 2 dependencies (the P and ¬P pair). Proof now has 85 steps (88 total lines including 3 premises), up from 81 steps.
+- **I.9** (`Proposition I.9.euclid`): Updated 3 ⊥-intro steps (23, 32, 37) to remove the Assume line from dependencies, keeping only the contradicting P/¬P pair. No intermediate steps needed.
+- **I.11** (`Proposition I.11.euclid`): Updated 1 ⊥-intro step (21) to remove the Assume line from dependencies, keeping only the contradicting P/¬P pair.
+
+### Results
+
+- I.9: 57/57 derived, 0 failures
+- I.10: 88/88 derived, 0 failures
+- I.11: 28/28 derived, 0 failures
+- All other solved proofs (I.1–I.8, I.12–I.15) unaffected — no regressions.
+- I.17 has pre-existing failures (4 lines) unrelated to ⊥-intro changes.
+
 ## [0.9.6.5] - 2025-06-05
 
 ### Fixed — Soundness Check Script Expected Values

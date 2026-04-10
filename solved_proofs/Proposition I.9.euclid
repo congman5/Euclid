@@ -12,83 +12,83 @@
   "canvas": {
     "points": [
       {
-        "label": "A",
+        "label": "a",
         "x": 100,
         "y": 250
       },
       {
-        "label": "B",
+        "label": "b",
         "x": 550,
         "y": 120
       },
       {
-        "label": "C",
+        "label": "c",
         "x": 550,
         "y": 380
       },
       {
-        "label": "D",
+        "label": "d",
         "x": 340.18,
         "y": 180.62
       },
       {
-        "label": "F",
+        "label": "f",
         "x": 340.18,
         "y": 319.38
       },
       {
-        "label": "E",
+        "label": "e",
         "x": 220.0,
         "y": 250.0
       }
     ],
     "segments": [
       {
-        "from": "A",
-        "to": "B",
+        "from": "a",
+        "to": "b",
         "color": "#2d70b3"
       },
       {
-        "from": "A",
-        "to": "C",
+        "from": "a",
+        "to": "c",
         "color": "#2d70b3"
       },
       {
-        "from": "A",
-        "to": "D",
+        "from": "a",
+        "to": "d",
         "color": "#2e8b57"
       },
       {
-        "from": "A",
-        "to": "F",
+        "from": "a",
+        "to": "f",
         "color": "#2e8b57"
       },
       {
-        "from": "D",
-        "to": "F",
+        "from": "d",
+        "to": "f",
         "color": "#333333"
       },
       {
-        "from": "D",
-        "to": "E",
+        "from": "d",
+        "to": "e",
         "color": "#cc3333"
       },
       {
-        "from": "F",
-        "to": "E",
+        "from": "f",
+        "to": "e",
         "color": "#cc3333"
       }
     ],
     "rays": [
       {
-        "from": "A",
-        "through": "E",
+        "from": "a",
+        "through": "e",
         "color": "#e67e22"
       }
     ],
     "circles": [
       {
-        "center": "A",
+        "center": "a",
         "radius": 250,
         "radius_point": "D",
         "color": "#2e8b57"
@@ -316,7 +316,6 @@
         "text": "⊥",
         "justification": "⊥-intro",
         "dependencies": [
-          21,
           20,
           22
         ],
@@ -414,7 +413,6 @@
         "text": "⊥",
         "justification": "⊥-intro",
         "dependencies": [
-          30,
           20,
           31
         ],
@@ -469,7 +467,6 @@
         "text": "⊥",
         "justification": "⊥-intro",
         "dependencies": [
-          35,
           34,
           36
         ],

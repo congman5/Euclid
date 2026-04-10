@@ -11,35 +11,35 @@
   "canvas": {
     "points": [
       {
-        "label": "A",
+        "label": "a",
         "x": 325,
         "y": 100
       },
       {
-        "label": "B",
+        "label": "b",
         "x": 150,
         "y": 400
       },
       {
-        "label": "C",
+        "label": "c",
         "x": 500,
         "y": 400
       }
     ],
     "segments": [
       {
-        "from": "A",
-        "to": "B",
+        "from": "a",
+        "to": "b",
         "color": "#2d70b3"
       },
       {
-        "from": "A",
-        "to": "C",
+        "from": "a",
+        "to": "c",
         "color": "#2d70b3"
       },
       {
-        "from": "B",
-        "to": "C",
+        "from": "b",
+        "to": "c",
         "color": "#2d70b3"
       }
     ],

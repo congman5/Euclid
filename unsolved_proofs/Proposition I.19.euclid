@@ -13,14 +13,38 @@
   },
   "canvas": {
     "points": [
-      { "label": "A", "x": 200, "y": 150 },
-      { "label": "B", "x": 150, "y": 380 },
-      { "label": "C", "x": 500, "y": 380 }
+      {
+        "label": "a",
+        "x": 200,
+        "y": 150
+      },
+      {
+        "label": "b",
+        "x": 150,
+        "y": 380
+      },
+      {
+        "label": "c",
+        "x": 500,
+        "y": 380
+      }
     ],
     "segments": [
-      { "from": "A", "to": "B", "color": "#2d70b3" },
-      { "from": "A", "to": "C", "color": "#2d70b3" },
-      { "from": "B", "to": "C", "color": "#2d70b3" }
+      {
+        "from": "a",
+        "to": "b",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "a",
+        "to": "c",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "color": "#2d70b3"
+      }
     ],
     "rays": [],
     "circles": [],
@@ -41,15 +65,23 @@
     ],
     "goal": "ac < ab",
     "declarations": {
-      "points": ["A", "B", "C"],
-      "lines": ["L"]
+      "points": [
+        "A",
+        "B",
+        "C"
+      ],
+      "lines": [
+        "L"
+      ]
     },
     "steps": [
       {
         "lineNumber": 8,
         "text": "¬(ab = ac): if ab = ac then I.5 gives ∠abc = ∠acb, contradicting ∠abc < ∠acb",
         "justification": "Prop.I.5 (contradiction)",
-        "dependencies": [7],
+        "dependencies": [
+          7
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -57,7 +89,9 @@
         "lineNumber": 9,
         "text": "¬(ab < ac): if ab < ac then I.18 gives ∠acb < ∠abc, contradicting ∠abc < ∠acb",
         "justification": "Prop.I.18 (contradiction)",
-        "dependencies": [7],
+        "dependencies": [
+          7
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -65,7 +99,10 @@
         "lineNumber": 10,
         "text": "ac < ab (by trichotomy: only remaining possibility)",
         "justification": "Trichotomy",
-        "dependencies": [8, 9],
+        "dependencies": [
+          8,
+          9
+        ],
         "depth": 0,
         "status": "?"
       }

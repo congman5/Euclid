@@ -16,12 +16,12 @@
         "y": -199.0
       },
       {
-        "label": "A",
+        "label": "a",
         "x": -3.0,
         "y": -1.0
       },
       {
-        "label": "B",
+        "label": "b",
         "x": -201.0,
         "y": -2.0
       },
@@ -119,16 +119,16 @@
       },
       {
         "from": "_p1",
-        "to": "A",
+        "to": "a",
         "color": "#2d70b3"
       },
       {
-        "from": "A",
-        "to": "B",
+        "from": "a",
+        "to": "b",
         "color": "#2d70b3"
       },
       {
-        "from": "B",
+        "from": "b",
         "to": "_p0",
         "color": "#2d70b3"
       },
@@ -228,13 +228,13 @@
         "color": "#2d70b3"
       },
       {
-        "center": "A",
+        "center": "a",
         "radius": 198.00252523642217,
         "radius_point": "B",
         "color": "#2d70b3"
       },
       {
-        "center": "B",
+        "center": "b",
         "radius": 198.00252523642217,
         "radius_point": "_p0",
         "color": "#2d70b3"

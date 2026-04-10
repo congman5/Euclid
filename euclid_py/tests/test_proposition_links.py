@@ -158,10 +158,10 @@ class TestTextbookTheorems:
     def test_thm_2_1_has_given_objects(self):
         p = get_proposition("tb-thm-2.1")
         assert p.given_objects is not None
-        assert len(p.given_objects.points) == 3  # A, B, M
+        assert len(p.given_objects.points) == 3  # a, b, m
         labels = {pt["label"] for pt in p.given_objects.points}
-        assert {"A", "B", "M"} == labels
-        assert len(p.given_objects.segments) == 1  # AB
+        assert {"a", "b", "m"} == labels
+        assert len(p.given_objects.segments) == 1  # ab
 
     def test_thm_2_1_has_conclusion_predicate(self):
         p = get_proposition("tb-thm-2.1")
@@ -186,10 +186,10 @@ class TestTextbookTheorems:
     def test_thm_4_1_has_given_objects(self):
         p = get_proposition("tb-thm-4.1")
         assert p.given_objects is not None
-        assert len(p.given_objects.points) == 3  # A, B, C
+        assert len(p.given_objects.points) == 3  # a, b, c
         labels = {pt["label"] for pt in p.given_objects.points}
-        assert {"A", "B", "C"} == labels
-        assert len(p.given_objects.segments) == 3  # AB, BC, AC
+        assert {"a", "b", "c"} == labels
+        assert len(p.given_objects.segments) == 3  # ab, bc, ac
 
     def test_thm_4_1_has_conclusion_predicate(self):
         p = get_proposition("tb-thm-4.1")

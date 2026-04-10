@@ -320,6 +320,98 @@ class TestAutofillNamedAxiom:
         # With backward-compat aliases, we have more entries than before
         assert len(ax_index) >= 50  # at least 50 named axioms
 
+    # ── Contrapositive (all-negative clause) autofill ─────────────
+
+    def test_generality_4_on_to_not_inside(self):
+        """Generality 4: on(a, α) → ¬inside(a, α)."""
+        p = self._make_panel()
+        p.set_declarations(["a"], [])
+        p.add_premise_text("on(a, \u03b1)")
+        p.add_step("", "Generality 4", [1])
+        p._eval_all()
+        step = p._steps[0]
+        assert step.text.strip() != "", "Generality 4 should autofill"
+        assert "\u00ac" in step.text, \
+            f"Expected negation, got: {step.text}"
+        assert "inside(" in step.text, \
+            f"Expected inside(), got: {step.text}"
+        assert step.status == "\u2713", \
+            f"Generality 4 should be \u2713, got: {step.status}"
+
+    def test_generality_4_inside_to_not_on(self):
+        """Generality 4 reverse: inside(a, α) → ¬on(a, α)."""
+        p = self._make_panel()
+        p.set_declarations(["a"], [])
+        p.add_premise_text("inside(a, \u03b1)")
+        p.add_step("", "Generality 4", [1])
+        p._eval_all()
+        step = p._steps[0]
+        assert step.text.strip() != "", \
+            "Generality 4 reverse should autofill"
+        assert "\u00ac" in step.text
+        assert "on(" in step.text, \
+            f"Expected on(), got: {step.text}"
+        assert step.status == "\u2713", \
+            f"Generality 4 reverse should be \u2713, got: {step.status}"
+
+    def test_same_side_3_contrapositive(self):
+        """Same-side 3: same-side(a, b, L) → ¬on(a, L)."""
+        p = self._make_panel()
+        p.set_declarations(["a", "b"], [])
+        p.add_premise_text("same-side(a, b, L)")
+        p.add_step("", "Same-side 3", [1])
+        p._eval_all()
+        step = p._steps[0]
+        assert step.text.strip() != "", "Same-side 3 should autofill"
+        assert "\u00ac" in step.text
+        assert "on(a, L)" in step.text, \
+            f"Expected ¬on(a, L), got: {step.text}"
+        assert step.status == "\u2713", \
+            f"Same-side 3 should be \u2713, got: {step.status}"
+
+    def test_betweenness_1b_contrapositive(self):
+        """Betweenness 1b: between(a, b, c) → ¬(a = b)."""
+        p = self._make_panel()
+        p.set_declarations(["a", "b", "c"], [])
+        p.add_premise_text("between(a, b, c)")
+        p.add_step("", "Betweenness 1b", [1])
+        p._eval_all()
+        step = p._steps[0]
+        assert step.text.strip() != "", "Betweenness 1b should autofill"
+        assert "\u00ac" in step.text
+        assert "a = b" in step.text, \
+            f"Expected ¬(a = b), got: {step.text}"
+        assert step.status == "\u2713", \
+            f"Betweenness 1b should be \u2713, got: {step.status}"
+
+    def test_pasch_3_contrapositive(self):
+        """Pasch 3: between(a,b,c), on(b,L) → ¬same-side(a,c,L)."""
+        p = self._make_panel()
+        p.set_declarations(["a", "b", "c"], [])
+        p.add_premise_text("between(a, b, c)")
+        p.add_premise_text("on(b, L)")
+        p.add_step("", "Pasch 3", [1, 2])
+        p._eval_all()
+        step = p._steps[0]
+        assert step.text.strip() != "", "Pasch 3 should autofill"
+        assert "\u00ac" in step.text
+        assert "same-side(" in step.text, \
+            f"Expected ¬same-side(), got: {step.text}"
+        assert step.status == "\u2713", \
+            f"Pasch 3 should be \u2713, got: {step.status}"
+
+    def test_contrapositive_no_matching_facts_fails(self):
+        """All-negative axiom with no matching facts should fail."""
+        p = self._make_panel()
+        p.set_declarations(["a", "b"], [])
+        # No relevant premise for Generality 4
+        p.add_premise_text("\u00ac(a = b)")
+        p.add_step("", "Generality 4", [1])
+        p._eval_all()
+        step = p._steps[0]
+        assert step.status == "\u2717", \
+            f"No matching facts should be \u2717, got: {step.status}"
+
 
 @pytest.mark.skipif(not _has_display(), reason="No display available")
 class TestAutofillTheorem:

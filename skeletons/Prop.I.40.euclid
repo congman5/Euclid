@@ -14,65 +14,65 @@
   "canvas": {
     "points": [
       {
-        "label": "A",
+        "label": "a",
         "x": 170,
         "y": 200
       },
       {
-        "label": "B",
+        "label": "b",
         "x": 120,
         "y": 400
       },
       {
-        "label": "C",
+        "label": "c",
         "x": 270,
         "y": 400
       },
       {
-        "label": "D",
+        "label": "d",
         "x": 430,
         "y": 200
       },
       {
-        "label": "E",
+        "label": "e",
         "x": 380,
         "y": 400
       },
       {
-        "label": "F",
+        "label": "f",
         "x": 530,
         "y": 400
       }
     ],
     "segments": [
       {
-        "from": "A",
-        "to": "B",
+        "from": "a",
+        "to": "b",
         "color": "#2d70b3"
       },
       {
-        "from": "A",
-        "to": "C",
+        "from": "a",
+        "to": "c",
         "color": "#2d70b3"
       },
       {
-        "from": "B",
-        "to": "C",
+        "from": "b",
+        "to": "c",
         "color": "#2d70b3"
       },
       {
-        "from": "D",
-        "to": "E",
+        "from": "d",
+        "to": "e",
         "color": "#2d70b3"
       },
       {
-        "from": "D",
-        "to": "F",
+        "from": "d",
+        "to": "f",
         "color": "#2d70b3"
       },
       {
-        "from": "E",
-        "to": "F",
+        "from": "e",
+        "to": "f",
         "color": "#2d70b3"
       }
     ],

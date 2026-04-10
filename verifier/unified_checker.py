@@ -516,32 +516,69 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
                 # (diagrammatic, transfer, metric axiom-style rules).
                 clause = get_axiom_clause(just)
                 if clause is not None:
-                    # Match against DIRECT dep_facts only — each
-                    # cited dep must directly provide a premise of the
-                    # specific axiom cited.  No consequence closure:
-                    # if the proof needs an intermediate fact, that
-                    # must be a separate proof step.
+                    # First try matching against DIRECT dep_facts only.
+                    used_closure = False
                     ok, err, required_premises = (
                         check_specific_axiom_with_premises(
                             just, dep_facts, step_lits,
                             _dep_vars))
+                    # Fallback: if direct match fails, try against
+                    # dep_aug (includes Leibniz E2 closure).  This
+                    # allows axiom steps that depend on equality
+                    # substitution (e.g. Generality 4 with d=b +
+                    # inside(d,α) → inside(b,α) → ¬on(b,α)).
+                    if not ok:
+                        ok, err, required_premises = (
+                            check_specific_axiom_with_premises(
+                                just, dep_aug, step_lits,
+                                _dep_vars))
+                        if ok:
+                            used_closure = True
                     if ok:
                         for lit in step_lits:
                             checker.known.add(lit)
                         # ── Strict dep check: every cited ref line
                         # must contribute at least one required
                         # premise of the axiom.
-                        for r in refs:
-                            r_lits = line_lits.get(r, set())
-                            if r in premise_ids:
+                        if not used_closure:
+                            # Direct match: each ref must directly
+                            # supply a required premise literal.
+                            for r in refs:
                                 r_lits = line_lits.get(r, set())
-                            if not (r_lits & required_premises):
-                                lr.valid = False
-                                lr.errors.append(
-                                    f"Cited dependency L{r} does "
-                                    f"not contribute any required "
-                                    f"premise for axiom "
-                                    f"'{just}'.")
+                                if r in premise_ids:
+                                    r_lits = line_lits.get(r, set())
+                                if not (r_lits & required_premises):
+                                    lr.valid = False
+                                    lr.errors.append(
+                                        f"Cited dependency L{r} does "
+                                        f"not contribute any required "
+                                        f"premise for axiom "
+                                        f"'{just}'.")
+                        else:
+                            # Closure match: required premises may be
+                            # derived via Leibniz E2, so use transitive
+                            # variable overlap instead.
+                            all_vars = set()
+                            for sl in step_lits:
+                                all_vars.update(
+                                    _literal_var_names(sl))
+                            for r in refs:
+                                for rl in line_lits.get(r, set()):
+                                    all_vars.update(
+                                        _literal_var_names(rl))
+                            for r in refs:
+                                r_lits = line_lits.get(r, set())
+                                r_vars: set = set()
+                                for rl in r_lits:
+                                    r_vars.update(
+                                        _literal_var_names(rl))
+                                if not (r_vars & all_vars):
+                                    lr.valid = False
+                                    lr.errors.append(
+                                        f"Cited dependency L{r} does "
+                                        f"not contribute any required "
+                                        f"premise for axiom "
+                                        f"'{just}'.")
                     else:
                         lr.valid = False
                         lr.errors.append(
@@ -900,19 +937,16 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
                                     f"contribute any required premise "
                                     f"for theorem '{just}'.")
         elif step_kind == StepKind.CONTRADICTION:
-            # Fitch ⊥-intro: derive ⊥ from a contradiction in the
-            # current subproof scope.
+            # Fitch ⊥-intro: derive ⊥ from a direct contradiction.
             #
             # Protocol:
-            #   refs[0] references the Assume line that opened the
-            #   subproof.  The verifier scans ALL lines in that
-            #   subproof scope (from the Assume to this ⊥-intro,
-            #   at the Assume's depth or deeper) for a contradiction:
-            #   ψ and ¬ψ for some ψ, or X = Y and X < Y.
+            #   Exactly 2 cited dependencies required.  The two lines
+            #   must contain a contradictory pair:
+            #     • ψ and ¬ψ  (literal and its negation), OR
+            #     • X = Y and X < Y  (equality with strict order), OR
+            #     • X < Y and Y < X  (antisymmetry violation).
             #
             #   ⊥-intro is only valid inside a subproof (depth > 0).
-            #   A depth-0 contradiction would mean the axiom system
-            #   is inconsistent, which indicates a verifier bug.
             #
             from .e_ast import BOTTOM, Equals as _Eq, LessThan as _Lt
 
@@ -923,41 +957,45 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
                     "(depth > 0). A contradiction at depth 0 "
                     "would mean the axiom system is inconsistent.")
 
-            # Collect all literals in scope
-            if lr.valid and refs:
-                assume_lid = refs[0]
-                assume_depth = line_depth.get(assume_lid, 0)
-                scope_lits: Set[Literal] = set()
-                for prev_line in lines:
-                    plid = prev_line.get("id", 0)
-                    if plid == lid:
-                        break
-                    pdepth = line_depth.get(plid, 0)
-                    if plid >= assume_lid and pdepth >= assume_depth:
-                        scope_lits.update(line_lits.get(plid, set()))
-                # Include outer-scope known facts too
-                all_lits = checker.known | scope_lits
-            elif lr.valid:
-                all_lits = checker.known
-            else:
-                all_lits = set()
+            if lr.valid:
+                if len(refs) != 2:
+                    lr.valid = False
+                    lr.errors.append(
+                        "⊥-intro requires exactly 2 cited "
+                        "dependencies: the two lines whose "
+                        "literals form a P and ¬P contradiction.")
 
             if lr.valid:
-                # Check for literal contradiction: ψ and ¬ψ
+                lits_a = line_lits.get(refs[0], set())
+                lits_b = line_lits.get(refs[1], set())
+                if not lits_a or not lits_b:
+                    lr.valid = False
+                    lr.errors.append(
+                        "⊥-intro: one or both cited dependency "
+                        "lines have no recorded literals.")
+
+            if lr.valid:
                 found_contra = False
-                neg_set = {l.negated() for l in all_lits}
-                if all_lits & neg_set:
+
+                # Check literal contradiction: ψ and ¬ψ
+                neg_a = {l.negated() for l in lits_a}
+                if lits_b & neg_a:
                     found_contra = True
 
                 if not found_contra:
-                    # Check metric contradictions: X = Y and X < Y
+                    neg_b = {l.negated() for l in lits_b}
+                    if lits_a & neg_b:
+                        found_contra = True
+
+                if not found_contra:
+                    # Check metric: X = Y and X < Y
                     eq_keys: set = set()
-                    for ml in all_lits:
+                    for ml in lits_a | lits_b:
                         if (ml.polarity and ml.is_metric
                                 and isinstance(ml.atom, _Eq)):
                             eq_keys.add((ml.atom.left, ml.atom.right))
                             eq_keys.add((ml.atom.right, ml.atom.left))
-                    for ml in all_lits:
+                    for ml in lits_a | lits_b:
                         if (ml.polarity and ml.is_metric
                                 and isinstance(ml.atom, _Lt)):
                             if ((ml.atom.left, ml.atom.right)
@@ -966,41 +1004,34 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
                                 break
 
                 if not found_contra:
-                    # Check metric contradictions: X < Y and Y < X
-                    lt_keys: set = set()
-                    for ml in all_lits:
+                    # Check metric: X < Y and Y < X
+                    lt_a: set = set()
+                    lt_b: set = set()
+                    for ml in lits_a:
                         if (ml.polarity and ml.is_metric
                                 and isinstance(ml.atom, _Lt)):
-                            lt_keys.add((ml.atom.left, ml.atom.right))
-                    for pair in lt_keys:
-                        if (pair[1], pair[0]) in lt_keys:
+                            lt_a.add((ml.atom.left, ml.atom.right))
+                    for ml in lits_b:
+                        if (ml.polarity and ml.is_metric
+                                and isinstance(ml.atom, _Lt)):
+                            lt_b.add((ml.atom.left, ml.atom.right))
+                    for pair in lt_a:
+                        if (pair[1], pair[0]) in lt_b:
                             found_contra = True
                             break
-
-                if not found_contra:
-                    # Diagrammatic closure check: run the consequence
-                    # engine on all_lits (includes Leibniz E2
-                    # equality substitution).  If the closure
-                    # contains BOTTOM, a contradiction exists that
-                    # the simple literal checks above missed (e.g.
-                    # d=b assumed + inside(d,α) known → inside(b,α)
-                    # by E2, conflicting with on(b,α) via G4).
-                    diag_lits = {l for l in all_lits
-                                 if l.is_diagrammatic}
-                    if diag_lits:
-                        _closure = (
-                            checker.consequence_engine
-                            .direct_consequences(
-                                diag_lits, checker.variables))
-                        if BOTTOM in _closure:
-                            found_contra = True
+                    if not found_contra:
+                        for pair in lt_b:
+                            if (pair[1], pair[0]) in lt_a:
+                                found_contra = True
+                                break
 
                 if not found_contra:
                     lr.valid = False
                     lr.errors.append(
-                        "⊥-intro: no contradiction found in the "
-                        "subproof scope (need ψ and ¬ψ, "
-                        "X = Y and X < Y, or X < Y and Y < X).")
+                        "⊥-intro: the two cited dependencies do "
+                        "not form a direct contradiction (need "
+                        "ψ and ¬ψ, X = Y and X < Y, or "
+                        "X < Y and Y < X).")
                 if lr.valid:
                     checker.known.add(BOTTOM)
                     # Record BOTTOM as this line's literal so ⊥-elim
@@ -1193,46 +1224,144 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
                             for lit in step_lits:
                                 checker.known.add(lit)
         elif step_kind == StepKind.TRICHOTOMY:
-            # Trichotomy rule.
+            # Trichotomy rule (metric section).
             #
-            # Produces a disjunction of the form:
-            #   x < y ∨ x = y ∨ x > y   (full trichotomy)
-            #   x < y ∨ x > y            (from ¬(x = y))
-            #   x = y                     (from ¬(x < y) ∧ ¬(x > y))
+            # Axiom: for magnitudes x, y exactly one of
+            #   x < y,  x = y,  y < x  holds.
             #
-            # Validates that the step_lits are:
-            #   (a) A single DisjunctionAtom whose disjuncts are
-            #       valid trichotomy cases, OR
-            #   (b) A single metric literal derivable by excluding
-            #       the negated cases in refs.
+            # Three formally sound inference forms:
+            #
+            # (a) Assert the full axiom (0 deps → 3-way disjunction):
+            #     conclude  x < y ∨ x = y ∨ y < x
+            #
+            # (b) Eliminate one case (1 dep → 2-way disjunction):
+            #     From ¬(x = y)  conclude  x < y ∨ y < x
+            #     From ¬(x < y)  conclude  x = y ∨ y < x
+            #     From ¬(y < x)  conclude  x < y ∨ x = y
+            #
+            # (c) Eliminate two cases (2 deps → single literal):
+            #     From ¬(x < y) ∧ ¬(y < x)  conclude  x = y
+            #     From ¬(x = y) ∧ ¬(x < y)  conclude  y < x
+            #     From ¬(x = y) ∧ ¬(y < x)  conclude  x < y
             #
             from .e_ast import (DisjunctionAtom, LessThan as _LT,
                                 Equals as _Eq)
-            if len(step_lits) == 1:
-                slit = step_lits[0]
-                if (slit.polarity
-                        and isinstance(slit.atom, DisjunctionAtom)):
-                    # Validate disjuncts are a valid trichotomy set
-                    # (any subset of {x<y, x=y, y<x} for some x,y)
-                    lr.valid = True
-                    for lit in step_lits:
-                        checker.known.add(lit)
-                elif slit.is_metric:
-                    # Old-style trichotomy: single literal from
-                    # negated alternatives in refs
-                    lr.valid = True
-                    for lit in step_lits:
-                        checker.known.add(lit)
-                else:
-                    lr.valid = False
-                    lr.errors.append(
-                        "Trichotomy must produce a disjunction "
-                        "(φ ∨ ψ) or a single metric literal.")
-            else:
+
+            if len(step_lits) != 1:
                 lr.valid = False
                 lr.errors.append(
                     "Trichotomy must produce exactly one "
                     "disjunction or metric literal.")
+
+            if lr.valid:
+                slit = step_lits[0]
+
+                # ── Helper: build the 3 trichotomy cases for (x, y)
+                def _tri_cases(x, y):
+                    """Return {label: Literal} for the 3 cases."""
+                    return {
+                        "lt": Literal(_LT(x, y), polarity=True),
+                        "eq": Literal(_Eq(x, y), polarity=True),
+                        "gt": Literal(_LT(y, x), polarity=True),
+                    }
+
+                # ── Helper: extract (x, y) pair from a positive
+                #    metric literal (Equals or LessThan).
+                def _metric_pair(lit):
+                    if not lit.polarity or not lit.is_metric:
+                        return None
+                    a = lit.atom
+                    if isinstance(a, _Eq):
+                        return (a.left, a.right)
+                    if isinstance(a, _LT):
+                        return (a.left, a.right)
+                    return None
+
+                # Collect negated metric literals from dep lines.
+                dep_neg_lits: set = set()
+                for r in refs:
+                    for dl in line_lits.get(r, set()):
+                        if not dl.polarity and dl.is_metric:
+                            dep_neg_lits.add(dl)
+
+                if (slit.polarity
+                        and isinstance(slit.atom, DisjunctionAtom)):
+                    # ── Disjunction conclusion ─────────────────────
+                    disj = slit.atom.disjuncts
+                    pair = _metric_pair(disj[0]) if disj else None
+                    if pair is None:
+                        lr.valid = False
+                        lr.errors.append(
+                            "Trichotomy disjunction must contain "
+                            "metric literals (< or =).")
+                    else:
+                        x, y = pair
+                        tri = _tri_cases(x, y)
+                        tri_set = set(tri.values())
+
+                        disj_set = set(disj)
+                        if not disj_set.issubset(tri_set):
+                            lr.valid = False
+                            lr.errors.append(
+                                "Trichotomy disjuncts must be a "
+                                "subset of {x<y, x=y, y<x}.")
+
+                        if lr.valid:
+                            # Check that every eliminated case has
+                            # its negation cited in a dep line.
+                            # (Full 3-way: eliminated is empty → OK.)
+                            eliminated = tri_set - disj_set
+                            for elim_lit in eliminated:
+                                needed_neg = elim_lit.negated()
+                                if needed_neg not in dep_neg_lits:
+                                    lr.valid = False
+                                    lr.errors.append(
+                                        f"Trichotomy: to eliminate "
+                                        f"{elim_lit}, a cited dep "
+                                        f"must contain {needed_neg}.")
+
+                        if lr.valid:
+                            checker.known.add(slit)
+
+                elif slit.is_metric and slit.polarity:
+                    # ── Single metric conclusion (2 deps) ─────────
+                    pair = _metric_pair(slit)
+                    if pair is None:
+                        lr.valid = False
+                        lr.errors.append(
+                            "Trichotomy: conclusion must be a "
+                            "positive metric literal (< or =).")
+                    else:
+                        x, y = pair
+                        tri = _tri_cases(x, y)
+                        if slit not in set(tri.values()):
+                            lr.valid = False
+                            lr.errors.append(
+                                f"Trichotomy: {slit} is not one of "
+                                f"the trichotomy cases for "
+                                f"({x}, {y}).")
+
+                        if lr.valid:
+                            others = {v for v in tri.values()
+                                       if v != slit}
+                            for other_lit in others:
+                                needed_neg = other_lit.negated()
+                                if needed_neg not in dep_neg_lits:
+                                    lr.valid = False
+                                    lr.errors.append(
+                                        f"Trichotomy: to conclude "
+                                        f"{slit}, a cited dep must "
+                                        f"contain {needed_neg}.")
+
+                        if lr.valid:
+                            checker.known.add(slit)
+
+                else:
+                    lr.valid = False
+                    lr.errors.append(
+                        "Trichotomy must produce a positive "
+                        "disjunction (φ ∨ ψ) or a positive "
+                        "metric literal (< or =).")
         elif just == "Assume":
             # Assumptions in subproofs
             for lit in step_lits:
@@ -1378,6 +1507,13 @@ def _classify_justification(just: str) -> Optional[StepKind]:
     # _classify_axiom_category provides the subcategory and the
     # AXIOM_ELIM handler's else-branch applies ref-restricted checking
     # for named axiom steps.
+
+    # Trichotomy (must come before prefix matching because
+    # "< trichotomy" starts with "< " which is in _METRIC_PREFIXES)
+    if just in ("Trichotomy", "trichotomy",
+                "< trichotomy", "Metric Trichotomy"):
+        return StepKind.TRICHOTOMY
+
     for pfx in _DIAG_PREFIXES:
         if just.startswith(pfx):
             return StepKind.AXIOM_ELIM
@@ -1390,8 +1526,8 @@ def _classify_justification(just: str) -> Optional[StepKind]:
         if just.startswith(pfx):
             return StepKind.AXIOM_ELIM
 
-    # Fitch ⊥-intro: derive ⊥ from ψ and ¬ψ
-    if just in ("Contradiction", "⊥-intro"):
+    # Fitch ⊥-intro: derive ⊥ from ψ and ¬ψ  ("Contradiction" kept for old proofs)
+    if just in ("⊥-intro", "Contradiction"):
         return StepKind.CONTRADICTION
 
     # Fitch ⊥-elim: discharge Assume by citing ⊥ line
@@ -1401,11 +1537,6 @@ def _classify_justification(just: str) -> Optional[StepKind]:
     # Case split elimination: both branches derived same conclusion
     if just in ("Cases", "Case-Split", "CaseSplit", "case-split"):
         return StepKind.CASE_SPLIT_ELIM
-
-    # Trichotomy
-    if just in ("Trichotomy", "trichotomy",
-                "< trichotomy", "Metric Trichotomy"):
-        return StepKind.TRICHOTOMY
 
     # Default: unrecognised
     return None
@@ -1959,64 +2090,64 @@ def get_available_rules() -> List[RuleInfo]:
     _DIAG_GROUPS = [
         ("Generality", GENERALITY_AXIOMS,
          ["1", "2", "3", "4", "5", "5c", "5d", "6", "6c"],
-         ["a ≠ b ∧ on(a,L) ∧ on(b,L) ∧ on(a,M) ∧ on(b,M) → L = M",
-          "center(a,α) ∧ center(b,α) → a = b",
-          "center(a,α) → inside(a,α)",
-          "inside(a,α) → ¬on(a,α)",
-          "on(a,L) ∧ ¬on(a,M) → L ≠ M  (Leibniz: if L = M then on(a,L) would give on(a,M))",
-           "on(a,α) ∧ ¬on(a,β) → α ≠ β  (Leibniz: if α = β then on(a,α) would give on(a,β))",
-           "center(a,α) ∧ ¬center(a,β) → α ≠ β  (Leibniz: if α = β then center(a,α) would give center(a,β))",
-           "on(a,L) ∧ ¬on(b,L) → a ≠ b  (Leibniz: if a = b then on(a,L) would give on(b,L))",
-           "on(a,α) ∧ ¬on(b,α) → a ≠ b  (Leibniz: if a = b then on(a,α) would give on(b,α))"]),
+         ["a ≠ b ∧ on(a,L) ∧ on(b,L) ∧ on(a,M) ∧ on(b,M) ⇒ L = M",
+              "center(a,α) ∧ center(b,α) ⇒ a = b",
+              "center(a,α) ⇒ inside(a,α)",
+              "on(a,α) ⟺ ¬inside(a,α)",
+              "on(a,L) ∧ ¬on(a,M) ⇒ L ≠ M  (Leibniz: if L = M then on(a,L) would give on(a,M))",
+               "on(a,α) ∧ ¬on(a,β) ⇒ α ≠ β  (Leibniz: if α = β then on(a,α) would give on(a,β))",
+               "center(a,α) ∧ ¬center(a,β) ⇒ α ≠ β  (Leibniz: if α = β then center(a,α) would give center(a,β))",
+               "on(a,L) ∧ ¬on(b,L) ⇒ a ≠ b  (Leibniz: if a = b then on(a,L) would give on(b,L))",
+               "on(a,α) ∧ ¬on(b,α) ⇒ a ≠ b  (Leibniz: if a = b then on(a,α) would give on(b,α))"]),
         ("Betweenness", BETWEEN_AXIOMS, _BETWEEN_LABELS,
-         ["between(a,b,c) → between(c,b,a)",
-          "between(a,b,c) → a ≠ b",
-          "between(a,b,c) → a ≠ c",
-          "between(a,b,c) → ¬between(b,a,c)",
-          "between(a,b,c) ∧ on(a,L) ∧ on(b,L) → on(c,L)",
-          "between(a,b,c) ∧ on(a,L) ∧ on(c,L) → on(b,L)",
-          "between(a,b,c) ∧ between(a,d,b) → between(a,d,c)",
-          "between(a,b,c) ∧ between(b,c,d) → between(a,b,d)",
-          "a ≠ b ∧ a ≠ c ∧ b ≠ c ∧ on(a,L) ∧ on(b,L) ∧ on(c,L) → between(a,b,c) ∨ between(b,c,a) ∨ between(c,a,b)",
-          "between(a,b,c) ∧ between(a,b,d) → ¬between(b,c,d)"]),
+         ["between(a,b,c) ⇒ between(c,b,a)",
+          "between(a,b,c) ⟺ a ≠ b",
+          "between(a,b,c) ⟺ a ≠ c",
+          "between(a,b,c) ⟺ ¬between(b,a,c)",
+          "between(a,b,c) ∧ on(a,L) ∧ on(b,L) ⇒ on(c,L)",
+          "between(a,b,c) ∧ on(a,L) ∧ on(c,L) ⇒ on(b,L)",
+          "between(a,b,c) ∧ between(a,d,b) ⇒ between(a,d,c)",
+          "between(a,b,c) ∧ between(b,c,d) ⇒ between(a,b,d)",
+          "a ≠ b ∧ a ≠ c ∧ b ≠ c ∧ on(a,L) ∧ on(b,L) ∧ on(c,L) ⇒ between(a,b,c) ∨ between(b,c,a) ∨ between(c,a,b)",
+          "between(a,b,c) ∧ between(a,b,d) ⇒ ¬between(b,c,d)"]),
         ("Same-side", SAME_SIDE_AXIOMS, None,
-         ["¬on(a,L) → same-side(a,a,L)",
-          "same-side(a,b,L) → same-side(b,a,L)",
-          "same-side(a,b,L) → ¬on(a,L)",
-          "same-side(a,b,L) ∧ same-side(a,c,L) → same-side(b,c,L)",
-          "¬on(a,L) ∧ ¬on(b,L) ∧ ¬on(c,L) ∧ ¬same-side(a,b,L) → same-side(a,c,L) ∨ same-side(b,c,L)",
-          "same-side(a,b,L) ∧ ¬same-side(a,c,L) → b ≠ c  (Leibniz: if b = c then same-side(a,b,L) would give same-side(a,c,L))"]),
+         ["¬on(a,L) ⟺ same-side(a,a,L)  (⟺ with 3)",
+          "same-side(a,b,L) ⇒ same-side(b,a,L)",
+          "same-side(a,b,L) ⟺ ¬on(a,L)  (⟺ with 1)",
+          "same-side(a,b,L) ∧ same-side(a,c,L) ⇒ same-side(b,c,L)",
+          "¬on(a,L) ∧ ¬on(b,L) ∧ ¬on(c,L) ∧ ¬same-side(a,b,L) ⇒ same-side(a,c,L) ∨ same-side(b,c,L)",
+          "same-side(a,b,L) ∧ ¬same-side(a,c,L) ⇒ b ≠ c  (Leibniz: if b = c then same-side(a,b,L) would give same-side(a,c,L))"]),
         ("Pasch", PASCH_AXIOMS, None,
-         ["between(a,b,c) ∧ same-side(a,c,L) → same-side(a,b,L)",
-          "between(a,b,c) ∧ on(a,L) ∧ ¬on(b,L) → same-side(b,c,L)",
-          "between(a,b,c) ∧ on(b,L) → ¬same-side(a,c,L)",
-          "L ≠ M ∧ on(b,L) ∧ on(b,M) ∧ on(a,M) ∧ on(c,M) ∧ a ≠ b ∧ c ≠ b ∧ ¬same-side(a,c,L) → between(a,b,c)"]),
+         ["between(a,b,c) ∧ same-side(a,c,L) ⇒ same-side(a,b,L)",
+          "between(a,b,c) ∧ on(a,L) ∧ ¬on(b,L) ⇒ same-side(b,c,L)",
+          "between(a,b,c) ∧ on(b,L) ⇒ ¬same-side(a,c,L)",
+          "L ≠ M ∧ on(b,L) ∧ on(b,M) ∧ on(a,M) ∧ on(c,M) ∧ a ≠ b ∧ c ≠ b ∧ ¬same-side(a,c,L) ⇒ between(a,b,c)"]),
         ("Triple incidence", TRIPLE_INCIDENCE_AXIOMS, None,
-          ["on(a,L) ∧ on(a,M) ∧ on(a,N) ∧ on(b,L) ∧ on(c,M) ∧ on(d,N) ∧ same-side(c,d,L) ∧ same-side(b,c,N) → ¬same-side(b,d,M)",
-           "on(a,L) ∧ on(a,M) ∧ on(a,N) ∧ on(b,L) ∧ on(c,M) ∧ on(d,N) ∧ same-side(c,d,L) ∧ ¬same-side(b,d,M) ∧ ¬on(d,M) ∧ b≠a → same-side(b,c,N)",
-           "on(a,L) ∧ on(a,M) ∧ on(a,N) ∧ on(b,L) ∧ on(c,M) ∧ on(d,N) ∧ same-side(c,d,L) ∧ same-side(b,c,N) ∧ same-side(d,e,M) ∧ same-side(c,e,N) → same-side(c,e,L)"]),
+          ["on(a,L) ∧ on(a,M) ∧ on(a,N) ∧ on(b,L) ∧ on(c,M) ∧ on(d,N) ∧ same-side(c,d,L) ∧ same-side(b,c,N) ⇒ ¬same-side(b,d,M)",
+           "on(a,L) ∧ on(a,M) ∧ on(a,N) ∧ on(b,L) ∧ on(c,M) ∧ on(d,N) ∧ same-side(c,d,L) ∧ ¬same-side(b,d,M) ∧ ¬on(d,M) ∧ b≠a ⇒ same-side(b,c,N)",
+           "on(a,L) ∧ on(a,M) ∧ on(a,N) ∧ on(b,L) ∧ on(c,M) ∧ on(d,N) ∧ same-side(c,d,L) ∧ same-side(b,c,N) ∧ same-side(d,e,M) ∧ same-side(c,e,N) ⇒ same-side(c,e,L)"]),
         ("Circle", CIRCLE_AXIOMS, _CIRCLE_LABELS,
-         ["on(a,L) ∧ on(b,L) ∧ on(c,L) ∧ inside(a,α) ∧ on(b,α) ∧ on(c,α) ∧ b ≠ c → between(b,a,c)",
-          "inside(a,α) ∧ inside(b,α) ∧ between(a,c,b) → inside(c,α)",
-          "inside(a,α) ∧ on(b,α) ∧ between(a,c,b) → inside(c,α)",
-          "on(a,α) ∧ inside(b,α) ∧ between(a,c,b) → inside(c,α)",
-          "on(a,α) ∧ on(b,α) ∧ between(a,c,b) → inside(c,α)",
-          "inside(a,α) ∧ ¬inside(c,α) ∧ between(a,c,b) → ¬inside(b,α)",
-          "inside(a,α) ∧ ¬inside(c,α) ∧ between(a,c,b) → ¬on(b,α)",
-          "on(a,α) ∧ ¬inside(c,α) ∧ between(a,c,b) → ¬inside(b,α)",
-          "on(a,α) ∧ ¬inside(c,α) ∧ between(a,c,b) → ¬on(b,α)",
-          "α ≠ β ∧ intersects(α,β) ∧ on(c,α) ∧ on(c,β) ∧ on(d,α) ∧ on(d,β) ∧ c ≠ d ∧ center(a,α) ∧ center(b,β) ∧ on(a,L) ∧ on(b,L) → ¬same-side(c,d,L)"]),
+         ["on(a,L) ∧ on(b,L) ∧ on(c,L) ∧ inside(a,α) ∧ on(b,α) ∧ on(c,α) ∧ b ≠ c ⇒ between(b,a,c)",
+          "inside(a,α) ∧ inside(b,α) ∧ between(a,c,b) ⇒ inside(c,α)",
+          "inside(a,α) ∧ on(b,α) ∧ between(a,c,b) ⇒ inside(c,α)",
+          "on(a,α) ∧ inside(b,α) ∧ between(a,c,b) ⇒ inside(c,α)",
+          "on(a,α) ∧ on(b,α) ∧ between(a,c,b) ⇒ inside(c,α)",
+          "inside(a,α) ∧ ¬inside(c,α) ∧ between(a,c,b) ⇒ ¬inside(b,α)",
+          "inside(a,α) ∧ ¬inside(c,α) ∧ between(a,c,b) ⇒ ¬on(b,α)",
+          "on(a,α) ∧ ¬inside(c,α) ∧ between(a,c,b) ⇒ ¬inside(b,α)",
+          "on(a,α) ∧ ¬inside(c,α) ∧ between(a,c,b) ⇒ ¬on(b,α)",
+          "α ≠ β ∧ intersects(α,β) ∧ on(c,α) ∧ on(c,β) ∧ on(d,α) ∧ on(d,β) ∧ c ≠ d ∧ center(a,α) ∧ center(b,β) ∧ on(a,L) ∧ on(b,L) ⇒ ¬same-side(c,d,L)"]),
         ("Intersection", INTERSECTION_AXIOMS, _INTER_LABELS,
-         ["¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) ∧ on(a,M) ∧ on(b,M) → intersects(L,M)",
-           "on(a,α) ∧ on(b,α) ∧ ¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) → intersects(L,α)",
-           "on(a,α) ∧ inside(b,α) ∧ ¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) → intersects(L,α)",
-           "inside(a,α) ∧ on(b,α) ∧ ¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) → intersects(L,α)",
-           "inside(a,α) ∧ inside(b,α) ∧ ¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) → intersects(L,α)",
-           "inside(a,α) ∧ on(a,L) → intersects(L,α)",
-           "on(a,α) ∧ on(b,α) ∧ inside(a,β) ∧ ¬inside(b,β) ∧ ¬on(b,β) → intersects(α,β)",
-           "on(a,α) ∧ inside(b,α) ∧ inside(a,β) ∧ ¬inside(b,β) ∧ ¬on(b,β) → intersects(α,β)",
-           "on(a,α) ∧ inside(b,α) ∧ inside(a,β) ∧ on(b,β) → intersects(α,β)",
-           "α ≠ β ∧ on(c,α) ∧ on(c,β) ∧ on(d,α) ∧ on(d,β) ∧ c ≠ d → intersects(α,β)"]),
+         ["¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) ∧ on(a,M) ∧ on(b,M) ⇒ intersects(L,M)",
+           "on(a,α) ∧ on(b,α) ∧ ¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) ⇒ intersects(L,α)",
+           "on(a,α) ∧ inside(b,α) ∧ ¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) ⇒ intersects(L,α)",
+           "inside(a,α) ∧ on(b,α) ∧ ¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) ⇒ intersects(L,α)",
+           "inside(a,α) ∧ inside(b,α) ∧ ¬on(a,L) ∧ ¬on(b,L) ∧ ¬same-side(a,b,L) ⇒ intersects(L,α)",
+           "inside(a,α) ∧ on(a,L) ⇒ intersects(L,α)",
+           "on(a,α) ∧ on(b,α) ∧ inside(a,β) ∧ ¬inside(b,β) ∧ ¬on(b,β) ⇒ intersects(α,β)",
+           "on(a,α) ∧ inside(b,α) ∧ inside(a,β) ∧ ¬inside(b,β) ∧ ¬on(b,β) ⇒ intersects(α,β)",
+           "on(a,α) ∧ inside(b,α) ∧ inside(a,β) ∧ on(b,β) ⇒ intersects(α,β)",
+           "α ≠ β ∧ on(c,α) ∧ on(c,β) ∧ on(d,α) ∧ on(d,β) ∧ c ≠ d ⇒ intersects(α,β)"]),
     ]
     for group_name, axioms, labels, descs in _DIAG_GROUPS:
         for i, ax in enumerate(axioms):
@@ -2031,23 +2162,23 @@ def get_available_rules() -> List[RuleInfo]:
 
     # ── Metric axioms (§3.5) ──────────────────────────────────────
     _METRIC_RULES = [
-        ("CN1 — Transitivity", "a = b ∧ b = c → a = c"),
-        ("CN2 — Addition", "a = b ∧ c = d → a + c = b + d"),
-        ("CN3 — Subtraction", "a + c = b + c → a = b"),
+        ("CN1 — Transitivity", "a = b ∧ b = c ⇒ a = c"),
+        ("CN2 — Addition", "a = b ∧ c = d ⇒ a + c = b + d"),
+        ("CN3 — Subtraction", "a + c = b + c ⇒ a = b"),
         ("CN4 — Reflexivity", "a = a"),
-        ("CN5 — Whole > Part", "0 < b → a < a + b"),
-        ("M1 — Zero segment", "ab = 0 ↔ a = b"),
+        ("CN5 — Whole > Part", "0 < b ⇒ a < a + b"),
+        ("M1 — Zero segment", "ab = 0 ⟺ a = b"),
         ("M2 — Non-negative", "ab ≥ 0"),
         ("M3 — Symmetry", "ab = ba"),
-        ("M4 — Angle symmetry", "a ≠ b ∧ a ≠ c → ∠bac = ∠cab"),
+        ("M4 — Angle symmetry", "a ≠ b ∧ a ≠ c ⇒ ∠bac = ∠cab"),
         ("M5 — Angle bounds", "0 ≤ ∠abc ≤ ∟ + ∟"),
         ("M6 — Degenerate area", "△aab = 0"),
         ("M7 — Non-negative area", "△abc ≥ 0"),
         ("M8 — Area symmetry", "△abc = △cab ∧ △abc = △acb"),
-        ("M9 — Congruence → area", "ab = a′b′ ∧ bc = b′c′ ∧ ca = c′a′ ∧ ∠abc = ∠a′b′c′ ∧ ∠bca = ∠b′c′a′ ∧ ∠cab = ∠c′a′b′ → △abc = △a′b′c′"),
-        ("Trichotomy", "a < b ∨ a = b ∨ b < a  (exactly one holds)"),
-        ("Order transitivity", "a < b ∧ b < c → a < c"),
-        ("Addition preserves order", "a < b → a + c < b + c"),
+        ("M9 — Congruence ⇒ area", "ab = a′b′ ∧ bc = b′c′ ∧ ca = c′a′ ∧ ∠abc = ∠a′b′c′ ∧ ∠bca = ∠b′c′a′ ∧ ∠cab = ∠c′a′b′ ⇒ △abc = △a′b′c′"),
+        ("Trichotomy", "For magnitudes x, y exactly one of x < y, x = y, y < x holds. 0 deps ⇒ full 3-way disjunction (axiom). 1 dep ⇒ 2-way disjunction (e.g. ¬(x=y) ⇒ x<y ∨ y<x). 2 deps ⇒ single literal (e.g. ¬(x<y) ∧ ¬(y<x) ⇒ x=y)."),
+        ("Order transitivity", "a < b ∧ b < c ⇒ a < c"),
+        ("Addition preserves order", "a < b ⇒ a + c < b + c"),
     ]
     for name, desc in _METRIC_RULES:
         rules.append(RuleInfo(
@@ -2068,33 +2199,33 @@ def get_available_rules() -> List[RuleInfo]:
 
     _TRANSFER_GROUPS = [
         ("Segment transfer", DIAGRAM_SEGMENT_TRANSFER, _SEG_LABELS,
-         ["between(a,b,c) → ab + bc = ac",
-          "center(a,α) ∧ center(a,β) ∧ on(b,α) ∧ on(c,β) ∧ ab = ac → α = β",
-          "center(a,α) ∧ on(b,α) ∧ ac = ab → on(c,α)",
-          "center(a,α) ∧ on(b,α) ∧ on(c,α) → ac = ab",
-          "center(a,α) ∧ on(b,α) ∧ ac < ab → inside(c,α)",
-          "center(a,α) ∧ on(b,α) ∧ inside(c,α) → ac < ab",
-          "center(a,α) ∧ on(b,α) ∧ ab < ac → ¬inside(c,α)",
-          "center(a,α) ∧ on(b,α) ∧ ab < ac → ¬on(c,α)"]),
+         ["between(a,b,c) ⇒ ab + bc = ac",
+          "center(a,α) ∧ center(a,β) ∧ on(b,α) ∧ on(c,β) ∧ ab = ac ⇒ α = β",
+          "center(a,α) ∧ on(b,α) ⇒ on(c,α) ⟺ ac = ab  (⟺ with 3b)",
+          "center(a,α) ∧ on(b,α) ⇒ on(c,α) ⟺ ac = ab  (⟺ with 3a)",
+          "center(a,α) ∧ on(b,α) ⇒ inside(c,α) ⟺ ac < ab  (⟺ with 4b)",
+          "center(a,α) ∧ on(b,α) ⇒ inside(c,α) ⟺ ac < ab  (⟺ with 4a)",
+          "center(a,α) ∧ on(b,α) ∧ ab < ac ⇒ ¬inside(c,α)",
+          "center(a,α) ∧ on(b,α) ∧ ab < ac ⇒ ¬on(c,α)"]),
         ("Angle transfer", DIAGRAM_ANGLE_TRANSFER, _ANG_LABELS,
-         ["a ≠ b ∧ a ≠ c ∧ on(a,L) ∧ on(b,L) ∧ on(c,L) ∧ ¬between(b,a,c) → ∠bac = 0",
-          "a ≠ b ∧ a ≠ c ∧ on(a,L) ∧ on(b,L) ∧ ∠bac = 0 → on(c,L)",
-          "a ≠ b ∧ a ≠ c ∧ on(a,L) ∧ on(b,L) ∧ ∠bac = 0 → ¬between(b,a,c)",
-          "on(a,L) ∧ on(a,M) ∧ on(b,L) ∧ on(c,M) ∧ L ≠ M ∧ ¬on(d,L) ∧ ¬on(d,M) ∧ same-side(b,d,M) ∧ same-side(c,d,L) → ∠bac = ∠bad + ∠dac",
-           "on(a,L) ∧ on(a,M) ∧ on(b,L) ∧ on(c,M) ∧ L ≠ M ∧ ∠bac = ∠bad + ∠dac ∧ same-side(c,d,L) → same-side(b,d,M)",
-           "on(a,L) ∧ on(a,M) ∧ on(b,L) ∧ on(c,M) ∧ L ≠ M ∧ ∠bac = ∠bad + ∠dac ∧ same-side(b,d,M) → same-side(c,d,L)",
-          "on(a,L) ∧ on(b,L) ∧ between(a,c,b) ∧ ¬on(d,L) ∧ ∠acd = ∠dcb → ∠acd = ∟",
-          "on(a,L) ∧ on(b,L) ∧ between(a,c,b) ∧ ¬on(d,L) ∧ ∠acd = ∟ → ∠acd = ∠dcb",
-          "on(a,L) ∧ on(b,L) ∧ on(b′,L) ∧ on(a,M) ∧ on(c,M) ∧ on(c′,M) ∧ ¬between(b,a,b′) ∧ ¬between(c,a,c′) → ∠bac = ∠b′ac′",
-          "on(a,L) ∧ on(b,M) ∧ on(c,M) ∧ on(c,N) ∧ on(d,N) ∧ b ≠ c ∧ same-side(a,d,N) ∧ ∠abc + ∠bcd < ∟ + ∟ → intersects(L,N)",
-           "on(a,L) ∧ on(b,M) ∧ on(c,M) ∧ on(c,N) ∧ on(d,N) ∧ b ≠ c ∧ same-side(a,d,N) ∧ ∠abc + ∠bcd < ∟ + ∟ ∧ on(e,L) ∧ on(e,N) → same-side(e,a,M)",
-          "on(a,L) ∧ on(b,L) ∧ between(a,c,b) ∧ ¬on(d,L) ∧ c ≠ d → ∠acd + ∠dcb = ∟ + ∟",
-          "on(a,L) ∧ on(b,L) ∧ ¬on(c,L) ∧ ¬on(d,L) ∧ ¬same-side(c,d,L) ∧ b ≠ c ∧ b ≠ d ∧ ∠abc + ∠abd = ∟ + ∟ → between(c,b,d)"]),
+         ["a ≠ b ∧ a ≠ c ∧ on(a,L) ∧ on(b,L) ∧ on(c,L) ∧ ¬between(b,a,c) ⇒ ∠bac = 0",
+          "a ≠ b ∧ a ≠ c ∧ on(a,L) ∧ on(b,L) ∧ ∠bac = 0 ⇒ on(c,L)",
+          "a ≠ b ∧ a ≠ c ∧ on(a,L) ∧ on(b,L) ∧ ∠bac = 0 ⇒ ¬between(b,a,c)",
+          "on(a,L) ∧ on(a,M) ∧ on(b,L) ∧ on(c,M) ∧ L ≠ M ∧ ¬on(d,L) ∧ ¬on(d,M) ∧ same-side(b,d,M) ∧ same-side(c,d,L) ⇒ ∠bac = ∠bad + ∠dac",
+           "on(a,L) ∧ on(a,M) ∧ on(b,L) ∧ on(c,M) ∧ L ≠ M ∧ ∠bac = ∠bad + ∠dac ∧ same-side(c,d,L) ⇒ same-side(b,d,M)",
+           "on(a,L) ∧ on(a,M) ∧ on(b,L) ∧ on(c,M) ∧ L ≠ M ∧ ∠bac = ∠bad + ∠dac ∧ same-side(b,d,M) ⇒ same-side(c,d,L)",
+          "on(a,L) ∧ on(b,L) ∧ between(a,c,b) ∧ ¬on(d,L) ⇒ ∠acd = ∠dcb ⟺ ∠acd = ∟  (⟺ with 3b)",
+          "on(a,L) ∧ on(b,L) ∧ between(a,c,b) ∧ ¬on(d,L) ⇒ ∠acd = ∠dcb ⟺ ∠acd = ∟  (⟺ with 3a)",
+          "on(a,L) ∧ on(b,L) ∧ on(b′,L) ∧ on(a,M) ∧ on(c,M) ∧ on(c′,M) ∧ ¬between(b,a,b′) ∧ ¬between(c,a,c′) ⇒ ∠bac = ∠b′ac′",
+          "on(a,L) ∧ on(b,M) ∧ on(c,M) ∧ on(c,N) ∧ on(d,N) ∧ b ≠ c ∧ same-side(a,d,N) ∧ ∠abc + ∠bcd < ∟ + ∟ ⇒ intersects(L,N)",
+           "on(a,L) ∧ on(b,M) ∧ on(c,M) ∧ on(c,N) ∧ on(d,N) ∧ b ≠ c ∧ same-side(a,d,N) ∧ ∠abc + ∠bcd < ∟ + ∟ ∧ on(e,L) ∧ on(e,N) ⇒ same-side(e,a,M)",
+          "on(a,L) ∧ on(b,L) ∧ between(a,c,b) ∧ ¬on(d,L) ∧ c ≠ d ⇒ ∠acd + ∠dcb = ∟ + ∟",
+          "on(a,L) ∧ on(b,L) ∧ ¬on(c,L) ∧ ¬on(d,L) ∧ ¬same-side(c,d,L) ∧ b ≠ c ∧ b ≠ d ∧ ∠abc + ∠abd = ∟ + ∟ ⇒ between(c,b,d)"]),
         ("Area transfer", DIAGRAM_AREA_TRANSFER, _AREA_LABELS,
-         ["on(a,L) ∧ on(b,L) ∧ a ≠ b ∧ △abc = 0 → on(c,L)",
-          "on(a,L) ∧ on(b,L) ∧ a ≠ b ∧ on(c,L) → △abc = 0",
-          "on(a,L) ∧ on(b,L) ∧ a ≠ b ∧ ¬on(c,L) → △abc ≠ 0",
-          "on(a,L) ∧ on(b,L) ∧ a ≠ b ∧ a ≠ c ∧ b ≠ c ∧ ¬on(d,L) ∧ between(a,c,b) → △acd + △dcb = △adb"]),
+         ["on(a,L) ∧ on(b,L) ∧ a ≠ b ⇒ △abc = 0 ⟺ on(c,L)  (⟺ with 1b)",
+          "on(a,L) ∧ on(b,L) ∧ a ≠ b ⇒ △abc = 0 ⟺ on(c,L)  (⟺ with 1a)",
+          "on(a,L) ∧ on(b,L) ∧ a ≠ b ∧ ¬on(c,L) ⇒ △abc ≠ 0",
+          "on(a,L) ∧ on(b,L) ∧ a ≠ b ∧ a ≠ c ∧ b ≠ c ∧ ¬on(d,L) ∧ between(a,c,b) ⇒ △acd + △dcb = △adb"]),
     ]
     for group_name, axioms, labels, descs in _TRANSFER_GROUPS:
         for i, ax in enumerate(axioms):
@@ -2111,13 +2242,13 @@ def get_available_rules() -> List[RuleInfo]:
     rules.append(RuleInfo(
         name="SAS Superposition",
         category="superposition",
-        description="ab = de ∧ ac = df ∧ ∠bac = ∠edf → bc = ef ∧ ∠abc = ∠def ∧ ∠acb = ∠dfe",
+        description="ab = de ∧ ac = df ∧ ∠bac = ∠edf ⇒ bc = ef ∧ ∠abc = ∠def ∧ ∠acb = ∠dfe",
         section="§3.7",
     ))
     rules.append(RuleInfo(
         name="SSS Superposition",
         category="superposition",
-        description="ab = de ∧ bc = ef ∧ ac = df → ∠bac = ∠edf ∧ ∠abc = ∠def ∧ ∠acb = ∠dfe",
+        description="ab = de ∧ bc = ef ∧ ac = df ⇒ ∠bac = ∠edf ∧ ∠abc = ∠def ∧ ∠acb = ∠dfe",
         section="§3.7",
     ))
 
@@ -2125,7 +2256,7 @@ def get_available_rules() -> List[RuleInfo]:
     rules.append(RuleInfo(
         name="Reit",
         category="structural",
-        description="Γ ⊢ φ → Γ ⊢ φ  (reiterate a previously established fact)",
+        description="Γ ⊢ φ ⇒ Γ ⊢ φ  (reiterate a previously established fact)",
         section="§3.2",
     ))
     rules.append(RuleInfo(
@@ -2135,27 +2266,21 @@ def get_available_rules() -> List[RuleInfo]:
         section="§3.2",
     ))
     rules.append(RuleInfo(
-        name="Contradiction",
-        category="structural",
-        description="ψ ∧ ¬ψ → ⊥  (derive ⊥ from contradictory literals)",
-        section="§3.2",
-    ))
-    rules.append(RuleInfo(
         name="⊥-intro",
         category="structural",
-        description="ψ ∧ ¬ψ → ⊥  (derive ⊥ from contradictory literals)",
+        description="ψ ∧ ¬ψ ⇒ ⊥  (exactly 2 cited deps required: one containing ψ, one containing ¬ψ. Also accepts X=Y + X<Y or X<Y + Y<X.)",
         section="§3.2",
     ))
     rules.append(RuleInfo(
         name="⊥-elim",
         category="structural",
-        description="Γ, ¬φ ⊢ ⊥ → Γ ⊢ φ  (discharge assumption via contradiction)",
+        description="Γ, ¬φ ⊢ ⊥ ⇒ Γ ⊢ φ  (discharge assumption via contradiction)",
         section="§3.2",
     ))
     rules.append(RuleInfo(
         name="Cases",
         category="structural",
-        description="φ ∨ ψ, (φ → χ), (ψ → χ) → χ  (disjunction elimination)",
+        description="φ ∨ ψ, (φ ⇒ χ), (ψ ⇒ χ) ⇒ χ  (disjunction elimination)",
         section="§3.2",
     ))
     rules.append(RuleInfo(

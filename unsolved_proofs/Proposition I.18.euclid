@@ -14,14 +14,38 @@
   },
   "canvas": {
     "points": [
-      { "label": "A", "x": 200, "y": 150 },
-      { "label": "B", "x": 150, "y": 380 },
-      { "label": "C", "x": 500, "y": 380 }
+      {
+        "label": "a",
+        "x": 200,
+        "y": 150
+      },
+      {
+        "label": "b",
+        "x": 150,
+        "y": 380
+      },
+      {
+        "label": "c",
+        "x": 500,
+        "y": 380
+      }
     ],
     "segments": [
-      { "from": "A", "to": "B", "color": "#2d70b3" },
-      { "from": "A", "to": "C", "color": "#2d70b3" },
-      { "from": "B", "to": "C", "color": "#2d70b3" }
+      {
+        "from": "a",
+        "to": "b",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "a",
+        "to": "c",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "color": "#2d70b3"
+      }
     ],
     "rays": [],
     "circles": [],
@@ -42,15 +66,26 @@
     ],
     "goal": "∠acb < ∠abc",
     "declarations": {
-      "points": ["A", "B", "C"],
-      "lines": ["L"]
+      "points": [
+        "A",
+        "B",
+        "C"
+      ],
+      "lines": [
+        "L"
+      ]
     },
     "steps": [
       {
         "lineNumber": 8,
         "text": "I.3: cut d on ac with ad = ab (between a, d, c)",
         "justification": "Prop.I.3",
-        "dependencies": [1, 2, 3, 7],
+        "dependencies": [
+          1,
+          2,
+          3,
+          7
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -58,7 +93,9 @@
         "lineNumber": 9,
         "text": "let-line: on(b, M), on(d, M)",
         "justification": "Construction",
-        "dependencies": [8],
+        "dependencies": [
+          8
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -66,7 +103,10 @@
         "lineNumber": 10,
         "text": "I.5: ad = ab → ∠abd = ∠adb (isosceles)",
         "justification": "Prop.I.5",
-        "dependencies": [8, 9],
+        "dependencies": [
+          8,
+          9
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -74,7 +114,10 @@
         "lineNumber": 11,
         "text": "I.16: ∠adb > ∠acb (exterior angle of △bdc)",
         "justification": "Prop.I.16",
-        "dependencies": [8, 10],
+        "dependencies": [
+          8,
+          10
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -82,7 +125,10 @@
         "lineNumber": 12,
         "text": "∠acb < ∠abc (since ∠acb < ∠adb = ∠abd ≤ ∠abc)",
         "justification": "Metric (conclusion)",
-        "dependencies": [10, 11],
+        "dependencies": [
+          10,
+          11
+        ],
         "depth": 0,
         "status": "?"
       }

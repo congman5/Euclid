@@ -13,20 +13,68 @@
   },
   "canvas": {
     "points": [
-      { "label": "A", "x": 150, "y": 180 },
-      { "label": "B", "x": 100, "y": 380 },
-      { "label": "C", "x": 300, "y": 380 },
-      { "label": "D", "x": 400, "y": 180 },
-      { "label": "E", "x": 350, "y": 380 },
-      { "label": "F", "x": 580, "y": 380 }
+      {
+        "label": "a",
+        "x": 150,
+        "y": 180
+      },
+      {
+        "label": "b",
+        "x": 100,
+        "y": 380
+      },
+      {
+        "label": "c",
+        "x": 300,
+        "y": 380
+      },
+      {
+        "label": "d",
+        "x": 400,
+        "y": 180
+      },
+      {
+        "label": "e",
+        "x": 350,
+        "y": 380
+      },
+      {
+        "label": "f",
+        "x": 580,
+        "y": 380
+      }
     ],
     "segments": [
-      { "from": "A", "to": "B", "color": "#2d70b3" },
-      { "from": "A", "to": "C", "color": "#2d70b3" },
-      { "from": "B", "to": "C", "color": "#2d70b3" },
-      { "from": "D", "to": "E", "color": "#cc3333" },
-      { "from": "D", "to": "F", "color": "#cc3333" },
-      { "from": "E", "to": "F", "color": "#cc3333" }
+      {
+        "from": "a",
+        "to": "b",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "a",
+        "to": "c",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "d",
+        "to": "e",
+        "color": "#cc3333"
+      },
+      {
+        "from": "d",
+        "to": "f",
+        "color": "#cc3333"
+      },
+      {
+        "from": "e",
+        "to": "f",
+        "color": "#cc3333"
+      }
     ],
     "rays": [],
     "circles": [],
@@ -49,7 +97,14 @@
     ],
     "goal": "∠edf < ∠bac",
     "declarations": {
-      "points": ["A", "B", "C", "D", "E", "F"],
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
       "lines": []
     },
     "steps": [
@@ -57,7 +112,11 @@
         "lineNumber": 10,
         "text": "¬(∠bac = ∠edf): if equal then I.4 gives bc = ef, contradicting ef < bc",
         "justification": "Prop.I.4 (contradiction)",
-        "dependencies": [1, 2, 3],
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -65,7 +124,11 @@
         "lineNumber": 11,
         "text": "¬(∠bac < ∠edf): if so then I.24 gives bc < ef, contradicting ef < bc",
         "justification": "Prop.I.24 (contradiction)",
-        "dependencies": [1, 2, 3],
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -73,7 +136,10 @@
         "lineNumber": 12,
         "text": "∠edf < ∠bac (trichotomy: only remaining possibility)",
         "justification": "Trichotomy",
-        "dependencies": [10, 11],
+        "dependencies": [
+          10,
+          11
+        ],
         "depth": 0,
         "status": "?"
       }

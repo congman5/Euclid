@@ -562,7 +562,7 @@ def p6():
     # M8: △bdc = △dbc, △bca = △abc → △dbc < △abc
     s19 = b.s("\u25b3dbc < \u25b3abc", "M8 \u2014 Area symmetry", [s18])
     # ⊥: △dbc = △abc (L15) and △dbc < △abc (L19)
-    s20 = b.s("\u22a5", "Contradiction", [s15, s19])
+    s20 = b.s("\u22a5", "\u22a5-intro", [s15, s19])
     # Reductio: ¬(ac < ab)
     s21 = b.reductio("\u00ac(ac < ab)", s8)
     # --- Symmetric case: Assume ab < ac ---
@@ -589,7 +589,7 @@ def p6():
     # M8: △ceb = △ecb, △cba = △bca
     s34 = b.s("\u25b3ecb < \u25b3bca", "M8 \u2014 Area symmetry", [s33])
     # ⊥: △ecb = △bca (L30) and △ecb < △bca (L34)
-    s35 = b.s("\u22a5", "Contradiction", [s30, s34])
+    s35 = b.s("\u22a5", "\u22a5-intro", [s30, s34])
     s36 = b.reductio("\u00ac(ab < ac)", s22)
     # ¬(ac < ab) ∧ ¬(ab < ac) → ab = ac: < trichotomy
     b.s("ab = ac", "< trichotomy", [s21, s36])
@@ -635,7 +635,7 @@ def p7():
     s17 = b.s("\u00ac(same-side(a, d, L))", "Circle 4",
               [s15, s16, s10, s11, s12, s13, s14,
                g["on(b, L)"], g["on(c, L)"]])
-    b.s("\u22a5", "Contradiction",
+    b.s("\u22a5", "\u22a5-intro",
         [g["same-side(a, d, L)"], s17])
     b.reductio("d = a", s14)
     return b.build()

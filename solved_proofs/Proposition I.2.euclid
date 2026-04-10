@@ -13,84 +13,73 @@
   "canvas": {
     "points": [
       {
-        "label": "A",
+        "label": "a",
         "x": 200,
         "y": 250
       },
       {
-        "label": "B",
+        "label": "b",
         "x": 350,
         "y": 350
       },
       {
-        "label": "C",
+        "label": "c",
         "x": 480,
         "y": 350
       },
       {
-        "label": "D",
+        "label": "d",
         "x": 361.6,
         "y": 170.1
       },
       {
-        "label": "G",
+        "label": "g",
         "x": 341.63,
         "y": 479.73
       },
       {
-        "label": "F",
+        "label": "f",
         "x": 83.47,
         "y": 307.62
       }
     ],
     "segments": [
       {
-        "from": "B",
-        "to": "C",
+        "from": "b",
+        "to": "c",
         "color": "#2d70b3"
       },
       {
-        "from": "A",
-        "to": "B",
+        "from": "a",
+        "to": "b",
         "color": "#333333"
       },
       {
-        "from": "A",
-        "to": "D",
+        "from": "a",
+        "to": "d",
         "color": "#333333"
       },
       {
-        "from": "B",
-        "to": "D",
+        "from": "b",
+        "to": "d",
         "color": "#333333"
       },
       {
-        "from": "A",
-        "to": "F",
+        "from": "a",
+        "to": "f",
         "color": "#2e8b57"
       }
     ],
-    "rays": [
-      {
-        "from": "D",
-        "through": "A",
-        "color": "#cc3333"
-      },
-      {
-        "from": "D",
-        "through": "B",
-        "color": "#cc3333"
-      }
-    ],
+    "rays": [],
     "circles": [
       {
-        "center": "B",
+        "center": "b",
         "radius": 130.0,
         "radius_point": "C",
         "color": "#2d70b3"
       },
       {
-        "center": "D",
+        "center": "d",
         "radius": 310.27756377319946,
         "radius_point": "G",
         "color": "#cc3333"

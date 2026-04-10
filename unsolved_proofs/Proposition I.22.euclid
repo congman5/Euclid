@@ -14,17 +14,53 @@
   },
   "canvas": {
     "points": [
-      { "label": "A", "x": 100, "y": 200 },
-      { "label": "B", "x": 250, "y": 200 },
-      { "label": "C", "x": 100, "y": 280 },
-      { "label": "D", "x": 300, "y": 280 },
-      { "label": "E", "x": 100, "y": 360 },
-      { "label": "F", "x": 280, "y": 360 }
+      {
+        "label": "a",
+        "x": 100,
+        "y": 200
+      },
+      {
+        "label": "b",
+        "x": 250,
+        "y": 200
+      },
+      {
+        "label": "c",
+        "x": 100,
+        "y": 280
+      },
+      {
+        "label": "d",
+        "x": 300,
+        "y": 280
+      },
+      {
+        "label": "e",
+        "x": 100,
+        "y": 360
+      },
+      {
+        "label": "f",
+        "x": 280,
+        "y": 360
+      }
     ],
     "segments": [
-      { "from": "A", "to": "B", "color": "#2d70b3" },
-      { "from": "C", "to": "D", "color": "#2d70b3" },
-      { "from": "E", "to": "F", "color": "#2d70b3" }
+      {
+        "from": "a",
+        "to": "b",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "c",
+        "to": "d",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "e",
+        "to": "f",
+        "color": "#2d70b3"
+      }
     ],
     "rays": [],
     "circles": [],
@@ -44,7 +80,14 @@
     ],
     "goal": "pq = ab, pr = cd, qr = ef",
     "declarations": {
-      "points": ["A", "B", "C", "D", "E", "F"],
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
       "lines": []
     },
     "steps": [
@@ -52,7 +95,14 @@
         "lineNumber": 7,
         "text": "place segment ph on a ray with ph = ab",
         "justification": "Construction (Prop.I.2/I.3)",
-        "dependencies": [1, 2, 3, 4, 5, 6],
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -60,7 +110,9 @@
         "lineNumber": 8,
         "text": "circle C1 centered at p with radius cd",
         "justification": "Construction (Postulate 3)",
-        "dependencies": [7],
+        "dependencies": [
+          7
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -68,7 +120,9 @@
         "lineNumber": 9,
         "text": "circle C2 centered at h with radius ef",
         "justification": "Construction (Postulate 3)",
-        "dependencies": [7],
+        "dependencies": [
+          7
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -76,7 +130,10 @@
         "lineNumber": 10,
         "text": "C1 and C2 intersect at point q (triangle inequality ensures intersection)",
         "justification": "Diagrammatic (circle intersection)",
-        "dependencies": [8, 9],
+        "dependencies": [
+          8,
+          9
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -84,7 +141,9 @@
         "lineNumber": 11,
         "text": "pq = cd (radius of C1), hq = ef (radius of C2)",
         "justification": "Transfer (radii)",
-        "dependencies": [10],
+        "dependencies": [
+          10
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -92,7 +151,10 @@
         "lineNumber": 12,
         "text": "pq = ab, pr = cd, qr = ef (rename: p→p, h→q gives triangle)",
         "justification": "Metric (conclusion)",
-        "dependencies": [7, 11],
+        "dependencies": [
+          7,
+          11
+        ],
         "depth": 0,
         "status": "?"
       }

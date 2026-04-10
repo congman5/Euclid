@@ -14,17 +14,53 @@
   },
   "canvas": {
     "points": [
-      { "label": "A", "x": 300, "y": 120 },
-      { "label": "B", "x": 130, "y": 400 },
-      { "label": "C", "x": 470, "y": 400 },
-      { "label": "D", "x": 300, "y": 310 }
+      {
+        "label": "a",
+        "x": 300,
+        "y": 120
+      },
+      {
+        "label": "b",
+        "x": 130,
+        "y": 400
+      },
+      {
+        "label": "c",
+        "x": 470,
+        "y": 400
+      },
+      {
+        "label": "d",
+        "x": 300,
+        "y": 310
+      }
     ],
     "segments": [
-      { "from": "A", "to": "B", "color": "#2d70b3" },
-      { "from": "A", "to": "C", "color": "#2d70b3" },
-      { "from": "B", "to": "C", "color": "#2d70b3" },
-      { "from": "B", "to": "D", "color": "#2d70b3" },
-      { "from": "C", "to": "D", "color": "#2d70b3" }
+      {
+        "from": "a",
+        "to": "b",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "a",
+        "to": "c",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "b",
+        "to": "d",
+        "color": "#2d70b3"
+      },
+      {
+        "from": "c",
+        "to": "d",
+        "color": "#2d70b3"
+      }
     ],
     "rays": [],
     "circles": [],
@@ -56,15 +92,43 @@
     ],
     "goal": "(bd + dc) < (ba + ac), ∠bac < ∠bdc",
     "declarations": {
-      "points": ["A", "B", "C", "D"],
-      "lines": ["L", "M", "N"]
+      "points": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "lines": [
+        "L",
+        "M",
+        "N"
+      ]
     },
     "steps": [
       {
         "lineNumber": 19,
         "text": "extend bd to e on ac; between(b, d, e), on(e, M)",
         "justification": "Diagrammatic (line bd meets ac inside triangle)",
-        "dependencies": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -72,7 +136,9 @@
         "lineNumber": 20,
         "text": "I.16: ∠bac < ∠bec (exterior angle of △abe)",
         "justification": "Prop.I.16",
-        "dependencies": [19],
+        "dependencies": [
+          19
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -80,7 +146,9 @@
         "lineNumber": 21,
         "text": "I.16: ∠bec < ∠bdc (exterior angle of △dec)",
         "justification": "Prop.I.16",
-        "dependencies": [19],
+        "dependencies": [
+          19
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -88,7 +156,10 @@
         "lineNumber": 22,
         "text": "∠bac < ∠bdc (transitivity of <)",
         "justification": "Metric (transitivity)",
-        "dependencies": [20, 21],
+        "dependencies": [
+          20,
+          21
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -96,7 +167,9 @@
         "lineNumber": 23,
         "text": "I.20 on △bec: be + ec > bc, so bd + dc < bd + de + ec",
         "justification": "Prop.I.20",
-        "dependencies": [19],
+        "dependencies": [
+          19
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -104,7 +177,10 @@
         "lineNumber": 24,
         "text": "I.20 on △abe: ba + ae > be, combined: bd + dc < ba + ac",
         "justification": "Prop.I.20",
-        "dependencies": [19, 23],
+        "dependencies": [
+          19,
+          23
+        ],
         "depth": 0,
         "status": "?"
       },
@@ -112,7 +188,10 @@
         "lineNumber": 25,
         "text": "(bd + dc) < (ba + ac), ∠bac < ∠bdc",
         "justification": "Metric (conclusion)",
-        "dependencies": [22, 24],
+        "dependencies": [
+          22,
+          24
+        ],
         "depth": 0,
         "status": "?"
       }

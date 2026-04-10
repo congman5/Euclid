@@ -13,48 +13,48 @@
   "canvas": {
     "points": [
       {
-        "label": "A",
+        "label": "a",
         "x": 200,
         "y": 300
       },
       {
-        "label": "B",
+        "label": "b",
         "x": 450,
         "y": 300
       },
       {
-        "label": "C",
+        "label": "c",
         "x": 325.0,
         "y": 83.49
       }
     ],
     "segments": [
       {
-        "from": "A",
-        "to": "B",
+        "from": "a",
+        "to": "b",
         "color": "#2d70b3"
       },
       {
-        "from": "A",
-        "to": "C",
+        "from": "a",
+        "to": "c",
         "color": "#2d70b3"
       },
       {
-        "from": "C",
-        "to": "B",
+        "from": "c",
+        "to": "b",
         "color": "#2d70b3"
       }
     ],
     "rays": [],
     "circles": [
       {
-        "center": "A",
+        "center": "a",
         "radius": 250.0,
         "radius_point": "B",
         "color": "#2d70b3"
       },
       {
-        "center": "B",
+        "center": "b",
         "radius": 250.0,
         "radius_point": "A",
         "color": "#cc3333"

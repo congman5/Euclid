@@ -1786,6 +1786,9 @@ class ToggleSwitch(QWidget):
         self._anim.start()
 
     def mousePressEvent(self, event):
+        if not self.isEnabled():
+            event.ignore()
+            return
         self._checked = not self._checked
         self._animate(self._checked)
         if self._callback:
@@ -1797,8 +1800,9 @@ class ToggleSwitch(QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         w, h = self.width(), self.height()
         r = h / 2
-        off_color = QColor("#ccc")
-        on_color = QColor(COLORS["primary"])
+        disabled = not self.isEnabled()
+        off_color = QColor("#e0e0e0") if disabled else QColor("#ccc")
+        on_color = QColor("#b0b0b0") if disabled else QColor(COLORS["primary"])
         t = self._knob_x
         track_color = QColor(
             int(off_color.red() + t * (on_color.red() - off_color.red())),
@@ -1812,7 +1816,8 @@ class ToggleSwitch(QWidget):
         knob_d = h - 2 * margin
         max_x = w - knob_d - margin
         knob_cx = margin + self._knob_x * (max_x - margin)
-        p.setBrush(QBrush(QColor("white")))
+        knob_color = QColor("#f0f0f0") if disabled else QColor("white")
+        p.setBrush(QBrush(knob_color))
         p.setPen(QPen(QColor(0, 0, 0, 30), 0.5))
         p.drawEllipse(int(knob_cx), margin, int(knob_d), int(knob_d))
         p.end()
@@ -3104,6 +3109,7 @@ class _WorkspaceScreen(QWidget):
         self._canvas.scene.canvas_changed.connect(self._mark_dirty)
         self._proof_panel.step_changed.connect(self._mark_dirty)
         self._proof_panel.step_changed.connect(self._update_ref_panel_facts)
+        self._proof_panel.canvas_sync_requested.connect(self._sync_proof_to_canvas)
         canvas_vbox.addWidget(self._canvas)
         body_splitter.addWidget(canvas_container)
         body_splitter.addWidget(self._proof_panel)
@@ -3325,6 +3331,700 @@ class _WorkspaceScreen(QWidget):
 
     def _mark_dirty(self):
         self._dirty = True
+
+    def _sync_proof_to_canvas(self, verified_steps,
+                              decl_points=None, decl_lines=None,
+                              premises=None):
+        """Rebuild canvas geometry from proof construction steps.
+
+        The canvas already contains given/free-variable points placed by
+        ``_load_given_objects``.  This method keeps those and adds derived
+        construction objects (points, segments, circles) computed
+        geometrically from the proof steps.
+
+        **Construction justifications handled** (all ``let-*`` and ``prop.*``):
+
+        * ``let-line``   → segment between endpoints, registers named line
+        * ``let-circle`` → circle from center + edge point
+        * ``let-intersection-circle-circle-*`` → circle–circle intersection
+        * ``let-intersection-line-circle-*``, ``let-intersection-circle-line-*``,
+          ``let-point-on-line-extend`` → line–circle intersection
+        * ``let-intersection-line-line`` → line–line intersection
+        * ``prop.i.1`` / ``theorem-app`` / ``equilateral`` → equilateral apex
+        * ``prop.i.*`` (other) → segment-transfer new point placement
+        * fallback → grid-place any new ``on()`` / ``between()`` points
+
+        **Second pass**: scans *all* step texts for segment-pair references
+        (``ab``, ``cd``, …) and draws segments between placed points.
+        """
+        import re
+        import math
+        from collections import Counter
+        from euclid_py.engine.constraints import (
+            circle_intersections as _circ_ix,
+            line_circle_intersections_full as _line_circ_ix,
+            segment_intersection as _seg_ix,
+        )
+
+        scene = self._canvas.scene
+        scene.blockSignals(True)
+        try:
+            # ── seed placed from existing canvas points ─────────────────
+            placed: dict[str, tuple[float, float]] = {}
+            for pt in scene.get_state()["points"]:
+                placed[pt["label"]] = (pt["x"], pt["y"])
+
+            def _label(name: str) -> str:
+                """Resolve a proof variable name to its canvas label."""
+                if name in placed:
+                    return name
+                up = name.upper()
+                if up in placed:
+                    return up
+                lo = name.lower()
+                if lo in placed:
+                    return lo
+                return name
+
+            # ── identify construction steps ─────────────────────────────
+            # A step is a construction step if its justification starts with
+            # "let-" or "prop." or is "theorem-app"/"equilateral".
+            # We process these regardless of verification status so that
+            # the canvas is populated even before the user clicks Eval.
+            all_steps = verified_steps
+
+            def _is_construction(jus: str) -> bool:
+                return (jus.startswith("let-") or jus.startswith("prop.")
+                        or jus in ("theorem-app", "equilateral"))
+
+            construction_steps = [
+                s for s in all_steps
+                if _is_construction((s.justification or "").strip().lower())
+            ]
+
+            circles: dict[str, dict] = {}   # name → {cx,cy,r,cpt,ept}
+            lines: dict[str, list[str]] = {}  # name → [lbl1, lbl2]
+
+            # ── seed declared lines from premises ───────────────────────
+            _re_on = re.compile(
+                r'on\(\s*([A-Za-z][A-Za-z0-9_\']*)\s*,'
+                r'\s*([A-Za-z\u03b1-\u03c9][A-Za-z0-9_\']*)\s*\)')
+
+            if decl_lines and premises:
+                decl_line_set = set(decl_lines)
+                for prem_text in (premises or []):
+                    for pt_name, obj_name in _re_on.findall(prem_text or ""):
+                        if obj_name in decl_line_set:
+                            lbl = _label(pt_name)
+                            if obj_name not in lines:
+                                lines[obj_name] = []
+                            if (lbl in placed
+                                    and lbl not in lines[obj_name]
+                                    and len(lines[obj_name]) < 2):
+                                lines[obj_name].append(lbl)
+                lines = {k: v for k, v in lines.items() if len(v) >= 2}
+
+            # ── layout helpers ──────────────────────────────────────────
+            pt_idx = [0]
+            spacing, cols = 80.0, 6
+            ox, oy = 100.0, 100.0
+
+            def _is_placed(name: str) -> bool:
+                return _label(name) in placed
+
+            def _grid_place(name: str) -> None:
+                lbl = _label(name)
+                if lbl in placed:
+                    return
+                i = pt_idx[0]; pt_idx[0] += 1
+                x = ox + (i % cols) * spacing
+                y = oy + (i // cols) * spacing
+                placed[lbl] = (x, y)
+                scene.add_point(lbl, x, y)
+
+            def _place_at(name: str, x: float, y: float) -> None:
+                lbl = _label(name)
+                if lbl in placed:
+                    return
+                placed[lbl] = (x, y)
+                scene.add_point(lbl, x, y)
+
+            def _dist_lbl(l1: str, l2: str) -> float:
+                x1, y1 = placed[l1]; x2, y2 = placed[l2]
+                return math.hypot(x2 - x1, y2 - y1)
+
+            # ── regex ───────────────────────────────────────────────────
+            _re_center = re.compile(
+                r'center\(\s*([A-Za-z][A-Za-z0-9_\']*)\s*,'
+                r'\s*([A-Za-z\u03b1-\u03c9][A-Za-z0-9_\']*)\s*\)')
+            _re_between3 = re.compile(
+                r'between\(\s*([A-Za-z][A-Za-z0-9_\']*)\s*,'
+                r'\s*([A-Za-z][A-Za-z0-9_\']*)\s*,'
+                r'\s*([A-Za-z][A-Za-z0-9_\']*)\s*\)')
+            _re_neq = re.compile(
+                r'[¬!]\s*\(?\s*([A-Za-z][A-Za-z0-9_\']*)\s*=\s*'
+                r'([A-Za-z][A-Za-z0-9_\']*)\s*\)?')
+            _re_seg_term = re.compile(r'\b([a-z])([a-z])\b')
+
+            # ── line–circle intersection picker ─────────────────────────
+            def _pick_line_circ(pts, txt, new_pt, jus):
+                """Pick the correct intersection from a line–circle pair.
+
+                Strategy priority:
+                1. between(X,Y,Z) with Y and Z both placed → betweenness score
+                2. ¬(X=Y) exclusion point → near (between) or far (extend)
+                3. between(X,Y,Z) with unplaced args → closest to line midpoint
+                4. fallback → prefer visually above baseline
+                """
+                if len(pts) == 1:
+                    return pts[0]
+                # 1. Full between(X,Y,Z) with placed args
+                btw_m = _re_between3.search(txt)
+                if btw_m:
+                    g1 = _label(btw_m.group(1))
+                    g2 = _label(btw_m.group(2))
+                    g3 = _label(btw_m.group(3))
+                    if g2 in placed and g3 in placed:
+                        # between(X, Y, Z) — Y and Z placed → betweenness score
+                        myx, myy = placed[g2]
+                        fzx, fzy = placed[g3]
+                        yz_dist = math.hypot(fzx - myx, fzy - myy)
+                        def _btw_score(p):
+                            cy_d = math.hypot(p["x"] - myx, p["y"] - myy)
+                            cz_d = math.hypot(p["x"] - fzx, p["y"] - fzy)
+                            return abs(cz_d - (cy_d + yz_dist))
+                        return min(pts, key=_btw_score)
+                    elif g1 in placed and g3 in placed:
+                        # between(X, NEW, Z) — NEW is the point being placed,
+                        # pick the intersection that lies between X and Z.
+                        ax, ay = placed[g1]
+                        bx, by = placed[g3]
+                        seg_len = math.hypot(bx - ax, by - ay)
+                        def _mid_score(p):
+                            da = math.hypot(p["x"] - ax, p["y"] - ay)
+                            db = math.hypot(p["x"] - bx, p["y"] - by)
+                            return abs((da + db) - seg_len)
+                        return min(pts, key=_mid_score)
+                    elif g1 in placed and g2 in placed:
+                        # between(X, Y, NEW) — NEW extends beyond Y from X.
+                        # Pick the intersection farther from X in the X→Y
+                        # direction.
+                        ax, ay = placed[g1]
+                        bx, by = placed[g2]
+                        return max(pts, key=lambda p:
+                            math.hypot(p["x"] - ax, p["y"] - ay))
+                # 2. ¬(X=Y) exclusion
+                excl_m = _re_neq.search(txt)
+                if excl_m:
+                    for g in (excl_m.group(1), excl_m.group(2)):
+                        if _is_placed(g) and g != new_pt:
+                            ex, ey = placed[_label(g)]
+                            if "between" in jus:
+                                return min(pts, key=lambda p:
+                                    math.hypot(p["x"] - ex, p["y"] - ey))
+                            else:
+                                return max(pts, key=lambda p:
+                                    math.hypot(p["x"] - ex, p["y"] - ey))
+                # 3. between in jus but no placed references
+                if "between" in jus:
+                    # pick closer to midpoint of line endpoints
+                    all_placed_on_matches = _re_on.findall(txt)
+                    line_ep = [_label(p) for p, o in all_placed_on_matches
+                               if _label(p) in placed and _label(p) != _label(new_pt)]
+                    if len(line_ep) >= 2:
+                        mx = (placed[line_ep[0]][0] + placed[line_ep[1]][0]) / 2
+                        my = (placed[line_ep[0]][1] + placed[line_ep[1]][1]) / 2
+                    else:
+                        mx = sum(p["x"] for p in pts) / len(pts)
+                        my = sum(p["y"] for p in pts) / len(pts)
+                    return min(pts, key=lambda p:
+                        math.hypot(p["x"] - mx, p["y"] - my))
+                # 4. fallback: prefer above (lower y in Qt)
+                return min(pts, key=lambda p: p["y"])
+
+            # ── main construction loop ──────────────────────────────────
+            for step in construction_steps:
+                jus = (step.justification or "").strip().lower()
+                txt = (step.text or "").strip()
+
+                # ── let-line ────────────────────────────────────────────
+                if jus == "let-line":
+                    on_matches = _re_on.findall(txt)
+                    seen_pts: list[str] = []
+                    line_name: str | None = None
+                    for pt_name, obj_name in on_matches:
+                        lbl = _label(pt_name)
+                        if lbl not in seen_pts:
+                            seen_pts.append(lbl)
+                        if line_name is None:
+                            line_name = obj_name
+                    for lbl in seen_pts:
+                        _grid_place(lbl)
+                    if len(seen_pts) >= 2:
+                        scene.add_segment(seen_pts[0], seen_pts[1])
+                        if line_name:
+                            lines[line_name] = seen_pts[:2]
+
+                # ── let-circle ──────────────────────────────────────────
+                elif jus == "let-circle":
+                    cm = _re_center.search(txt)
+                    # Find on() that is NOT inside center() — match all
+                    # on() calls and pick the one whose point differs from
+                    # the center's point argument.
+                    on_matches = _re_on.findall(txt)
+                    circ_name: str | None = None
+                    cpt_raw: str | None = None
+                    ept_raw: str | None = None
+                    if cm:
+                        cpt_raw = cm.group(1)
+                        circ_name = cm.group(2)
+                        # The edge point is the on() argument that matches the
+                        # same circle name but whose point is NOT the center.
+                        for pt_name, obj_name in on_matches:
+                            if obj_name == circ_name and pt_name != cpt_raw:
+                                ept_raw = pt_name
+                                break
+                        # Fallback: if all on() points equal center, just take
+                        # the first on() match as edge.
+                        if ept_raw is None and on_matches:
+                            ept_raw = on_matches[0][0]
+                    if cpt_raw and ept_raw and circ_name:
+                        cpt = _label(cpt_raw)
+                        ept = _label(ept_raw)
+                        _grid_place(cpt_raw)
+                        if not _is_placed(ept_raw):
+                            # Place edge point at a default offset from center
+                            cx, cy = placed[cpt]
+                            _place_at(ept_raw, cx + spacing, cy)
+                        r = _dist_lbl(cpt, ept)
+                        circles[circ_name] = {
+                            "cx": placed[cpt][0], "cy": placed[cpt][1],
+                            "r": r, "cpt": cpt, "ept": ept,
+                        }
+                        scene.add_circle_by_radius_pt(cpt, ept)
+
+                # ── circle-circle intersection ──────────────────────────
+                elif jus.startswith("let-intersection-circle-circle"):
+                    on_matches = _re_on.findall(txt)
+                    circ_names: list[str] = []
+                    new_pts: list[str] = []
+                    for pt_name, obj_name in on_matches:
+                        if obj_name in circles and obj_name not in circ_names:
+                            circ_names.append(obj_name)
+                        if not _is_placed(pt_name) and pt_name not in new_pts:
+                            new_pts.append(pt_name)
+                    prefer_above = "two" not in jus
+                    if len(circ_names) >= 2 and new_pts:
+                        c1 = circles[circ_names[0]]
+                        c2 = circles[circ_names[1]]
+                        pts = _circ_ix(
+                            {"x": c1["cx"], "y": c1["cy"]}, c1["r"],
+                            {"x": c2["cx"], "y": c2["cy"]}, c2["r"],
+                        )
+                        if pts:
+                            pts_sorted = sorted(pts, key=lambda p: p["y"])
+                            chosen = pts_sorted[0] if prefer_above else pts_sorted[-1]
+                            _place_at(new_pts[0], chosen["x"], chosen["y"])
+                            if len(new_pts) > 1 and len(pts) >= 2:
+                                other = pts_sorted[1] if prefer_above else pts_sorted[0]
+                                _place_at(new_pts[1], other["x"], other["y"])
+                        else:
+                            for np in new_pts:
+                                _grid_place(np)
+                    else:
+                        for np in new_pts:
+                            _grid_place(np)
+
+                # ── line-circle intersection (unified) ──────────────────
+                # Handles: let-intersection-line-circle-*,
+                #          let-intersection-circle-line-*,
+                #          let-point-on-line-extend
+                elif (jus.startswith("let-intersection-line-circle")
+                      or jus.startswith("let-intersection-circle-line")
+                      or jus == "let-point-on-line-extend"):
+                    on_matches = _re_on.findall(txt)
+                    circ_hit: str | None = None
+                    line_hit: str | None = None
+                    new_pts: list[str] = []
+                    for pt_name, obj_name in on_matches:
+                        if obj_name in circles and circ_hit is None:
+                            circ_hit = obj_name
+                        if obj_name in lines and line_hit is None:
+                            line_hit = obj_name
+                        if not _is_placed(pt_name) and pt_name not in new_pts:
+                            new_pts.append(pt_name)
+                    if circ_hit and line_hit and new_pts:
+                        ci = circles[circ_hit]
+                        lp = lines[line_hit]
+                        pts = _line_circ_ix(
+                            {"x": placed[lp[0]][0], "y": placed[lp[0]][1]},
+                            {"x": placed[lp[1]][0], "y": placed[lp[1]][1]},
+                            {"x": ci["cx"], "y": ci["cy"]}, ci["r"],
+                        )
+                        if pts:
+                            chosen = _pick_line_circ(pts, txt, new_pts[0], jus)
+                            _place_at(new_pts[0], chosen["x"], chosen["y"])
+                        else:
+                            _grid_place(new_pts[0])
+                    else:
+                        for np in new_pts:
+                            _grid_place(np)
+
+                # ── line-line intersection ───────────────────────────────
+                elif jus == "let-intersection-line-line":
+                    on_matches = _re_on.findall(txt)
+                    line_names_seen: list[str] = []
+                    new_pts: list[str] = []
+                    for pt_name, obj_name in on_matches:
+                        if obj_name in lines and obj_name not in line_names_seen:
+                            line_names_seen.append(obj_name)
+                        if not _is_placed(pt_name) and pt_name not in new_pts:
+                            new_pts.append(pt_name)
+                    if len(line_names_seen) >= 2 and new_pts:
+                        l1 = lines[line_names_seen[0]]
+                        l2 = lines[line_names_seen[1]]
+                        ipt = _seg_ix(
+                            {"x": placed[l1[0]][0], "y": placed[l1[0]][1]},
+                            {"x": placed[l1[1]][0], "y": placed[l1[1]][1]},
+                            {"x": placed[l2[0]][0], "y": placed[l2[0]][1]},
+                            {"x": placed[l2[1]][0], "y": placed[l2[1]][1]},
+                        )
+                        if ipt:
+                            _place_at(new_pts[0], ipt["x"], ipt["y"])
+                        else:
+                            _grid_place(new_pts[0])
+                    else:
+                        for np in new_pts:
+                            _grid_place(np)
+
+                # ── Prop.I.1 / theorem-app (equilateral apex) ───────────
+                elif (jus in ("theorem-app", "prop.i.1", "equilateral")
+                      or (jus.startswith("prop.") and "i.1" in jus)):
+                    neq_counter: Counter = Counter()
+                    all_pts_in_text: list[str] = []
+                    for m in _re_neq.finditer(txt):
+                        x_name, y_name = m.group(1), m.group(2)
+                        neq_counter[x_name] += 1
+                        neq_counter[y_name] += 1
+                        for name in (x_name, y_name):
+                            if name not in all_pts_in_text:
+                                all_pts_in_text.append(name)
+                    for m in _re_seg_term.finditer(txt):
+                        for name in (m.group(1), m.group(2)):
+                            if name not in all_pts_in_text:
+                                all_pts_in_text.append(name)
+                    max_count = max(neq_counter.values(), default=0)
+                    new_pts_th: list[str] = [
+                        n for n, c in neq_counter.items()
+                        if c == max_count and not _is_placed(n)
+                    ]
+                    for name in all_pts_in_text:
+                        if name not in new_pts_th and not _is_placed(name):
+                            _grid_place(name)
+                    anchor_lbls: list[str] = [
+                        _label(name) for name in all_pts_in_text
+                        if name not in new_pts_th and _is_placed(name)
+                    ]
+                    if len(new_pts_th) == 1 and len(anchor_lbls) >= 2:
+                        p1, p2 = anchor_lbls[0], anchor_lbls[1]
+                        x1, y1 = placed[p1]; x2, y2 = placed[p2]
+                        mx, my = (x1 + x2) / 2, (y1 + y2) / 2
+                        side = math.hypot(x2 - x1, y2 - y1)
+                        h = side * math.sqrt(3) / 2
+                        dx, dy = -(y2 - y1), (x2 - x1)
+                        length = math.hypot(dx, dy)
+                        if length > 0:
+                            dx, dy = dx / length * h, dy / length * h
+                        if dy > 0:
+                            dx, dy = -dx, -dy
+                        _place_at(new_pts_th[0], mx + dx, my + dy)
+                    else:
+                        for np in new_pts_th:
+                            _grid_place(np)
+
+                # ── Prop.I.2 (full expansion — segment transfer) ────────
+                # Step text like "af = cd": place anchor's copy of
+                # segment cd at point a, yielding f.  We EXPAND the
+                # full Prop.I.2 construction on the canvas:
+                #   equilateral triangle, 2 lines, 2 circles, 2
+                #   intersection points, resulting in the new point.
+                elif (jus.startswith("prop.") and "i.2" in jus):
+                    seg_matches_i2 = _re_seg_term.findall(txt)
+                    # Identify: anchor (placed), new_pt (unplaced),
+                    # and reference segment (both placed).
+                    anchor_i2: str | None = None
+                    new_pt_i2: str | None = None
+                    ref_ep1: str | None = None  # schema b
+                    ref_ep2: str | None = None  # schema c
+                    for p1_raw, p2_raw in seg_matches_i2:
+                        l1, l2 = _label(p1_raw), _label(p2_raw)
+                        if l1 in placed and l2 not in placed:
+                            anchor_i2, new_pt_i2 = l1, l2
+                        elif l2 in placed and l1 not in placed:
+                            anchor_i2, new_pt_i2 = l2, l1
+                        elif l1 in placed and l2 in placed:
+                            ref_ep1, ref_ep2 = l1, l2
+
+                    if (anchor_i2 and new_pt_i2
+                            and ref_ep1 and ref_ep2
+                            and anchor_i2 in placed
+                            and ref_ep1 in placed
+                            and ref_ep2 in placed):
+                        ax, ay = placed[anchor_i2]
+                        bx, by = placed[ref_ep1]   # schema b
+                        cx_r, cy_r = placed[ref_ep2]  # schema c
+
+                        # 1. Equilateral apex on anchor–ref_ep1
+                        ab_dist = math.hypot(bx - ax, by - ay)
+                        if ab_dist > 0:
+                            mx_eq, my_eq = (ax + bx) / 2, (ay + by) / 2
+                            h_eq = ab_dist * math.sqrt(3) / 2
+                            dx_eq = -(by - ay)
+                            dy_eq = (bx - ax)
+                            ln_eq = math.hypot(dx_eq, dy_eq)
+                            if ln_eq > 0:
+                                dx_eq, dy_eq = (dx_eq / ln_eq * h_eq,
+                                                dy_eq / ln_eq * h_eq)
+                            # prefer above (lower y in screen coords)
+                            if dy_eq > 0:
+                                dx_eq, dy_eq = -dx_eq, -dy_eq
+                            apex_x = mx_eq + dx_eq
+                            apex_y = my_eq + dy_eq
+
+                            # 2. Lines M (apex→anchor) and N (apex→ref_ep1)
+                            #    (used as infinite lines for intersections)
+
+                            # 3. Circle γ: center=ref_ep1, radius=ref_dist
+                            ref_dist_i2 = math.hypot(
+                                cx_r - bx, cy_r - by)
+
+                            # 4. Point G: intersect line N (apex→ref_ep1)
+                            #    with circle γ. Pick the point on the
+                            #    extension *beyond* ref_ep1 from apex.
+                            pts_g = _line_circ_ix(
+                                {"x": apex_x, "y": apex_y},
+                                {"x": bx, "y": by},
+                                {"x": bx, "y": by}, ref_dist_i2)
+                            if pts_g:
+                                # pick the one farther from apex (extension
+                                # beyond ref_ep1)
+                                g_pt = max(pts_g, key=lambda p:
+                                    math.hypot(p["x"] - apex_x,
+                                               p["y"] - apex_y))
+                            else:
+                                # fallback: extend along apex→ref_ep1
+                                dv = (bx - apex_x, by - apex_y)
+                                dvl = math.hypot(dv[0], dv[1])
+                                if dvl > 0:
+                                    dv = (dv[0] / dvl, dv[1] / dvl)
+                                g_pt = {
+                                    "x": bx + dv[0] * ref_dist_i2,
+                                    "y": by + dv[1] * ref_dist_i2}
+
+                            # 5. Circle δ: center=apex, radius=dist(apex,G)
+                            dg_dist = math.hypot(
+                                g_pt["x"] - apex_x,
+                                g_pt["y"] - apex_y)
+
+                            # 6. Point F: intersect line M (apex→anchor)
+                            #    with circle δ. Pick the point on the
+                            #    extension *beyond* anchor from apex.
+                            pts_f = _line_circ_ix(
+                                {"x": apex_x, "y": apex_y},
+                                {"x": ax, "y": ay},
+                                {"x": apex_x, "y": apex_y}, dg_dist)
+                            if pts_f:
+                                # pick the one farther from apex (extension
+                                # beyond anchor)
+                                f_pt = max(pts_f, key=lambda p:
+                                    math.hypot(p["x"] - apex_x,
+                                               p["y"] - apex_y))
+                            else:
+                                # fallback: extend along apex→anchor
+                                dv = (ax - apex_x, ay - apex_y)
+                                dvl = math.hypot(dv[0], dv[1])
+                                if dvl > 0:
+                                    dv = (dv[0] / dvl, dv[1] / dvl)
+                                f_pt = {
+                                    "x": ax + dv[0] * dg_dist,
+                                    "y": ay + dv[1] * dg_dist}
+
+                            _place_at(new_pt_i2,
+                                      f_pt["x"], f_pt["y"])
+
+                            # Draw the construction on canvas:
+                            # - segments for equilateral triangle
+                            scene.add_segment(anchor_i2, ref_ep1)
+                            # (apex is not a named proof point, so we
+                            #  just draw the result segment anchor→new_pt)
+                            scene.add_segment(anchor_i2, new_pt_i2)
+                        else:
+                            # degenerate: anchor == ref_ep1
+                            _place_at(new_pt_i2, ax + spacing, ay)
+                    else:
+                        # Could not parse all required points; fallback
+                        for p1_raw, p2_raw in seg_matches_i2:
+                            for n in (p1_raw, p2_raw):
+                                if not _is_placed(n):
+                                    _grid_place(n)
+
+                # ── Prop.I.* (segment transfer / midpoint) ──────────────
+                # Step text like "af = cd" or "between(b,d,a), bd = ac".
+                # Identifies new point, anchor, and reference distance
+                # from segment-term pairs, then places geometrically.
+                elif jus.startswith("prop."):
+                    seg_matches = _re_seg_term.findall(txt)
+                    new_pt_seg: str | None = None
+                    anchor_pt: str | None = None
+                    ref_dist: float | None = None
+                    # First pass: find the term with a new (unplaced) point
+                    for p1_raw, p2_raw in seg_matches:
+                        l1, l2 = _label(p1_raw), _label(p2_raw)
+                        if l1 in placed and l2 not in placed and new_pt_seg is None:
+                            anchor_pt, new_pt_seg = l1, l2
+                        elif l2 in placed and l1 not in placed and new_pt_seg is None:
+                            anchor_pt, new_pt_seg = l2, l1
+                    # Second pass: find reference distance (both placed)
+                    for p1_raw, p2_raw in seg_matches:
+                        l1, l2 = _label(p1_raw), _label(p2_raw)
+                        if l1 in placed and l2 in placed:
+                            ref_dist = _dist_lbl(l1, l2)
+                            break
+
+                    btw_m_th = _re_between3.search(txt)
+                    if new_pt_seg and anchor_pt and ref_dist is not None:
+                        ax, ay = placed[anchor_pt]
+                        if btw_m_th:
+                            b_args = [_label(btw_m_th.group(i))
+                                      for i in (1, 2, 3)]
+                            outer1, outer2 = b_args[0], b_args[2]
+                            if anchor_pt == outer1 and outer2 in placed:
+                                target = outer2
+                            elif anchor_pt == outer2 and outer1 in placed:
+                                target = outer1
+                            elif outer2 in placed:
+                                target = outer2
+                            else:
+                                target = (outer1 if outer1 in placed
+                                          else None)
+                            if target and target in placed:
+                                tx, ty = placed[target]
+                                ddx, ddy = tx - ax, ty - ay
+                                ln = math.hypot(ddx, ddy)
+                                if ln > 0:
+                                    ddx, ddy = ddx / ln, ddy / ln
+                                _place_at(new_pt_seg,
+                                          ax + ddx * ref_dist,
+                                          ay + ddy * ref_dist)
+                            else:
+                                _place_at(new_pt_seg,
+                                          ax + ref_dist, ay)
+                        else:
+                            # No between() cue — pick a sensible direction.
+                            # 1. If anchor sits on a known line, place
+                            #    perpendicular to that line (above).
+                            dir_x, dir_y = 0.0, -1.0  # default: up
+                            for ln_name, ln_pts in lines.items():
+                                if (anchor_pt in ln_pts
+                                        and len(ln_pts) >= 2
+                                        and ln_pts[0] in placed
+                                        and ln_pts[1] in placed):
+                                    lx0, ly0 = placed[ln_pts[0]]
+                                    lx1, ly1 = placed[ln_pts[1]]
+                                    dx_l = lx1 - lx0
+                                    dy_l = ly1 - ly0
+                                    ln_l = math.hypot(dx_l, dy_l)
+                                    if ln_l > 0:
+                                        # perpendicular, prefer above
+                                        dir_x = -dy_l / ln_l
+                                        dir_y = dx_l / ln_l
+                                        if dir_y > 0:
+                                            dir_x, dir_y = -dir_x, -dir_y
+                                    break
+                            _place_at(new_pt_seg,
+                                      ax + dir_x * ref_dist,
+                                      ay + dir_y * ref_dist)
+                    elif btw_m_th:
+                        b_args = [_label(btw_m_th.group(i))
+                                  for i in (1, 2, 3)]
+                        mid_lbl = b_args[1]
+                        o1, o2 = b_args[0], b_args[2]
+                        if (o1 in placed and o2 in placed
+                                and mid_lbl not in placed):
+                            mx = (placed[o1][0] + placed[o2][0]) / 2
+                            my = (placed[o1][1] + placed[o2][1]) / 2
+                            _place_at(mid_lbl, mx, my)
+
+                # ── fallback for other let-point-* rules ────────────────
+                elif jus.startswith("let-"):
+                    on_matches = _re_on.findall(txt)
+                    new_pt: str | None = None
+                    pt_on_lines: list[str] = []
+                    pt_on_circles: list[str] = []
+                    for pt_name, obj_name in on_matches:
+                        if not _is_placed(pt_name) and new_pt is None:
+                            new_pt = pt_name
+                    if new_pt:
+                        for pt_name, obj_name in on_matches:
+                            if pt_name == new_pt:
+                                if obj_name in lines:
+                                    pt_on_lines.append(obj_name)
+                                elif obj_name in circles:
+                                    pt_on_circles.append(obj_name)
+                        if pt_on_lines and pt_on_circles:
+                            lpts = lines[pt_on_lines[0]]
+                            ci = circles[pt_on_circles[0]]
+                            pts = _line_circ_ix(
+                                {"x": placed[lpts[0]][0],
+                                 "y": placed[lpts[0]][1]},
+                                {"x": placed[lpts[1]][0],
+                                 "y": placed[lpts[1]][1]},
+                                {"x": ci["cx"], "y": ci["cy"]},
+                                ci["r"],
+                            )
+                            if pts:
+                                chosen = _pick_line_circ(
+                                    pts, txt, new_pt, jus)
+                                _place_at(new_pt,
+                                          chosen["x"], chosen["y"])
+                            else:
+                                _grid_place(new_pt)
+                        else:
+                            _grid_place(new_pt)
+
+            # ── second pass: draw segments from step texts ──────────────
+            drawn_segs: set[frozenset] = set()
+            pt_names = sorted(placed.keys(), key=len, reverse=True)
+            _re_seg = (
+                re.compile(
+                    r'\b(' + '|'.join(re.escape(p) for p in pt_names) + r')'
+                    r'(' + '|'.join(re.escape(p) for p in pt_names) + r')\b'
+                )
+                if len(pt_names) >= 2
+                else None
+            )
+            _skip_seg_jus = {
+                "diagrammatic",
+                "cn1 \u2014 transitivity", "cn3 \u2014 subtraction",
+                "betweenness 1c", "circle 2c", "generality 3",
+            }
+            if _re_seg:
+                for step in all_steps:
+                    jus2 = (step.justification or "").strip().lower()
+                    if jus2 in _skip_seg_jus:
+                        continue
+                    txt2 = (step.text or "").strip()
+                    for m in _re_seg.finditer(txt2):
+                        p1, p2 = m.group(1), m.group(2)
+                        if p1 == p2:
+                            continue
+                        key = frozenset((p1, p2))
+                        if key not in drawn_segs:
+                            drawn_segs.add(key)
+                            scene.add_segment(p1, p2)
+
+        finally:
+            scene.blockSignals(False)
 
     def _enforce_feature_locks(self):
         """Apply locked-feature restrictions from a loaded file."""

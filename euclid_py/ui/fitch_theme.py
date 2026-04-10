@@ -8,7 +8,9 @@ generous line spacing, and restrained colour use.
 """
 from __future__ import annotations
 
-from PyQt6.QtGui import QColor, QFont
+from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, pyqtProperty, pyqtSignal
+from PyQt6.QtGui import QColor, QFont, QPainter, QPen, QBrush
+from PyQt6.QtWidgets import QAbstractButton, QSizePolicy
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -335,8 +337,8 @@ class Sym:
     neg = "¬"
     conj = "∧"
     disj = "∨"
-    impl = "→"
-    iff = "↔"
+    impl = "⇒"
+    iff = "⟺"
     neq = "≠"
 
     # Greek letters — commonly used in geometric proofs
@@ -361,3 +363,86 @@ class Sym:
     chi = "χ"
     psi = "ψ"
     omega = "ω"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TOGGLE SWITCH WIDGET
+# ═══════════════════════════════════════════════════════════════════════════
+
+class ToggleSwitch(QAbstractButton):
+    """A compact iOS-style toggle switch.
+
+    Usage::
+
+        toggle = ToggleSwitch(checked=False)
+        toggle.toggled.connect(my_slot)
+    """
+
+    def __init__(self, checked: bool = False,
+                 on_color: str = C.valid,
+                 off_color: str = "#c0c2c8",
+                 parent=None):
+        super().__init__(parent)
+        self._on_color = QColor(on_color)
+        self._off_color = QColor(off_color)
+        self._thumb_x: float = 0.0   # animated 0.0 → 1.0
+
+        self.setCheckable(True)
+        self.setChecked(checked)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.setFixedSize(36, 18)
+
+        self._anim = QPropertyAnimation(self, b"_thumb_pos", self)
+        self._anim.setDuration(120)
+        self._anim.setEasingCurve(QEasingCurve.Type.InOutQuad)
+
+        # Sync initial thumb position without animation
+        self._thumb_x = 1.0 if checked else 0.0
+
+        self.toggled.connect(self._on_toggled)
+
+    # ── Animated property ────────────────────────────────────────────
+    def _get_thumb_pos(self) -> float:
+        return self._thumb_x
+
+    def _set_thumb_pos(self, val: float):
+        self._thumb_x = val
+        self.update()
+
+    _thumb_pos = pyqtProperty(float, _get_thumb_pos, _set_thumb_pos)
+
+    def _on_toggled(self, checked: bool):
+        self._anim.stop()
+        self._anim.setStartValue(self._thumb_x)
+        self._anim.setEndValue(1.0 if checked else 0.0)
+        self._anim.start()
+
+    # ── Painting ─────────────────────────────────────────────────────
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        w, h = self.width(), self.height()
+        r = h / 2
+
+        # Track
+        track_color = self._on_color if self.isChecked() else self._off_color
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(track_color))
+        p.drawRoundedRect(0, 0, w, h, r, r)
+
+        # Thumb
+        margin = 2
+        travel = w - h          # how far the thumb slides
+        tx = margin + self._thumb_x * travel
+        thumb_r = r - margin
+        p.setBrush(QBrush(QColor("white")))
+        p.drawEllipse(
+            int(tx), int(margin),
+            int(h - 2 * margin), int(h - 2 * margin),
+        )
+        p.end()
+
+    def sizeHint(self):
+        from PyQt6.QtCore import QSize
+        return QSize(36, 18)

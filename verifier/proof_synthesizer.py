@@ -1403,7 +1403,7 @@ class ProofSynthesizer:
         self.steps.append({
             "lineNumber": ln,
             "text": "⊥",
-            "justification": "Contradiction",
+            "justification": "⊥-intro",
             "dependencies": [assume_ln],
             "depth": depth, "status": "?",
         })

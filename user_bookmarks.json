@@ -5,6 +5,18 @@
       "name": "Skeletons",
       "icon": "\u25b8",
       "type": "folder"
+    },
+    {
+      "path": "C:/Users/Connor Gorman/source/repos/congman5/Euclid/test.euclid",
+      "name": "test",
+      "icon": "\u2022",
+      "type": "file"
+    },
+    {
+      "path": "C:/Users/Connor Gorman/source/repos/congman5/Euclid/cool squares.euclid",
+      "name": "cool squares",
+      "icon": "\u2022",
+      "type": "file"
     }
   ],
   "dialog_geometry": {

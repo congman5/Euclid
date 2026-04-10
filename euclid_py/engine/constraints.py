@@ -123,6 +123,34 @@ def line_circle_intersections(p1, p2, center, radius: float) -> List[dict]:
     return pts
 
 
+def line_circle_intersections_full(p1, p2, center, radius: float) -> List[dict]:
+    """Intersect the *infinite* line through p1–p2 with a circle.
+
+    Same maths as ``line_circle_intersections`` but without clamping
+    the parameter *t* to [0, 1].  Used by the canvas-sync code which
+    needs intersections along rays and extended lines, not just the
+    finite segment.
+    """
+    d = (p2["x"] - p1["x"], p2["y"] - p1["y"])
+    f = (p1["x"] - center["x"], p1["y"] - center["y"])
+    a = d[0] ** 2 + d[1] ** 2
+    if a == 0:
+        return []
+    b = 2 * (f[0] * d[0] + f[1] * d[1])
+    c = f[0] ** 2 + f[1] ** 2 - radius ** 2
+    disc = b * b - 4 * a * c
+    if disc < 0:
+        return []
+    sqrt_disc = math.sqrt(disc)
+    pts = []
+    t1 = (-b - sqrt_disc) / (2 * a)
+    t2 = (-b + sqrt_disc) / (2 * a)
+    pts.append({"x": p1["x"] + t1 * d[0], "y": p1["y"] + t1 * d[1]})
+    if abs(t2 - t1) > 1e-10:
+        pts.append({"x": p1["x"] + t2 * d[0], "y": p1["y"] + t2 * d[1]})
+    return pts
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # CONSTRAINT TYPES
 # ═══════════════════════════════════════════════════════════════════════════

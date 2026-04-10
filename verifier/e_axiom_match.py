@@ -115,7 +115,10 @@ def list_axiom_names() -> List[str]:
 def _infer_schema_sorts(clause: Clause) -> Dict[str, Sort]:
     """Infer sorts of schema variables from their positions in the clause."""
     sorts: Dict[str, Sort] = {}
-    for lit in clause.literals:
+    # Sort literals before iterating so that sort inference is deterministic
+    # regardless of PYTHONHASHSEED (FrozenSet iteration order varies across
+    # Python process restarts, which can misclassify ambiguous schema vars).
+    for lit in sorted(clause.literals, key=lambda l: repr(l)):
         _collect_sorts(lit.atom, sorts)
     return sorts
 

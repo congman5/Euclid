@@ -615,7 +615,7 @@ COLOR_PALETTE = [
     QColor("#00897b"),  # teal
 ]
 
-LABEL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+LABEL_CHARS = "abcdefghijklmnopqrstuvwxyz"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1324,6 +1324,7 @@ class GeometryScene(QGraphicsScene):
         return [r for r in CONSTRUCTION_RULES if r.matches(np, ns, nc)]
 
     def execute_construction(self, cdef: ConstructionDef):
+        self.push_undo()
         pts, segs, circs = self.construct_selected_items()
         self._clear_construct_selection()
         cdef.build(self, pts, segs, circs)
@@ -1396,7 +1397,7 @@ class GeometryScene(QGraphicsScene):
         self._label_proxy.setPos(pt.pos().x() + 10, pt.pos().y() - 30)
 
         def accept():
-            new_label = inp.text().strip()
+            new_label = inp.text().strip().lower()
             if new_label and new_label != pt.label:
                 old = pt.label
                 if new_label not in self._points:
@@ -1433,6 +1434,7 @@ class GeometryScene(QGraphicsScene):
     # ── Add / query API ───────────────────────────────────────────────
 
     def add_point(self, label: str, x: float, y: float) -> PointItem:
+        label = label.lower()
         if label in self._points:
             return self._points[label]
         pt = PointItem(label, x, y)
@@ -1446,6 +1448,7 @@ class GeometryScene(QGraphicsScene):
         return pt
 
     def add_segment(self, from_label: str, to_label: str) -> Optional[SegmentItem]:
+        from_label, to_label = from_label.lower(), to_label.lower()
         p1 = self._points.get(from_label)
         p2 = self._points.get(to_label)
         if not p1 or not p2:
@@ -1464,6 +1467,7 @@ class GeometryScene(QGraphicsScene):
         return seg
 
     def add_circle_by_radius_pt(self, center_label: str, edge_label: str) -> Optional[CircleItem]:
+        center_label, edge_label = center_label.lower(), edge_label.lower()
         cpt = self._points.get(center_label)
         ept = self._points.get(edge_label)
         if not cpt or not ept:
@@ -1479,6 +1483,7 @@ class GeometryScene(QGraphicsScene):
         return circ
 
     def add_ray(self, from_label: str, through_label: str) -> Optional[RayItem]:
+        from_label, through_label = from_label.lower(), through_label.lower()
         p1 = self._points.get(from_label)
         p2 = self._points.get(through_label)
         if not p1 or not p2:
@@ -1494,6 +1499,7 @@ class GeometryScene(QGraphicsScene):
         return ray
 
     def add_circle(self, center_label: str, radius: float) -> Optional[CircleItem]:
+        center_label = center_label.lower()
         cpt = self._points.get(center_label)
         if not cpt:
             return None
@@ -1508,6 +1514,7 @@ class GeometryScene(QGraphicsScene):
 
     def add_angle_mark(self, from_l: str, vertex_l: str, to_l: str,
                        is_right: bool = False) -> Optional[AngleMarkItem]:
+        from_l, vertex_l, to_l = from_l.lower(), vertex_l.lower(), to_l.lower()
         f, v, t = self._points.get(from_l), self._points.get(vertex_l), self._points.get(to_l)
         if not all([f, v, t]):
             return None
@@ -1983,24 +1990,25 @@ class GeometryScene(QGraphicsScene):
                 if clicked is None:
                     return  # ignore clicks on empty space
             else:
+                # Snapshot before the first click so that a single undo
+                # reverts the entire operation (shape + any created points).
+                if not self._pending:
+                    self.push_undo()
                 clicked = self._get_or_create_point(pos)
             clicked.set_highlight(True)
             self._pending.append(clicked)
 
             if self._tool == "segment" and len(self._pending) == 2:
-                self.push_undo()
                 self.add_segment(self._pending[0].label, self._pending[1].label)
                 self._clear_pending_highlight()
                 self._pending.clear()
                 self._clear_tool_preview()
             elif self._tool == "ray" and len(self._pending) == 2:
-                self.push_undo()
                 self.add_ray(self._pending[0].label, self._pending[1].label)
                 self._clear_pending_highlight()
                 self._pending.clear()
                 self._clear_tool_preview()
             elif self._tool == "circle" and len(self._pending) == 2:
-                self.push_undo()
                 self.add_circle_by_radius_pt(self._pending[0].label, self._pending[1].label)
                 self._clear_pending_highlight()
                 self._pending.clear()
@@ -2497,8 +2505,18 @@ class CanvasWidget(QWidget):
         return self._scene
 
     def _cancel_pending(self):
-        self._scene._clear_pending_highlight()
-        self._scene._pending.clear()
+        if self._scene._pending:
+            # An undo snapshot was pushed at the first click of
+            # segment/ray/circle; revert it so stray points are removed.
+            self._scene._clear_pending_highlight()
+            self._scene._pending.clear()
+            self._scene.undo()
+            # The undo pushed the current state onto redo — discard it
+            # so the cancelled operation doesn't reappear on redo.
+            if self._scene._redo_stack:
+                self._scene._redo_stack.pop()
+        else:
+            self._scene._clear_pending_highlight()
         self._scene._eq_selection.clear()
         self._scene._dismiss_label_popover()
 

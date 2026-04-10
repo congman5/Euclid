@@ -254,3 +254,516 @@ Traceback (most recent call last):
                        ^^^^^^^^^
 NameError: name 'QTextEdit' is not defined
 
+2026-04-08 23:12:59 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:00 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:00 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:00 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:00 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:00 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:00 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:01 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:01 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:01 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:01 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:01 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:01 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:01 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:01 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:01 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:01 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:01 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:01 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:01 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:02 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:02 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:02 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:02 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:02 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:02 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:02 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:06 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:14:06 [ERROR] Unhandled exception in _eval_all:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2262, in _eval_all
+    self._eval_all_inner()
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2309, in _eval_all_inner
+    proof_json = self._build_proof_json()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_build_proof_json'. Did you mean: '_build_proof_json_up_to'?
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:01 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:02 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:02 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:02 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:02 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:02 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:02 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:02 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:02 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:02 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:02 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:02 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:03 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
+2026-04-08 23:15:03 [ERROR] Unhandled exception in _on_verify_finished:
+Traceback (most recent call last):
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2388, in _on_verify_finished
+    self._on_verify_finished_inner(result_or_exc)
+  File "C:\Users\Connor Gorman\source\repos\congman5\Euclid\euclid_py\ui\proof_panel.py", line 2498, in _on_verify_finished_inner
+    self._update_counts()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ProofPanel' object has no attribute '_update_counts'
+
