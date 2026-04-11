@@ -87,6 +87,63 @@ def segment_intersection(p1, p2, p3, p4) -> Optional[dict]:
     return {"x": p1["x"] + t * d1[0], "y": p1["y"] + t * d1[1]}
 
 
+def ray_segment_intersection(ray_origin, ray_through, seg_p1, seg_p2) -> Optional[dict]:
+    """Intersect a ray (origin through ray_through, extending infinitely) with a finite segment."""
+    d1 = (ray_through["x"] - ray_origin["x"], ray_through["y"] - ray_origin["y"])
+    d2 = (seg_p2["x"] - seg_p1["x"], seg_p2["y"] - seg_p1["y"])
+    cross = d1[0] * d2[1] - d1[1] * d2[0]
+    if abs(cross) < 1e-10:
+        return None
+    d3 = (seg_p1["x"] - ray_origin["x"], seg_p1["y"] - ray_origin["y"])
+    t = (d3[0] * d2[1] - d3[1] * d2[0]) / cross
+    u = (d3[0] * d1[1] - d3[1] * d1[0]) / cross
+    if t < 0 or u < 0 or u > 1:
+        return None
+    return {"x": ray_origin["x"] + t * d1[0], "y": ray_origin["y"] + t * d1[1]}
+
+
+def ray_ray_intersection(r1_origin, r1_through, r2_origin, r2_through) -> Optional[dict]:
+    """Intersect two rays (each from origin through through-point, extending infinitely)."""
+    d1 = (r1_through["x"] - r1_origin["x"], r1_through["y"] - r1_origin["y"])
+    d2 = (r2_through["x"] - r2_origin["x"], r2_through["y"] - r2_origin["y"])
+    cross = d1[0] * d2[1] - d1[1] * d2[0]
+    if abs(cross) < 1e-10:
+        return None
+    d3 = (r2_origin["x"] - r1_origin["x"], r2_origin["y"] - r1_origin["y"])
+    t = (d3[0] * d2[1] - d3[1] * d2[0]) / cross
+    u = (d3[0] * d1[1] - d3[1] * d1[0]) / cross
+    if t < 0 or u < 0:
+        return None
+    return {"x": r1_origin["x"] + t * d1[0], "y": r1_origin["y"] + t * d1[1]}
+
+
+def ray_circle_intersections(ray_origin, ray_through, center, radius: float) -> List[dict]:
+    """Intersect a ray (origin through ray_through, extending infinitely) with a circle.
+
+    Like ``line_circle_intersections_full`` but only returns points where t >= 0
+    (on the forward side of the ray).
+    """
+    d = (ray_through["x"] - ray_origin["x"], ray_through["y"] - ray_origin["y"])
+    f = (ray_origin["x"] - center["x"], ray_origin["y"] - center["y"])
+    a = d[0] ** 2 + d[1] ** 2
+    if a == 0:
+        return []
+    b = 2 * (f[0] * d[0] + f[1] * d[1])
+    c = f[0] ** 2 + f[1] ** 2 - radius ** 2
+    disc = b * b - 4 * a * c
+    if disc < 0:
+        return []
+    sqrt_disc = math.sqrt(disc)
+    pts = []
+    t1 = (-b - sqrt_disc) / (2 * a)
+    t2 = (-b + sqrt_disc) / (2 * a)
+    if t1 >= 0:
+        pts.append({"x": ray_origin["x"] + t1 * d[0], "y": ray_origin["y"] + t1 * d[1]})
+    if t2 >= 0 and abs(t2 - t1) > 1e-10:
+        pts.append({"x": ray_origin["x"] + t2 * d[0], "y": ray_origin["y"] + t2 * d[1]})
+    return pts
+
+
 def circle_intersections(c1, r1: float, c2, r2: float) -> List[dict]:
     d = distance(c1, c2)
     if d is None or d > r1 + r2 or d < abs(r1 - r2) or (d == 0 and r1 == r2):

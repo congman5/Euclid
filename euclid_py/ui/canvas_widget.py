@@ -6,7 +6,8 @@ QGraphicsScene-based interactive geometry canvas supporting:
   • Segment / ray / circle / angle / perpendicular drawing
   • Pan tool + middle-click pan + scroll zoom + toolbar zoom controls
   • Snap-to-existing-point, snap-to-segment, snap-to-circle-boundary
-  • Circle-circle & segment-circle intersection snapping
+  • Circle-circle, segment-circle, ray-circle intersection snapping
+  • Segment-segment, ray-segment, ray-ray intersection snapping
   • Circle defined by center + radius point (drag resizes)
   • Intersection-point drags both parent circles
   • Equality assertion tool with tick marks
@@ -38,7 +39,11 @@ from PyQt6.QtWidgets import (
 from ..engine.constraints import (
     circle_intersections as _circle_ix,
     line_circle_intersections as _line_circle_ix,
+    line_circle_intersections_full as _line_circle_ix_full,
     segment_intersection as _seg_ix,
+    ray_segment_intersection as _ray_seg_ix,
+    ray_ray_intersection as _ray_ray_ix,
+    ray_circle_intersections as _ray_circle_ix,
     distance as _dist,
     angle_at_vertex as _angle_at_vertex,
 )
@@ -1740,33 +1745,81 @@ class GeometryScene(QGraphicsScene):
         return best_pt
 
     def _snap_to_intersection(self, pos: QPointF) -> Optional[Tuple[QPointF, List[CircleItem]]]:
-        """Find nearest circle-circle intersection within snap distance."""
+        """Find nearest geometric intersection within snap distance.
+
+        Checks: circle-circle, segment-circle, ray-circle,
+        segment-segment, ray-segment, and ray-ray intersections.
+        """
         snap = self._effective_snap()
         best_pt, best_d, best_circs = None, snap, []
+
+        def _consider(ip: dict, circs: list):
+            nonlocal best_pt, best_d, best_circs
+            d = math.hypot(ip["x"] - pos.x(), ip["y"] - pos.y())
+            if d < best_d:
+                best_pt = QPointF(ip["x"], ip["y"])
+                best_d = d
+                best_circs = circs
+
+        # ── Circle-circle intersections ──
         for i, c1 in enumerate(self._circles):
             for c2 in self._circles[i + 1:]:
                 c1_dict = {"x": c1.center_pt.pos().x(), "y": c1.center_pt.pos().y()}
                 c2_dict = {"x": c2.center_pt.pos().x(), "y": c2.center_pt.pos().y()}
-                pts = _circle_ix(c1_dict, c1.radius, c2_dict, c2.radius)
-                for ip in pts:
-                    d = math.hypot(ip["x"] - pos.x(), ip["y"] - pos.y())
-                    if d < best_d:
-                        best_pt = QPointF(ip["x"], ip["y"])
-                        best_d = d
-                        best_circs = [c1, c2]
-        # Also check segment-circle intersections
+                for ip in _circle_ix(c1_dict, c1.radius, c2_dict, c2.radius):
+                    _consider(ip, [c1, c2])
+
+        # ── Segment-circle intersections ──
         for seg in self._segments:
+            p1 = {"x": seg.p1.pos().x(), "y": seg.p1.pos().y()}
+            p2 = {"x": seg.p2.pos().x(), "y": seg.p2.pos().y()}
             for circ in self._circles:
-                p1 = {"x": seg.p1.pos().x(), "y": seg.p1.pos().y()}
-                p2 = {"x": seg.p2.pos().x(), "y": seg.p2.pos().y()}
                 center = {"x": circ.center_pt.pos().x(), "y": circ.center_pt.pos().y()}
-                pts = _line_circle_ix(p1, p2, center, circ.radius)
-                for ip in pts:
-                    d = math.hypot(ip["x"] - pos.x(), ip["y"] - pos.y())
-                    if d < best_d:
-                        best_pt = QPointF(ip["x"], ip["y"])
-                        best_d = d
-                        best_circs = [circ]
+                for ip in _line_circle_ix(p1, p2, center, circ.radius):
+                    _consider(ip, [circ])
+
+        # ── Ray-circle intersections ──
+        for ray in self._rays:
+            ro = {"x": ray.p1.pos().x(), "y": ray.p1.pos().y()}
+            rt = {"x": ray.p2.pos().x(), "y": ray.p2.pos().y()}
+            for circ in self._circles:
+                center = {"x": circ.center_pt.pos().x(), "y": circ.center_pt.pos().y()}
+                for ip in _ray_circle_ix(ro, rt, center, circ.radius):
+                    _consider(ip, [circ])
+
+        # ── Segment-segment intersections ──
+        for i, s1 in enumerate(self._segments):
+            s1p1 = {"x": s1.p1.pos().x(), "y": s1.p1.pos().y()}
+            s1p2 = {"x": s1.p2.pos().x(), "y": s1.p2.pos().y()}
+            for s2 in self._segments[i + 1:]:
+                s2p1 = {"x": s2.p1.pos().x(), "y": s2.p1.pos().y()}
+                s2p2 = {"x": s2.p2.pos().x(), "y": s2.p2.pos().y()}
+                ip = _seg_ix(s1p1, s1p2, s2p1, s2p2)
+                if ip:
+                    _consider(ip, [])
+
+        # ── Ray-segment intersections ──
+        for ray in self._rays:
+            ro = {"x": ray.p1.pos().x(), "y": ray.p1.pos().y()}
+            rt = {"x": ray.p2.pos().x(), "y": ray.p2.pos().y()}
+            for seg in self._segments:
+                sp1 = {"x": seg.p1.pos().x(), "y": seg.p1.pos().y()}
+                sp2 = {"x": seg.p2.pos().x(), "y": seg.p2.pos().y()}
+                ip = _ray_seg_ix(ro, rt, sp1, sp2)
+                if ip:
+                    _consider(ip, [])
+
+        # ── Ray-ray intersections ──
+        for i, r1 in enumerate(self._rays):
+            r1o = {"x": r1.p1.pos().x(), "y": r1.p1.pos().y()}
+            r1t = {"x": r1.p2.pos().x(), "y": r1.p2.pos().y()}
+            for r2 in self._rays[i + 1:]:
+                r2o = {"x": r2.p1.pos().x(), "y": r2.p1.pos().y()}
+                r2t = {"x": r2.p2.pos().x(), "y": r2.p2.pos().y()}
+                ip = _ray_ray_ix(r1o, r1t, r2o, r2t)
+                if ip:
+                    _consider(ip, [])
+
         if best_pt:
             return best_pt, best_circs
         return None
@@ -1786,6 +1839,8 @@ class GeometryScene(QGraphicsScene):
     def _find_snap(self, pos: QPointF) -> Tuple[QPointF, str, List[CircleItem]]:
         """Multi-priority snap: points > intersections > segment > circle > raw pos.
         Returns (snapped_pos, snap_type, associated_circles).
+        Intersections include circle-circle, segment-circle, ray-circle,
+        segment-segment, ray-segment, and ray-ray.
         When ``_snap_enabled`` is False, only existing-point snapping is active."""
         # 1. Existing point (always active)
         pt = self._snap_to_point(pos)

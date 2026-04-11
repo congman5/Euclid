@@ -4,6 +4,28 @@ All notable changes to the Euclid project.
 
 > **v1.0** will be released when all 48 propositions of Book I are correctly implemented and verified, until them numerate the first digit after each new implimentation, and on smaller updates enumerate the number furthest to the right.
 
+## [0.9.6.36] - 2025-06-10
+
+### Added — Canvas intersection snap points for lines, rays, and circles
+
+- **Segment-segment intersection snap**: When placing points or drawing lines/rays, the cursor now snaps to the intersection of two segments on the canvas, shown with the `×` indicator.
+- **Ray-segment intersection snap**: Snaps to where a ray crosses a segment.
+- **Ray-ray intersection snap**: Snaps to where two rays intersect.
+- **Ray-circle intersection snap**: Snaps to where a ray crosses a circle boundary (extends beyond the defining segment of the ray).
+- **New geometry helpers**: Added `ray_segment_intersection`, `ray_ray_intersection`, and `ray_circle_intersections` to `euclid_py/engine/constraints.py` for ray-aware intersection math.
+- Existing circle-circle and segment-circle intersection snaps remain unchanged.
+
+## [0.9.6.35] - 2025-06-10
+
+### Fixed — Rule Reference tab axiom descriptions aligned with the paper
+
+- **Corrected biconditional arrows**: Replaced incorrect `⟺` with one-directional `⇒` in 14 axiom descriptions where the clause only encodes one direction of an if-and-only-if (Generality 4, Betweenness 1b/1c/1d, Same-side 1/3, Segment transfer 3a/3b/4a/4b, Angle transfer 3a/3b, Area transfer 1a/1b).
+- **Fixed Generality 4**: Changed from `on(a,α) ⟺ ¬inside(a,α)` to `inside(a,α) ⇒ ¬on(a,α)` to match paper §3.4.
+- **Fixed Metric M4**: Updated to `a ≠ b ∧ a ≠ c ⇒ ∠abc = ∠cba` to match the paper's formulation (vertex b, swap arms).
+- **Added Equality axioms**: Added the two Equality axioms from §3.4 (reflexivity `x = x` and substitution `x = y ∧ φ(x) ⇒ φ(y)`) to the Diagrammatic Axioms section. These were built into the consequence engine but missing from the reference display.
+- **Shortened Leibniz notes**: Replaced verbose Leibniz explanations with concise `(equality substitution)` annotations on derived axioms (G5/5c/5d/6/6c, SS6).
+- Source of truth: Avigad, Dean, Mumma (2009) "A Formal System for Euclid's Elements" (ref/formal_system_extracted.txt).
+
 ## [0.9.6.34] - 2025-06-10
 
 ### Changed — Remove Sync Canvas toggle, fix proof header button layout
