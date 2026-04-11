@@ -4,6 +4,17 @@ All notable changes to the Euclid project.
 
 > **v1.0** will be released when all 48 propositions of Book I are correctly implemented and verified, until them numerate the first digit after each new implimentation, and on smaller updates enumerate the number furthest to the right.
 
+## [0.9.6.37] - 2025-06-10
+
+### Changed — Codebase cleanup for main branch
+
+- **Removed tracked `__pycache__/` and `.pyc` files**: 31 compiled bytecode files removed from version control.
+- **Removed debug/scratch scripts**: 11 root-level debug scripts (`debug_*.py`, `dump_*.py`, `verify_prop*.py`, `test_prop*.py`, `test_parse_prime.py`) untracked.
+- **Removed output/log files**: 22 root-level stdout/stderr/trace text files and `euclid_crash.log` untracked.
+- **Removed verifier test debug artifacts**: 32 files (`verifier/tests/debug_*`, `verifier/tests/synth_*`) untracked.
+- **Removed misc temp files**: `_i17.json`, `test.euclid`, `cool squares.euclid`, `Proposition I.10.euclid.new`, `instructions.txt`, `user_bookmarks.json`, `euclid-plan.md` untracked.
+- **Updated `.gitignore`**: Comprehensive patterns to prevent re-tracking of bytecode, debug scripts, scratch output, and temp files.
+
 ## [0.9.6.36] - 2025-06-10
 
 ### Added — Canvas intersection snap points for lines, rays, and circles
