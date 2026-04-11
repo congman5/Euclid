@@ -331,10 +331,16 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
     # are keyed on the variable set and automatically regenerate when
     # new variables appear).
 
-    def _ref_known(refs: List[int]) -> Set[Literal]:
-        """Collect literals from referenced lines only."""
+    def _ref_known(refs: List[int], current_depth: int) -> Set[Literal]:
+        """Collect literals from referenced lines only.
+
+        Only includes literals from lines whose depth is ≤ *current_depth*
+        so that assumptions from inner subproofs cannot leak outward.
+        """
         rk: Set[Literal] = set()
         for r in refs:
+            if line_depth.get(r, 0) > current_depth:
+                continue
             if r in premise_ids:
                 rk.update(line_lits.get(r, set()))
             elif r in line_lits:
@@ -415,7 +421,7 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
                 # Use only facts from cited references (+ closure),
                 # not all known facts, so wrong refs are rejected.
                 if rule.prereq_pattern:
-                    ref_facts = _ref_known(refs)
+                    ref_facts = _ref_known(refs, depth)
                     ref_closure = (
                         checker.consequence_engine.direct_consequences(
                             ref_facts, checker.variables))
@@ -466,7 +472,7 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
                     checker.known.add(lit)
             elif axiom_category == "structural":
                 # Reit: literal must be in cited refs only
-                dep_facts = _ref_known(refs)
+                dep_facts = _ref_known(refs, depth)
                 for lit in step_lits:
                     if lit in dep_facts:
                         checker.known.add(lit)
@@ -480,7 +486,7 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
                 # Gather facts ONLY from cited references, compute
                 # their closure, then verify the specific axiom
                 # cited actually derives the target from those facts.
-                dep_facts = _ref_known(refs)
+                dep_facts = _ref_known(refs, depth)
 
                 # Restrict variables to those appearing in the
                 # dep_facts and step_lits so that the consequence
@@ -720,7 +726,7 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
                     "SAS requires conclusions mentioning exactly "
                     "6 distinct point variables (a,b,c,d,e,f).")
             else:
-                dep_facts = _ref_known(refs)
+                dep_facts = _ref_known(refs, depth)
                 a, b, c, d, e, f = pts[:6]
                 sas_r = apply_sas_superposition(
                     dep_facts, a, b, c, d, e, f)
@@ -742,7 +748,7 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
                     "SSS requires conclusions mentioning exactly "
                     "6 distinct point variables (a,b,c,d,e,f).")
             else:
-                dep_facts = _ref_known(refs)
+                dep_facts = _ref_known(refs, depth)
                 a, b, c, d, e, f = pts[:6]
                 sss_r = apply_sss_superposition(
                     dep_facts, a, b, c, d, e, f)
@@ -812,7 +818,7 @@ def verify_e_proof_json(proof_json: dict, on_line_checked=None) -> PanelCheckRes
                             f"Unknown theorem '{just}'.")
             if thm is not None:
                 # Gather facts from cited refs only (+ closure).
-                dep_facts = _ref_known(refs)
+                dep_facts = _ref_known(refs, depth)
                 dep_closure = (
                     checker.consequence_engine.direct_consequences(
                         dep_facts, checker.variables))
