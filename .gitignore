@@ -55,8 +55,8 @@ debug_*_out.txt
 /_*.py
 /debug_*.py
 /dump_*.py
-/verify_prop*.py
-/test_prop*.py
+/verify_prop*
+/test_prop*
 /test_parse_prime.py
 
 # ── Verifier test debug output ──
@@ -65,6 +65,8 @@ verifier/tests/synth_*
 
 # ── Misc temp / scratch files ──
 test.euclid
+cool squares.euclid
+euclid-plan.md
 test_out.txt
 test_err.txt
 user_bookmarks.json
