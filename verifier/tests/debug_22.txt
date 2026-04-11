@@ -1,9 +1,0 @@
-Synthesizing Prop I.22...
-  [SLOW 8.5s] _inject_metric_prereqs
-  [SLOW 8.5s] _apply_theorem rule=proposition_3
-  [SLOW 11.0s] _inject_metric_prereqs
-  [SLOW 11.1s] _apply_theorem rule=proposition_3
-  [SLOW 37.1s] _ensure_intersects
-  [SLOW 37.1s] _apply_construction rule=intersection_circle_line_extending_points
-  [SLOW 12.1s] _ensure_intersects
-  [SLOW 12.1s] _apply_construction rule=intersection_circles

@@ -23,11 +23,6 @@ build/
 *.whl
 *.spec
 
-# ── PyInstaller ──
-# The .spec is checked in (euclid.spec), but build output is not
-/dist/
-/build/
-
 # ── Virtual environments ──
 .venv/
 venv/
@@ -44,8 +39,34 @@ coverage.xml
 
 # ── Logs and crash dumps ──
 euclid_crash.log
+
+# ── Debug / scratch output (root level) ──
+_stderr.txt
+_stdout*.txt
+_test.txt
+_tmp.txt
+_verify_results.txt
+_i17.json
+trace_out.txt
+dump_*.txt
+debug_*_out.txt
+
+# ── Debug / scratch scripts (root level) ──
+/_*.py
+/debug_*.py
+/dump_*.py
+/verify_prop*.py
+/test_prop*.py
+/test_parse_prime.py
+
+# ── Verifier test debug output ──
+verifier/tests/debug_*
+verifier/tests/synth_*
+
+# ── Misc temp / scratch files ──
+test.euclid
 test_out.txt
 test_err.txt
-
-# ── Temp / debug scripts (underscore-prefixed at repo root) ──
-/_*.py
+user_bookmarks.json
+instructions.txt
+*.new
