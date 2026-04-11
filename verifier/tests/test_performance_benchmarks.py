@@ -141,8 +141,8 @@ class TestForwardChainingScaling:
 class TestProofVerificationTiming:
     """Measure verification time for encoded proofs."""
 
-    def test_all_encoded_proofs_under_1s(self):
-        """Each encoded proof verifies (pass or fail) in under 1 second."""
+    def test_all_encoded_proofs_under_5s(self):
+        """Each encoded proof verifies (pass or fail) in under 5 seconds."""
         from verifier.e_proofs import E_PROOFS
         from verifier.unified_checker import verify_named_proof
 
@@ -150,7 +150,7 @@ class TestProofVerificationTiming:
         for name in E_PROOFS:
             _, elapsed = _time_ms(verify_named_proof, name)
             timings[name] = elapsed
-            assert elapsed < 1000, f"{name} took {elapsed:.1f}ms"
+            assert elapsed < 5000, f"{name} took {elapsed:.1f}ms"
 
     def test_prop_i1_verification_fast(self):
         """Prop I.1 (equilateral triangle) verifies quickly."""

@@ -903,7 +903,7 @@ class TestMatchConstructionPrereqs:
         ]
         known = {Literal(Equals("p", "q"), polarity=False)}
         checker = EChecker()
-        vm, err = _match_construction_prereqs(rule, step_lits, known, checker)
+        vm, err, _prereqs = _match_construction_prereqs(rule, step_lits, known, checker)
         assert err is None
         assert vm["a"] == "p"
         assert vm["b"] == "q"
@@ -919,7 +919,7 @@ class TestMatchConstructionPrereqs:
             Literal(On("q", "\u03b3"), polarity=True),
         ]
         checker = EChecker()
-        vm, err = _match_construction_prereqs(rule, step_lits, set(), checker)
+        vm, err, _prereqs = _match_construction_prereqs(rule, step_lits, set(), checker)
         assert err is not None
         assert "prerequisite" in err.lower()
 

@@ -1262,30 +1262,30 @@ class TestBotElimStepType:
             "name": "bot_elim_test",
             "declarations": {"points": ["a", "b"], "lines": ["L"]},
             "premises": ["on(a, L)", "on(b, L)"],
-            "goal": "a = b",
+            "goal": "on(a, L)",
             "lines": [
                 {"id": 1, "depth": 0, "statement": "on(a, L)",
                  "justification": "Given", "refs": []},
                 {"id": 2, "depth": 0, "statement": "on(b, L)",
                  "justification": "Given", "refs": []},
-                # Assume ¬(a = b)
-                {"id": 3, "depth": 1, "statement": "\u00ac(a = b)",
+                # Assume ¬on(a, L)
+                {"id": 3, "depth": 1, "statement": "\u00ac(on(a, L))",
                  "justification": "Assume", "refs": []},
-                # Derive a contradiction: on(a, L) and ¬on(a, L)
-                {"id": 4, "depth": 1, "statement": "\u00ac(on(a, L))",
-                 "justification": "Assume", "refs": []},
-                # ⊥-intro: contradiction found
+                # Reiterate on(a, L) from premise
+                {"id": 4, "depth": 1, "statement": "on(a, L)",
+                 "justification": "Reit", "refs": [1]},
+                # ⊥-intro: contradiction between lines 3 and 4
                 {"id": 5, "depth": 1, "statement": "\u22a5",
-                 "justification": "\u22a5-intro", "refs": [3]},
-                # ⊥-elim: conclude a = b
-                {"id": 6, "depth": 0, "statement": "a = b",
+                 "justification": "\u22a5-intro", "refs": [3, 4]},
+                # ⊥-elim: conclude on(a, L) by discharging assumption
+                {"id": 6, "depth": 0, "statement": "on(a, L)",
                  "justification": "\u22a5-elim", "refs": [3]},
             ],
         }
         result = verify_e_proof_json(pj)
         # ⊥-intro should find the contradiction
         assert 5 in result.derived
-        # ⊥-elim should derive a = b
+        # ⊥-elim should derive on(a, L)
         assert 6 in result.derived
 
     def test_bot_elim_without_refs_fails(self):
@@ -1343,19 +1343,19 @@ class TestBotElimStepType:
             "lines": [
                 {"id": 1, "depth": 0, "statement": "on(a, L)",
                  "justification": "Given", "refs": []},
-                # Subproof: assume ¬(a = b) and also assume between(a,c,b)
-                {"id": 2, "depth": 1, "statement": "\u00ac(a = b)",
+                # Subproof: assume ¬on(a, L)
+                {"id": 2, "depth": 1, "statement": "\u00ac(on(a, L))",
                  "justification": "Assume", "refs": []},
                 {"id": 3, "depth": 1, "statement": "between(a, c, b)",
                  "justification": "Assume", "refs": []},
-                # Create contradiction: assume ¬on(a, L)
-                {"id": 4, "depth": 1, "statement": "\u00ac(on(a, L))",
-                 "justification": "Assume", "refs": []},
-                # ⊥-intro: contradiction found
+                # Reiterate on(a, L) from premise
+                {"id": 4, "depth": 1, "statement": "on(a, L)",
+                 "justification": "Reit", "refs": [1]},
+                # ⊥-intro: contradiction between lines 2 and 4
                 {"id": 5, "depth": 1, "statement": "\u22a5",
-                 "justification": "\u22a5-intro", "refs": [2]},
-                # ⊥-elim: conclude a = b
-                {"id": 6, "depth": 0, "statement": "a = b",
+                 "justification": "\u22a5-intro", "refs": [2, 4]},
+                # ⊥-elim: discharge assumption from line 2
+                {"id": 6, "depth": 0, "statement": "on(a, L)",
                  "justification": "\u22a5-elim", "refs": [2]},
                 # Now try to use between(a,c,b) which was only in the
                 # subproof.  This should fail because it was retracted.
