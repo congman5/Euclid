@@ -4,6 +4,12 @@ All notable changes to the Euclid project.
 
 > **v1.0** will be released when all 48 propositions of Book I are correctly implemented and verified, until them numerate the first digit after each new implimentation, and on smaller updates enumerate the number furthest to the right.
 
+## [0.9.6.39] - 2025-06-10
+
+### Fixed — Subproof depth isolation in proof verifier
+
+- **Soundness fix**: `_ref_known` in `unified_checker.py` now filters referenced lines by depth — a depth-0 step can no longer cite a depth-1 `Assume` line and absorb its literals as known facts. Previously, any statement could be "proved" by assuming it in a subproof and citing the assumption from an outer scope (e.g. `ab < ab` accepted via `Assume` at depth 1 + `CN1` at depth 0). All 6 call sites updated to pass the current line's depth.
+
 ## [0.9.6.38] - 2025-06-10
 
 ### Fixed — 5 test bugs (no engine changes)
